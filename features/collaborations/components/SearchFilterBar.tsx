@@ -162,7 +162,7 @@ export function SearchFilterBar({
               onClick={() => {
                 /* toggle handled by Dropdown's own state — use a controlled variant below */
               }}
-              className="flex size-[42px] cursor-pointer items-center justify-center rounded-sm bg-bg"
+              className="pressable flex size-[42px] cursor-pointer items-center justify-center rounded-sm bg-bg focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
             >
               <Icon name="sort" size={20} className="text-ink" />
             </button>
@@ -176,7 +176,7 @@ export function SearchFilterBar({
                   type="button"
                   onClick={() => onSortChange(opt.value)}
                   className={clsx(
-                    "cursor-pointer rounded px-2 py-1 text-left text-sm transition-colors",
+                    "pressable cursor-pointer rounded px-2 py-1 text-left text-sm transition-colors focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none",
                     sortKey === opt.value
                       ? "bg-accent font-medium text-ink"
                       : "text-ink hover:bg-bg"
@@ -194,7 +194,7 @@ export function SearchFilterBar({
               type="button"
               aria-label="Filter"
               aria-haspopup="true"
-              className="relative flex size-[42px] cursor-pointer items-center justify-center rounded-sm bg-bg"
+              className="pressable relative flex size-[42px] cursor-pointer items-center justify-center rounded-sm bg-bg focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
             >
               <Icon name="filter" size={20} className="text-ink" />
               {activeFilterCount > 0 && (
@@ -242,7 +242,7 @@ export function SearchFilterBar({
         <button
           type="button"
           onClick={onSearch}
-          className="cursor-pointer rounded-md bg-accent px-4 py-2.5 text-sm font-medium text-ink transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+          className="pressable cursor-pointer rounded-md bg-accent px-4 py-2.5 text-sm font-medium text-ink transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
         >
           Search
         </button>

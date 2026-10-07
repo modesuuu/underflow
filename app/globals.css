@@ -35,3 +35,88 @@
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
+
+/* --- Motion utilities (P2). All animations gated behind
+   prefers-reduced-motion: no-preference — reduced-motion users see static UI. */
+
+@keyframes uf-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes uf-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes uf-fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes uf-modal-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes uf-modal-out {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* Grid entrance: one-shot per mount, 50ms stagger via --stagger-i */
+  .card-stagger {
+    animation: uf-card-in 450ms ease-out backwards;
+    animation-delay: calc(var(--stagger-i, 0) * 50ms);
+  }
+
+  /* Modal open/close (replaces the GSAP usage) */
+  .modal-overlay-in {
+    animation: uf-fade-in 280ms ease-out;
+  }
+  .modal-overlay-out {
+    animation: uf-fade-out 220ms ease-in;
+  }
+  .modal-panel-in {
+    animation: uf-modal-in 280ms ease-out;
+  }
+  .modal-panel-out {
+    animation: uf-modal-out 220ms ease-in;
+  }
+
+  /* Press feedback: subtle scale on :active */
+  .pressable:active {
+    transform: scale(0.97);
+  }
+}
+
+.pressable {
+  transition: transform 120ms ease-out;
+}

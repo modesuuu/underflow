@@ -27,7 +27,8 @@ export function CollabCard({ project }: CollabCardProps) {
     <article
       className={
         "group relative flex origin-center flex-col rounded-xl bg-bg p-5 " +
-        "motion-safe:transition-all motion-safe:duration-300 motion-safe:ease-out " +
+        "motion-safe:transition-[transform,background-color,box-shadow] " +
+        "motion-safe:duration-300 motion-safe:ease-out " +
         "motion-safe:hover:-rotate-[8deg] motion-safe:hover:bg-surface " +
         "motion-safe:hover:shadow-lg motion-safe:hover:scale-[1.03]"
       }
@@ -107,7 +108,7 @@ export function CollabCard({ project }: CollabCardProps) {
             className={
               isFull
                 ? "flex items-center gap-1.5 rounded-xl bg-placeholder px-5 py-2.5 text-sm font-semibold text-muted"
-                : "flex cursor-pointer items-center gap-1.5 rounded-xl bg-accent px-5 py-2.5 text-sm font-semibold text-ink focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+                : "pressable flex cursor-pointer items-center gap-1.5 rounded-xl bg-accent px-5 py-2.5 text-sm font-semibold text-ink transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
             }
           >
             {isFull ? "Full" : "Apply"}

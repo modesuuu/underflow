@@ -1,6 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type CSSProperties } from "react";
+import clsx from "clsx";
+import { Icon } from "@/components/ui/Icon";
 import { CollabCard } from "./CollabCard";
 import { SearchFilterBar } from "./SearchFilterBar";
 import { sortProjects } from "../sort";
@@ -15,9 +17,18 @@ interface CollabGridProps {
   projects: CollabProject[];
 }
 
+/** Cap the stagger index so late cards don't wait a full second in. */
+const STAGGER_CAP = 11;
+
 /**
  * Search + filter + sort + responsive card grid (Figma "Collaborations" frame).
  * Pipeline: committed search → type filter → status filter → sort.
+ *
+ * P2 rhythm (revert = delete the `i === 0` span class, the number span, and
+ * the wrapper div → cards go back to being direct grid children):
+ * - first card spans 2 columns (featured) from sm up;
+ * - subtle 01–06 numbering above each card;
+ * - one-shot mount stagger (50ms/item, CSS-gated behind reduced motion).
  */
 export function CollabGrid({ projects }: CollabGridProps) {
   // Draft query is typed in the input; committed only on Search click / Enter.
@@ -69,17 +80,37 @@ export function CollabGrid({ projects }: CollabGridProps) {
         onStatusChange={setStatusFilter}
       />
 
-      {/* Card grid — columns owned by the grid, card is responsive */}
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {filtered.map((project) => (
-          <CollabCard key={project.id} project={project} />
-        ))}
-      </div>
-
-      {filtered.length === 0 && (
-        <p className="py-12 text-center text-sm text-muted">
-          No projects found. Try a different search or filter.
-        </p>
+      {filtered.length === 0 ? (
+        /* P2 #12: proper empty view instead of a blank area */
+        <div className="flex flex-col items-center gap-3 py-16 text-center">
+          <Icon name="search-alt" size={40} className="text-placeholder" />
+          <p className="text-lg font-medium text-ink">No projects found</p>
+          <p className="max-w-xs text-sm text-muted">
+            Adjust your search or filters — or create a project and be the
+            first to show up here.
+          </p>
+        </div>
+      ) : (
+        /* Card grid — columns owned by the grid, card is responsive.
+           The wrapper div carries the stagger + rhythm; CollabCard itself is
+           untouched (revert-friendly). */
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {filtered.map((project, i) => (
+            <div
+              key={project.id}
+              className={clsx("card-stagger flex flex-col", i === 0 && "sm:col-span-2")}
+              style={{ "--stagger-i": String(Math.min(i, STAGGER_CAP)) } as CSSProperties}
+            >
+              <span
+                aria-hidden="true"
+                className="mb-2 text-2xs font-medium tracking-[0.2em] text-subtle"
+              >
+                {String(i + 1).padStart(2, "0")}
+              </span>
+              <CollabCard project={project} />
+            </div>
+          ))}
+        </div>
       )}
     </div>
   );

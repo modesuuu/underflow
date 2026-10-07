@@ -68,7 +68,7 @@ export function CollabHeaderActions() {
           aria-haspopup="true"
           aria-expanded={bellOpen}
           onClick={() => setBellOpen((v) => !v)}
-          className="cursor-pointer text-ink"
+          className="pressable cursor-pointer rounded-md p-1 text-ink focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
         >
           <Icon name="bell" size={20} />
         </button>
@@ -102,7 +102,7 @@ export function CollabHeaderActions() {
       <button
         type="button"
         onClick={() => setModalOpen(true)}
-        className="flex cursor-pointer items-center gap-1 rounded-md bg-accent p-2 transition-opacity hover:opacity-85"
+        className="pressable flex cursor-pointer items-center gap-1 rounded-md bg-accent p-2 transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
       >
         <Icon name="plus" size={16} />
         <span className="text-sm font-medium">Create Project</span>

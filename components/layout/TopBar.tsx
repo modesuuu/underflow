@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import gsap from "gsap";
 import { useRouter } from "next/navigation";
 import { Icon } from "@/components/ui/Icon";
 
@@ -42,6 +41,7 @@ export function TopBar({
   const borderRef = useRef<HTMLSpanElement>(null);
   const [scrolled, setScrolled] = useState(false);
 
+  // P2: border fade is now a CSS transition (GSAP dropped for trivial opacity)
   useEffect(() => {
     const bar = barRef.current;
     if (!bar) return;
@@ -52,15 +52,6 @@ export function TopBar({
     scroller.addEventListener("scroll", onScroll, { passive: true });
     return () => scroller.removeEventListener("scroll", onScroll);
   }, []);
-
-  useEffect(() => {
-    if (variant !== "dashboard" || !borderRef.current) return;
-    gsap.to(borderRef.current, {
-      opacity: scrolled ? 1 : 0,
-      duration: 0.2,
-      ease: "power2.out",
-    });
-  }, [scrolled, variant]);
 
   const handleBack = () => {
     if (backHref) router.push(backHref);
@@ -108,7 +99,12 @@ export function TopBar({
         aria-hidden="true"
         className={
           "pointer-events-none absolute inset-x-0 bottom-0 h-px bg-line " +
-          (variant === "detail" ? "opacity-100" : "opacity-0")
+          (variant === "detail"
+            ? "opacity-100"
+            : scrolled
+              ? "opacity-100"
+              : "opacity-0") +
+          " transition-opacity duration-200 motion-reduce:transition-none"
         }
       />
     </header>

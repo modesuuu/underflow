@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent, type KeyboardEvent } from "react";
-import gsap from "gsap";
+import clsx from "clsx";
 import { Icon } from "@/components/ui/Icon";
 import { createCollabProject } from "../api";
 import type { SkillTag } from "../types";
@@ -45,6 +45,28 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
   const [photoError, setPhotoError] = useState<string | null>(null);
   const [customRoles, setCustomRoles] = useState<string[]>([]);
   const [roleDraft, setRoleDraft] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<{
+    title?: string;
+    description?: string;
+  }>({});
+  // P2: exit animation state — modal stays mounted until the CSS out-animation
+  // finishes (timeout also covers reduced-motion where the animation never runs).
+  const [closing, setClosing] = useState(false);
+
+  useEffect(() => {
+    if (open) setClosing(false);
+  }, [open]);
+
+  useEffect(() => {
+    if (!closing) return;
+    const t = setTimeout(() => setClosing(false), 260);
+    return () => clearTimeout(t);
+  }, [closing]);
+
+  const requestClose = () => {
+    setClosing(true);
+    onClose();
+  };
 
   // Track live blob URLs in a ref so the unmount cleanup revokes exactly the
   // ones still open (removed entries are already revoked inline).
@@ -128,34 +150,10 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
     }
   };
 
-  // GSAP open/close animation
-  useEffect(() => {
-    if (!overlayRef.current || !modalRef.current) return;
-    if (open) {
-      gsap.fromTo(
-        overlayRef.current,
-        { opacity: 0 },
-        { opacity: 1, duration: 0.28, ease: "power3.out" }
-      );
-      gsap.fromTo(
-        modalRef.current,
-        { opacity: 0, scale: 0.96 },
-        { opacity: 1, scale: 1, duration: 0.28, ease: "power3.out" }
-      );
-    } else {
-      gsap.to(overlayRef.current, {
-        opacity: 0,
-        duration: 0.22,
-        ease: "power2.in",
-      });
-      gsap.to(modalRef.current, {
-        opacity: 0,
-        scale: 0.96,
-        duration: 0.22,
-        ease: "power2.in",
-      });
-    }
-  }, [open]);
+  // P2: open/close animations are CSS keyframes (globals.css .modal-*-in/out),
+  // gated behind prefers-reduced-motion. GSAP was dropped for this trivial
+  // opacity/scale use — CSS is simpler and cheaper; GSAP stays for the
+  // sidebar pill motion which has real path/choreography.
 
   const toggleSkill = (id: string) => {
     setSelectedSkills((prev) => {
@@ -168,35 +166,52 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+
+    // Inline validation (visible errors, not just the native bubble)
+    const errors: { title?: string; description?: string } = {};
+    if (!title.trim()) errors.title = "Title is required.";
+    if (!description.trim()) errors.description = "Description is required.";
+    if (errors.title || errors.description) {
+      setFieldErrors(errors);
+      return;
+    }
+
     setSubmitting(true);
     // TODO(backend): POST /api/collaborations with form data
     // TODO(backend): POST /api/upload for the selected photo Files,
     // then include returned URLs in the project payload.
     const photoFiles = photos.map((p) => p.file);
     await createCollabProject({
-      title,
-      description,
+      title: title.trim(),
+      description: description.trim(),
       skills: SKILL_OPTIONS.filter((s) => selectedSkills.has(s.id)),
       slotsTotal: roleCount,
       photos: photoFiles,
       customRoles,
     });
     setSubmitting(false);
+    setClosing(false);
     onClose();
   };
 
-  if (!open) return null;
+  if (!open && !closing) return null;
 
   return (
     <div
       ref={overlayRef}
-      onClick={onClose}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-ink/60"
+      onClick={requestClose}
+      className={clsx(
+        "fixed inset-0 z-50 flex items-center justify-center bg-ink/60",
+        closing ? "modal-overlay-out" : "modal-overlay-in"
+      )}
     >
       <div
         ref={modalRef}
         onClick={(e) => e.stopPropagation()}
-        className="no-scrollbar max-h-[90vh] w-[596px] overflow-y-auto rounded-lg bg-bg p-6"
+        className={clsx(
+          "no-scrollbar max-h-[90vh] w-[596px] overflow-y-auto rounded-lg bg-bg p-6",
+          closing ? "modal-panel-out" : "modal-panel-in"
+        )}
       >
         {/* Header */}
         <div className="mb-6 flex items-start justify-between">
@@ -208,26 +223,36 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
           </div>
           <button
             type="button"
-            onClick={onClose}
+            onClick={requestClose}
             aria-label="Close"
-            className="cursor-pointer"
+            className="pressable cursor-pointer rounded-md p-1 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
           >
             <Icon name="x" size={24} className="text-ink" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+        <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-5">
           {/* Title */}
           <div className="flex flex-col gap-1">
             <label className="text-base font-medium">Title</label>
             <input
               type="text"
               value={title}
-              onChange={(e) => setTitle(e.target.value)}
+              onChange={(e) => {
+                setTitle(e.target.value);
+                if (fieldErrors.title)
+                  setFieldErrors((f) => ({ ...f, title: undefined }));
+              }}
               placeholder="Title"
               required
-              className="rounded-lg bg-surface px-4 py-3 text-base font-medium text-ink outline-none placeholder:text-muted"
+              aria-invalid={fieldErrors.title ? true : undefined}
+              className="rounded-lg bg-surface px-4 py-3 text-base font-medium text-ink outline-none placeholder:text-muted focus-visible:ring-2 focus-visible:ring-accent"
             />
+            {fieldErrors.title && (
+              <p role="alert" className="text-xs font-medium text-badge">
+                {fieldErrors.title}
+              </p>
+            )}
           </div>
 
           {/* Descriptions */}
@@ -235,12 +260,22 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
             <label className="text-base font-medium">Descriptions</label>
             <textarea
               value={description}
-              onChange={(e) => setDescription(e.target.value)}
+              onChange={(e) => {
+                setDescription(e.target.value);
+                if (fieldErrors.description)
+                  setFieldErrors((f) => ({ ...f, description: undefined }));
+              }}
               placeholder="Descriptions"
               required
               rows={3}
-              className="resize-none rounded-lg bg-surface px-4 py-3 text-base font-medium text-ink outline-none placeholder:text-muted"
+              aria-invalid={fieldErrors.description ? true : undefined}
+              className="resize-none rounded-lg bg-surface px-4 py-3 text-base font-medium text-ink outline-none placeholder:text-muted focus-visible:ring-2 focus-visible:ring-accent"
             />
+            {fieldErrors.description && (
+              <p role="alert" className="text-xs font-medium text-badge">
+                {fieldErrors.description}
+              </p>
+            )}
           </div>
 
           {/* Roles / Skills */}
@@ -257,13 +292,13 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
                 onKeyDown={handleRoleKey}
                 placeholder="Make Custom Role"
                 aria-label="Custom role"
-                className="min-w-0 flex-1 bg-transparent text-base font-medium text-ink outline-none placeholder:text-muted"
+                className="min-w-0 flex-1 bg-transparent text-base font-medium text-ink outline-none placeholder:text-muted focus-visible:ring-2 focus-visible:ring-accent"
               />
               <button
                 type="button"
                 onClick={addCustomRole}
                 aria-label="Add custom role"
-                className="flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-sm bg-accent"
+                className="pressable flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-sm bg-accent focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
               >
                 <Icon name="plus" size={14} className="text-ink" />
               </button>
@@ -275,9 +310,11 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
                   type="button"
                   onClick={() => toggleSkill(skill.id)}
                   className={
-                    selectedSkills.has(skill.id)
-                      ? "flex cursor-pointer items-center gap-1 rounded-full bg-accent px-3 py-1.5 text-xs font-medium text-ink"
-                      : "flex cursor-pointer items-center gap-1 rounded-full border border-line px-3 py-1.5 text-xs font-medium text-ink"
+                    "pressable flex cursor-pointer items-center gap-1 rounded-full px-3 py-1.5 text-xs font-medium text-ink " +
+                    "focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none " +
+                    (selectedSkills.has(skill.id)
+                      ? "bg-accent"
+                      : "border border-line")
                   }
                 >
                   {skill.icon && <Icon name={skill.icon} size={14} />}
@@ -288,7 +325,7 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
               {customRoles.map((role, i) => (
                 <span
                   key={`role-${i}`}
-                  className="flex cursor-pointer items-center gap-1 rounded-full bg-accent px-3 py-1.5 text-xs font-medium text-ink"
+                  className="flex items-center gap-1 rounded-full bg-accent px-3 py-1.5 text-xs font-medium text-ink"
                 >
                   <Icon name="purchase-tag" size={14} />
                   {role}
@@ -296,7 +333,7 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
                     type="button"
                     onClick={() => removeCustomRole(i)}
                     aria-label={`Remove ${role}`}
-                    className="ml-0.5 cursor-pointer"
+                    className="pressable ml-0.5 cursor-pointer focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
                   >
                     <Icon name="x" size={12} />
                   </button>
@@ -353,7 +390,7 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
             <button
               type="button"
               onClick={() => photoInputRef.current?.click()}
-              className="flex cursor-pointer items-center gap-1 text-base font-medium text-muted"
+              className="pressable flex cursor-pointer items-center gap-1 text-base font-medium text-muted transition-colors hover:text-ink focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
             >
               <Icon name="image-add" size={20} />
               Photo
@@ -362,7 +399,7 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
                 attachments (non-image) once /api/upload exists. */}
             <button
               type="button"
-              className="flex cursor-pointer items-center gap-1 text-base font-medium text-muted"
+              className="pressable flex cursor-pointer items-center gap-1 text-base font-medium text-muted transition-colors hover:text-ink focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
             >
               <Icon name="paperclip" size={20} />
               File
@@ -388,7 +425,7 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
                     type="button"
                     onClick={() => removePhoto(i)}
                     aria-label={`Remove photo ${i + 1}`}
-                    className="absolute right-1 top-1 flex size-5 cursor-pointer items-center justify-center rounded-full bg-ink/70 text-bg"
+                    className="pressable absolute right-1 top-1 flex size-5 cursor-pointer items-center justify-center rounded-full bg-ink/70 text-bg focus-visible:ring-2 focus-visible:ring-bg focus-visible:outline-none"
                   >
                     <Icon name="x" size={12} />
                   </button>
@@ -401,7 +438,7 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
           <button
             type="submit"
             disabled={submitting}
-            className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-md bg-accent py-3 text-base font-medium text-ink transition-opacity hover:opacity-85 disabled:opacity-50"
+            className="pressable flex w-full cursor-pointer items-center justify-center gap-2 rounded-md bg-accent py-3 text-base font-medium text-ink transition-opacity hover:opacity-85 disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
           >
             <Icon name="send" size={20} />
             Make Collaborations

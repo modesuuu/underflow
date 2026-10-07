@@ -1,3 +1,6 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import clsx from "clsx";
 import Image from "next/image";
 
@@ -17,6 +20,15 @@ const ROUNDED_CLASS = {
   sm: "rounded-sm",
 } as const;
 
+/** First initials of the name, e.g. "Russel" -> "R", "Kimi N." -> "KN". */
+function initialsOf(name: string): string {
+  return name
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? "")
+    .join("");
+}
+
 export function Avatar({
   src,
   alt,
@@ -26,19 +38,35 @@ export function Avatar({
   placeholderBg,
 }: AvatarProps) {
   const shape = ROUNDED_CLASS[rounded];
+  // next/image shows a broken-image glyph on 404; fall back to a
+  // placeholder circle with initials instead.
+  const [errored, setErrored] = useState(false);
 
-  if (!src) {
+  useEffect(() => {
+    setErrored(false);
+  }, [src]);
+
+  if (!src || errored) {
+    const showInitials = errored && src ? initialsOf(alt) : "";
     return (
       <div
         role="img"
         aria-label={alt}
-        className={clsx("shrink-0", placeholderBg ? "" : "bg-placeholder", shape, className)}
+        className={clsx(
+          "flex shrink-0 items-center justify-center",
+          placeholderBg ? "font-semibold text-bg" : "bg-placeholder",
+          shape,
+          className
+        )}
         style={{
           width: size,
           height: size,
+          fontSize: showInitials ? Math.round(size * 0.42) : undefined,
           ...(placeholderBg ? { backgroundColor: placeholderBg } : {}),
         }}
-      />
+      >
+        {showInitials || null}
+      </div>
     );
   }
 
@@ -53,6 +81,7 @@ export function Avatar({
         fill
         sizes={`${size}px`}
         className="object-cover"
+        onError={() => setErrored(true)}
       />
     </div>
   );
