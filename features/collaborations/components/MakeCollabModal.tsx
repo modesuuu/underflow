@@ -373,16 +373,11 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
               {photoError}
             </p>
           )}
-          {/* Photo preview: always render 5 slots; filled = image + remove,
-              empty = dark box (matches the 5 black squares in the design). */}
-          <div className="flex gap-2">
-            {Array.from({ length: MAX_PHOTOS }).map((_, i) => {
-              const photo = photos[i];
-              return photo ? (
-                <div
-                  key={photo.url}
-                  className="relative size-[100px] rounded-lg"
-                >
+          {/* Photo preview: only shown when photos exist */}
+          {photos.length > 0 && (
+            <div className="flex gap-2">
+              {photos.map((photo, i) => (
+                <div key={photo.url} className="relative size-[100px] rounded-lg">
                   {/* Plain <img> — blob: URLs are not supported by next/image. */}
                   <img
                     src={photo.url}
@@ -398,11 +393,9 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
                     <Icon name="x" size={12} />
                   </button>
                 </div>
-              ) : (
-                <div key={`empty-${i}`} className="size-[100px] rounded-lg bg-ink" />
-              );
-            })}
-          </div>
+              ))}
+            </div>
+          )}
 
           {/* Submit */}
           <button
