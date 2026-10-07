@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type ChangeEvent, type FormEvent, type KeyboardEvent } from "react";
 import gsap from "gsap";
 import { Icon } from "@/components/ui/Icon";
 import { createCollabProject } from "../api";
@@ -22,19 +22,111 @@ interface MakeCollabModalProps {
   onClose: () => void;
 }
 
-/**
- * "Make Collaborations" modal (Figma "modal-make collaborations" frame).
- * GSAP open/close: opacity + scale 0.96->1, 280ms power3.out / 220ms power2.in.
- * Typo fix: "Make Costoms Role" -> "Make Custom Role".
- */
+/** Max photo upload constraints (matches 5-slot design). */
+const MAX_PHOTOS = 5;
+const MAX_PHOTO_BYTES = 5 * 1024 * 1024; // 5 MB per file
+
+/** A selected photo with an instant blob: preview URL. */
+interface PhotoDraft {
+  file: File;
+  url: string;
+}
+
 export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
+  const photoInputRef = useRef<HTMLInputElement>(null);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [selectedSkills, setSelectedSkills] = useState<Set<string>>(new Set());
   const [roleCount, setRoleCount] = useState(2);
   const [submitting, setSubmitting] = useState(false);
+  const [photos, setPhotos] = useState<PhotoDraft[]>([]);
+  const [photoError, setPhotoError] = useState<string | null>(null);
+  const [customRoles, setCustomRoles] = useState<string[]>([]);
+  const [roleDraft, setRoleDraft] = useState("");
+
+  // Track live blob URLs in a ref so the unmount cleanup revokes exactly the
+  // ones still open (removed entries are already revoked inline).
+  const photoUrlsRef = useRef<string[]>([]);
+  useEffect(() => {
+    return () => {
+      photoUrlsRef.current.forEach((u) => URL.revokeObjectURL(u));
+      photoUrlsRef.current = [];
+    };
+  }, []);
+
+  const handlePhotoChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []);
+    e.target.value = ""; // allow re-selecting the same file
+    setPhotoError(null);
+
+    const accepted: PhotoDraft[] = [];
+    let rejectedReason: string | null = null;
+    for (const file of files) {
+      if (!file.type.startsWith("image/")) {
+        rejectedReason = "Only image files are allowed.";
+        continue;
+      }
+      if (file.size > MAX_PHOTO_BYTES) {
+        rejectedReason = `Max ${MAX_PHOTO_BYTES / 1024 / 1024} MB per photo.`;
+        continue;
+      }
+      if (photos.length + accepted.length >= MAX_PHOTOS) {
+        rejectedReason = `Max ${MAX_PHOTOS} photos.`;
+        break;
+      }
+      const url = URL.createObjectURL(file);
+      accepted.push({ file, url });
+    }
+
+    if (accepted.length > 0) {
+      const next = [...photos, ...accepted];
+      setPhotos(next);
+      photoUrlsRef.current = next.map((p) => p.url);
+    }
+    if (rejectedReason) setPhotoError(rejectedReason);
+  };
+
+  const removePhoto = (index: number) => {
+    setPhotos((prev) => {
+      const removed = prev[index];
+      const next = prev.filter((_, i) => i !== index);
+      if (removed) {
+        URL.revokeObjectURL(removed.url);
+        photoUrlsRef.current = next.map((p) => p.url);
+      }
+      return next;
+    });
+    setPhotoError(null);
+  };
+
+  const addCustomRole = () => {
+    const value = roleDraft.trim();
+    if (!value) return;
+    const isDuplicate = customRoles.some(
+      (r) => r.toLowerCase() === value.toLowerCase()
+    );
+    if (isDuplicate) {
+      setRoleDraft("");
+      return;
+    }
+    setCustomRoles((prev) => [...prev, value]);
+    setRoleDraft("");
+  };
+
+  const removeCustomRole = (index: number) => {
+    setCustomRoles((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleRoleKey = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      addCustomRole();
+    } else if (e.key === "Escape") {
+      setRoleDraft("");
+    }
+  };
 
   // GSAP open/close animation
   useEffect(() => {
@@ -78,11 +170,16 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
     e.preventDefault();
     setSubmitting(true);
     // TODO(backend): POST /api/collaborations with form data
+    // TODO(backend): POST /api/upload for the selected photo Files,
+    // then include returned URLs in the project payload.
+    const photoFiles = photos.map((p) => p.file);
     await createCollabProject({
       title,
       description,
       skills: SKILL_OPTIONS.filter((s) => selectedSkills.has(s.id)),
       slotsTotal: roleCount,
+      photos: photoFiles,
+      customRoles,
     });
     setSubmitting(false);
     onClose();
@@ -147,11 +244,31 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
           </div>
 
           {/* Roles / Skills */}
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-3">
             <label className="text-base font-medium">
               What Role do you want to find?
             </label>
-            <div className="flex flex-wrap gap-2">
+            {/* Custom role: real input + add button (replaces dead "Make Custom Role") */}
+            <div className="flex items-center gap-2 rounded-lg bg-surface px-4 py-3">
+              <input
+                type="text"
+                value={roleDraft}
+                onChange={(e) => setRoleDraft(e.target.value)}
+                onKeyDown={handleRoleKey}
+                placeholder="Make Custom Role"
+                aria-label="Custom role"
+                className="min-w-0 flex-1 bg-transparent text-base font-medium text-ink outline-none placeholder:text-muted"
+              />
+              <button
+                type="button"
+                onClick={addCustomRole}
+                aria-label="Add custom role"
+                className="flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-sm bg-accent"
+              >
+                <Icon name="plus" size={14} className="text-ink" />
+              </button>
+            </div>
+            <div className="flex flex-wrap gap-2 mt-3">
               {SKILL_OPTIONS.map((skill) => (
                 <button
                   key={skill.id}
@@ -167,27 +284,37 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
                   {skill.label}
                 </button>
               ))}
+              {/* Custom roles render as accent-bg chips with a tag icon + remove */}
+              {customRoles.map((role, i) => (
+                <span
+                  key={`role-${i}`}
+                  className="flex cursor-pointer items-center gap-1 rounded-full bg-accent px-3 py-1.5 text-xs font-medium text-ink"
+                >
+                  <Icon name="purchase-tag" size={14} />
+                  {role}
+                  <button
+                    type="button"
+                    onClick={() => removeCustomRole(i)}
+                    aria-label={`Remove ${role}`}
+                    className="ml-0.5 cursor-pointer"
+                  >
+                    <Icon name="x" size={12} />
+                  </button>
+                </span>
+              ))}
             </div>
-            {/* Make Custom Role (typo fixed from "Make Costoms Role") */}
-            <button
-              type="button"
-              className="flex cursor-pointer items-center gap-2 rounded-lg bg-surface px-4 py-3"
-            >
-              <span className="flex size-6 items-center justify-center rounded-sm bg-accent">
-                <Icon name="plus" size={14} className="text-ink" />
-              </span>
-              <span className="text-base font-medium text-muted">
-                Make Custom Role
-              </span>
-            </button>
           </div>
 
           {/* Team size */}
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-3 mt-3">
             <label className="text-base font-medium">
               How many Role do you want to ?
             </label>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 justify-start">
+              <div className="flex items-center gap-1">
+                <span className="text-sm font-medium">{roleCount}</span>
+                <Icon name="group" size={20} className="text-ink" />
+              </div>
               {/* Owner slot */}
               <div className="flex items-center gap-2">
                 <div className="size-8 rounded-full bg-placeholder" />
@@ -208,25 +335,31 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
                   <span className="text-2xs text-muted">Waiting....</span>
                 </div>
               </div>
-              {/* Counter */}
-              <div className="ml-auto flex items-center gap-1">
-                <span className="text-sm font-medium">{roleCount}</span>
-                <Icon name="group" size={20} className="text-ink" />
-              </div>
             </div>
           </div>
 
           {/* Photo / File attachments */}
           <div className="flex items-center gap-4">
-            {/* TODO(backend): POST /api/upload for photo attachments */}
+            {/* Hidden input — "Photo" button triggers it */}
+            <input
+              ref={photoInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              aria-label="Upload photos"
+              onChange={handlePhotoChange}
+              className="sr-only"
+            />
             <button
               type="button"
+              onClick={() => photoInputRef.current?.click()}
               className="flex cursor-pointer items-center gap-1 text-base font-medium text-muted"
             >
               <Icon name="image-add" size={20} />
               Photo
             </button>
-            {/* TODO(backend): POST /api/upload for file attachments */}
+            {/* TODO(backend): reuse the same hidden-input pattern for file
+                attachments (non-image) once /api/upload exists. */}
             <button
               type="button"
               className="flex cursor-pointer items-center gap-1 text-base font-medium text-muted"
@@ -235,12 +368,40 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
               File
             </button>
           </div>
-
-          {/* Photo preview placeholders (5 black squares from design) */}
+          {photoError && (
+            <p className="text-xs font-medium text-badge" role="alert">
+              {photoError}
+            </p>
+          )}
+          {/* Photo preview: always render 5 slots; filled = image + remove,
+              empty = dark box (matches the 5 black squares in the design). */}
           <div className="flex gap-2">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="size-[100px] rounded-lg bg-ink" />
-            ))}
+            {Array.from({ length: MAX_PHOTOS }).map((_, i) => {
+              const photo = photos[i];
+              return photo ? (
+                <div
+                  key={photo.url}
+                  className="relative size-[100px] rounded-lg"
+                >
+                  {/* Plain <img> — blob: URLs are not supported by next/image. */}
+                  <img
+                    src={photo.url}
+                    alt={`Photo preview ${i + 1}`}
+                    className="size-[100px] rounded-lg object-cover"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removePhoto(i)}
+                    aria-label={`Remove photo ${i + 1}`}
+                    className="absolute right-1 top-1 flex size-5 cursor-pointer items-center justify-center rounded-full bg-ink/70 text-bg"
+                  >
+                    <Icon name="x" size={12} />
+                  </button>
+                </div>
+              ) : (
+                <div key={`empty-${i}`} className="size-[100px] rounded-lg bg-ink" />
+              );
+            })}
           </div>
 
           {/* Submit */}
