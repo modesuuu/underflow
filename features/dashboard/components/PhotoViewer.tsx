@@ -3,7 +3,7 @@
 import { useState } from "react";
 import type { Photo } from "../types";
 import { PhotoGrid } from "./PhotoGrid";
-import { PhotoLightbox } from "./PhotoLightbox";
+import { PhotoLightbox } from "@/components/ui/PhotoLightbox";
 
 interface PhotoViewerProps {
   photos: Photo[];

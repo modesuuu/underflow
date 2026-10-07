@@ -27,6 +27,7 @@ export function CollabCard({ project }: CollabCardProps) {
     <article
       className={
         "group relative flex origin-center flex-col rounded-xl bg-bg p-5 " +
+        "h-full " +
         "motion-safe:transition-[transform,background-color,box-shadow] " +
         "motion-safe:duration-300 motion-safe:ease-out " +
         "motion-safe:hover:-rotate-[8deg] motion-safe:hover:bg-surface " +

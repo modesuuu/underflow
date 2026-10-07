@@ -1,9 +1,21 @@
 "use client";
 
+import { useState } from "react";
 import { Icon } from "@/components/ui/Icon";
 import { Avatar } from "@/components/ui/Avatar";
+import { PhotoLightbox } from "@/components/ui/PhotoLightbox";
 import { ApplyCta } from "./ApplyCta";
 import type { CollabProject } from "../types";
+
+/**
+ * Collab photos are `string[]` (URLs per the API contract). The mock uses
+ * placeholder tokens ("photo-1"); treat a value as a real URL only when it
+ * looks like one, otherwise keep the lime placeholder tile so the mock doesn't
+ * paint broken <img>s.
+ */
+function isUrlish(s: string): boolean {
+  return /^https?:\/\//.test(s) || s.startsWith("//") || s.startsWith("/");
+}
 
 interface CollabDetailContentProps {
   project: CollabProject;
@@ -11,8 +23,16 @@ interface CollabDetailContentProps {
 
 export function CollabDetailContent({ project }: CollabDetailContentProps) {
   const isFull = project.slotsFilled >= project.slotsTotal;
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+
+  // Map the collab photo strings to the lightbox { url?, alt }[] shape.
+  const lightboxPhotos = project.photos.slice(0, 4).map((url, i) => ({
+    url: isUrlish(url) ? url : undefined,
+    alt: `Project photo ${i + 1}`,
+  }));
 
   return (
+    <>
     <div className="flex flex-col gap-6 px-6 pb-12 pt-6">
       {/* 1. Header band (light gray) */}
       <div className="flex flex-col gap-4 rounded-2xl  p-6">
@@ -41,17 +61,28 @@ export function CollabDetailContent({ project }: CollabDetailContentProps) {
           </span>
         </div>
 
-        {/* 2×2 photo grid — lime placeholders with centered image icon; count = actual photos (max 4) */}
+        {/* 2×2 photo grid — real thumbnails (or lime placeholder when the
+            value isn't a URL yet, i.e. mock); click opens the lightbox */}
         {project.photos.length > 0 && (
           <div className="grid grid-cols-2 gap-2">
-            {project.photos.slice(0, 4).map((photo, i) => (
-              <div
-                key={photo}
-                aria-label={`Project photo ${i + 1}`}
-                className="flex aspect-[4/3] items-center justify-center rounded-md bg-accent"
+            {lightboxPhotos.map((photo, i) => (
+              <button
+                key={i}
+                type="button"
+                onClick={() => setLightboxIndex(i)}
+                aria-label={`View photo ${i + 1}`}
+                className="pressable flex aspect-[4/3] cursor-pointer items-center justify-center overflow-hidden rounded-md bg-accent focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
               >
-                <Icon name="image-add" size={24} className="text-ink/40" />
-              </div>
+                {photo.url ? (
+                  <img
+                    src={photo.url}
+                    alt={photo.alt}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <Icon name="image-add" size={24} className="text-ink/40" />
+                )}
+              </button>
             ))}
           </div>
         )}
@@ -163,5 +194,13 @@ export function CollabDetailContent({ project }: CollabDetailContentProps) {
       {/* 5. Apply CTA block (at the BOTTOM) */}
       <ApplyCta projectId={project.id} slotsFull={isFull} />
     </div>
+    {lightboxIndex !== null && (
+      <PhotoLightbox
+        photos={lightboxPhotos}
+        startIndex={lightboxIndex}
+        onClose={() => setLightboxIndex(null)}
+      />
+    )}
+    </>
   );
 }

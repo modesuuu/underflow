@@ -3,10 +3,19 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import { Icon } from "@/components/ui/Icon";
-import type { Photo } from "../types";
+
+/**
+ * Generic photo lightbox (moved here from features/dashboard — shared by
+ * feeds and collaborations). A photo only needs { url?, alt }: a missing
+ * url renders the lime placeholder frame.
+ */
+export interface LightboxPhoto {
+  url?: string;
+  alt: string;
+}
 
 interface PhotoLightboxProps {
-  photos: Photo[];
+  photos: LightboxPhoto[];
   startIndex: number;
   onClose: () => void;
 }
