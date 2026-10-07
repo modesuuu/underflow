@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import gsap from "gsap";
 import { useRouter } from "next/navigation";
 import { Icon } from "@/components/ui/Icon";
@@ -13,6 +13,8 @@ interface TopBarProps {
   backLabel?: string;
   backHref?: string;
   variant?: TopBarVariant;
+  /** Page-specific right-side actions; rendered INSTEAD of the default Post button. */
+  actions?: ReactNode;
 }
 
 const SCROLL_THRESHOLD = 24;
@@ -33,6 +35,7 @@ export function TopBar({
   backLabel = "Feed",
   backHref,
   variant = "dashboard",
+  actions,
 }: TopBarProps) {
   const router = useRouter();
   const barRef = useRef<HTMLElement>(null);
@@ -86,24 +89,18 @@ export function TopBar({
       </div>
 
       <div className="flex items-center gap-6">
-        
-        {/* <div className="flex items-center gap-2">
-          <button type="button" aria-label="Notifications" className="cursor-pointer text-ink">
-            <Icon name="bell" size={20} />
-          </button>
-          <button type="button" aria-label="Settings" className="cursor-pointer text-ink">
-            <Icon name="cog" size={20} />
-          </button>
-        </div> */}
-
-        {/* TODO(backend): open composer modal / POST /api/posts */}
-        <button
-          type="button"
-          className="flex cursor-pointer items-center gap-1 rounded-md bg-accent p-2 transition-opacity hover:opacity-85"
-        >
-          <Icon name="plus" size={16} />
-          <span className="text-sm font-medium">Post Something</span>
-        </button>
+        {actions ?? (
+          <>
+            {/* TODO(backend): open composer modal / POST /api/posts */}
+            <button
+              type="button"
+              className="flex cursor-pointer items-center gap-1 rounded-md bg-accent p-2 transition-opacity hover:opacity-85"
+            >
+              <Icon name="plus" size={16} />
+              <span className="text-sm font-medium">Post Something</span>
+            </button>
+          </>
+        )}
       </div>
 
       <span

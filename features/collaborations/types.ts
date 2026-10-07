@@ -43,3 +43,7 @@ export interface CollabProject {
 }
 
 export type CollabFilterType = ProjectType | "all";
+
+export type CollabSortKey = "recommended" | "due" | "newest";
+
+export type CollabStatusFilter = "all" | "open" | "in-progress";

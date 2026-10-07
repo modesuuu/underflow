@@ -11,6 +11,8 @@ interface AppShellProps {
   backHref?: string;
   variant?: TopBarVariant;
   hideTopBar?: boolean;
+  /** Page-specific TopBar right-side actions; replaces the default Post button. */
+  actions?: ReactNode;
 }
 
 
@@ -23,6 +25,7 @@ export function AppShell({
   backHref,
   variant = "dashboard",
   hideTopBar = false,
+  actions,
 }: AppShellProps) {
   return (
     <div className="flex h-dvh w-full overflow-hidden">
@@ -35,6 +38,7 @@ export function AppShell({
             backLabel={backLabel}
             backHref={backHref}
             variant={variant}
+            actions={actions}
           />
         )}
         {children}

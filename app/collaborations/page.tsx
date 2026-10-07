@@ -1,7 +1,7 @@
 import { AppShell } from "@/components/layout/AppShell";
 import { getCollabProjects } from "@/features/collaborations/api";
 import { CollabGrid } from "@/features/collaborations/components/CollabGrid";
-import { MakeCollabTrigger } from "@/features/collaborations/components/MakeCollabTrigger";
+import { CollabHeaderActions } from "@/features/collaborations/components/CollabHeaderActions";
 
 export default async function CollaborationsPage() {
   // TODO(backend): GET /api/collaborations
@@ -11,7 +11,7 @@ export default async function CollaborationsPage() {
     <AppShell
       breadcrumbRoot="Dashboard"
       breadcrumbLeaf="Collaborations"
-      hideTopBar
+      actions={<CollabHeaderActions />}
     >
       <div className="flex flex-col gap-6 px-6 py-8">
         {/* Page header */}
@@ -27,9 +27,6 @@ export default async function CollaborationsPage() {
         {/* Search + filter + card grid */}
         <CollabGrid projects={projects} />
       </div>
-
-      {/* Floating "Create Project" trigger opens the modal */}
-      <MakeCollabTrigger />
     </AppShell>
   );
 }
