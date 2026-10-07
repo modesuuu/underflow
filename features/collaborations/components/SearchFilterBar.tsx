@@ -225,7 +225,7 @@ export function SearchFilterBar({
 
       {/* Right: search input + Search button */}
       <div className="flex items-center gap-2">
-        <div className="flex items-center gap-2 rounded-full border border-line bg-surface px-4 py-2.5">
+        <div className="flex items-center gap-2 rounded-md border border-line bg-surface px-4 py-2.5">
           <Icon name="search" size={16} className="text-muted" />
           <input
             type="text"
@@ -242,7 +242,7 @@ export function SearchFilterBar({
         <button
           type="button"
           onClick={onSearch}
-          className="cursor-pointer rounded-full bg-accent px-4 py-2.5 text-sm font-medium text-ink transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+          className="cursor-pointer rounded-md bg-accent px-4 py-2.5 text-sm font-medium text-ink transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
         >
           Search
         </button>

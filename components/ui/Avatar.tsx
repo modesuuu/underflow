@@ -7,6 +7,8 @@ interface AvatarProps {
   size?: number;
   rounded?: "full" | "md" | "sm";
   className?: string;
+  /** Override the fallback background color when src is missing. */
+  placeholderBg?: string;
 }
 
 const ROUNDED_CLASS = {
@@ -21,6 +23,7 @@ export function Avatar({
   size = 42,
   rounded = "full",
   className,
+  placeholderBg,
 }: AvatarProps) {
   const shape = ROUNDED_CLASS[rounded];
 
@@ -29,8 +32,12 @@ export function Avatar({
       <div
         role="img"
         aria-label={alt}
-        className={clsx("shrink-0 bg-placeholder", shape, className)}
-        style={{ width: size, height: size }}
+        className={clsx("shrink-0", placeholderBg ? "" : "bg-placeholder", shape, className)}
+        style={{
+          width: size,
+          height: size,
+          ...(placeholderBg ? { backgroundColor: placeholderBg } : {}),
+        }}
       />
     );
   }

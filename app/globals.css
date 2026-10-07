@@ -24,6 +24,7 @@
   --radius-sm: var(--uf-radius-sm);
   --radius-md: var(--uf-radius-md);
   --radius-lg: var(--uf-radius-lg);
+  --radius-xl: var(--uf-radius-xl);
   --radius-pill: var(--uf-radius-pill);
 }
 
