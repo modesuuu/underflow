@@ -9,6 +9,9 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "boxicons": "^2.1.4",
+    "clsx": "^2.1.1",
+    "gsap": "^3.15.0",
     "next": "16.3.6",
     "react": "19.2.8",
     "react-dom": "19.2.8"

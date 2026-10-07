@@ -1,0 +1,64 @@
+
+
+:root {
+  /* Colors */
+  --uf-bg: #f1f0ee;
+  --uf-surface: #ffffff;
+  --uf-ink: #000000;
+  --uf-muted: #6d6c6a;
+  --uf-subtle: #8e8e93;
+  --uf-accent: #dff66a;
+  --uf-badge: #ff383c;
+  --uf-heart: #ff2d55;
+  --uf-placeholder: #d9d9d9;
+  --uf-line: #6d6c6a;
+
+  --uf-radius-sm: 4px;
+  --uf-radius-md: 6px;
+  --uf-radius-lg: 12px;
+  --uf-radius-pill: 100px;
+
+  --uf-sidebar-w: 246px;
+  --uf-content-w: 636px;
+  --uf-panel-w: 308px;
+}
+
+@font-face {
+  font-family: "PP Neue Montreal";
+  src: url("/font/ppneuemontreal-book.otf") format("opentype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "PP Neue Montreal";
+  src: url("/font/ppneuemontreal-italic.otf") format("opentype");
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "PP Neue Montreal";
+  src: url("/font/ppneuemontreal-medium.otf") format("opentype");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "PP Neue Montreal";
+  src: url("/font/ppneuemontreal-semibolditalic.otf") format("opentype");
+  font-weight: 600;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "PP Neue Montreal";
+  src: url("/font/ppneuemontreal-bold.otf") format("opentype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}

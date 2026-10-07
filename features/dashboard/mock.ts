@@ -1,0 +1,132 @@
+import type { NotificationItem, Post } from "./types";
+
+/** Helper to build lime placeholder photos until real uploads exist. */
+function placeholderPhotos(postId: string, count: number) {
+  return Array.from({ length: count }, (_, i) => ({
+    id: `${postId}-photo-${i + 1}`,
+    alt: `${postId} photo ${i + 1}`,
+  }));
+}
+
+export const POSTS: Post[] = [
+  {
+    id: "post-1",
+    author: { id: "user-russel", name: "Russel" },
+    postedAgo: "2 hours ago",
+    text: "Hi everyone, today I was on the most beautiful mountain in the world, I also want to say hi to Silena, Olya and Davis!",
+    photos: placeholderPhotos("post-1", 1),
+    views: 1000,
+    likes: 1000,
+    liked: false,
+    comments: [
+      {
+        id: "post-1-c1",
+        author: { id: "user-1", name: "User" },
+        text: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.",
+        postedAgo: "2 hours ago",
+        likes: 1000,
+        liked: false,
+      },
+      {
+        id: "post-1-c2",
+        author: { id: "user-2", name: "User" },
+        text: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.",
+        postedAgo: "2 hours ago",
+        likes: 1000,
+        liked: false,
+      },
+      {
+        id: "post-1-c3",
+        author: { id: "user-3", name: "User" },
+        text: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.",
+        postedAgo: "2 hours ago",
+        likes: 1000,
+        liked: false,
+      },
+    ],
+  },
+  {
+    id: "post-2",
+    author: { id: "user-silena", name: "Silena" },
+    postedAgo: "3 hours ago",
+    text: "Two shots from yesterday's sunset hike — golden hour never disappoints.",
+    photos: placeholderPhotos("post-2", 2),
+    views: 640,
+    likes: 312,
+    liked: false,
+    comments: [],
+  },
+  {
+    id: "post-3",
+    author: { id: "user-olya", name: "Olya" },
+    postedAgo: "5 hours ago",
+    text: "Studio day! Three frames from the campus zine shoot.",
+    photos: placeholderPhotos("post-3", 3),
+    views: 480,
+    likes: 156,
+    liked: true,
+    comments: [],
+  },
+  {
+    id: "post-4",
+    author: { id: "user-davis", name: "Davis" },
+    postedAgo: "8 hours ago",
+    text: "Hackathon squad progress dump. Four screens, zero sleep.",
+    photos: placeholderPhotos("post-4", 4),
+    views: 2200,
+    likes: 890,
+    liked: false,
+    comments: [],
+  },
+  {
+    id: "post-5",
+    author: { id: "user-russel", name: "Russel" },
+    postedAgo: "1 day ago",
+    text: "Full gallery from the weekend trip — tap the last tile for the rest.",
+    photos: placeholderPhotos("post-5", 6),
+    views: 3400,
+    likes: 1500,
+    liked: false,
+    comments: [],
+  },
+];
+
+/** Mock notifications (Figma 515:150) — mixed read/unread so the tabs filter visibly. */
+export const NOTIFICATIONS: NotificationItem[] = [
+  {
+    id: "notif-1",
+    actor: { id: "user-russel", name: "Russel" },
+    action: "commented in",
+    target: "SME Cashier App",
+    timeLabel: "Friday 3.12 PM",
+    agoLabel: "2 hours ago",
+    unread: true,
+  },
+  {
+    id: "notif-2",
+    actor: { id: "user-silena", name: "Silena" },
+    action: "commented in",
+    target: "Campus Event Portal",
+    timeLabel: "Friday 1.40 PM",
+    agoLabel: "4 hours ago",
+    unread: true,
+  },
+  {
+    id: "notif-3",
+    actor: { id: "user-olya", name: "Olya" },
+    action: "mentioned you in",
+    target: "Portfolio Review",
+    timeLabel: "Thursday 6.05 PM",
+    agoLabel: "1 day ago",
+    unread: false,
+  },
+  {
+    id: "notif-4",
+    actor: { id: "user-davis", name: "Davis" },
+    action: "invited you to",
+    target: "Hackathon Squad",
+    timeLabel: "Wednesday 10.22 AM",
+    agoLabel: "2 days ago",
+    unread: false,
+  },
+];
