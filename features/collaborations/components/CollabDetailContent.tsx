@@ -9,12 +9,6 @@ interface CollabDetailContentProps {
   project: CollabProject;
 }
 
-/**
- * Detail page content (Figma "Collaborations - Details" frame, 1280×1366).
- * Section order: header band (status + title + meta + 2×2 photos) →
- * owner card (owner row + about + work items) → skills → team → apply CTA.
- * Notifications live in the right AppShell panel, not here.
- */
 export function CollabDetailContent({ project }: CollabDetailContentProps) {
   const isFull = project.slotsFilled >= project.slotsTotal;
 
