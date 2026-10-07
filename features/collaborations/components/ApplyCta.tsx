@@ -4,7 +4,6 @@ import { useState } from "react";
 import { Icon } from "@/components/ui/Icon";
 import { applyToCollab } from "../api";
 
-
 type ApplyState = "default" | "pending" | "entered" | "declined" | "closed";
 
 const HELPER_TEXT =
@@ -40,15 +39,13 @@ export function ApplyCta({
   };
 
   return (
-    <div className="flex flex-col gap-3 rounded-lg bg-bg p-3">
-      <p className="text-xs text-muted">{HELPER_TEXT}</p>
-
+    <div className="flex flex-col gap-3 rounded-2xl bg-bg p-6">
       {state === "default" &&
         (slotsFull ? (
           <button
             type="button"
             disabled
-            className="w-full cursor-not-allowed rounded-md bg-placeholder py-2.5 text-base font-medium text-muted"
+            className="w-full cursor-not-allowed rounded-full bg-placeholder py-3 text-base font-medium text-muted"
           >
             Apply to this project
           </button>
@@ -57,7 +54,7 @@ export function ApplyCta({
             type="button"
             onClick={handleApply}
             disabled={submitting}
-            className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-md bg-accent py-2.5 text-base font-medium text-ink transition-opacity hover:opacity-85 disabled:opacity-50"
+            className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-accent py-3 text-base font-medium text-ink transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none disabled:opacity-50"
           >
             <Icon name="send" size={20} />
             Apply to this project
@@ -66,13 +63,13 @@ export function ApplyCta({
 
       {state === "pending" && (
         <div className="flex gap-2">
-          <div className="flex flex-1 items-center justify-center rounded-md border border-line py-2.5 text-base font-medium text-muted">
+          <div className="flex flex-1 items-center justify-center rounded-full border border-line py-3 text-base font-medium text-muted">
             Pending
           </div>
           <button
             type="button"
             onClick={handleCancel}
-            className="flex-1 cursor-pointer rounded-md bg-badge py-2.5 text-base font-medium text-surface transition-opacity hover:opacity-85"
+            className="flex-1 cursor-pointer rounded-full bg-badge py-3 text-base font-medium text-surface transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
           >
             Cancel Application
           </button>
@@ -80,22 +77,25 @@ export function ApplyCta({
       )}
 
       {state === "entered" && (
-        <div className="rounded-md bg-accent py-2.5 text-center text-base font-medium text-ink">
+        <div className="rounded-full bg-accent py-3 text-center text-base font-medium text-ink">
           You have entered this project
         </div>
       )}
 
       {state === "declined" && (
-        <div className="rounded-md bg-placeholder py-2.5 text-center text-base font-medium text-muted">
+        <div className="rounded-full bg-placeholder py-3 text-center text-base font-medium text-muted">
           Your application was declined by the owner
         </div>
       )}
 
       {state === "closed" && (
-        <div className="rounded-md bg-bg py-2.5 text-center text-base font-medium text-muted">
+        <div className="rounded-full bg-bg py-3 text-center text-base font-medium text-muted">
           This project is closed
         </div>
       )}
+
+      {/* Helper text below the button, per Figma "Collaborations - Details" */}
+      <p className="text-xs text-muted">{HELPER_TEXT}</p>
     </div>
   );
 }
