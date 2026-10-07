@@ -24,11 +24,14 @@ const STAGGER_CAP = 11;
  * Search + filter + sort + responsive card grid (Figma "Collaborations" frame).
  * Pipeline: committed search → type filter → status filter → sort.
  *
- * P2 rhythm (revert = delete the `i === 0` span class, the number span, and
- * the wrapper div → cards go back to being direct grid children):
+ * P2 rhythm (revert = delete the `i === 0` span class and the wrapper div →
+ * cards go back to being direct grid children):
  * - first card spans 2 columns (featured) from sm up;
- * - subtle 01–06 numbering above each card;
  * - one-shot mount stagger (50ms/item, CSS-gated behind reduced motion).
+ *
+ * No positional numbering: this is a filterable/sortable/searchable data
+ * grid — index numbers reshuffle on every interaction and imply a ranking
+ * that doesn't exist.
  */
 export function CollabGrid({ projects }: CollabGridProps) {
   // Draft query is typed in the input; committed only on Search click / Enter.
@@ -98,15 +101,9 @@ export function CollabGrid({ projects }: CollabGridProps) {
           {filtered.map((project, i) => (
             <div
               key={project.id}
-              className={clsx("card-stagger flex flex-col", i === 0 && "sm:col-span-2")}
+              className={clsx("card-stagger", i === 0 && "sm:col-span-2")}
               style={{ "--stagger-i": String(Math.min(i, STAGGER_CAP)) } as CSSProperties}
             >
-              <span
-                aria-hidden="true"
-                className="mb-2 text-2xs font-medium tracking-[0.2em] text-subtle"
-              >
-                {String(i + 1).padStart(2, "0")}
-              </span>
               <CollabCard project={project} />
             </div>
           ))}
