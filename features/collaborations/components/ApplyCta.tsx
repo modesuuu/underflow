@@ -72,28 +72,28 @@ export function ApplyCta({
           <button
             type="button"
             onClick={handleCancel}
-            className="flex-1 cursor-pointer rounded-md bg-badge py-2.5 text-base font-medium text-white transition-opacity hover:opacity-85"
+            className="flex-1 cursor-pointer rounded-md bg-badge py-2.5 text-base font-medium text-surface transition-opacity hover:opacity-85"
           >
-            Canceling Apply
+            Cancel Application
           </button>
         </div>
       )}
 
       {state === "entered" && (
-        <div className="rounded-md bg-muted py-2.5 text-center text-base font-medium text-white">
+        <div className="rounded-md bg-accent py-2.5 text-center text-base font-medium text-ink">
           You have entered this project
         </div>
       )}
 
       {state === "declined" && (
-        <div className="rounded-md bg-black/20 py-2.5 text-center text-base font-medium text-white">
-          Decline
+        <div className="rounded-md bg-placeholder py-2.5 text-center text-base font-medium text-muted">
+          Your application was declined by the owner
         </div>
       )}
 
       {state === "closed" && (
-        <div className="rounded-md bg-muted py-2.5 text-center text-base font-medium text-white">
-          Closed
+        <div className="rounded-md bg-bg py-2.5 text-center text-base font-medium text-muted">
+          This project is closed
         </div>
       )}
     </div>

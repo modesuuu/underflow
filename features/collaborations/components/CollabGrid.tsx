@@ -10,8 +10,8 @@ interface CollabGridProps {
 }
 
 /**
- * Search + filter + responsive card grid (Penpot "Collaborations" Frame 492).
- * Functional filtering against mock data; swap to API params when backend lands.
+ * Search + filter + responsive card grid (Figma "Collaborations" frame).
+ * Live filtering against mock data; swap to API params when backend lands.
  */
 export function CollabGrid({ projects }: CollabGridProps) {
   const [searchQuery, setSearchQuery] = useState("");
@@ -43,7 +43,7 @@ export function CollabGrid({ projects }: CollabGridProps) {
         onTypeChange={setActiveType}
       />
 
-      {/* Card grid: 4 columns per Penpot (226px cards, 20px gap) */}
+      {/* Card grid — responsive columns owned by the grid, not the card */}
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {filtered.map((project) => (
           <CollabCard key={project.id} project={project} />

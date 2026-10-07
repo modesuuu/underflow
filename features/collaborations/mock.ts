@@ -25,14 +25,32 @@ const MEMBER_KIMI = {
   role: "UI Designer",
 };
 
-function makeSlots(filled: number, total: number) {
-  const members: CollabMember[] = [OWNER];
-  if (filled > 1) members.push(MEMBER_KIMI);
-  for (let i = members.length; i < total; i++) {
+const MEMBER_ALEX = {
+  id: "m-alex",
+  name: "Alex",
+  role: "Backend Dev",
+};
+
+const MEMBER_JENNY = {
+  id: "m-jenny",
+  name: "Jenny",
+  role: "ML Engineer",
+};
+
+/**
+ * Build a member list that is internally consistent:
+ * the first `filled` entries are real members, the rest are open slots.
+ * Total array length always equals `total`, so
+ * members.filter(m => !m.isOpenSlot).length === filled by construction.
+ */
+function makeSlots(filled: number, total: number): CollabMember[] {
+  const real: CollabMember[] = [OWNER, MEMBER_KIMI, MEMBER_ALEX, MEMBER_JENNY];
+  const members: CollabMember[] = real.slice(0, filled);
+  for (let i = real.length; i < total; i++) {
     members.push({
       id: `slot-${i}`,
       name: "Open slot",
-      role: "Waiting....",
+      role: "Waiting...",
       isOpenSlot: true,
     });
   }
@@ -43,7 +61,7 @@ export const COLLAB_PROJECTS: CollabProject[] = [
   {
     id: "collab-1",
     title: "SME Cashier App",
-    subtitle: "Need Frontend....",
+    subtitle: "Need Frontend...",
     status: "open",
     type: "portfolio",
     dueDate: "Dec 25, 26",
@@ -66,7 +84,7 @@ export const COLLAB_PROJECTS: CollabProject[] = [
   {
     id: "collab-2",
     title: "Landing Page E-com",
-    subtitle: "Need Frontend....",
+    subtitle: "Need Frontend...",
     status: "open",
     type: "coursework",
     dueDate: "Dec 25, 26",
@@ -84,7 +102,7 @@ export const COLLAB_PROJECTS: CollabProject[] = [
   {
     id: "collab-3",
     title: "Portfolio Builder",
-    subtitle: "Need Designer....",
+    subtitle: "Need Designer...",
     status: "open",
     type: "product",
     dueDate: "Jan 15, 27",
@@ -102,7 +120,7 @@ export const COLLAB_PROJECTS: CollabProject[] = [
   {
     id: "collab-4",
     title: "Campus Event App",
-    subtitle: "Need Backend....",
+    subtitle: "Need Backend...",
     status: "open",
     type: "coursework",
     dueDate: "Feb 01, 27",
@@ -120,7 +138,7 @@ export const COLLAB_PROJECTS: CollabProject[] = [
   {
     id: "collab-5",
     title: "AI Study Assistant",
-    subtitle: "Need ML Eng....",
+    subtitle: "Need ML Eng...",
     status: "in-progress",
     type: "product",
     dueDate: "Mar 10, 27",
@@ -143,7 +161,7 @@ export const COLLAB_PROJECTS: CollabProject[] = [
   {
     id: "collab-6",
     title: "Open Source Docs",
-    subtitle: "Need Writers....",
+    subtitle: "Need Writers...",
     status: "open",
     type: "portfolio",
     dueDate: "Jan 30, 27",

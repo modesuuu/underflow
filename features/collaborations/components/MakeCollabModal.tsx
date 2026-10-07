@@ -23,7 +23,7 @@ interface MakeCollabModalProps {
 }
 
 /**
- * "Make Collaborations" modal (Penpot "modal-make collaborations" / Frame 34).
+ * "Make Collaborations" modal (Figma "modal-make collaborations" frame).
  * GSAP open/close: opacity + scale 0.96->1, 280ms power3.out / 220ms power2.in.
  * Typo fix: "Make Costoms Role" -> "Make Custom Role".
  */
@@ -94,7 +94,7 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
     <div
       ref={overlayRef}
       onClick={onClose}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-ink/60"
     >
       <div
         ref={modalRef}

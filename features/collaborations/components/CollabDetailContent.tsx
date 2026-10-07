@@ -11,7 +11,7 @@ interface CollabDetailContentProps {
 }
 
 /**
- * Detail page content (Penpot "Collaborations - Details").
+ * Detail page content (Figma "Collaborations - Details" frame).
  * Sections: hero, apply CTA, team, skills, about + owner, photos.
  */
 export function CollabDetailContent({ project }: CollabDetailContentProps) {
@@ -37,7 +37,7 @@ export function CollabDetailContent({ project }: CollabDetailContentProps) {
           </span>
           <span className="flex items-center gap-1 text-xs font-medium text-muted">
             <Icon name="calendar" size={14} />
-            Due to: {project.dueDate}
+            Due: {project.dueDate}
           </span>
         </div>
       </div>
@@ -71,7 +71,7 @@ export function CollabDetailContent({ project }: CollabDetailContentProps) {
 
       {/* Skills needed */}
       <div className="flex flex-col gap-3">
-        <h2 className="text-xl font-medium">Skill needed</h2>
+        <h2 className="text-xl font-medium">Skills needed</h2>
         <div className="flex flex-wrap gap-2">
           {project.skills.map((skill) => (
             <span
@@ -136,6 +136,21 @@ export function CollabDetailContent({ project }: CollabDetailContentProps) {
           </div>
         </div>
       </div>
+      {/* Photos */}
+      {project.photos.length > 0 && (
+        <div className="flex flex-col gap-3">
+          <h2 className="text-xl font-medium">Photos</h2>
+          <div className="grid grid-cols-2 gap-2">
+            {project.photos.map((photo, i) => (
+              <div
+                key={i}
+                aria-label={`Project photo ${i + 1}`}
+                className="aspect-square rounded-md bg-accent"
+              />
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
