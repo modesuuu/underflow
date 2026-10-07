@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { Icon } from "@/components/ui/Icon";
+import { Avatar } from "@/components/ui/Avatar";
 import type { CollabProject } from "../types";
 
 interface CollabCardProps {
@@ -11,12 +12,22 @@ interface CollabCardProps {
 /**
  * Project card (Figma "Collaborations" frame).
  * Accessible: article + stretched Link, Apply button as sibling (never nested).
+ * Hover: fixed playful tilt (-8deg) + white bg + shadow + slight scale,
+ * ~300ms ease-out, pure CSS. Gated behind motion-safe: (prefers-reduced-motion).
  */
 export function CollabCard({ project }: CollabCardProps) {
   const isFull = project.slotsFilled >= project.slotsTotal;
+  const firstMember = project.members[0];
 
   return (
-    <article className="relative flex flex-col gap-3 rounded-lg bg-bg p-4 transition-shadow hover:shadow-md">
+    <article
+      className={
+        "relative flex flex-col gap-3 rounded-lg bg-bg p-4 origin-center " +
+        "motion-safe:transition-all motion-safe:duration-300 motion-safe:ease-out " +
+        "motion-safe:hover:shadow-lg " +
+        "motion-safe:hover:-rotate-[8deg] motion-safe:hover:bg-surface motion-safe:hover:scale-[1.03]"
+      }
+    >
       {/* Stretched link — covers the whole card, accessible to keyboard */}
       <Link
         href={`/collaborations/${project.id}`}
@@ -26,13 +37,14 @@ export function CollabCard({ project }: CollabCardProps) {
 
       {/* Content on top of the link */}
       <div className="relative z-10 flex flex-col gap-2 pointer-events-none">
-        <div className="flex items-center gap-1">
-          <Icon name="joystick" size={16} className="text-ink" />
-          <span className="text-xs font-medium capitalize">
+        {/* Top row: status pill badge + bookmark icon */}
+        <div className="flex items-center justify-between">
+          <span className="rounded-full border border-accent px-2 py-0.5 text-xs font-medium capitalize text-accent">
             {project.status}
           </span>
+          <Icon name="bookmark" size={16} className="text-ink" />
         </div>
-        <h3 className="line-clamp-2 text-xl font-medium leading-tight">
+        <h3 className="line-clamp-2 text-xl font-bold leading-tight text-ink">
           {project.title}
         </h3>
         <p className="text-sm font-medium text-muted">{project.subtitle}</p>
@@ -46,8 +58,12 @@ export function CollabCard({ project }: CollabCardProps) {
 
       {/* Footer row — pointer events re-enabled for the button */}
       <div className="relative z-10 flex items-center justify-between pointer-events-auto">
-        <div className="flex items-center gap-1">
-          <Icon name="group" size={16} className="text-muted" />
+        <div className="flex items-center gap-2">
+          <Avatar
+            size={24}
+            src={firstMember?.avatarUrl}
+            alt={firstMember?.name ?? "Member"}
+          />
           <span className="text-xs font-medium text-muted">
             {project.slotsFilled} / {project.slotsTotal}
           </span>

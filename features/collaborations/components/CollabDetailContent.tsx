@@ -19,9 +19,9 @@ export function CollabDetailContent({ project }: CollabDetailContentProps) {
   const isFull = project.slotsFilled >= project.slotsTotal;
 
   return (
-    <div className="flex flex-col gap-6 px-6 pb-12">
+    <div className="flex flex-col gap-6 px-6 pb-12 pt-6">
       {/* 1. Header band (light gray) */}
-      <div className="flex flex-col gap-4 rounded-2xl bg-bg p-6">
+      <div className="flex flex-col gap-4 rounded-2xl  p-6">
         {/* Status pill */}
         <div>
           <span className="inline-flex items-center gap-1 rounded-full bg-surface px-3 py-1 text-xs font-medium text-ink">
@@ -47,12 +47,12 @@ export function CollabDetailContent({ project }: CollabDetailContentProps) {
           </span>
         </div>
 
-        {/* 2×2 photo grid — lime placeholders with centered image icon */}
+        {/* 2×2 photo grid — lime placeholders with centered image icon; count = actual photos (max 4) */}
         {project.photos.length > 0 && (
           <div className="grid grid-cols-2 gap-2">
-            {Array.from({ length: 4 }).map((_, i) => (
+            {project.photos.slice(0, 4).map((photo, i) => (
               <div
-                key={i}
+                key={photo}
                 aria-label={`Project photo ${i + 1}`}
                 className="flex aspect-[4/3] items-center justify-center rounded-md bg-accent"
               >
@@ -89,7 +89,7 @@ export function CollabDetailContent({ project }: CollabDetailContentProps) {
         {/* About the project */}
         <div className="flex flex-col gap-2">
           <h2 className="text-xl font-medium text-ink">About the project</h2>
-          <p className="text-sm leading-relaxed text-muted">
+          <p className="text-sm leading-relaxed text-ink">
             {project.description}
           </p>
         </div>
@@ -102,7 +102,7 @@ export function CollabDetailContent({ project }: CollabDetailContentProps) {
             </h3>
             <ul className="flex flex-col gap-1.5">
               {project.workItems.map((item, i) => (
-                <li key={i} className="flex items-start gap-2 text-sm text-muted">
+                <li key={i} className="flex items-start gap-2 text-sm text-ink">
                   <span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-ink" />
                   {item}
                 </li>
@@ -139,12 +139,12 @@ export function CollabDetailContent({ project }: CollabDetailContentProps) {
             <Icon name="group" size={20} className="text-ink" />
           </div>
         </div>
-        <div className="flex flex-wrap gap-4">
+        <div className="flex gap-4">
           {project.members.map((member) =>
             member.isOpenSlot ? (
               /* Open slot: dark-gray circle with white "+" icon */
               <div key={member.id} className="flex items-center gap-2">
-                <div className="flex size-[32px] items-center justify-center rounded-full bg-placeholder">
+                <div className="flex size-[32px] items-center justify-center rounded-full bg-muted">
                   <Icon name="plus" size={14} className="text-surface" />
                 </div>
                 <div className="flex flex-col">

@@ -39,7 +39,7 @@ export function ApplyCta({
   };
 
   return (
-    <div className="flex flex-col gap-3 rounded-2xl bg-bg p-6">
+    <div className="flex flex-col gap-3 items-center rounded-2xl bg-bg p-6">
       {state === "default" &&
         (slotsFull ? (
           <button
@@ -62,14 +62,14 @@ export function ApplyCta({
         ))}
 
       {state === "pending" && (
-        <div className="flex gap-2">
-          <div className="flex flex-1 items-center justify-center rounded-full border border-line py-3 text-base font-medium text-muted">
+        <div className="flex gap-2 w-full">
+          <div className="flex flex-1 items-center justify-center w-full rounded-md border border-line py-3 text-base font-medium text-muted">
             Pending
           </div>
           <button
             type="button"
             onClick={handleCancel}
-            className="flex-1 cursor-pointer rounded-full bg-badge py-3 text-base font-medium text-surface transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+            className="flex-1 cursor-pointer rounded-md bg-badge py-3 text-base font-medium text-surface transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
           >
             Cancel Application
           </button>
