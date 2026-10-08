@@ -7,12 +7,12 @@ export interface PostAuthor {
   avatarUrl?: string;
 }
 
-export interface Photo {
-  id: string;
-  /** Absolute image URL; undefined renders the lime placeholder tile. */
-  url?: string;
-  alt: string;
-}
+// `Photo` now lives in the shared UI layer (components/ui/PhotoGrid.tsx)
+// so the dashboard feed and the collab detail page share one definition.
+// Import it for local use (Post["photos"]) AND re-export it so existing
+// `import { Photo } from "../types"` call sites keep working unchanged.
+import type { Photo } from "@/components/ui/PhotoGrid";
+export type { Photo };
 
 export interface PostComment {
   id: string;

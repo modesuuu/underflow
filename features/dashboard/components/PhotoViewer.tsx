@@ -1,8 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { Photo } from "../types";
-import { PhotoGrid } from "./PhotoGrid";
+import { PhotoGrid, type Photo } from "@/components/ui/PhotoGrid";
 import { PhotoLightbox } from "@/components/ui/PhotoLightbox";
 
 interface PhotoViewerProps {

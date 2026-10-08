@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Icon } from "@/components/ui/Icon";
 import { Avatar } from "@/components/ui/Avatar";
+import { PhotoGrid } from "@/components/ui/PhotoGrid";
 import { PhotoLightbox } from "@/components/ui/PhotoLightbox";
 import { ApplyCta } from "./ApplyCta";
 import { formatDueDate } from "../sort";
@@ -26,8 +27,10 @@ export function CollabDetailContent({ project }: CollabDetailContentProps) {
   const isFull = project.slotsFilled >= project.slotsTotal;
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
-  // Map the collab photo strings to the lightbox { url?, alt }[] shape.
+  // Map the collab photo strings to the shared `Photo` shape
+  // (components/ui/PhotoGrid), which the lightbox also consumes.
   const lightboxPhotos = project.photos.slice(0, 4).map((url, i) => ({
+    id: `${project.id}-photo-${i + 1}`,
     url: isUrlish(url) ? url : undefined,
     alt: `Project photo ${i + 1}`,
   }));
@@ -62,30 +65,16 @@ export function CollabDetailContent({ project }: CollabDetailContentProps) {
           </span>
         </div>
 
-        {/* 2×2 photo grid — real thumbnails (or lime placeholder when the
-            value isn't a URL yet, i.e. mock); click opens the lightbox */}
+        {/* Adaptive photo grid (shared PhotoGrid, components/ui):
+            1 photo = full-width, 2 = two columns, 3 = one tall + two
+            stacked, 4+ = 2x2 with a +N overlay. Non-URL mock tokens
+            still paint the lime placeholder tile. Click opens the
+            lightbox at that index. */}
         {project.photos.length > 0 && (
-          <div className="grid grid-cols-2 gap-2">
-            {lightboxPhotos.map((photo, i) => (
-              <button
-                key={i}
-                type="button"
-                onClick={() => setLightboxIndex(i)}
-                aria-label={`View photo ${i + 1}`}
-                className="pressable flex aspect-[4/3] cursor-pointer items-center justify-center overflow-hidden rounded-md bg-accent focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
-              >
-                {photo.url ? (
-                  <img
-                    src={photo.url}
-                    alt={photo.alt}
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <Icon name="image-add" size={24} className="text-ink/40" />
-                )}
-              </button>
-            ))}
-          </div>
+          <PhotoGrid
+            photos={lightboxPhotos}
+            onPhotoClick={(i) => setLightboxIndex(i)}
+          />
         )}
       </div>
 

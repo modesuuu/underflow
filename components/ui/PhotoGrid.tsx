@@ -2,7 +2,20 @@
 
 import { useState } from "react";
 import clsx from "clsx";
-import type { Photo } from "../types";
+
+/**
+ * The shared `Photo` shape (one source of truth, now in `components/ui/`
+ * so both the dashboard feed and the collab detail page reuse the exact
+ * same grid): `{ id, url?, alt }`. A missing/undefined `url` (e.g. mock
+ * placeholder tokens like "photo-1") renders the lime placeholder frame
+ * instead of a broken <img>.
+ */
+export interface Photo {
+  id: string;
+  /** Absolute image URL; undefined renders the lime placeholder tile. */
+  url?: string;
+  alt: string;
+}
 
 interface TileProps {
   photo: Photo;
@@ -55,8 +68,10 @@ function Tile({ photo, overlayCount = 0, onClick, className }: TileProps) {
 interface PhotoGridProps {
   photos: Photo[];
   /**
-   * Called with the photo index when a tile is clicked. The feed passes a
-   * navigator to the post detail page; the detail page omits it (inert tiles).
+   * Called with the photo index when a tile is clicked. Both the dashboard
+   * feed and the collab / post detail pages forward this to open the
+   * PhotoLightbox at that index. Omit it to render inert (non-clickable)
+   * tiles (e.g. a read-only gallery).
    */
   onPhotoClick?: (index: number) => void;
 }

@@ -7,7 +7,7 @@ import { Avatar } from "@/components/ui/Avatar";
 import { Icon } from "@/components/ui/Icon";
 import { formatCount } from "@/lib/format";
 import type { Post } from "../types";
-import { PhotoGrid } from "./PhotoGrid";
+import { PhotoGrid } from "@/components/ui/PhotoGrid";
 
 interface LikeButtonProps {
   liked: boolean;
