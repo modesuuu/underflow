@@ -149,6 +149,7 @@ function NavSectionBlock({
 
 /** Map a pathname to the nav item id that should be active. */
 function routeToNavId(pathname: string): string {
+  if (pathname.startsWith("/my-collaborations")) return "my-collab";
   if (pathname.startsWith("/collaborations")) return "collaborations";
   if (pathname === "/" || pathname.startsWith("/dashboard")) return "feeds";
   return DEFAULT_ACTIVE_ID;

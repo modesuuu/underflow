@@ -153,6 +153,27 @@ interface InboxSummary {
 }
 ```
 
+## My Collaborations (user-scoped)
+
+All endpoints below are scoped to the authenticated user (Bearer JWT).
+
+```ts
+// The user's own progress on a project — a SEPARATE domain from the public
+// ProjectStatus (open | in-progress | completed). Do not merge the two.
+type MyCollabStatus = "not-started" | "pending" | "complete" | "revise";
+
+interface MyCollabProject extends CollabProject {
+  myStatus: MyCollabStatus;
+}
+```
+
+- `GET /api/my-collaborations` → `{ data: MyCollabProject[], meta }`
+- `GET /api/my-collaborations/:id` → `{ data: MyCollabProject, meta }` (404 envelope when the id is unknown or does not belong to the user)
+
+Frontend mapping: `getMyCollabProjects()` / `getMyCollabProject(id)` in
+`features/my-collaborations/api.ts`; the board groups by `myStatus`
+(not-started / pending / complete / revise).
+
 ## Open questions for the backend team
 1. Auth provider/token shape — who issues the JWT?
 2. Image storage/CDN for `/api/upload` URLs (expiry?).

@@ -30,7 +30,7 @@ export const NAV_SECTIONS: NavSection[] = [
     title: "Tools",
     items: [
       { id: "inbox", label: "Inbox", icon: "envelope" },
-      { id: "my-collab", label: "My collab", icon: "group" },
+      { id: "my-collab", label: "My Collaborations", icon: "group", href: "/my-collaborations" },
     ],
   },
 ];

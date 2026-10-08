@@ -43,7 +43,7 @@ const MEMBER_JENNY = {
  * Total array length always equals `total`, so
  * members.filter(m => !m.isOpenSlot).length === filled by construction.
  */
-function makeSlots(filled: number, total: number): CollabMember[] {
+export function makeSlots(filled: number, total: number): CollabMember[] {
   const real: CollabMember[] = [OWNER, MEMBER_KIMI, MEMBER_ALEX, MEMBER_JENNY];
   const members: CollabMember[] = real.slice(0, filled);
   // Start from the FILLED count (members.length), not the pool size —
