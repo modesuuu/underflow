@@ -35,7 +35,7 @@ export function MyCollabCard({ project, variant = "board" }: MyCollabCardProps) 
       <div className="pointer-events-none relative z-10 flex flex-col">
         {variant === "category" && (
           <div className="flex items-center gap-1.5">
-            <Icon name="joystick" size={16} className="text-ink" />
+            <Icon name="group-alt" size={16} className="text-ink" />
             <span className="text-[13px] font-medium text-ink">
               {project.status}
             </span>
@@ -62,7 +62,7 @@ export function MyCollabCard({ project, variant = "board" }: MyCollabCardProps) 
       <div className="relative z-10 mt-auto pt-7">
         <div
           aria-hidden="true"
-          className="h-px bg-placeholder opacity-0 transition-opacity duration-300 motion-safe:group-hover:opacity-100"
+          className="h-0.5 bg-placeholder"
         />
         <div className="pointer-events-auto flex items-center justify-between pt-4">
           <div className="flex items-center">

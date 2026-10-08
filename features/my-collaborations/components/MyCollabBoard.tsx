@@ -25,16 +25,14 @@ interface StatCardProps {
 
 function StatCard({ icon, value, label }: StatCardProps) {
   return (
-    <div className="flex flex-1 items-center gap-3 rounded-lg bg-bg p-4">
+    <div className="flex flex-1 flex-col gap-3 rounded-xl border border-line bg-surface p-5">
       <div className="flex size-9 shrink-0 items-center justify-center rounded-md bg-ink">
         <Icon name={icon} size={18} className="text-surface" />
       </div>
-      <div className="flex min-w-0 flex-col">
-        <span className="text-[28px] font-extrabold leading-none text-ink">
-          {value}
-        </span>
-        <span className="mt-1 text-xs font-medium text-muted">{label}</span>
-      </div>
+      <span className="text-[32px] font-extrabold leading-none text-ink">
+        {value}
+      </span>
+      <span className="text-xs font-medium text-muted">{label}</span>
     </div>
   );
 }
@@ -92,10 +90,10 @@ export function MyCollabBoard({ projects }: MyCollabBoardProps) {
       </div>
 
       <div className="flex flex-wrap gap-4">
-        <StatCard icon="joystick" value={String(active)} label="Active Projects" />
-        <StatCard icon="bar-chart-alt-2" value={pct} label="Percentage Complete" />
-        <StatCard icon="time-five" value={String(pending)} label="Project Pending" />
-        <StatCard icon="check-shield" value={String(complete)} label="Project Complete" />
+        <StatCard icon="file" value={String(active)} label="Active Projects" />
+        <StatCard icon="check" value={pct} label="Percentage Complete" />
+        <StatCard icon="history" value={String(pending)} label="Project Pending" />
+        <StatCard icon="check-circle" value={String(complete)} label="Project Complete" />
       </div>
 
       <MyCollabSearchBar
@@ -123,7 +121,7 @@ export function MyCollabBoard({ projects }: MyCollabBoardProps) {
                 <span
                   className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ${cat.pillClassName}`}
                 >
-                  <Icon name="joystick" size={14} className="shrink-0" />
+                  <Icon name={cat.icon} size={14} className="shrink-0" />
                   <span className="truncate">{cat.boardLabel}</span>
                   <span className="ml-auto flex size-5 shrink-0 items-center justify-center rounded-full bg-ink/10 text-2xs font-semibold text-ink">
                     {items.length}
@@ -153,7 +151,7 @@ export function MyCollabBoard({ projects }: MyCollabBoardProps) {
                   href={`/my-collaborations/${cat.slug}`}
                   className="pressable mt-auto flex w-full cursor-pointer items-center justify-center rounded-md bg-accent py-2.5 text-sm font-medium text-ink transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
                 >
-                  View More ({remaining})
+                  View More
                 </Link>
               )}
             </section>

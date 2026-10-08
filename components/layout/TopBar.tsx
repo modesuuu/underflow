@@ -63,36 +63,21 @@ export function TopBar({
       ref={barRef}
       className="sticky top-0 z-20 flex h-[79px] items-center justify-between bg-bg px-[42px]"
     >
-      <div className="flex items-center">
-        {variant === "detail" ? (
+      <div className="flex items-center gap-3">
+        {backHref && (
           <button
             type="button"
             onClick={handleBack}
             aria-label={`Back to ${backLabel}`}
-            className="flex cursor-pointer items-center"
+            className="pressable flex cursor-pointer items-center rounded-md text-ink focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
           >
             <Icon name="chevron-left" size={24} />
-            <span className="text-base font-bold">{backLabel}</span>
           </button>
-        ) : (
-          <Breadcrumb root={breadcrumbRoot} leaf={breadcrumbLeaf} />
         )}
+        <Breadcrumb root={breadcrumbRoot} leaf={breadcrumbLeaf} />
       </div>
 
-      <div className="flex items-center gap-6">
-        {actions ?? (
-          <>
-            {/* TODO(backend): open composer modal / POST /api/posts */}
-            <button
-              type="button"
-              className="flex cursor-pointer items-center gap-1 rounded-md bg-accent p-2 transition-opacity hover:opacity-85"
-            >
-              <Icon name="plus" size={16} />
-              <span className="text-sm font-medium">Post Something</span>
-            </button>
-          </>
-        )}
-      </div>
+      <div className="flex items-center gap-6">{actions}</div>
 
       <span
         ref={borderRef}

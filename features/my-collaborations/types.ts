@@ -22,12 +22,15 @@ export interface MyCollabCategory {
   pillClassName: string;
   /** Category page subtitle. */
   subtitle: string;
+  /** Boxicons name (bx- prefix) for the board column pill. */
+  icon: string;
 }
 
 /**
  * Canonical category table (spec decision #2). Pill backgrounds are pale
  * neutrals matching the design; the `not-started` subtitle is from the frame,
- * the other three follow the same tone.
+ * the other three follow the same tone. Icons: `zap` is not in boxicons —
+ * `revision` (draft pen) is the closest available glyph for Revise.
  */
 export const MY_COLLAB_CATEGORIES: MyCollabCategory[] = [
   {
@@ -36,6 +39,7 @@ export const MY_COLLAB_CATEGORIES: MyCollabCategory[] = [
     crumbLabel: "Not Started",
     pillClassName: "bg-bg text-ink",
     subtitle: "Queued and ready to start.",
+    icon: "group",
   },
   {
     slug: "pending",
@@ -43,6 +47,7 @@ export const MY_COLLAB_CATEGORIES: MyCollabCategory[] = [
     crumbLabel: "Pending",
     pillClassName: "bg-badge/10 text-badge",
     subtitle: "Waiting for review.",
+    icon: "loader-circle",
   },
   {
     slug: "complete",
@@ -50,6 +55,7 @@ export const MY_COLLAB_CATEGORIES: MyCollabCategory[] = [
     crumbLabel: "Complete",
     pillClassName: "bg-accent/40 text-ink",
     subtitle: "Finished and wrapped up.",
+    icon: "check-circle",
   },
   {
     slug: "revise",
@@ -57,6 +63,7 @@ export const MY_COLLAB_CATEGORIES: MyCollabCategory[] = [
     crumbLabel: "Revise",
     pillClassName: "bg-accent/20 text-ink",
     subtitle: "Needs another pass.",
+    icon: "revision",
   },
 ];
 

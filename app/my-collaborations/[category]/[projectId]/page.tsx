@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { AppShell } from "@/components/layout/AppShell";
+import { NotificationsBell } from "@/components/layout/NotificationsBell";
 import { getMyCollabProject } from "@/features/my-collaborations/api";
 import { MyCollabDetailContent } from "@/features/my-collaborations/components/MyCollabDetailContent";
 import { getCategory } from "@/features/my-collaborations/types";
@@ -43,6 +44,7 @@ export default async function DetailPage({ params }: DetailPageProps) {
       breadcrumbRoot={`Tools / My Collaborations / ${cat.crumbLabel}`}
       breadcrumbLeaf={project.title}
       panel={<NotificationsPanel notifications={notifications} />}
+      actions={<NotificationsBell />}
     >
       <MyCollabDetailContent project={project} />
     </AppShell>

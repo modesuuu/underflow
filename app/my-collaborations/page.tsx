@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { AppShell } from "@/components/layout/AppShell";
+import { NotificationsBell } from "@/components/layout/NotificationsBell";
 import { getMyCollabProjects } from "@/features/my-collaborations/api";
 import { MyCollabBoard } from "@/features/my-collaborations/components/MyCollabBoard";
 
@@ -17,6 +18,7 @@ export default async function MyCollaborationsPage() {
     <AppShell
       breadcrumbRoot="Tools"
       breadcrumbLeaf="My Collaborations"
+      actions={<NotificationsBell />}
     >
       <div className="flex flex-col gap-6 px-6 py-8">
         <MyCollabBoard projects={projects} />

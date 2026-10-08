@@ -113,7 +113,7 @@ export function PhotoLightbox({ photos, startIndex, onClose }: PhotoLightboxProp
       tabIndex={-1}
       onClick={close}
       className={
-        "fixed inset-0 flex items-center justify-center bg-black/85 p-8 focus:outline-none " +
+        "fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-8 focus:outline-none " +
         (closing ? "modal-overlay-out" : "modal-overlay-in")
       }
     >
@@ -136,8 +136,10 @@ export function PhotoLightbox({ photos, startIndex, onClose }: PhotoLightboxProp
           <div
             role="img"
             aria-label={photo.alt}
-            className="aspect-[4/3] w-full rounded-lg bg-accent"
-          />
+            className="flex aspect-[4/3] max-h-[80vh] w-full items-center justify-center rounded-lg bg-bg"
+          >
+            <Icon name="image-add" size={48} className="text-ink/40" />
+          </div>
         )}
       </div>
 

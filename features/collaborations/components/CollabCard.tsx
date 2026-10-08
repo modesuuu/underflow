@@ -27,7 +27,7 @@ export function CollabCard({ project }: CollabCardProps) {
   return (
     <article
       className={
-        "collab-card group relative flex origin-center flex-col rounded-xl bg-bg p-5 " +
+        "collab-card group relative flex origin-center flex-col rounded-xl bg-[#F1F0EE] p-5 " +
         "h-full " +
         /* P1-E #27: tilt + bg + shadow + active-press now live in
            globals.css `.collab-card`, gated behind
@@ -77,7 +77,7 @@ export function CollabCard({ project }: CollabCardProps) {
       <div className="relative z-10 mt-auto pt-7">
         <div
           aria-hidden="true"
-          className="h-px bg-placeholder opacity-0 transition-opacity duration-300 motion-safe:group-hover:opacity-100"
+          className="h-0.5 bg-placeholder"
         />
         <div className="pointer-events-auto flex items-center justify-between pt-4">
           {/* Left: avatar pair + filled/total count */}
