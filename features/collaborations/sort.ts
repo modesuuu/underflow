@@ -4,16 +4,28 @@
 import type { CollabProject } from "./types";
 
 /**
- * Parse a due date like "Dec 25, 26" deterministically.
- * Two-digit year → 2000 + yy. No Date.parse (locale-dependent).
+ * Parse a due date deterministically. Accepts the contract wire format
+ * (ISO 8601 "2026-12-25", audit P1-A #5) AND the legacy display string
+ * "Dec 25, 26" until every producer has moved to ISO.
+ * Two-digit year → 2000 + yy. No Date.parse for the display form.
  */
 const MONTH_MAP: Record<string, number> = {
   Jan: 0, Feb: 1, Mar: 2, Apr: 3, May: 4, Jun: 5,
   Jul: 6, Aug: 7, Sep: 8, Oct: 9, Nov: 10, Dec: 11,
 };
 
+const ISO_RE = /^(\d{4})-(\d{2})-(\d{2})$/;
+
 export function parseDueDate(raw: string): number {
-  // Format: "MMM D, YY"
+  const iso = raw.match(ISO_RE);
+  if (iso) {
+    return Date.UTC(
+      Number(iso[1]),
+      Number(iso[2]) - 1,
+      Number(iso[3])
+    );
+  }
+  // Legacy display form: "MMM D, YY"
   const m = raw.match(/^(\w{3})\s+(\d{1,2}),\s*(\d{2,4})$/);
   if (!m) return Infinity;
   const month = MONTH_MAP[m[1]];
@@ -21,6 +33,27 @@ export function parseDueDate(raw: string): number {
   const day = parseInt(m[2], 10);
   const year = m[3].length === 2 ? 2000 + parseInt(m[3], 10) : parseInt(m[3], 10);
   return new Date(year, month, day).getTime();
+}
+
+const MONTH_NAMES = [
+  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+];
+
+/**
+ * Format a due date for display ("Dec 25, 26"). Contract wire dates are ISO
+ * (audit P1-A #5) — display strings are frontend-only, never over the wire.
+ * Falls back to the raw value when it is not an ISO date.
+ */
+export function formatDueDate(raw: string): string {
+  const iso = raw.match(ISO_RE);
+  if (!iso) return raw;
+  const d = new Date(
+    Date.UTC(Number(iso[1]), Number(iso[2]) - 1, Number(iso[3]))
+  );
+  return `${MONTH_NAMES[d.getUTCMonth()]} ${String(d.getUTCDate()).padStart(2, "0")}, ${String(
+    d.getUTCFullYear()
+  ).slice(-2)}`;
 }
 
 /**

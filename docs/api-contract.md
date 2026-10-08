@@ -34,8 +34,21 @@
 ### Notifications
 | Method | Path | Auth | Notes |
 |---|---|---|---|
-| GET | `/api/notifications` | required | → `200 { data: Notification[] }` (newest first) |
-| PATCH | `/api/notifications/:id/read` | required | → `200 { data: Notification }` |
+| GET | `/api/dashboard/notifications` | required | → `200 { data: Notification[], meta }` (newest first) — frontend path is `/api/dashboard/notifications` (see mapping notes); backend may keep this or confirm a canonical `/api/notifications` — **decide once** |
+| PATCH | `/api/notifications/:id/read` | required | → `200 { data: Notification, meta }` |
+
+### Posts (dashboard feed — NOT in the earlier draft, frontend codes against these)
+| Method | Path | Auth | Notes |
+|---|---|---|---|
+| GET | `/api/dashboard/posts` | optional | → `200 { data: Post[], meta }` |
+| GET | `/api/posts/:id` | optional | → `200 { data: Post, meta }`, `404` unknown id |
+| POST | `/api/posts/:id/comments` | required | Body `{ text: string }` (max 1000) → `201 { data: PostComment, meta }`; `400` empty/oversize |
+| POST | `/api/comments/:commentId/like` | required | → `200 { data: PostComment, meta }` (toggles like) |
+
+### Inbox
+| Method | Path | Auth | Notes |
+|---|---|---|---|
+| GET | `/api/inbox/summary` | required | → `200 { data: InboxSummary, meta }`; v1 shape `{ unreadCount: number }` (frontend today only renders the nav badge — list view lands later) |
 
 ## Type shapes (source of truth — both sides)
 
@@ -105,6 +118,39 @@ interface Notification {
   read: boolean;
   link?: string;          // deep link, e.g. "/collaborations/abc123"
 }
+
+// --- Dashboard feed (added 2026-10-08, audit P1-A #12) ---
+
+interface PostAuthor {
+  id: string;
+  name: string;
+  avatarUrl?: string;     // absolute URL; null renders the placeholder circle
+}
+
+interface PostComment {
+  id: string;
+  author: PostAuthor;
+  text: string;           // max 1000
+  createdAt: string;      // ISO 8601 (wire) — frontend formats to a relative label
+  likes: number;
+  liked: boolean;         // relative to the requesting user (auth)
+}
+
+interface Post {
+  id: string;
+  author: PostAuthor;
+  postedAt: string;       // ISO 8601 (wire) — frontend formats to a relative label
+  text: string;
+  photos: { id: string; url?: string; alt: string }[];
+  views: number;
+  likes: number;
+  liked: boolean;
+  comments: PostComment[];
+}
+
+interface InboxSummary {
+  unreadCount: number;    // v1: badge count only; list view later
+}
 ```
 
 ## Open questions for the backend team
@@ -117,4 +163,7 @@ interface Notification {
 - `getCollabProjects()` → `GET /api/collaborations` (+ map query params from filter bar state).
 - `createCollabProject()` → upload photos first (`POST /api/upload`), then `POST /api/collaborations` with returned `photoUrls`.
 - `postedAgo`/`dueDate` display strings become frontend formatting over ISO dates — the `parseDueDate`/`parsePostedAgo` helpers in `sort.ts` can be deleted once the backend serves ISO.
-- `getNotifications()` → `GET /api/notifications`.
+- `getNotifications()` → `GET /api/dashboard/notifications` (path mismatch flagged in the Endpoints table — backend decides canonical route once).
+- `getDashboardPosts()` → `GET /api/dashboard/posts`; comment posting in `CommentSection` → `POST /api/posts/:id/comments` (both added to the contract 2026-10-08, audit P1-A #12 — previously frontend-only TODOs).
+- `getInboxSummary()` → `GET /api/inbox/summary` (v1: `unreadCount` badge only).
+- All responses use the `{ data, meta }` envelope (audit P1-A #8); errors use `{ error: { code, message } }` surfaced by `lib/api-client.ts` (`ApiError`).

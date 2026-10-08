@@ -20,6 +20,9 @@ const STATUS_OPTIONS: { value: CollabStatusFilter; label: string }[] = [
   { value: "all", label: "All" },
   { value: "open", label: "Open" },
   { value: "in-progress", label: "In progress" },
+  // Audit P1-A #7: "completed" was missing from the filter union, so
+  // completed projects could never be filtered at all.
+  { value: "completed", label: "Completed" },
 ];
 
 const SORT_OPTIONS: { value: CollabSortKey; label: string }[] = [

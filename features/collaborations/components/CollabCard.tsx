@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Icon } from "@/components/ui/Icon";
 import { Avatar } from "@/components/ui/Avatar";
+import { formatDueDate } from "../sort";
 import type { CollabProject } from "../types";
 
 /** Dark-charcoal fallback placeholder (no token — eyeballed from design). */
@@ -26,12 +27,13 @@ export function CollabCard({ project }: CollabCardProps) {
   return (
     <article
       className={
-        "group relative flex origin-center flex-col rounded-xl bg-bg p-5 " +
+        "collab-card group relative flex origin-center flex-col rounded-xl bg-bg p-5 " +
         "h-full " +
-        "motion-safe:transition-[transform,background-color,box-shadow] " +
-        "motion-safe:duration-300 motion-safe:ease-out " +
-        "motion-safe:hover:-rotate-[8deg] motion-safe:hover:bg-surface " +
-        "motion-safe:hover:shadow-lg motion-safe:hover:scale-[1.03]"
+        /* P1-E #27: tilt + bg + shadow + active-press now live in
+           globals.css `.collab-card`, gated behind
+           @media (hover:hover) and (pointer:fine) — so touch/sticky-tap
+           devices don't get a stuck :hover tilt. No JS; pure CSS. */
+        "active:scale-[0.99]"
       }
     >
       {/* Stretched link — whole card clickable, keyboard reachable */}
@@ -66,7 +68,7 @@ export function CollabCard({ project }: CollabCardProps) {
           <Icon name="calendar" solid size={14} className="text-ink" />
           <span className="text-[13px] text-muted">Due to:</span>
           <span className="text-[13px] font-semibold text-ink">
-            {project.dueDate}
+            {formatDueDate(project.dueDate)}
           </span>
         </div>
       </div>

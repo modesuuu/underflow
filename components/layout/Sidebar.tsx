@@ -6,10 +6,8 @@ import {
   useMemo,
   useRef,
   useState,
-  type MouseEvent,
 } from "react";
 import clsx from "clsx";
-import gsap from "gsap";
 import { usePathname, useRouter } from "next/navigation";
 import { Avatar } from "@/components/ui/Avatar";
 import { Badge } from "@/components/ui/Badge";
@@ -24,10 +22,12 @@ import {
   type NavSection,
 } from "./nav";
 
-const EASE_OUT = "power3.out";
-const EASE_INOUT = "power2.inOut";
-const HOVER_BG = "rgba(255, 255, 255, 0.6)"; 
-const CLEAR_BG = "rgba(255, 255, 255, 0)";
+// P1-E #28 / P1-C #21: the sidebar no longer uses GSAP — the hover
+// background, chevron rotation, and section accordion are pure CSS
+// transitions (globals.css), so they run on the compositor where
+// possible and are fully respected by prefers-reduced-motion. GSAP's
+// only remaining job is moving the active pill (its Y/height follow
+// the row's layout box — a genuinely JS-positioned element).
 
 type RegisterRef<T> = (id: string, el: T | null) => void;
 
@@ -41,25 +41,6 @@ interface NavRowProps {
 
 function NavRow({ item, active, badge, onSelect, registerRef }: NavRowProps) {
   const router = useRouter();
-  const handleEnter = (e: MouseEvent<HTMLButtonElement>) => {
-    if (!active) {
-      gsap.to(e.currentTarget, {
-        backgroundColor: HOVER_BG,
-        duration: 0.25,
-        ease: EASE_OUT,
-        overwrite: "auto",
-      });
-    }
-  };
-
-  const handleLeave = (e: MouseEvent<HTMLButtonElement>) => {
-    gsap.to(e.currentTarget, {
-      backgroundColor: CLEAR_BG,
-      duration: 0.3,
-      ease: EASE_OUT,
-      overwrite: "auto",
-    });
-  };
 
   return (
     <button
@@ -71,10 +52,15 @@ function NavRow({ item, active, badge, onSelect, registerRef }: NavRowProps) {
         onSelect(item.id);
         if (item.href) router.push(item.href);
       }}
-      onMouseEnter={handleEnter}
-      onMouseLeave={handleLeave}
+      // P1-E #28: hover background is the CSS `.nav-row-hoverable`
+      // transition (was a GSAP backgroundColor tween, off-GPU). Only
+      // non-active rows get the hover wash — the active row is pinned
+      // under the pill.
+      className={clsx(
+        "relative z-10 flex w-full cursor-pointer items-center gap-1 rounded-md px-1 py-2 text-left",
+        !active && "nav-row-hoverable"
+      )}
       aria-current={active ? "page" : undefined}
-      className="relative z-10 flex w-full cursor-pointer items-center gap-1 rounded-md px-1 py-2 text-left"
     >
       <Icon
         name={item.icon}
@@ -105,8 +91,6 @@ interface NavSectionBlockProps {
   onToggle: (id: string) => void;
   onSelect: (id: string) => void;
   registerRowRef: RegisterRef<HTMLButtonElement>;
-  registerWrapRef: RegisterRef<HTMLDivElement>;
-  registerChevronRef: RegisterRef<HTMLSpanElement>;
 }
 
 function NavSectionBlock({
@@ -117,8 +101,6 @@ function NavSectionBlock({
   onToggle,
   onSelect,
   registerRowRef,
-  registerWrapRef,
-  registerChevronRef,
 }: NavSectionBlockProps) {
   return (
     <div className="flex flex-col gap-3">
@@ -131,32 +113,35 @@ function NavSectionBlock({
         <span className="text-xs font-medium text-muted">
           {section.title}
         </span>
+        {/* P1-E #28: chevron rotation is the CSS `.chevron-rot`
+            transition (was a GSAP rotation tween). `rotate` is
+            compositor-friendly. */}
         <span
-          ref={(el) => {
-            registerChevronRef(section.id, el);
-          }}
-          className="inline-flex"
+          className={
+            "chevron-rot inline-flex " +
+            (collapsed ? "-rotate-90" : "rotate-0")
+          }
         >
           <Icon name="chevron-down" size={20} className="text-muted" />
         </span>
       </button>
-      {/* Rows stay mounted while collapsed so refs/measurements survive. */}
-      <div
-        ref={(el) => {
-          registerWrapRef(section.id, el);
-        }}
-        className="flex flex-col gap-1 overflow-hidden"
-      >
-        {section.items.map((item) => (
-          <NavRow
-            key={item.id}
-            item={item}
-            active={item.id === activeId}
-            badge={badgeFor(item.id)}
-            onSelect={onSelect}
-            registerRef={registerRowRef}
-          />
-        ))}
+      {/* P1-E #28: section open/close is the grid-template-rows
+          0fr<->1fr trick (CSS `.acc-wrap`/`.acc-inner`) instead of a
+          GSAP height:0<->auto tween. Rows stay mounted so refs and
+          pill measurements survive. */}
+      <div className={collapsed ? "acc-wrap [grid-template-rows:0fr]" : "acc-wrap [grid-template-rows:1fr]"}>
+        <div className="acc-inner flex flex-col gap-1">
+          {section.items.map((item) => (
+            <NavRow
+              key={item.id}
+              item={item}
+              active={item.id === activeId}
+              badge={badgeFor(item.id)}
+              onSelect={onSelect}
+              registerRef={registerRowRef}
+            />
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -179,8 +164,6 @@ export function Sidebar() {
   const areaRef = useRef<HTMLDivElement>(null);
   const pillRef = useRef<HTMLDivElement>(null);
   const rowRefs = useRef(new Map<string, HTMLButtonElement>());
-  const wrapRefs = useRef(new Map<string, HTMLDivElement>());
-  const chevronRefs = useRef(new Map<string, HTMLSpanElement>());
   const firstPill = useRef(true);
 
   // Sync activeId with pathname on navigation.
@@ -214,100 +197,54 @@ export function Sidebar() {
     return true;
   }, [activeId, collapsed]);
 
-  const positionPill = (animate: boolean) => {
+  // P1-E #28: the pill is positioned with `transform: translateY()` and
+  // faded with `opacity` — the ONLY animated props — both compositor-only.
+  // The CSS `.active-pill` transition animates them (jump on first mount).
+  // Its fixed height (h-9) matches a standard nav row, so no `height`/`top`
+  // layout tweens are needed (the old GSAP implementation animated top,
+  // height, and opacity — all off-GPU / layout-triggering).
+  const positionPill = () => {
     const area = areaRef.current;
     const pill = pillRef.current;
     if (!area || !pill) return;
     const row = rowRefs.current.get(activeId);
     if (!row) {
-      gsap.set(pill, { opacity: 0 });
+      pill.style.opacity = "0";
       return;
     }
-    const rowRect = row.getBoundingClientRect();
-    const vars = {
-      top: rowRect.top - area.getBoundingClientRect().top,
-      height: rowRect.height,
-      opacity: activeVisible ? 1 : 0,
-    };
-    if (firstPill.current || !animate) {
-      gsap.set(pill, vars);
+    const y = row.getBoundingClientRect().top - area.getBoundingClientRect().top;
+    if (firstPill.current) {
+      pill.style.transition = "none";
+      pill.style.transform = `translateY(${y}px)`;
+      pill.style.opacity = activeVisible ? "1" : "0";
+      void pill.offsetWidth; // flush so the next change animates via CSS
+      pill.style.transition = "";
       firstPill.current = false;
-    } else {
-      gsap.to(pill, { ...vars, duration: 0.35, ease: EASE_OUT, overwrite: true });
+      return;
     }
+    pill.style.transform = `translateY(${y}px)`;
+    pill.style.opacity = activeVisible ? "1" : "0";
   };
 
   const positionPillRef = useRef(positionPill);
   positionPillRef.current = positionPill;
 
   useLayoutEffect(() => {
-    positionPillRef.current(true);
-    const row = rowRefs.current.get(activeId);
-    if (row) gsap.set(row, { backgroundColor: CLEAR_BG });
+    positionPillRef.current();
   }, [activeId, activeVisible]);
 
   const toggleSection = (id: string) => {
-    const wrap = wrapRefs.current.get(id);
-    const chevron = chevronRefs.current.get(id);
     const isCollapsed = !!collapsed[id];
     setCollapsed((prev) => ({ ...prev, [id]: !isCollapsed }));
-
-    if (chevron) {
-      gsap.to(chevron, {
-        rotation: isCollapsed ? 0 : -90,
-        duration: 0.25,
-        ease: EASE_OUT,
-        overwrite: "auto",
-      });
-    }
-    if (!wrap) return;
-
-    if (isCollapsed) {
-      gsap.fromTo(
-        wrap,
-        { height: 0, opacity: 0 },
-        {
-          height: "auto",
-          opacity: 1,
-          duration: 0.3,
-          ease: EASE_INOUT,
-          onComplete: () => positionPillRef.current(true),
-        }
-      );
-    } else {
-      const section = NAV_SECTIONS.find((s) => s.id === id);
-      if (
-        pillRef.current &&
-        section?.items.some((item) => item.id === activeId)
-      ) {
-        gsap.to(pillRef.current, {
-          opacity: 0,
-          duration: 0.2,
-          ease: EASE_OUT,
-          overwrite: "auto",
-        });
-      }
-      gsap.to(wrap, {
-        height: 0,
-        opacity: 0,
-        duration: 0.3,
-        ease: EASE_INOUT,
-        onComplete: () => positionPillRef.current(true),
-      });
-    }
+    // Re-measure the pill once the CSS accordion transition (300ms) settles,
+    // so it follows the row to its new position. (The chevron rotation and
+    // the open/close both run as pure CSS now — no GSAP.)
+    window.setTimeout(() => positionPillRef.current(), 320);
   };
 
   const registerRow: RegisterRef<HTMLButtonElement> = (id, el) => {
     if (el) rowRefs.current.set(id, el);
     else rowRefs.current.delete(id);
-  };
-  const registerWrap: RegisterRef<HTMLDivElement> = (id, el) => {
-    if (el) wrapRefs.current.set(id, el);
-    else wrapRefs.current.delete(id);
-  };
-  const registerChevron: RegisterRef<HTMLSpanElement> = (id, el) => {
-    if (el) chevronRefs.current.set(id, el);
-    else chevronRefs.current.delete(id);
   };
 
   return (
@@ -318,8 +255,8 @@ export function Sidebar() {
       >
         <div
           ref={pillRef}
-          className="absolute left-6 right-6 z-0 rounded-md bg-surface"
-          style={{ top: 0, height: 0, opacity: 0 }}
+          className="active-pill absolute left-6 right-6 top-0 z-0 h-9 rounded-md bg-surface"
+          style={{ opacity: 0 }}
         />
 
         <div className="flex flex-col gap-6">
@@ -342,8 +279,6 @@ export function Sidebar() {
                 onToggle={toggleSection}
                 onSelect={setActiveId}
                 registerRowRef={registerRow}
-                registerWrapRef={registerWrap}
-                registerChevronRef={registerChevron}
               />
             ))}
           </nav>

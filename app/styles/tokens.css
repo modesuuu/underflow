@@ -22,6 +22,10 @@
   --uf-sidebar-w: 246px;
   --uf-content-w: 636px;
   --uf-panel-w: 308px;
+
+  /* Single easing token (audit P1-E #29): one custom ease-out for every
+     entrance/exit in the UI — no banned ease-in on exits. */
+  --uf-ease-out: cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 @font-face {

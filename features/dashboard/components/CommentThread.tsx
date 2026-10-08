@@ -2,7 +2,6 @@
 
 import { useState, type Ref } from "react";
 import clsx from "clsx";
-import gsap from "gsap";
 import { useRef } from "react";
 import { Avatar } from "@/components/ui/Avatar";
 import { Icon } from "@/components/ui/Icon";
@@ -20,17 +19,23 @@ function CommentItem({ comment, innerRef }: CommentItemProps) {
   const bumpRef = useRef<HTMLSpanElement>(null);
 
   const toggleLike = () => {
+    // WAAPI instead of GSAP (audit P1-E #26): rapid re-clicks restart the
+    // same animation instead of stacking tweens -> no visible snap.
     if (!liked && bumpRef.current) {
-      gsap.fromTo(
-        bumpRef.current,
-        { scale: 1 },
-        { scale: 1.35, duration: 0.15, ease: "power2.out", yoyo: true, repeat: 1 }
+      bumpRef.current.animate(
+        [
+          { transform: "scale(1)" },
+          { transform: "scale(1.35)", offset: 0.5 },
+          { transform: "scale(1)" },
+        ],
+        { duration: 300, easing: "cubic-bezier(0.23, 1, 0.32, 1)" }
       );
     }
-    setLiked((prev) => {
-      setLikeCount((c) => (prev ? c - 1 : c + 1));
-      return !prev;
-    });
+    // Pure state update (audit P0-2): no setState nested inside another
+    // updater — StrictMode double-firing otherwise shifts the count ±2.
+    const next = !liked;
+    setLiked(next);
+    setLikeCount((c) => c + (next ? 1 : -1));
   };
 
   return (

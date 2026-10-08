@@ -1,13 +1,20 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import gsap from "gsap";
 import { Icon } from "@/components/ui/Icon";
 
 /**
- * Generic photo lightbox (moved here from features/dashboard — shared by
- * feeds and collaborations). A photo only needs { url?, alt }: a missing
- * url renders the lime placeholder frame.
+ * Generic photo lightbox (shared by feeds and collaborations). A photo only
+ * needs { url?, alt }: a missing url renders the lime placeholder frame.
+ *
+ * Motion: the shared CSS keyframes (.modal-overlay-* and .modal-panel-* in
+ * globals.css, audit P1-E #24) replace the old GSAP tweens — same opacity /
+ * scale, gated behind prefers-reduced-motion for free, and exits use the
+ * ease-out token faster than the open (P1-E #25).
+ *
+ * Accessibility (P1-C #17): focus moves into the dialog on open, is trapped
+ * while open (Tab / Shift-Tab stay inside), and returns to the trigger on
+ * close. Esc closes; arrows navigate.
  */
 export interface LightboxPhoto {
   url?: string;
@@ -21,45 +28,63 @@ interface PhotoLightboxProps {
 }
 
 export function PhotoLightbox({ photos, startIndex, onClose }: PhotoLightboxProps) {
-  const overlayRef = useRef<HTMLDivElement>(null);
-  const frameRef = useRef<HTMLDivElement>(null);
   const [index, setIndex] = useState(startIndex);
   const [closing, setClosing] = useState(false);
+  const [imgBroken, setImgBroken] = useState(false);
+
+  const overlayRef = useRef<HTMLDivElement>(null);
+  const frameRef = useRef<HTMLDivElement>(null);
+  const prevFocusRef = useRef<HTMLElement | null>(null);
+
+  // Reset the broken-image flag whenever the visible photo changes.
+  useEffect(() => {
+    setImgBroken(false);
+  }, [index]);
 
   const close = useCallback(() => {
     if (closing) return;
     setClosing(true);
-    if (overlayRef.current) {
-      gsap.to(overlayRef.current, {
-        opacity: 0,
-        duration: 0.22,
-        ease: "power2.in",
-        onComplete: onClose,
-      });
-      if (frameRef.current) {
-        gsap.to(frameRef.current, { scale: 0.96, duration: 0.22, ease: "power2.in" });
-      }
-    } else {
-      onClose();
-    }
+    // The CSS out-animation is 180ms; hold the mount until it finishes so
+    // reduced-motion users (animation gated off -> instant) still unmount
+    // cleanly. The timeout also covers that no-animation path.
+    window.setTimeout(onClose, 220);
   }, [closing, onClose]);
 
-  // Open animation.
+  // Open: move focus into the dialog and remember the trigger for restore.
   useEffect(() => {
-    if (overlayRef.current) {
-      gsap.fromTo(
-        overlayRef.current,
-        { opacity: 0 },
-        { opacity: 1, duration: 0.28, ease: "power3.out" }
+    prevFocusRef.current = (document.activeElement as HTMLElement | null) ?? null;
+    overlayRef.current?.focus();
+  }, []);
+
+  // Close: return focus to whatever opened the lightbox.
+  useEffect(() => {
+    if (!closing) return;
+    return () => {
+      prevFocusRef.current?.focus?.();
+    };
+  }, [closing]);
+
+  // Trap Tab inside the dialog while open.
+  useEffect(() => {
+    const onTab = (e: KeyboardEvent) => {
+      if (e.key !== "Tab" || !overlayRef.current) return;
+      const focusable = overlayRef.current.querySelectorAll<HTMLElement>(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
       );
-    }
-    if (frameRef.current) {
-      gsap.fromTo(
-        frameRef.current,
-        { scale: 0.96 },
-        { scale: 1, duration: 0.28, ease: "power3.out" }
-      );
-    }
+      if (focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      const active = document.activeElement;
+      if (e.shiftKey && active === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && active === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+    window.addEventListener("keydown", onTab);
+    return () => window.removeEventListener("keydown", onTab);
   }, []);
 
   useEffect(() => {
@@ -75,6 +100,9 @@ export function PhotoLightbox({ photos, startIndex, onClose }: PhotoLightboxProp
   }, [close, photos.length]);
 
   const photo = photos[index];
+  // P1-C #19: a broken image (onError) or missing URL falls back to the
+  // placeholder frame.
+  const showImage = !!photo.url && !imgBroken;
 
   return (
     <div
@@ -82,22 +110,34 @@ export function PhotoLightbox({ photos, startIndex, onClose }: PhotoLightboxProp
       role="dialog"
       aria-modal="true"
       aria-label={photo.alt}
+      tabIndex={-1}
       onClick={close}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-8"
+      className={
+        "fixed inset-0 flex items-center justify-center bg-black/85 p-8 focus:outline-none " +
+        (closing ? "modal-overlay-out" : "modal-overlay-in")
+      }
     >
       <div
         ref={frameRef}
         onClick={(e) => e.stopPropagation()}
-        className="flex w-full max-w-3xl items-center justify-center"
+        className={
+          "flex w-full max-w-3xl items-center justify-center " +
+          (closing ? "modal-panel-out" : "modal-panel-in")
+        }
       >
-        {photo.url ? (
+        {showImage ? (
           <img
             src={photo.url}
             alt={photo.alt}
+            onError={() => setImgBroken(true)}
             className="max-h-[80vh] w-auto max-w-full rounded-lg object-contain"
           />
         ) : (
-          <div aria-label={photo.alt} className="aspect-[4/3] w-full rounded-lg bg-accent" />
+          <div
+            role="img"
+            aria-label={photo.alt}
+            className="aspect-[4/3] w-full rounded-lg bg-accent"
+          />
         )}
       </div>
 
@@ -110,7 +150,7 @@ export function PhotoLightbox({ photos, startIndex, onClose }: PhotoLightboxProp
               e.stopPropagation();
               setIndex((i) => (i - 1 + photos.length) % photos.length);
             }}
-            className="absolute left-4 top-1/2 -translate-y-1/2 cursor-pointer rounded-full bg-black/50 p-2 text-white transition-opacity hover:opacity-80"
+            className="absolute left-4 top-1/2 -translate-y-1/2 cursor-pointer rounded-full bg-black/50 p-2 text-white transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
           >
             <Icon name="chevron-left" size={24} />
           </button>
@@ -121,7 +161,7 @@ export function PhotoLightbox({ photos, startIndex, onClose }: PhotoLightboxProp
               e.stopPropagation();
               setIndex((i) => (i + 1) % photos.length);
             }}
-            className="absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer rounded-full bg-black/50 p-2 text-white transition-opacity hover:opacity-80"
+            className="absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer rounded-full bg-black/50 p-2 text-white transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
           >
             <Icon name="chevron-right" size={24} />
           </button>
@@ -136,7 +176,7 @@ export function PhotoLightbox({ photos, startIndex, onClose }: PhotoLightboxProp
         type="button"
         aria-label="Close preview"
         onClick={close}
-        className="absolute right-4 top-4 cursor-pointer rounded-full bg-black/50 p-2 text-white transition-opacity hover:opacity-80"
+        className="absolute right-4 top-4 cursor-pointer rounded-full bg-black/50 p-2 text-white transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
       >
         <Icon name="x" size={20} />
       </button>

@@ -5,6 +5,7 @@ import { Icon } from "@/components/ui/Icon";
 import { Avatar } from "@/components/ui/Avatar";
 import { PhotoLightbox } from "@/components/ui/PhotoLightbox";
 import { ApplyCta } from "./ApplyCta";
+import { formatDueDate } from "../sort";
 import type { CollabProject } from "../types";
 
 /**

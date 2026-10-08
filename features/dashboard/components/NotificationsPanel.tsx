@@ -14,34 +14,48 @@ interface TabDef {
 }
 
 function filterByTab(items: NotificationItem[], tab: Tab): NotificationItem[] {
-  if (tab === "unread") return items.filter((n) => n.unread);
-  if (tab === "read") return items.filter((n) => !n.unread);
+  // Contract field is `read` (audit P1-A #6) — the inverse of the old `unread`.
+  if (tab === "unread") return items.filter((n) => !n.read);
+  if (tab === "read") return items.filter((n) => n.read);
   return items;
 }
 
 function NotificationRow({ item }: { item: NotificationItem }) {
+  // Contract base row data: title + body. The rich actor/action/target
+  // extension fields (mock today, backend-confirmed later) take over the
+  // name + subline when present; `body` is the wire fallback.
+  const name = item.actor?.name ?? item.title;
+  const subline =
+    item.action || item.target
+      ? `${item.action ?? ""} ${item.target ?? ""}`.trim()
+      : item.body;
   return (
     <div className="flex min-h-[47px] items-center gap-5">
       <div className="flex flex-1 items-start gap-2">
-        <Avatar size={32} src={item.actor.avatarUrl} alt={item.actor.name} />
+        <Avatar size={32} src={item.actor?.avatarUrl} alt={name} />
         <div className="flex min-w-0 flex-1 flex-col gap-2">
           <div className="flex flex-col gap-1">
-            <span className="text-base font-medium">{item.actor.name}</span>
-            <span className="flex gap-0.5">
-              <span className="text-xs text-muted">{item.action}</span>
-              <span className="text-xs font-medium">{item.target}</span>
-            </span>
+            <span className="text-base font-medium">{name}</span>
+            {subline && (
+              <span className="flex gap-0.5">
+                <span className="text-xs text-muted">{subline}</span>
+              </span>
+            )}
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-xs">{item.timeLabel}</span>
-            {/* <span className="text-2xs font-medium text-muted">
-              {item.agoLabel}
-            </span> */}
+            {(item.timeLabel ?? item.agoLabel) && (
+              <span className="text-xs">{item.timeLabel ?? item.agoLabel}</span>
+            )}
           </div>
         </div>
       </div>
-      {item.unread && (
-        <span aria-hidden="true" className="size-1.5 shrink-0 rounded-full bg-accent" />
+      {/* Unread indicator (audit P1-C #20): the dot stays decorative, an
+          sr-only word carries the meaning for screen readers. */}
+      {!item.read && (
+        <span className="flex shrink-0 items-center gap-1">
+          <span aria-hidden="true" className="size-1.5 rounded-full bg-accent" />
+          <span className="sr-only">Unread</span>
+        </span>
       )}
     </div>
   );
@@ -55,7 +69,7 @@ export function NotificationsPanel({
 }) {
   const [tab, setTab] = useState<Tab>("all");
 
-  const unreadCount = notifications.filter((n) => n.unread).length;
+  const unreadCount = notifications.filter((n) => !n.read).length;
   const readCount = notifications.length - unreadCount;
 
   const tabs: (TabDef & { count: number })[] = [

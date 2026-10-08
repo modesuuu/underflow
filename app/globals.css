@@ -91,32 +91,117 @@
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  /* Grid entrance: one-shot per mount, 50ms stagger via --stagger-i */
+  /* Grid entrance: one-shot per mount, 50ms stagger via --stagger-i.
+     300ms duration — with a 50ms stagger the tail item finishes inside the
+     300ms UI budget instead of ~1s (audit P1-E #30). */
   .card-stagger {
-    animation: uf-card-in 450ms ease-out backwards;
+    animation: uf-card-in 300ms var(--uf-ease-out) backwards;
     animation-delay: calc(var(--stagger-i, 0) * 50ms);
   }
 
-  /* Modal open/close (replaces the GSAP usage) */
+  /* Modal/lightbox open/close. Exits use the shared ease-out token and run
+     FASTER than the 280ms entrance (exits read as snappier; audit P1-E
+     #25/#29 — banned ease-in on exits). */
   .modal-overlay-in {
-    animation: uf-fade-in 280ms ease-out;
+    animation: uf-fade-in 280ms var(--uf-ease-out);
   }
   .modal-overlay-out {
-    animation: uf-fade-out 220ms ease-in;
+    animation: uf-fade-out 180ms var(--uf-ease-out);
   }
   .modal-panel-in {
-    animation: uf-modal-in 280ms ease-out;
+    animation: uf-modal-in 280ms var(--uf-ease-out);
   }
   .modal-panel-out {
-    animation: uf-modal-out 220ms ease-in;
+    animation: uf-modal-out 180ms var(--uf-ease-out);
   }
 
-  /* Press feedback: subtle scale on :active */
+  /* Press feedback: subtle scale on :active (transition lives unlayered
+     below so it cannot shadow Tailwind utility transitions). */
   .pressable:active {
     transform: scale(0.97);
   }
 }
 
+/* Press feedback: transition is UNLAYERED, so it must enumerate every
+   property Tailwind utilities animate on these elements — otherwise it
+   silently deletes their hover color/opacity transitions (audit P0-3).
+   .pressable:active stays gated in the reduced-motion block above. */
 .pressable {
-  transition: transform 120ms ease-out;
+  transition:
+    transform 120ms ease-out,
+    opacity 160ms ease-out,
+    background-color 160ms ease-out,
+    color 160ms ease-out;
+}
+
+/* --- Sidebar motion on the GPU (audit P1-E #28 / P1-C #21) ---
+   The old implementation tweened backgroundColor, top/height, and
+   height:0<->auto with GSAP (all off-GPU / layout-triggering). Now:
+   hover bg + chevron + accordion are plain CSS transitions; the active
+   pill animates transform (translateY + scaleY) only. */
+.nav-row-hoverable {
+  transition: background-color 250ms var(--uf-ease-out);
+}
+.nav-row-hoverable:hover {
+  background-color: rgba(255, 255, 255, 0.6);
+}
+.chevron-rot {
+  transition: transform 250ms var(--uf-ease-out);
+}
+/* Active-row pill: the ONLY animated props are transform + opacity
+   (compositor-only, no layout) — replaces the GSAP top/height/opacity
+   tweens (audit P1-E #28). */
+.active-pill {
+  transition:
+    transform 350ms var(--uf-ease-out),
+    opacity 350ms var(--uf-ease-out);
+}
+/* Accordion open/close: the grid-template-rows 0fr<->1fr trick
+   (layout, but only on the occasional toggle — accepted per the audit). */
+.acc-wrap {
+  display: grid;
+  transition: grid-template-rows 300ms var(--uf-ease-out);
+}
+.acc-inner {
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* --- Collab card tilt (audit P1-E #27) ---
+   Gated behind a real pointer: on sticky-tap touch devices the old
+   :hover tilt got "stuck". The press feedback (active:scale 0.99)
+   still applies everywhere. */
+@media (prefers-reduced-motion: no-preference) {
+  @media (hover: hover) and (pointer: fine) {
+    .collab-card {
+      transition:
+        transform 200ms var(--uf-ease-out),
+        background-color 200ms var(--uf-ease-out),
+        box-shadow 200ms var(--uf-ease-out);
+    }
+    .collab-card:hover {
+      transform: rotate(-8deg) scale(1.03);
+      background-color: var(--uf-surface);
+      box-shadow:
+        0 10px 15px -3px rgb(0 0 0 / 0.1),
+        0 4px 6px -4px rgb(0 0 0 / 0.1);
+    }
+    .collab-card:active {
+      transform: scale(0.99);
+    }
+  }
+}
+
+/* --- Global reduced-motion kill switch (audit P1-C #21) ---
+   Every transition/animation jumps to its final state for users with
+   prefers-reduced-motion: reduce. This covers the sidebar pill/accordion
+   (previously GSAP, which ignored the preference) and the card tilt. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
 }

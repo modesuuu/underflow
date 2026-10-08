@@ -46,7 +46,9 @@ const MEMBER_JENNY = {
 function makeSlots(filled: number, total: number): CollabMember[] {
   const real: CollabMember[] = [OWNER, MEMBER_KIMI, MEMBER_ALEX, MEMBER_JENNY];
   const members: CollabMember[] = real.slice(0, filled);
-  for (let i = real.length; i < total; i++) {
+  // Start from the FILLED count (members.length), not the pool size —
+  // otherwise open slots are silently dropped when filled < pool (audit P0-1).
+  for (let i = members.length; i < total; i++) {
     members.push({
       id: `slot-${i}`,
       name: "Open slot",
@@ -64,7 +66,8 @@ export const COLLAB_PROJECTS: CollabProject[] = [
     subtitle: "Need Frontend...",
     status: "open",
     type: "portfolio",
-    dueDate: "Dec 25, 26",
+    dueDate: "2026-12-25",
+    postedAt: "2026-10-04T00:00:00Z",
     postedAgo: "3d ago",
     slotsFilled: 2,
     slotsTotal: 4,
@@ -87,7 +90,8 @@ export const COLLAB_PROJECTS: CollabProject[] = [
     subtitle: "Need Frontend...",
     status: "open",
     type: "coursework",
-    dueDate: "Dec 25, 26",
+    dueDate: "2026-12-25",
+    postedAt: "2026-10-02T00:00:00Z",
     postedAgo: "5d ago",
     slotsFilled: 2,
     slotsTotal: 4,
@@ -105,7 +109,8 @@ export const COLLAB_PROJECTS: CollabProject[] = [
     subtitle: "Need Designer...",
     status: "open",
     type: "product",
-    dueDate: "Jan 15, 27",
+    dueDate: "2027-01-15",
+    postedAt: "2026-09-27T00:00:00Z",
     postedAgo: "1d ago",
     slotsFilled: 4,
     slotsTotal: 4,
@@ -123,7 +128,8 @@ export const COLLAB_PROJECTS: CollabProject[] = [
     subtitle: "Need Backend...",
     status: "open",
     type: "coursework",
-    dueDate: "Feb 01, 27",
+    dueDate: "2027-02-01",
+    postedAt: "2026-09-24T00:00:00Z",
     postedAgo: "7d ago",
     slotsFilled: 1,
     slotsTotal: 3,
@@ -141,7 +147,8 @@ export const COLLAB_PROJECTS: CollabProject[] = [
     subtitle: "Need ML Eng...",
     status: "in-progress",
     type: "product",
-    dueDate: "Mar 10, 27",
+    dueDate: "2027-03-10",
+    postedAt: "2026-09-25T00:00:00Z",
     postedAgo: "2d ago",
     slotsFilled: 3,
     slotsTotal: 5,
@@ -164,7 +171,8 @@ export const COLLAB_PROJECTS: CollabProject[] = [
     subtitle: "Need Writers...",
     status: "open",
     type: "portfolio",
-    dueDate: "Jan 30, 27",
+    dueDate: "2027-01-30",
+    postedAt: "2026-09-29T00:00:00Z",
     postedAgo: "4d ago",
     slotsFilled: 2,
     slotsTotal: 6,

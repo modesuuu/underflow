@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import clsx from "clsx";
 import type { Photo } from "../types";
 
@@ -9,6 +12,8 @@ interface TileProps {
 }
 
 function Tile({ photo, overlayCount = 0, onClick, className }: TileProps) {
+  const [broken, setBroken] = useState(false);
+
   return (
     <button
       type="button"
@@ -17,16 +22,26 @@ function Tile({ photo, overlayCount = 0, onClick, className }: TileProps) {
       disabled={!onClick}
       className={clsx(
         "relative overflow-hidden rounded-md bg-accent",
+        // P1-C #19: a keyboard-visible focus ring was missing on the tiles.
+        "focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none",
         onClick && "cursor-pointer",
         className
       )}
     >
-      {photo.url && (
+      {/* P1-C #19: a broken/missing URL paints a placeholder frame
+          (the lime `bg-accent` tile + a small image icon) instead of a
+          broken-image glyph. */}
+      {photo.url && !broken ? (
         <img
           src={photo.url}
           alt={photo.alt}
+          onError={() => setBroken(true)}
           className="absolute inset-0 h-full w-full object-cover"
         />
+      ) : (
+        <span className="absolute inset-0 flex items-center justify-center bg-accent">
+          <i className="bx bx-image-add text-2xl text-ink/40" aria-hidden="true" />
+        </span>
       )}
       {overlayCount > 0 && (
         <span className="absolute inset-0 flex items-center justify-center bg-black/50 text-xl font-medium text-white">

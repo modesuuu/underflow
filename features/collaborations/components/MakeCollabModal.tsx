@@ -36,6 +36,10 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
+  const firstFieldRef = useRef<HTMLInputElement>(null);
+  // P1-C #17: remember the trigger that opened the modal so focus can be
+  // restored on close.
+  const previousFocusRef = useRef<HTMLElement | null>(null);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [selectedSkills, setSelectedSkills] = useState<Set<string>>(new Set());
@@ -67,6 +71,45 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
     setClosing(true);
     onClose();
   };
+
+  // P1-C #17: dialog a11y — focus moves to the first field on open, is
+  // trapped while open, and returns to the trigger on close. Esc closes
+  // (previously it only cleared the custom-role draft).
+  useEffect(() => {
+    if (!open) return;
+    previousFocusRef.current = (document.activeElement as HTMLElement | null) ?? null;
+    firstFieldRef.current?.focus();
+
+    const onKeyDown = (e: globalThis.KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.stopPropagation();
+        requestClose();
+        return;
+      }
+      if (e.key !== "Tab" || !modalRef.current) return;
+      const focusable = modalRef.current.querySelectorAll<HTMLElement>(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      );
+      if (focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      const active = document.activeElement;
+      if (e.shiftKey && active === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && active === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      // Restore focus when the open-session ends (close or unmount).
+      previousFocusRef.current?.focus?.();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   // Track live blob URLs in a ref so the unmount cleanup revokes exactly the
   // ones still open (removed entries are already revoked inline).
@@ -152,8 +195,9 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
 
   // P2: open/close animations are CSS keyframes (globals.css .modal-*-in/out),
   // gated behind prefers-reduced-motion. GSAP was dropped for this trivial
-  // opacity/scale use — CSS is simpler and cheaper; GSAP stays for the
-  // sidebar pill motion which has real path/choreography.
+  // opacity/scale use — CSS is simpler and cheaper. (The sidebar migrated to
+  // CSS in the same round; gsap has no remaining source consumers and was
+  // removed from package.json.)
 
   const toggleSkill = (id: string) => {
     setSelectedSkills((prev) => {
@@ -184,7 +228,10 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
     await createCollabProject({
       title: title.trim(),
       description: description.trim(),
-      skills: SKILL_OPTIONS.filter((s) => selectedSkills.has(s.id)),
+      // P1-A #9: the contract takes skillIds (string[]), not SkillTag[].
+      skillIds: SKILL_OPTIONS.filter((s) => selectedSkills.has(s.id)).map(
+        (s) => s.id
+      ),
       slotsTotal: roleCount,
       photos: photoFiles,
       customRoles,
@@ -207,6 +254,9 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
     >
       <div
         ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="make-collab-title"
         onClick={(e) => e.stopPropagation()}
         className={clsx(
           "no-scrollbar max-h-[90vh] w-[596px] overflow-y-auto rounded-lg bg-bg p-6",
@@ -216,7 +266,9 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
         {/* Header */}
         <div className="mb-6 flex items-start justify-between">
           <div>
-            <h2 className="text-2xl font-medium">Make Collaborations</h2>
+            <h2 id="make-collab-title" className="text-2xl font-medium">
+              Create Project
+            </h2>
             <p className="mt-1 text-xs font-medium text-muted">
               Find your team, build your portfolio, ship real projects.
             </p>
@@ -234,8 +286,10 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
         <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-5">
           {/* Title */}
           <div className="flex flex-col gap-1">
-            <label className="text-base font-medium">Title</label>
+            <label htmlFor="make-collab-title-input" className="text-base font-medium">Title</label>
             <input
+              id="make-collab-title-input"
+              ref={firstFieldRef}
               type="text"
               value={title}
               onChange={(e) => {
@@ -257,8 +311,9 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
 
           {/* Descriptions */}
           <div className="flex flex-col gap-1">
-            <label className="text-base font-medium">Descriptions</label>
+            <label htmlFor="make-collab-desc-input" className="text-base font-medium">Descriptions</label>
             <textarea
+              id="make-collab-desc-input"
               value={description}
               onChange={(e) => {
                 setDescription(e.target.value);
@@ -343,16 +398,49 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
           </div>
 
           {/* Team size */}
+          {/* P1-D #22: this block previously rendered a static count with
+              setRoleCount never called, so every submission hard-coded
+              slotsTotal = 2. It is now a working stepper (1–10 open slots)
+              and the copy reads "Team size" (was the broken
+              "How many Role do you want to ?"). */}
           <div className="flex flex-col gap-3 mt-3">
-            <label className="text-base font-medium">
-              How many Role do you want to ?
+            <label
+              htmlFor="team-size-stepper"
+              className="text-base font-medium"
+            >
+              Team size
             </label>
-            <div className="flex items-center gap-3 justify-start">
-              <div className="flex items-center gap-1">
-                <span className="text-sm font-medium">{roleCount}</span>
-                <Icon name="group" size={20} className="text-ink" />
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  id="team-size-stepper"
+                  aria-label="Fewer team members"
+                  disabled={roleCount <= 1}
+                  onClick={() => setRoleCount((c) => Math.max(1, c - 1))}
+                  className="pressable flex size-8 cursor-pointer items-center justify-center rounded-full border border-line text-ink disabled:cursor-not-allowed disabled:opacity-40 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+                >
+                  <Icon name="minus" size={14} />
+                </button>
+                <span className="min-w-[52px] text-center text-sm font-medium">
+                  {roleCount}
+                </span>
+                <button
+                  type="button"
+                  aria-label="More team members"
+                  disabled={roleCount >= 10}
+                  onClick={() => setRoleCount((c) => Math.min(10, c + 1))}
+                  className="pressable flex size-8 cursor-pointer items-center justify-center rounded-full border border-line text-ink disabled:cursor-not-allowed disabled:opacity-40 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+                >
+                  <Icon name="plus" size={14} />
+                </button>
               </div>
-              {/* Owner slot */}
+              <span className="text-xs text-muted">
+                {roleCount === 1 ? "1 member" : `${roleCount} members`}
+              </span>
+            </div>
+            {/* Owner slot + the open slots implied by the current count. */}
+            <div className="flex flex-wrap items-center gap-4">
               <div className="flex items-center gap-2">
                 <div className="size-8 rounded-full bg-placeholder" />
                 <div className="flex flex-col">
@@ -362,16 +450,19 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
                   </span>
                 </div>
               </div>
-              {/* Open slot */}
-              <div className="flex items-center gap-2">
-                <div className="flex size-8 items-center justify-center rounded-full bg-placeholder">
-                  <Icon name="plus" size={14} className="text-ink" />
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-base font-medium">Open slot</span>
-                  <span className="text-2xs text-muted">Waiting....</span>
-                </div>
-              </div>
+              {Array.from({ length: Math.max(0, roleCount - 1) }).map(
+                (_, i) => (
+                  <div key={`open-${i}`} className="flex items-center gap-2">
+                    <div className="flex size-8 items-center justify-center rounded-full bg-placeholder">
+                      <Icon name="plus" size={14} className="text-ink" />
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-base font-medium">Open slot</span>
+                      <span className="text-2xs text-muted">Waiting....</span>
+                    </div>
+                  </div>
+                )
+              )}
             </div>
           </div>
 
@@ -395,15 +486,11 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
               <Icon name="image-add" size={20} />
               Photo
             </button>
-            {/* TODO(backend): reuse the same hidden-input pattern for file
-                attachments (non-image) once /api/upload exists. */}
-            <button
-              type="button"
-              className="pressable flex cursor-pointer items-center gap-1 text-base font-medium text-muted transition-colors hover:text-ink focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
-            >
-              <Icon name="paperclip" size={20} />
-              File
-            </button>
+            {/* P1-C #18: the "File" paperclip had no onClick / no hidden
+                input — removed until non-image attachments exist. The
+                TODO(backend) note stays here for the /api/upload hook:
+                reuse the same hidden-input pattern with a permissive
+                accept attribute (any file type). */}
           </div>
           {photoError && (
             <p className="text-xs font-medium text-badge" role="alert">
@@ -441,7 +528,7 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
             className="pressable flex w-full cursor-pointer items-center justify-center gap-2 rounded-md bg-accent py-3 text-base font-medium text-ink transition-opacity hover:opacity-85 disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
           >
             <Icon name="send" size={20} />
-            Make Collaborations
+            Create Project
           </button>
         </form>
       </div>

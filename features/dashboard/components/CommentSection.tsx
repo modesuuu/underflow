@@ -73,6 +73,9 @@ export function CommentSection({ initialComments, autoFocusComment = false }: Co
               }
             }}
             placeholder="Write your comment"
+            // P1-C #20: the input had no accessible name beyond the
+            // placeholder (placeholders disappear on focus) — add one.
+            aria-label="Write your comment"
             className="min-w-0 flex-1 bg-transparent text-base font-medium text-ink placeholder:text-muted focus:outline-none"
           />
           <button

@@ -11,6 +11,9 @@ export default async function Home() {
 
   return (
     <AppShell panel={<NotificationsPanel notifications={notifications} />}>
+      {/* P1-C #20: one real h1 per page — visually hidden so the
+          breadcrumb in the TopBar stays the visual heading. */}
+      <h1 className="sr-only">Feed</h1>
       <FeedColumn posts={posts} />
     </AppShell>
   );

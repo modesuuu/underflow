@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { AppShell } from "@/components/layout/AppShell";
 import { getDashboardPosts, getNotifications } from "@/features/dashboard/api";
@@ -11,6 +12,22 @@ import { Icon } from "@/components/ui/Icon";
 interface DetailPageProps {
   params: Promise<{ postId: string }>;
   searchParams: Promise<{ focus?: string }>;
+}
+
+// P1-B #14: every post previously fell back to the root tab title. Derive
+// per-post metadata (same pattern as app/collaborations/[projectId]).
+export async function generateMetadata({
+  params,
+}: DetailPageProps): Promise<Metadata> {
+  const { postId } = await params;
+  const posts = await getDashboardPosts();
+  const post = posts.find((p) => p.id === postId);
+  if (!post) return { title: "Post" };
+  const excerpt = post.text.length > 60 ? `${post.text.slice(0, 60)}…` : post.text;
+  return {
+    title: `${post.author.name} — Bareng`,
+    description: excerpt,
+  };
 }
 
 export default async function PostDetailPage({ params, searchParams }: DetailPageProps) {
@@ -31,6 +48,9 @@ export default async function PostDetailPage({ params, searchParams }: DetailPag
       backHref="/"
     >
       <div className="mx-auto flex w-full max-w-(--uf-content-w) flex-col gap-6 py-3">
+        {/* P1-C #20: one real h1 per page — visually hidden so the design
+            (small author name span) is untouched. */}
+        <h1 className="sr-only">Post by {post.author.name}</h1>
         {/* Post header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -40,9 +60,8 @@ export default async function PostDetailPage({ params, searchParams }: DetailPag
               <span className="text-2xs text-subtle">{post.postedAgo}</span>
             </div>
           </div>
-          <button type="button" aria-label="Post options" className="cursor-pointer text-muted transition-colors hover:text-ink">
-            <Icon name="dots-vertical-rounded" size={24} />
-          </button>
+          {/* P1-C #18: the "Post options" button had no onClick / no menu —
+              removed until the options menu exists (same for PostCard). */}
         </div>
 
         {/* Body */}

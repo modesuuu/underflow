@@ -2,7 +2,6 @@
 
 import { useRef, useState } from "react";
 import clsx from "clsx";
-import gsap from "gsap";
 import { useRouter } from "next/navigation";
 import { Avatar } from "@/components/ui/Avatar";
 import { Icon } from "@/components/ui/Icon";
@@ -20,18 +19,16 @@ function LikeButton({ liked, count, onToggle }: LikeButtonProps) {
   const bumpRef = useRef<HTMLSpanElement>(null);
 
   const handleClick = () => {
+    // WAAPI instead of GSAP: rapid re-clicks restart the same animation
+    // (no stacked tweens -> no snap). transform-origin center, scale bump.
     if (!liked && bumpRef.current) {
-      gsap.fromTo(
-        bumpRef.current,
-        { scale: 1 },
-        {
-          scale: 1.35,
-          duration: 0.15,
-          ease: "power2.out",
-          yoyo: true,
-          repeat: 1,
-          transformOrigin: "center center",
-        }
+      bumpRef.current.animate(
+        [
+          { transform: "scale(1)" },
+          { transform: "scale(1.35)", offset: 0.5 },
+          { transform: "scale(1)" },
+        ],
+        { duration: 300, easing: "cubic-bezier(0.23, 1, 0.32, 1)" }
       );
     }
     onToggle();
@@ -73,10 +70,11 @@ export function PostCard({ post }: { post: Post }) {
     router.push(`/dashboard/${post.id}?focus=comment`);
 
   const toggleLike = () => {
-    setLiked((prev) => {
-      setLikeCount((c) => (prev ? c - 1 : c + 1));
-      return !prev;
-    });
+    // Pure: no setState nested inside another updater (StrictMode double-fire
+    // otherwise shifts the count by ±2 per click — audit P0-2).
+    const next = !liked;
+    setLiked(next);
+    setLikeCount((c) => c + (next ? 1 : -1));
   };
 
   return (
@@ -90,13 +88,6 @@ export function PostCard({ post }: { post: Post }) {
             <span className="text-2xs text-subtle">{post.postedAgo}</span>
           </div>
         </div>
-        <button
-          type="button"
-          aria-label="Post options"
-          className="cursor-pointer text-muted transition-colors hover:text-ink"
-        >
-          <Icon name="dots-vertical-rounded" size={24} />
-        </button>
       </div>
 
       {/* Body */}
@@ -114,14 +105,10 @@ export function PostCard({ post }: { post: Post }) {
               </span>
             </span>
             <LikeButton liked={liked} count={likeCount} onToggle={toggleLike} />
-            <button
-              type="button"
-              onClick={openDetailAtComment}
-              className="flex cursor-pointer items-center gap-1"
-            >
-              <Icon name="message-rounded" size={24} className="text-ink" />
-              <span className="text-2xs font-medium">Comment</span>
-            </button>
+            {/* P1-F #31: the "Comment" counter button and the "Write your
+                comment" bar below opened the SAME target 24px apart — one
+                CTA per intent. The input bar is kept (primary); this
+                button is removed. */}
           </div>
         </div>
       </div>
