@@ -13,6 +13,10 @@
   --color-heart: var(--uf-heart);
   --color-placeholder: var(--uf-placeholder);
   --color-line: var(--uf-line);
+  --color-success: var(--uf-success);
+  --color-error: var(--uf-error);
+  --color-info: var(--uf-info);
+  --color-warning: var(--uf-warning);
 
   --font-sans: "PP Neue Montreal", ui-sans-serif, system-ui, -apple-system,
     sans-serif;

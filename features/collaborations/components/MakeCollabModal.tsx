@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type ChangeEvent, type FormEvent, type Key
 import clsx from "clsx";
 import { Icon } from "@/components/ui/Icon";
 import { createCollabProject } from "../api";
+import { useToast } from "@/components/ui/ToastProvider";
 import type { SkillTag } from "../types";
 
 const SKILL_OPTIONS: SkillTag[] = [
@@ -33,6 +34,7 @@ interface PhotoDraft {
 }
 
 export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
+  const toast = useToast();
   const overlayRef = useRef<HTMLDivElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
@@ -221,24 +223,40 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
     }
 
     setSubmitting(true);
-    // TODO(backend): POST /api/collaborations with form data
-    // TODO(backend): POST /api/upload for the selected photo Files,
-    // then include returned URLs in the project payload.
-    const photoFiles = photos.map((p) => p.file);
-    await createCollabProject({
-      title: title.trim(),
-      description: description.trim(),
-      // P1-A #9: the contract takes skillIds (string[]), not SkillTag[].
-      skillIds: SKILL_OPTIONS.filter((s) => selectedSkills.has(s.id)).map(
-        (s) => s.id
-      ),
-      slotsTotal: roleCount,
-      photos: photoFiles,
-      customRoles,
-    });
-    setSubmitting(false);
-    setClosing(false);
-    onClose();
+    try {
+      // TODO(backend): POST /api/collaborations with form data
+      // TODO(backend): POST /api/upload for the selected photo Files,
+      // then include returned URLs in the project payload.
+      const photoFiles = photos.map((p) => p.file);
+      await createCollabProject({
+        title: title.trim(),
+        description: description.trim(),
+        // P1-A #9: the contract takes skillIds (string[]), not SkillTag[].
+        skillIds: SKILL_OPTIONS.filter((s) => selectedSkills.has(s.id)).map(
+          (s) => s.id
+        ),
+        slotsTotal: roleCount,
+        photos: photoFiles,
+        customRoles,
+      });
+      
+      // Show success toast
+      toast.showToast({
+        tone: "success",
+        message: `Project "${title}" created successfully!`,
+      });
+      
+      setClosing(true);
+      onClose();
+    } catch (error) {
+      console.error("Failed to create project:", error);
+      toast.showToast({
+        tone: "error",
+        message: "Failed to create project. Please try again.",
+      });
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   if (!open && !closing) return null;
