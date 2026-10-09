@@ -8,6 +8,7 @@ import { Icon } from "@/components/ui/Icon";
 import { formatCount } from "@/lib/format";
 import type { Post } from "../types";
 import { PhotoGrid } from "@/components/ui/PhotoGrid";
+import { CommentThread } from "./CommentThread";
 
 interface LikeButtonProps {
   liked: boolean;
@@ -20,15 +21,17 @@ function LikeButton({ liked, count, onToggle }: LikeButtonProps) {
 
   const handleClick = () => {
     // WAAPI instead of GSAP: rapid re-clicks restart the same animation
-    // (no stacked tweens -> no snap). transform-origin center, scale bump.
+    // (no stacked tweens -> no snap). transform-only. Like gets a spring-
+    // style overshoot pop; unlike animates nothing (P1-F spec).
     if (!liked && bumpRef.current) {
       bumpRef.current.animate(
         [
           { transform: "scale(1)" },
-          { transform: "scale(1.35)", offset: 0.5 },
+          { transform: "scale(1.45)", offset: 0.4 },
+          { transform: "scale(0.92)", offset: 0.7 },
           { transform: "scale(1)" },
         ],
-        { duration: 300, easing: "cubic-bezier(0.23, 1, 0.32, 1)" }
+        { duration: 380, easing: "cubic-bezier(0.23, 1, 0.32, 1)" }
       );
     }
     onToggle();
@@ -44,6 +47,7 @@ function LikeButton({ liked, count, onToggle }: LikeButtonProps) {
       <span ref={bumpRef} className="inline-flex">
         <Icon
           name="heart"
+          solid={liked}
           size={24}
           className={liked ? "text-heart" : "text-ink"}
         />
@@ -60,10 +64,11 @@ function LikeButton({ liked, count, onToggle }: LikeButtonProps) {
   );
 }
 
-export function PostCard({ post }: { post: Post }) {
+export function PostCard({ post, inlineComments }: { post: Post; inlineComments?: boolean }) {
   const router = useRouter();
   const [liked, setLiked] = useState(post.liked);
   const [likeCount, setLikeCount] = useState(post.likes);
+  const [commentsOpen, setCommentsOpen] = useState(false);
 
   const openDetail = () => router.push(`/dashboard/${post.id}`);
   const openDetailAtComment = () =>
@@ -105,13 +110,61 @@ export function PostCard({ post }: { post: Post }) {
               </span>
             </span>
             <LikeButton liked={liked} count={likeCount} onToggle={toggleLike} />
-            {/* P1-F #31: the "Comment" counter button and the "Write your
-                comment" bar below opened the SAME target 24px apart — one
-                CTA per intent. The input bar is kept (primary); this
-                button is removed. */}
+            {/* P1-F: the comment counter is back with a different job — it
+                opens the thread INLINE in the card (no navigation). The
+                detail page still renders the full thread separately; this
+                toggle is only present in the feed (inlineComments). */}
+            {inlineComments && (
+              <button
+                type="button"
+                aria-expanded={commentsOpen}
+                aria-label={`${commentsOpen ? "Hide" : "Show"} ${post.comments.length} comment${post.comments.length === 1 ? "" : "s"}`}
+                onClick={() => setCommentsOpen((v) => !v)}
+                className="flex cursor-pointer items-center gap-1"
+              >
+                <Icon
+                  name="message"
+                  size={24}
+                  className={commentsOpen ? "text-accent" : "text-ink"}
+                />
+                <span
+                  className={clsx(
+                    "text-2xs font-medium",
+                    commentsOpen ? "text-accent" : "text-ink"
+                  )}
+                >
+                  {formatCount(post.comments.length)}
+                </span>
+              </button>
+            )}
           </div>
         </div>
       </div>
+
+      {/* Inline comment thread — grid-rows accordion (same pattern as the
+          sidebar), never a raw height animation. CommentThread returns null
+          for an empty array, so the empty-state text is rendered here. */}
+      {inlineComments && (
+        <div
+          className={
+            commentsOpen
+              ? "acc-wrap [grid-template-rows:1fr]"
+              : "acc-wrap [grid-template-rows:0fr]"
+          }
+        >
+          <div className="acc-inner">
+            <div className="flex flex-col gap-[42px] pt-2">
+              {post.comments.length === 0 ? (
+                <p className="text-sm text-muted">
+                  No comments yet — be the first to share your thoughts.
+                </p>
+              ) : (
+                <CommentThread comments={post.comments} />
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Comment bar */}
       <div className="flex items-center gap-3">

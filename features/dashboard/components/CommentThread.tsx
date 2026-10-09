@@ -19,16 +19,18 @@ function CommentItem({ comment, innerRef }: CommentItemProps) {
   const bumpRef = useRef<HTMLSpanElement>(null);
 
   const toggleLike = () => {
-    // WAAPI instead of GSAP (audit P1-E #26): rapid re-clicks restart the
-    // same animation instead of stacking tweens -> no visible snap.
+    // WAAPI instead of GSAP: rapid re-clicks restart the same animation
+    // instead of stacking tweens -> no visible snap. Like gets a spring-style
+    // overshoot pop; unlike animates nothing (P1-F spec, same as PostCard).
     if (!liked && bumpRef.current) {
       bumpRef.current.animate(
         [
           { transform: "scale(1)" },
-          { transform: "scale(1.35)", offset: 0.5 },
+          { transform: "scale(1.45)", offset: 0.4 },
+          { transform: "scale(0.92)", offset: 0.7 },
           { transform: "scale(1)" },
         ],
-        { duration: 300, easing: "cubic-bezier(0.23, 1, 0.32, 1)" }
+        { duration: 380, easing: "cubic-bezier(0.23, 1, 0.32, 1)" }
       );
     }
     // Pure state update (audit P0-2): no setState nested inside another
@@ -63,6 +65,7 @@ function CommentItem({ comment, innerRef }: CommentItemProps) {
         <span ref={bumpRef} className="inline-flex">
           <Icon
             name="heart"
+            solid={liked}
             size={24}
             className={liked ? "text-heart" : "text-ink"}
           />

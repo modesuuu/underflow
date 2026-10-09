@@ -99,6 +99,13 @@
     animation-delay: calc(var(--stagger-i, 0) * 50ms);
   }
 
+  /* Page entrance: one fade+rise for the whole feed column when the user
+     lands on / (from another page or a hard load). Not a per-card stagger
+     — the column enters as one block (P1-F spec). */
+  .page-enter {
+    animation: uf-card-in 320ms var(--uf-ease-out) backwards;
+  }
+
   /* Modal/lightbox open/close. Exits use the shared ease-out token and run
      FASTER than the 280ms entrance (exits read as snappier; audit P1-E
      #25/#29 — banned ease-in on exits). */
