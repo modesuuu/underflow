@@ -113,13 +113,13 @@
     animation: uf-fade-in 280ms var(--uf-ease-out);
   }
   .modal-overlay-out {
-    animation: uf-fade-out 180ms var(--uf-ease-out);
+    animation: uf-fade-out 180ms var(--uf-ease-out) forwards;
   }
   .modal-panel-in {
     animation: uf-modal-in 280ms var(--uf-ease-out);
   }
   .modal-panel-out {
-    animation: uf-modal-out 180ms var(--uf-ease-out);
+    animation: uf-modal-out 180ms var(--uf-ease-out) forwards;
   }
 
   /* Press feedback: subtle scale on :active (transition lives unlayered

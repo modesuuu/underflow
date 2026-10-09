@@ -63,7 +63,9 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
 
   useEffect(() => {
     if (!closing) return;
-    const t = setTimeout(() => setClosing(false), 260);
+    // The CSS out-animation is 180ms; hold the mount 200ms so the exit
+    // finishes before unmount (forwards fill keeps opacity 0 until then).
+    const t = setTimeout(() => setClosing(false), 200);
     return () => clearTimeout(t);
   }, [closing]);
 

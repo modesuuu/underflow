@@ -44,10 +44,11 @@ export function PhotoLightbox({ photos, startIndex, onClose }: PhotoLightboxProp
   const close = useCallback(() => {
     if (closing) return;
     setClosing(true);
-    // The CSS out-animation is 180ms; hold the mount until it finishes so
+    // The CSS out-animation is 180ms; hold the mount 200ms so it finishes
+    // before unmount (the forwards fill keeps opacity 0 until then), and
     // reduced-motion users (animation gated off -> instant) still unmount
-    // cleanly. The timeout also covers that no-animation path.
-    window.setTimeout(onClose, 220);
+    // cleanly via this same timeout.
+    window.setTimeout(onClose, 200);
   }, [closing, onClose]);
 
   // Open: move focus into the dialog and remember the trigger for restore.
