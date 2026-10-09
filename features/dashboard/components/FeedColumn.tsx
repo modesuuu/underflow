@@ -5,7 +5,7 @@ import { Icon } from "@/components/ui/Icon";
 
 export function FeedColumn({ posts }: { posts: Post[] }) {
   return (
-    <div className="page-enter mx-auto flex w-full flex-col gap-6 px-12 py-3">
+    <div className="page-enter mx-auto flex w-full max-w-(--uf-content-w) flex-col gap-6 py-3">
       {/* <Composer /> */}
       {posts.length === 0 ? (
         /* P1-B #16: empty feed state — previously this column rendered

@@ -1,13 +1,10 @@
 "use client";
 
-import { useState, type Ref } from "react";
-import clsx from "clsx";
-import { useRef } from "react";
+import { type Ref } from "react";
 import { Avatar } from "@/components/ui/Avatar";
-import { HeartIcon } from "@/components/ui/HeartIcon";
 import { Icon } from "@/components/ui/Icon";
 import type { PostComment } from "../types";
-import { formatCount } from "@/lib/format";
+import { LikeButton } from "./LikeButton";
 
 interface CommentItemProps {
   comment: PostComment;
@@ -15,32 +12,6 @@ interface CommentItemProps {
 }
 
 function CommentItem({ comment, innerRef }: CommentItemProps) {
-  const [liked, setLiked] = useState(comment.liked);
-  const [likeCount, setLikeCount] = useState(comment.likes);
-  const bumpRef = useRef<HTMLSpanElement>(null);
-
-  const toggleLike = () => {
-    // WAAPI instead of GSAP: rapid re-clicks restart the same animation
-    // instead of stacking tweens -> no visible snap. Like gets a spring-style
-    // overshoot pop; unlike animates nothing (P1-F spec, same as PostCard).
-    if (!liked && bumpRef.current) {
-      bumpRef.current.animate(
-        [
-          { transform: "scale(1)" },
-          { transform: "scale(1.45)", offset: 0.4 },
-          { transform: "scale(0.92)", offset: 0.7 },
-          { transform: "scale(1)" },
-        ],
-        { duration: 380, easing: "cubic-bezier(0.23, 1, 0.32, 1)" }
-      );
-    }
-    // Pure state update (audit P0-2): no setState nested inside another
-    // updater — StrictMode double-firing otherwise shifts the count ±2.
-    const next = !liked;
-    setLiked(next);
-    setLikeCount((c) => c + (next ? 1 : -1));
-  };
-
   return (
     <div ref={innerRef} className="flex flex-col gap-3">
       {/* Author + time */}
@@ -56,29 +27,15 @@ function CommentItem({ comment, innerRef }: CommentItemProps) {
       {/* Text */}
       <p className="text-base font-normal">{comment.text}</p>
 
-      {/* Like */}
-      <button
-        type="button"
-        aria-pressed={liked}
-        onClick={toggleLike}
-        className="flex w-fit cursor-pointer items-center gap-1"
-      >
-        <span ref={bumpRef} className="inline-flex">
-          <HeartIcon
-            filled={liked}
-            size={24}
-            className={liked ? "text-heart" : "text-ink"}
-          />
-        </span>
-        <span
-          className={clsx(
-            "text-2xs font-medium",
-            liked ? "text-heart" : "text-ink"
-          )}
-        >
-          {formatCount(likeCount)}
-        </span>
-      </button>
+      {/* Like — shared store so the like survives leaving and re-entering
+          the detail page (session memory until the like API exists). */}
+      <div className="w-fit">
+        <LikeButton
+          storeKey={`comment:${comment.id}`}
+          initialLiked={comment.liked}
+          initialLikes={comment.likes}
+        />
+      </div>
     </div>
   );
 }

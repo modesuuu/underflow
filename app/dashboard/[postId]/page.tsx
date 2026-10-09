@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { AppShell } from "@/components/layout/AppShell";
 import { getDashboardPosts, getNotifications } from "@/features/dashboard/api";
 import { CommentSection } from "@/features/dashboard/components/CommentSection";
+import { LikeButton } from "@/features/dashboard/components/LikeButton";
 import { NotificationsPanel } from "@/features/dashboard/components/NotificationsPanel";
 import { PhotoViewer } from "@/features/dashboard/components/PhotoViewer";
 import { formatCount } from "@/lib/format";
@@ -152,14 +153,11 @@ async function PostDetailAsync({
               <span className="text-2xs font-medium">{formatCount(post.views)}</span>
             </span>
             <span className="flex items-center gap-1">
-              <HeartIcon
-                filled={post.liked}
-                size={24}
-                className={post.liked ? "text-heart" : "text-ink"}
+              <LikeButton
+                storeKey={post.id}
+                initialLiked={post.liked}
+                initialLikes={post.likes}
               />
-              <span className={`text-2xs font-medium ${post.liked ? "text-heart" : "text-ink"}`}>
-                {formatCount(post.likes)}
-              </span>
             </span>
             <span className="flex items-center gap-1">
               <Icon name="message-rounded" size={24} className="text-ink" />
