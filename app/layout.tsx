@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import "boxicons/css/boxicons.min.css";
 import "./globals.css";
-import { ToastProvider } from "@/components/ui/ToastProvider";
 
 export const metadata: Metadata = {
   title: "Stack Underflow",
@@ -9,14 +8,10 @@ export const metadata: Metadata = {
     "Student collaboration hub: find portfolio projects, apply, and build together.",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className="h-full antialiased">
-      <body className="min-h-dvh bg-bg font-sans text-ink">
-        <ToastProvider>
-          {children}
-        </ToastProvider>
-      </body>
+      <body className="min-h-dvh bg-bg font-sans text-ink">{children}</body>
     </html>
   );
 }

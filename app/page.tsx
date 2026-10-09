@@ -4,11 +4,6 @@ import { getDashboardPosts, getNotifications } from "@/features/dashboard/api";
 import { FeedColumn } from "@/features/dashboard/components/FeedColumn";
 import { NotificationsPanel } from "@/features/dashboard/components/NotificationsPanel";
 
-export const metadata = {
-  title: "Feed | Stack Underflow",
-  description: "Browse student collaboration posts and updates.",
-};
-
 export default async function Home() {
   const [posts, notifications] = await Promise.all([
     getDashboardPosts(),

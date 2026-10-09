@@ -13,12 +13,6 @@
   --uf-placeholder: #d9d9d9;
   --uf-line: #6d6c6a;
 
-  /* Feedback colors */
-  --uf-success: #00c853;
-  --uf-error: #ff3b30;
-  --uf-info: #007aff;
-  --uf-warning: #ffcc00;
-
   --uf-radius-sm: 4px;
   --uf-radius-md: 6px;
   --uf-radius-lg: 12px;
