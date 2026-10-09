@@ -21,7 +21,7 @@ export function FeedColumn({ posts }: { posts: Post[] }) {
           </div>
         </div>
       ) : (
-        posts.map((post) => <PostCard key={post.id} post={post} inlineComments />)
+        posts.map((post) => <PostCard key={post.id} post={post} />)
       )}
     </div>
   );

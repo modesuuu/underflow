@@ -8,6 +8,7 @@ import { NotificationsPanel } from "@/features/dashboard/components/Notification
 import { PhotoViewer } from "@/features/dashboard/components/PhotoViewer";
 import { formatCount } from "@/lib/format";
 import { Avatar } from "@/components/ui/Avatar";
+import { HeartIcon } from "@/components/ui/HeartIcon";
 import { Icon } from "@/components/ui/Icon";
 
 interface DetailPageProps {
@@ -147,11 +148,15 @@ async function PostDetailAsync({
           {/* Counters */}
           <div className="flex items-center gap-3">
             <span className="flex items-center gap-1">
-              <Icon name="show-alt" size={24} className="text-ink" />
+              <Icon name="show" size={24} className="text-ink" />
               <span className="text-2xs font-medium">{formatCount(post.views)}</span>
             </span>
             <span className="flex items-center gap-1">
-              <Icon name="heart" size={24} className={post.liked ? "text-heart" : "text-ink"} />
+              <HeartIcon
+                filled={post.liked}
+                size={24}
+                className={post.liked ? "text-heart" : "text-ink"}
+              />
               <span className={`text-2xs font-medium ${post.liked ? "text-heart" : "text-ink"}`}>
                 {formatCount(post.likes)}
               </span>

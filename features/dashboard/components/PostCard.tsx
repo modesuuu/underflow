@@ -4,11 +4,11 @@ import { useRef, useState } from "react";
 import clsx from "clsx";
 import { useRouter } from "next/navigation";
 import { Avatar } from "@/components/ui/Avatar";
+import { HeartIcon } from "@/components/ui/HeartIcon";
 import { Icon } from "@/components/ui/Icon";
 import { formatCount } from "@/lib/format";
 import type { Post } from "../types";
 import { PhotoGrid } from "@/components/ui/PhotoGrid";
-import { CommentThread } from "./CommentThread";
 
 interface LikeButtonProps {
   liked: boolean;
@@ -45,9 +45,8 @@ function LikeButton({ liked, count, onToggle }: LikeButtonProps) {
       className="flex cursor-pointer items-center gap-1"
     >
       <span ref={bumpRef} className="inline-flex">
-        <Icon
-          name="heart"
-          solid={liked}
+        <HeartIcon
+          filled={liked}
           size={24}
           className={liked ? "text-heart" : "text-ink"}
         />
@@ -64,11 +63,10 @@ function LikeButton({ liked, count, onToggle }: LikeButtonProps) {
   );
 }
 
-export function PostCard({ post, inlineComments }: { post: Post; inlineComments?: boolean }) {
+export function PostCard({ post }: { post: Post }) {
   const router = useRouter();
   const [liked, setLiked] = useState(post.liked);
   const [likeCount, setLikeCount] = useState(post.likes);
-  const [commentsOpen, setCommentsOpen] = useState(false);
 
   const openDetail = () => router.push(`/dashboard/${post.id}`);
   const openDetailAtComment = () =>
@@ -104,67 +102,27 @@ export function PostCard({ post, inlineComments }: { post: Post; inlineComments?
           {/* Counters */}
           <div className="flex items-center gap-3">
             <span className="flex items-center gap-1">
-              <Icon name="show-alt" size={24} className="text-ink" />
+              <Icon name="show" size={24} className="text-ink" />
               <span className="text-2xs font-medium">
                 {formatCount(post.views)}
               </span>
             </span>
             <LikeButton liked={liked} count={likeCount} onToggle={toggleLike} />
-            {/* P1-F: the comment counter is back with a different job — it
-                opens the thread INLINE in the card (no navigation). The
-                detail page still renders the full thread separately; this
-                toggle is only present in the feed (inlineComments). */}
-            {inlineComments && (
-              <button
-                type="button"
-                aria-expanded={commentsOpen}
-                aria-label={`${commentsOpen ? "Hide" : "Show"} ${post.comments.length} comment${post.comments.length === 1 ? "" : "s"}`}
-                onClick={() => setCommentsOpen((v) => !v)}
-                className="flex cursor-pointer items-center gap-1"
-              >
-                <Icon
-                  name="message"
-                  size={24}
-                  className={commentsOpen ? "text-accent" : "text-ink"}
-                />
-                <span
-                  className={clsx(
-                    "text-2xs font-medium",
-                    commentsOpen ? "text-accent" : "text-ink"
-                  )}
-                >
-                  {formatCount(post.comments.length)}
-                </span>
-              </button>
-            )}
+            {/* Comment counter -> post detail at the composer (same target
+                as the "Write your comment" bar below). The thread itself
+                lives on the detail page; the feed does not inline it. */}
+            <button
+              type="button"
+              onClick={openDetailAtComment}
+              aria-label={`Comment on post by ${post.author.name}`}
+              className="flex cursor-pointer items-center gap-1"
+            >
+              <Icon name="message-rounded" size={24} className="text-ink" />
+              <span className="text-2xs font-medium text-ink">Comment</span>
+            </button>
           </div>
         </div>
       </div>
-
-      {/* Inline comment thread — grid-rows accordion (same pattern as the
-          sidebar), never a raw height animation. CommentThread returns null
-          for an empty array, so the empty-state text is rendered here. */}
-      {inlineComments && (
-        <div
-          className={
-            commentsOpen
-              ? "acc-wrap [grid-template-rows:1fr]"
-              : "acc-wrap [grid-template-rows:0fr]"
-          }
-        >
-          <div className="acc-inner">
-            <div className="flex flex-col gap-[42px] pt-2">
-              {post.comments.length === 0 ? (
-                <p className="text-sm text-muted">
-                  No comments yet — be the first to share your thoughts.
-                </p>
-              ) : (
-                <CommentThread comments={post.comments} />
-              )}
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Comment bar */}
       <div className="flex items-center gap-3">

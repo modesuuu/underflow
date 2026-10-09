@@ -4,6 +4,7 @@ import { useState, type Ref } from "react";
 import clsx from "clsx";
 import { useRef } from "react";
 import { Avatar } from "@/components/ui/Avatar";
+import { HeartIcon } from "@/components/ui/HeartIcon";
 import { Icon } from "@/components/ui/Icon";
 import type { PostComment } from "../types";
 import { formatCount } from "@/lib/format";
@@ -63,9 +64,8 @@ function CommentItem({ comment, innerRef }: CommentItemProps) {
         className="flex w-fit cursor-pointer items-center gap-1"
       >
         <span ref={bumpRef} className="inline-flex">
-          <Icon
-            name="heart"
-            solid={liked}
+          <HeartIcon
+            filled={liked}
             size={24}
             className={liked ? "text-heart" : "text-ink"}
           />
