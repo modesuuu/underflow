@@ -2,9 +2,10 @@ import { AppShell } from "@/components/layout/AppShell";
 
 /**
  * Root loading skeleton (P1-B #13) — shown while getDashboardPosts /
- * getNotifications suspend on `/` and `/dashboard/[postId]`. The
- * right-hand notifications panel is a simple stacked list; the feed
- * column is a stack of post cards (avatar + text lines + photo grid).
+ * getNotifications suspend on `/`. The right-hand notifications panel is a
+ * simple stacked list; the feed column is a stack of post cards
+ * (avatar + text lines + photo grid). /dashboard/[postId] has its own
+ * shaped skeleton (app/dashboard/[postId]/loading.tsx).
  */
 export default function RootLoading() {
   return (

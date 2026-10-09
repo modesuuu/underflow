@@ -4,7 +4,7 @@ import { NotificationsBell } from "@/components/layout/NotificationsBell";
 /**
  * Route-level loading.tsx for /my-collaborations — skeleton shaped like the
  * board: header + 4 vertical stat cards + search row + 4 column placeholders.
- * Covers the nested category/detail routes too (one boundary per tree).
+ * Nested category/detail routes have their own shaped skeletons.
  */
 export default function MyCollaborationsLoading() {
   return (
