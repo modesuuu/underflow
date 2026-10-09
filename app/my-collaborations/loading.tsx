@@ -30,14 +30,19 @@ export default function MyCollaborationsLoading() {
             </div>
           ))}
         </div>
+        {/* Toolbar mirrors MyCollabSearchBar: sort+filter icon buttons left,
+            search group (input + Search button) right */}
         <div className="flex items-center justify-between gap-4">
-          <div className="flex flex-1 items-center gap-2">
-            <div className="h-[42px] flex-1 rounded-md border border-line bg-surface px-4" />
-            <div className="h-[42px] w-24 rounded-md bg-placeholder" />
-          </div>
           <div className="flex items-center gap-2">
             <div className="size-[42px] rounded-sm bg-placeholder" />
             <div className="size-[42px] rounded-sm bg-placeholder" />
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="flex h-[42px] w-64 items-center gap-2 rounded-md border border-line bg-surface px-4">
+              <div className="size-4 shrink-0 rounded-full bg-placeholder" />
+              <div className="h-3 flex-1 rounded bg-placeholder" />
+            </div>
+            <div className="h-[42px] w-24 rounded-md bg-placeholder" />
           </div>
         </div>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">

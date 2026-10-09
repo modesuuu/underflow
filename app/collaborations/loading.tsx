@@ -3,9 +3,11 @@ import { CollabHeaderActions } from "@/features/collaborations/components/Collab
 
 /**
  * Route-level loading.tsx — shown while getCollabProjects() suspends in dev.
- * Skeleton mirrors the real page: 56px display title, long search input +
- * Search button + two 42px icon buttons, and an 8-card grid with the same
- * sm:col-span-2 featured first card and CollabCard anatomy.
+ * Skeleton mirrors the real page: 56px display title, two 42px sort/filter
+ * icon buttons left + search group right (same order as SearchFilterBar),
+ * and an 8-card grid with the same sm:col-span-2 featured first card and
+ * CollabCard anatomy. Cards use a fixed height — the real cards are equal
+ * height regardless of span width, so the featured card must not stretch.
  */
 export default function CollaborationsLoading() {
   return (
@@ -20,18 +22,19 @@ export default function CollaborationsLoading() {
           <div className="h-4 w-80 rounded-md bg-placeholder" />
         </div>
 
-        {/* Toolbar: long input + Search button, two icon buttons right */}
+        {/* Toolbar mirrors SearchFilterBar: sort+filter icon buttons left,
+            search group (input + Search button) right */}
         <div className="flex items-center justify-between gap-4">
-          <div className="flex flex-1 items-center gap-2">
-            <div className="flex h-[42px] flex-1 items-center gap-2 rounded-md border border-line bg-surface px-4">
-              <div className="size-4 rounded-full bg-placeholder" />
-              <div className="h-3 flex-1 rounded bg-placeholder" />
-            </div>
-            <div className="h-[42px] w-24 rounded-md bg-placeholder" />
-          </div>
           <div className="flex items-center gap-2">
             <div className="size-[42px] rounded-sm bg-placeholder" />
             <div className="size-[42px] rounded-sm bg-placeholder" />
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="flex h-[42px] w-64 items-center gap-2 rounded-md border border-line bg-surface px-4">
+              <div className="size-4 shrink-0 rounded-full bg-placeholder" />
+              <div className="h-3 flex-1 rounded bg-placeholder" />
+            </div>
+            <div className="h-[42px] w-24 rounded-md bg-placeholder" />
           </div>
         </div>
 
@@ -39,7 +42,7 @@ export default function CollaborationsLoading() {
           {Array.from({ length: 8 }).map((_, i) => (
             <div
               key={i}
-              className={`flex aspect-[246/235] flex-col justify-between rounded-xl bg-bg p-5 ${
+              className={`flex h-[235px] flex-col justify-between rounded-xl bg-bg p-5 ${
                 i === 0 ? "sm:col-span-2" : ""
               }`}
             >
