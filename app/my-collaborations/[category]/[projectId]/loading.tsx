@@ -81,7 +81,7 @@ export default function MyCollabDetailLoading() {
           <div className="h-5 w-28 rounded bg-placeholder" />
           <div className="flex flex-wrap gap-2">
             {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="h-8 w-24 rounded-full bg-accent/60" />
+              <div key={i} className="h-8 w-24 rounded-full bg-placeholder/60" />
             ))}
           </div>
         </div>
@@ -109,7 +109,7 @@ export default function MyCollabDetailLoading() {
         </div>
 
         {/* 7. Bottom CTA — disabled "Closed" (presentational this phase) */}
-        <div className="mx-auto h-12 w-64 rounded-md bg-ink/80" />
+        <div className="mx-auto h-12 w-64 rounded-full bg-placeholder" />
       </div>
     </AppShell>
   );

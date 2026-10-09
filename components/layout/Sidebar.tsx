@@ -8,7 +8,8 @@ import {
   useState,
 } from "react";
 import clsx from "clsx";
-import { usePathname, useRouter } from "next/navigation";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Avatar } from "@/components/ui/Avatar";
 import { Badge } from "@/components/ui/Badge";
 import { Icon } from "@/components/ui/Icon";
@@ -36,32 +37,21 @@ interface NavRowProps {
   active: boolean;
   badge?: number;
   onSelect: (id: string) => void;
-  registerRef: RegisterRef<HTMLButtonElement>;
+  registerRef: RegisterRef<HTMLElement>;
 }
 
 function NavRow({ item, active, badge, onSelect, registerRef }: NavRowProps) {
-  const router = useRouter();
+  // Items with an href are real <Link> anchors — Next.js prefetches the
+  // destination route shell on hover/appearance, so slow compiles no longer
+  // flash the wrong skeleton first (button + router.push had no prefetch).
+  // href-less items stay buttons. Either element is registered to the pill.
+  const className = clsx(
+    "relative z-10 flex w-full cursor-pointer items-center gap-1 rounded-md px-1 py-2 text-left",
+    !active && "nav-row-hoverable"
+  );
 
-  return (
-    <button
-      type="button"
-      ref={(el) => {
-        registerRef(item.id, el);
-      }}
-      onClick={() => {
-        onSelect(item.id);
-        if (item.href) router.push(item.href);
-      }}
-      // P1-E #28: hover background is the CSS `.nav-row-hoverable`
-      // transition (was a GSAP backgroundColor tween, off-GPU). Only
-      // non-active rows get the hover wash — the active row is pinned
-      // under the pill.
-      className={clsx(
-        "relative z-10 flex w-full cursor-pointer items-center gap-1 rounded-md px-1 py-2 text-left",
-        !active && "nav-row-hoverable"
-      )}
-      aria-current={active ? "page" : undefined}
-    >
+  const inner = (
+    <>
       <Icon
         name={item.icon}
         size={20}
@@ -79,6 +69,44 @@ function NavRow({ item, active, badge, onSelect, registerRef }: NavRowProps) {
       {badge !== undefined && badge > 0 && (
         <Badge count={badge} tone="danger" className="ml-auto" />
       )}
+    </>
+  );
+
+  if (item.href) {
+    return (
+      <Link
+        href={item.href}
+        ref={(el) => {
+          registerRef(item.id, el);
+        }}
+        onClick={() => {
+          onSelect(item.id);
+        }}
+        // P1-E #28: hover background is the CSS `.nav-row-hoverable`
+        // transition (was a GSAP backgroundColor tween, off-GPU). Only
+        // non-active rows get the hover wash — the active row is pinned
+        // under the pill.
+        className={className}
+        aria-current={active ? "page" : undefined}
+      >
+        {inner}
+      </Link>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      ref={(el) => {
+        registerRef(item.id, el);
+      }}
+      onClick={() => {
+        onSelect(item.id);
+      }}
+      className={className}
+      aria-current={active ? "page" : undefined}
+    >
+      {inner}
     </button>
   );
 }
@@ -90,7 +118,7 @@ interface NavSectionBlockProps {
   badgeFor: (id: string) => number | undefined;
   onToggle: (id: string) => void;
   onSelect: (id: string) => void;
-  registerRowRef: RegisterRef<HTMLButtonElement>;
+  registerRowRef: RegisterRef<HTMLElement>;
 }
 
 function NavSectionBlock({
@@ -164,7 +192,7 @@ export function Sidebar() {
 
   const areaRef = useRef<HTMLDivElement>(null);
   const pillRef = useRef<HTMLDivElement>(null);
-  const rowRefs = useRef(new Map<string, HTMLButtonElement>());
+  const rowRefs = useRef(new Map<string, HTMLElement>());
   const firstPill = useRef(true);
 
   // Sync activeId with pathname on navigation.
@@ -243,7 +271,7 @@ export function Sidebar() {
     window.setTimeout(() => positionPillRef.current(), 320);
   };
 
-  const registerRow: RegisterRef<HTMLButtonElement> = (id, el) => {
+  const registerRow: RegisterRef<HTMLElement> = (id, el) => {
     if (el) rowRefs.current.set(id, el);
     else rowRefs.current.delete(id);
   };

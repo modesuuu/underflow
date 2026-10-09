@@ -12,7 +12,7 @@ export default function MyCollabCategoryLoading() {
     <AppShell
       backLabel="My Collaborations"
       backHref="/my-collaborations"
-      breadcrumbRoot="Tools / My Collaborations"
+      breadcrumbRoot="Tools"
       breadcrumbLeaf="Category"
       actions={<NotificationsBell />}
     >
