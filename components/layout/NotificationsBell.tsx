@@ -63,7 +63,7 @@ export function NotificationsBell() {
         aria-haspopup="true"
         aria-expanded={bellOpen}
         onClick={() => setBellOpen((v) => !v)}
-        className="pressable cursor-pointer rounded-md p-1 text-ink focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+        className="pressable cursor-pointer rounded-sm p-1 text-ink focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
       >
         <Icon name="bell" size={20} />
       </button>
@@ -72,13 +72,13 @@ export function NotificationsBell() {
           ref={bellPanelRef}
           role="dialog"
           aria-label="Notifications"
-          className="absolute right-0 top-full z-50 mt-2 w-80 rounded-lg border border-line bg-surface p-3 shadow-lg"
+          className="sheet sheet-lift absolute right-0 top-full z-50 mt-2 w-80 p-3"
         >
-          <h3 className="mb-2 text-sm font-medium text-ink">Notifications</h3>
+          <h3 className="mb-2 border-b border-rule pb-2 text-xs font-semibold tracking-[0.06em] text-muted">Notifications</h3>
           {notifications.length === 0 ? (
             <p className="text-xs text-muted">No notifications.</p>
           ) : (
-            <ul className="flex flex-col divide-y divide-placeholder">
+            <ul className="flex flex-col divide-y divide-rule">
               {notifications.slice(0, 5).map((n) => (
                 <li key={n.id} className="flex flex-col gap-0.5 py-2">
                   <span className="text-xs font-medium text-ink">

@@ -83,7 +83,7 @@ export function PostCard({ post, index }: { post: Post; index?: number }) {
         <Avatar size={32} alt="You" />
         <span className="flex flex-1 items-baseline justify-between border-b border-rule pb-1">
           <span className="text-sm text-muted">Write your comment</span>
-          <Icon name="send" size={20} className="text-accent" />
+          <Icon name="send" size={20} className="text-ink" />
         </span>
       </button>
     </article>

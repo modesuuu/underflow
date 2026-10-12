@@ -60,7 +60,7 @@ export function CommentSection({ initialComments, autoFocusComment = false }: Co
       {/* Comment input bar */}
       <div className="flex items-center gap-3">
         <Avatar size={32} alt={CURRENT_USER.name} />
-        <div ref={inputBarRef} className="flex flex-1 items-center justify-between rounded-lg border border-accent bg-surface p-2">
+        <div ref={inputBarRef} className="flex flex-1 items-center justify-between border-b border-ink pb-1.5">
           <input
             ref={inputRef}
             type="text"
@@ -76,15 +76,15 @@ export function CommentSection({ initialComments, autoFocusComment = false }: Co
             // P1-C #20: the input had no accessible name beyond the
             // placeholder (placeholders disappear on focus) — add one.
             aria-label="Write your comment"
-            className="min-w-0 flex-1 bg-transparent text-base font-medium text-ink placeholder:text-muted focus:outline-none"
+            className="min-w-0 flex-1 bg-transparent text-sm text-ink outline-none placeholder:text-subtle"
           />
           <button
             type="button"
             aria-label="Send comment"
             onClick={submit}
-            className="shrink-0 cursor-pointer text-accent flex items-center"
+            className="pressable flex shrink-0 cursor-pointer items-center text-ink"
           >
-            <Icon name="send" size={24} />
+            <Icon name="send" size={20} />
           </button>
         </div>
       </div>

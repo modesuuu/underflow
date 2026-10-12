@@ -22,8 +22,8 @@ export default function RootError({
   }, [error]);
 
   return (
-    <div className="flex h-dvh flex-col items-center justify-center gap-4 bg-bg px-6 text-center">
-      <p className="text-2xl font-bold text-ink">Something went wrong</p>
+    <div className="pad-ruled flex h-dvh flex-col items-center justify-center gap-4 px-6 text-center">
+      <p className="text-2xl font-bold tracking-[-0.02em] text-ink">Something went wrong</p>
       <p className="max-w-sm text-sm text-muted">
         We couldn&apos;t load this page. This is usually a temporary
         glitch — give it another try.
@@ -32,13 +32,13 @@ export default function RootError({
         <button
           type="button"
           onClick={() => reset()}
-          className="pressable cursor-pointer rounded-md bg-accent px-4 py-2.5 text-sm font-medium text-ink transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+          className="pressable cursor-pointer rounded-sm bg-ink px-4 py-2.5 text-sm font-semibold text-surface focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
         >
           Try again
         </button>
         <Link
           href="/"
-          className="rounded-md px-4 py-2.5 text-sm font-medium text-muted transition-colors hover:text-ink focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+          className="rounded-sm px-4 py-2.5 text-sm font-medium text-muted transition-colors hover:text-ink focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
         >
           Go home
         </Link>

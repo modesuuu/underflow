@@ -131,15 +131,15 @@ export function PhotoLightbox({ photos, startIndex, onClose }: PhotoLightboxProp
             src={photo.url}
             alt={photo.alt}
             onError={() => setImgBroken(true)}
-            className="max-h-[80vh] w-auto max-w-full rounded-lg object-contain"
+            className="max-h-[80vh] w-auto max-w-full rounded-sm object-contain"
           />
         ) : (
           <div
             role="img"
             aria-label={photo.alt}
-            className="flex aspect-[4/3] max-h-[80vh] w-full items-center justify-center rounded-lg bg-bg"
+            className="flex aspect-[4/3] max-h-[80vh] w-full items-center justify-center rounded-sm border border-rule bg-surface"
           >
-            <Icon name="image-add" size={48} className="text-ink/40" />
+            <Icon name="image-add" size={48} className="text-subtle" />
           </div>
         )}
       </div>
@@ -153,7 +153,7 @@ export function PhotoLightbox({ photos, startIndex, onClose }: PhotoLightboxProp
               e.stopPropagation();
               setIndex((i) => (i - 1 + photos.length) % photos.length);
             }}
-            className="absolute left-4 top-1/2 -translate-y-1/2 cursor-pointer rounded-full bg-black/50 p-2 text-white transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+            className="pressable absolute left-4 top-1/2 -translate-y-1/2 cursor-pointer rounded-sm bg-black/60 p-2 text-white focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
           >
             <Icon name="chevron-left" size={24} />
           </button>
@@ -164,11 +164,11 @@ export function PhotoLightbox({ photos, startIndex, onClose }: PhotoLightboxProp
               e.stopPropagation();
               setIndex((i) => (i + 1) % photos.length);
             }}
-            className="absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer rounded-full bg-black/50 p-2 text-white transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+            className="pressable absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer rounded-sm bg-black/60 p-2 text-white focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
           >
             <Icon name="chevron-right" size={24} />
           </button>
-          <span className="absolute bottom-4 left-1/2 -translate-x-1/2 text-2xs font-medium text-white">
+          <span className="font-figures absolute bottom-4 left-1/2 -translate-x-1/2 text-2xs font-medium text-white">
             {index + 1} / {photos.length}
           </span>
         </>
@@ -179,7 +179,7 @@ export function PhotoLightbox({ photos, startIndex, onClose }: PhotoLightboxProp
         type="button"
         aria-label="Close preview"
         onClick={close}
-        className="absolute right-4 top-4 cursor-pointer rounded-full bg-black/50 p-2 text-white transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+        className="pressable absolute right-4 top-4 cursor-pointer rounded-sm bg-black/60 p-2 text-white focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
       >
         <Icon name="x" size={20} />
       </button>
