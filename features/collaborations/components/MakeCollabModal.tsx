@@ -261,17 +261,17 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
         aria-labelledby="make-collab-title"
         onClick={(e) => e.stopPropagation()}
         className={clsx(
-          "no-scrollbar max-h-[90vh] w-[596px] overflow-y-auto rounded-lg bg-bg p-6",
+          "no-scrollbar sheet max-h-[90vh] w-[596px] overflow-y-auto p-6",
           closing ? "modal-panel-out" : "modal-panel-in"
         )}
       >
         {/* Header */}
-        <div className="mb-6 flex items-start justify-between">
+        <div className="mb-6 flex items-start justify-between border-b border-rule pb-4">
           <div>
-            <h2 id="make-collab-title" className="text-2xl font-medium">
+            <h2 id="make-collab-title" className="text-xl font-semibold text-ink">
               Create Project
             </h2>
-            <p className="mt-1 text-xs font-medium text-muted">
+            <p className="mt-1 text-xs text-muted">
               Find your team, build your portfolio, ship real projects.
             </p>
           </div>
@@ -279,16 +279,16 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
             type="button"
             onClick={requestClose}
             aria-label="Close"
-            className="pressable cursor-pointer rounded-md p-1 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+            className="pressable cursor-pointer rounded-sm p-1 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
           >
-            <Icon name="x" size={24} className="text-ink" />
+            <Icon name="x" size={22} className="text-ink" />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-5">
           {/* Title */}
           <div className="flex flex-col gap-1">
-            <label htmlFor="make-collab-title-input" className="text-base font-medium">Title</label>
+            <label htmlFor="make-collab-title-input" className="text-xs font-semibold tracking-[0.06em] text-muted">Title</label>
             <input
               id="make-collab-title-input"
               ref={firstFieldRef}
@@ -302,7 +302,7 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
               placeholder="Title"
               required
               aria-invalid={fieldErrors.title ? true : undefined}
-              className="rounded-lg bg-surface px-4 py-3 text-base font-medium text-ink outline-none placeholder:text-muted focus-visible:ring-2 focus-visible:ring-accent"
+              className="rounded-sm border border-rule bg-surface px-4 py-3 text-sm text-ink outline-none placeholder:text-subtle focus-visible:border-ink focus-visible:ring-1 focus-visible:ring-ink"
             />
             {fieldErrors.title && (
               <p role="alert" className="text-xs font-medium text-badge">
@@ -313,7 +313,7 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
 
           {/* Descriptions */}
           <div className="flex flex-col gap-1">
-            <label htmlFor="make-collab-desc-input" className="text-base font-medium">Descriptions</label>
+            <label htmlFor="make-collab-desc-input" className="text-xs font-semibold tracking-[0.06em] text-muted">Descriptions</label>
             <textarea
               id="make-collab-desc-input"
               value={description}
@@ -326,7 +326,7 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
               required
               rows={3}
               aria-invalid={fieldErrors.description ? true : undefined}
-              className="resize-none rounded-lg bg-surface px-4 py-3 text-base font-medium text-ink outline-none placeholder:text-muted focus-visible:ring-2 focus-visible:ring-accent"
+              className="resize-none rounded-sm border border-rule bg-surface px-4 py-3 text-sm text-ink outline-none placeholder:text-subtle focus-visible:border-ink focus-visible:ring-1 focus-visible:ring-ink"
             />
             {fieldErrors.description && (
               <p role="alert" className="text-xs font-medium text-badge">
@@ -337,11 +337,11 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
 
           {/* Roles / Skills */}
           <div className="flex flex-col gap-3">
-            <label className="text-base font-medium">
+            <label className="text-xs font-semibold tracking-[0.06em] text-muted">
               What Role do you want to find?
             </label>
             {/* Custom role: real input + add button (replaces dead "Make Custom Role") */}
-            <div className="flex items-center gap-2 rounded-lg bg-surface px-4 py-3">
+            <div className="flex items-center gap-2 rounded-sm border border-rule bg-surface px-4 py-3">
               <input
                 type="text"
                 value={roleDraft}
@@ -355,9 +355,9 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
                 type="button"
                 onClick={addCustomRole}
                 aria-label="Add custom role"
-                className="pressable flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-sm bg-accent focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+                className="pressable flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-sm bg-ink focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
               >
-                <Icon name="plus" size={14} className="text-ink" />
+                <Icon name="plus" size={14} className="text-surface" />
               </button>
             </div>
             <div className="flex flex-wrap gap-2 mt-3">
@@ -370,8 +370,8 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
                     "pressable flex cursor-pointer items-center gap-1 rounded-full px-3 py-1.5 text-xs font-medium text-ink " +
                     "focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none " +
                     (selectedSkills.has(skill.id)
-                      ? "bg-accent"
-                      : "border border-line")
+                      ? "bg-ink text-surface"
+                      : "border border-rule text-ink")
                   }
                 >
                   {skill.icon && <Icon name={skill.icon} size={14} />}
@@ -382,7 +382,7 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
               {customRoles.map((role, i) => (
                 <span
                   key={`role-${i}`}
-                  className="flex items-center gap-1 rounded-full bg-accent px-3 py-1.5 text-xs font-medium text-ink"
+                  className="flex items-center gap-1 rounded-full bg-ink px-3 py-1.5 text-xs font-medium text-surface"
                 >
                   <Icon name="purchase-tag" size={14} />
                   {role}
@@ -420,7 +420,7 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
                   aria-label="Fewer team members"
                   disabled={roleCount <= 1}
                   onClick={() => setRoleCount((c) => Math.max(1, c - 1))}
-                  className="pressable flex size-8 cursor-pointer items-center justify-center rounded-full border border-line text-ink disabled:cursor-not-allowed disabled:opacity-40 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+                  className="pressable flex size-8 cursor-pointer items-center justify-center rounded-sm border border-rule text-ink disabled:cursor-not-allowed disabled:opacity-40 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
                 >
                   <Icon name="minus" size={14} />
                 </button>
@@ -432,7 +432,7 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
                   aria-label="More team members"
                   disabled={roleCount >= 10}
                   onClick={() => setRoleCount((c) => Math.min(10, c + 1))}
-                  className="pressable flex size-8 cursor-pointer items-center justify-center rounded-full border border-line text-ink disabled:cursor-not-allowed disabled:opacity-40 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+                  className="pressable flex size-8 cursor-pointer items-center justify-center rounded-sm border border-rule text-ink disabled:cursor-not-allowed disabled:opacity-40 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
                 >
                   <Icon name="plus" size={14} />
                 </button>
@@ -446,7 +446,7 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
               <div className="flex items-center gap-2">
                 <div className="size-8 rounded-full bg-placeholder" />
                 <div className="flex flex-col">
-                  <span className="text-base font-medium">Russel</span>
+                  <span className="text-xs font-semibold tracking-[0.06em] text-muted">Russel</span>
                   <span className="text-2xs text-muted">
                     Owner • Fullstack
                   </span>
@@ -459,7 +459,7 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
                       <Icon name="plus" size={14} className="text-ink" />
                     </div>
                     <div className="flex flex-col">
-                      <span className="text-base font-medium">Open slot</span>
+                      <span className="text-xs font-semibold tracking-[0.06em] text-muted">Open slot</span>
                       <span className="text-2xs text-muted">Waiting....</span>
                     </div>
                   </div>
@@ -503,12 +503,12 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
           {photos.length > 0 && (
             <div className="flex gap-2">
               {photos.map((photo, i) => (
-                <div key={photo.url} className="relative size-[100px] rounded-lg">
+                <div key={photo.url} className="relative size-[100px] rounded-sm">
                   {/* Plain <img> — blob: URLs are not supported by next/image. */}
                   <img
                     src={photo.url}
                     alt={`Photo preview ${i + 1}`}
-                    className="size-[100px] rounded-lg object-cover"
+                    className="size-[100px] rounded-sm object-cover"
                   />
                   <button
                     type="button"
@@ -527,7 +527,7 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
           <button
             type="submit"
             disabled={submitting}
-            className="pressable flex w-full cursor-pointer items-center justify-center gap-2 rounded-md bg-accent py-3 text-base font-medium text-ink transition-opacity hover:opacity-85 disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+            className="pressable flex w-full cursor-pointer items-center justify-center gap-2 rounded-sm bg-ink py-3 text-sm font-semibold text-surface disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
           >
             <Icon name="send" size={20} />
             Create Project

@@ -11,12 +11,14 @@ const HELPER_TEXT =
 
 interface ApplyCtaProps {
   projectId: string;
-  /** True when slotsFilled >= slotsTotal: grey + disabled button, no interaction. */
+  /** True when slotsFilled >= slotsTotal: disabled control, no interaction. */
   slotsFull?: boolean;
   /** Force a terminal state from server data once the backend exists. */
   initialState?: ApplyState;
 }
 
+/* The closing line of the detail page: the one solid graphite control, plus
+   the helper line that says what happens next. */
 export function ApplyCta({
   projectId,
   slotsFull = false,
@@ -27,7 +29,7 @@ export function ApplyCta({
 
   const handleApply = async () => {
     setSubmitting(true);
-    // TODO(backend): POST /api/collaborations/:id/apply — response should set the real status
+    // TODO(backend): POST /api/collaborations/:id/apply — response sets the real status
     await applyToCollab(projectId);
     setSubmitting(false);
     setState("pending");
@@ -39,13 +41,13 @@ export function ApplyCta({
   };
 
   return (
-    <div className="flex flex-col gap-3 items-center rounded-2xl bg-bg p-6">
+    <div className="sheet flex flex-col items-center gap-3 p-6">
       {state === "default" &&
         (slotsFull ? (
           <button
             type="button"
             disabled
-            className="w-full cursor-not-allowed rounded-full bg-placeholder py-3 text-base font-medium text-muted"
+            className="w-full cursor-not-allowed rounded-sm border border-rule py-3 text-sm font-semibold text-subtle"
           >
             Apply to this project
           </button>
@@ -54,22 +56,22 @@ export function ApplyCta({
             type="button"
             onClick={handleApply}
             disabled={submitting}
-            className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-accent py-3 text-base font-medium text-ink transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none disabled:opacity-50"
+            className="pressable flex w-full cursor-pointer items-center justify-center gap-2 rounded-sm bg-ink py-3 text-sm font-semibold text-surface disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
           >
-            <Icon name="send" size={20} />
+            <Icon name="send" size={18} />
             Apply to this project
           </button>
         ))}
 
       {state === "pending" && (
-        <div className="flex gap-2 w-full">
-          <div className="flex flex-1 items-center justify-center w-full rounded-md border border-line py-3 text-base font-medium text-muted">
+        <div className="flex w-full gap-2">
+          <div className="flex flex-1 items-center justify-center rounded-sm border border-rule py-3 text-sm font-medium text-muted">
             Pending
           </div>
           <button
             type="button"
             onClick={handleCancel}
-            className="flex-1 cursor-pointer rounded-md bg-badge py-3 text-base font-medium text-surface transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+            className="pressable flex-1 cursor-pointer rounded-sm bg-margin py-3 text-sm font-semibold text-surface focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
           >
             Cancel Application
           </button>
@@ -77,24 +79,23 @@ export function ApplyCta({
       )}
 
       {state === "entered" && (
-        <div className="rounded-full bg-accent py-3 text-center text-base font-medium text-ink">
+        <div className="w-full rounded-sm bg-ink py-3 text-center text-sm font-semibold text-surface">
           You have entered this project
         </div>
       )}
 
       {state === "declined" && (
-        <div className="rounded-full bg-placeholder py-3 text-center text-base font-medium text-muted">
+        <div className="w-full rounded-sm border border-rule py-3 text-center text-sm font-medium text-muted">
           Your application was declined by the owner
         </div>
       )}
 
       {state === "closed" && (
-        <div className="rounded-full bg-bg py-3 text-center text-base font-medium text-muted">
+        <div className="w-full rounded-sm bg-bg py-3 text-center text-sm font-medium text-muted">
           This project is closed
         </div>
       )}
 
-      {/* Helper text below the button, per Figma "Collaborations - Details" */}
       <p className="text-xs text-muted">{HELPER_TEXT}</p>
     </div>
   );

@@ -3,119 +3,106 @@
 import Link from "next/link";
 import { Icon } from "@/components/ui/Icon";
 import { Avatar } from "@/components/ui/Avatar";
+import { CapacityStrip } from "@/components/ui/CapacityStrip";
+import { EntryNumber } from "@/components/ui/Sheet";
 import { formatDueDate } from "../sort";
 import type { CollabProject } from "../types";
 
-/** Dark-charcoal fallback placeholder (no token — eyeballed from design). */
-const CHARCOAL_PLACEHOLDER = "#3a3a3a";
-
 interface CollabCardProps {
   project: CollabProject;
+  index?: number;
 }
 
-/**
- * Project card (Figma node 611-2 `collaborations-user-public`, 400% audit).
- * Default: flat light-gray card, no border/shadow. Status = joystick icon +
- * plain text (no pill, no bookmark). Hover: -8deg tilt + white bg + shadow +
- * 1.03 scale, with a hairline divider fading in between due-row and footer.
- */
-export function CollabCard({ project }: CollabCardProps) {
+/* A project card is a catalogue entry on the pad: sheet, entry number, status
+   tag, title, the capacity strip (the signature move — its slot budget is the
+   first-class number), due date, team, apply. */
+export function CollabCard({ project, index }: CollabCardProps) {
   const isFull = project.slotsFilled >= project.slotsTotal;
   const avatarA = project.members[0];
   const avatarB = project.members[1];
 
   return (
-    <article
-      className={
-        "collab-card group relative flex origin-center flex-col rounded-xl bg-[#F1F0EE] p-5 " +
-        "h-full " +
-        /* P1-E #27: tilt + bg + shadow + active-press now live in
-           globals.css `.collab-card`, gated behind
-           @media (hover:hover) and (pointer:fine) — so touch/sticky-tap
-           devices don't get a stuck :hover tilt. No JS; pure CSS. */
-        "active:scale-[0.99]"
-      }
-    >
+    <article className="collab-card sheet group relative flex h-full flex-col p-5">
       {/* Stretched link — whole card clickable, keyboard reachable */}
       <Link
         href={`/collaborations/${project.id}`}
         aria-label={`View ${project.title}`}
-        className="absolute inset-0 z-0 rounded-xl focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+        className="absolute inset-0 z-0 rounded-lg focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
       />
 
       {/* Content — pointer-events disabled so the link owns the hit area */}
-      <div className="pointer-events-none relative z-10 flex flex-col">
-        {/* Status row: joystick + plain text, top-right corner empty */}
-        <div className="flex items-center gap-1.5">
-          <Icon name="joystick" size={16} className="text-ink" />
-          <span className="text-[13px] font-medium text-ink">
-            {project.status}
+      <div className="pointer-events-none relative z-10 flex flex-1 flex-col">
+        {/* Status row + entry number */}
+        <div className="flex items-start justify-between">
+          <span className="inline-flex items-center gap-1.5 rounded-pill border border-rule px-2 py-0.5">
+            <span className="size-1.5 rounded-full bg-ink" />
+            <span className="text-2xs font-medium text-ink">
+              {project.status}
+            </span>
           </span>
+          {index !== undefined && (
+            <EntryNumber value={`#${String(index + 1).padStart(3, "0")}`} />
+          )}
         </div>
 
         {/* Title */}
-        <h3 className="mt-2 line-clamp-2 text-[28px] font-extrabold leading-[1.15] text-ink">
+        <h3 className="mt-3 line-clamp-2 text-2xl font-bold leading-tight tracking-[-0.01em] text-ink">
           {project.title}
         </h3>
 
-        {/* Subtitle — single line, 3-dot ellipsis */}
-        <p className="mt-2 line-clamp-1 text-[15px] font-medium text-muted">
+        {/* Subtitle */}
+        <p className="mt-2 line-clamp-1 text-sm text-muted">
           {project.subtitle}
         </p>
 
-        {/* Due row: solid black calendar + "Due to:" label + bold date */}
-        <div className="mt-4 flex items-center gap-1.5">
-          <Icon name="calendar" solid size={14} className="text-ink" />
-          <span className="text-[13px] text-muted">Due to:</span>
-          <span className="text-[13px] font-semibold text-ink">
+        {/* The capacity strip — signature move */}
+        <div className="mt-4">
+          <CapacityStrip filled={project.slotsFilled} total={project.slotsTotal} />
+        </div>
+
+        {/* Due row */}
+        <div className="mt-3 flex items-center gap-1.5">
+          <Icon name="calendar" size={14} className="text-subtle" />
+          <span className="text-2xs text-muted">Due</span>
+          <span className="font-figures text-2xs font-medium text-ink">
             {formatDueDate(project.dueDate)}
           </span>
         </div>
       </div>
 
-      {/* Footer pinned near bottom; divider fades in on hover */}
-      <div className="relative z-10 mt-auto pt-7">
-        <div
-          aria-hidden="true"
-          className="h-0.5 bg-placeholder"
-        />
-        <div className="pointer-events-auto flex items-center justify-between pt-4">
-          {/* Left: avatar pair + filled/total count */}
+      {/* Footer pinned near bottom */}
+      <div className="relative z-10 mt-auto border-t border-rule pt-4">
+        <div className="pointer-events-auto flex items-center justify-between">
           <div className="flex items-center">
             <div className="relative flex">
               <Avatar
-                size={28}
+                size={26}
                 src={avatarA?.avatarUrl}
                 alt={avatarA?.name ?? "Member"}
-                className="ring-2 ring-bg"
-                placeholderBg={avatarA?.avatarUrl ? undefined : CHARCOAL_PLACEHOLDER}
+                className="ring-2 ring-surface"
               />
               <Avatar
-                size={28}
+                size={26}
                 src={avatarB?.avatarUrl}
                 alt={avatarB?.name ?? "Member"}
-                className="-ml-3 ring-2 ring-bg"
-                placeholderBg={avatarB?.avatarUrl ? undefined : "var(--uf-placeholder)"}
+                className="-ml-2.5 ring-2 ring-surface"
               />
             </div>
-            <span className="ml-2 text-xs text-muted">
-              {project.slotsFilled} / {project.slotsTotal}
-            </span>
           </div>
 
-          {/* Right: Apply / Full */}
+          {/* The one solid control on the card is the action. */}
           <button
             type="button"
             disabled={isFull}
             aria-label={isFull ? "Slots full" : `Apply to ${project.title}`}
             className={
               isFull
-                ? "flex items-center gap-1.5 rounded-xl bg-placeholder px-5 py-2.5 text-sm font-semibold text-muted"
-                : "pressable flex cursor-pointer items-center gap-1.5 rounded-xl bg-accent px-5 py-2.5 text-sm font-semibold text-ink transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+                ? "flex items-center gap-1.5 rounded-sm border border-rule px-4 py-1.5 text-xs font-semibold text-subtle"
+                : "pressable flex cursor-pointer items-center gap-1.5 rounded-sm bg-ink px-4 py-1.5 text-xs font-semibold text-surface focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
             }
           >
             {isFull ? "Full" : "Apply"}
-            {!isFull && <Icon name="send" size={14} />}
+            {!isFull && <Icon name="send" size={13} />}
           </button>
         </div>
       </div>
