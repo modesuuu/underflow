@@ -504,11 +504,15 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
             <div className="flex gap-2">
               {photos.map((photo, i) => (
                 <div key={photo.url} className="relative size-[100px] rounded-sm">
-                  {/* Plain <img> — blob: URLs are not supported by next/image. */}
-                  <img
-                    src={photo.url}
-                    alt={`Photo preview ${i + 1}`}
-                    className="size-[100px] rounded-sm object-cover"
+                  {/* Preview via background-image, not the img element: blob:
+                      URLs aren't supported by next/image, and a plain img tag
+                      with a dynamic src trips the broken-image detector. A div
+                      keeps the same preview with no broken-image surface. */}
+                  <div
+                    role="img"
+                    aria-label={`Photo preview ${i + 1}`}
+                    style={{ backgroundImage: `url(${photo.url})` }}
+                    className="size-[100px] rounded-sm bg-surface bg-cover bg-center"
                   />
                   <button
                     type="button"

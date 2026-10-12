@@ -228,20 +228,13 @@
   overflow: hidden;
 }
 
-/* Collab card: the one interactive container that lifts. Pointer-gated so the
-   state cannot stick on touch. No rotation; the offset edge deepens. */
-@media (prefers-reduced-motion: no-preference) {
-  @media (hover: hover) and (pointer: fine) {
-    .collab-card {
-      transition:
-        box-shadow 180ms var(--uf-ease-out),
-        border-color 180ms var(--uf-ease-out),
-        background-color 180ms var(--uf-ease-out);
-    }
-    .collab-card:hover {
-      box-shadow: var(--uf-sheet-shadow-lift);
-      border-color: var(--uf-ink);
-    }
+/* Collab card hover: a colour change only (DESIGN.md bans per-card hover
+   motion, tilt, and lift-and-shadow). The border deepens to graphite; no
+   shadow, no transition, no movement. Pointer-gated so the state cannot
+   stick on touch. */
+@media (hover: hover) and (pointer: fine) {
+  .collab-card:hover {
+    border-color: var(--uf-ink);
   }
 }
 

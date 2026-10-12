@@ -61,7 +61,7 @@ function MyCollabDetailLoadingBody() {
             {Array.from({ length: 5 }).map((_, i) => (
               <div
                 key={i}
-                className="h-[12px] w-[12px] rounded-[1px] bg-placeholder"
+                className="h-[10px] w-[6px] rounded-[1px] bg-placeholder"
               />
             ))}
           </div>
@@ -122,7 +122,7 @@ function MyCollabDetailLoadingBody() {
               {Array.from({ length: 5 }).map((_, i) => (
                 <div
                   key={i}
-                  className="h-[12px] w-[12px] rounded-[1px] bg-placeholder"
+                  className="h-[10px] w-[6px] rounded-[1px] bg-placeholder"
                 />
               ))}
             </div>
