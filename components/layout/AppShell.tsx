@@ -4,7 +4,6 @@ import { TopBar, type TopBarVariant } from "./TopBar";
 
 interface AppShellProps {
   children: ReactNode;
-  panel?: ReactNode;
   breadcrumbRoot?: string;
   breadcrumbLeaf?: string;
   backLabel?: string;
@@ -18,7 +17,6 @@ interface AppShellProps {
 
 export function AppShell({
   children,
-  panel,
   breadcrumbRoot = "Dashboard",
   breadcrumbLeaf = "Feed",
   backLabel = "Feed",
@@ -43,11 +41,6 @@ export function AppShell({
         )}
         {children}
       </main>
-      {panel !== undefined && (
-        <aside className="no-scrollbar w-(--uf-panel-w) shrink-0 overflow-y-auto border-l border-line bg-surface">
-          {panel}
-        </aside>
-      )}
     </div>
   );
 }

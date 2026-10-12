@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { Icon } from "@/components/ui/Icon";
+import { NotificationsBell } from "./NotificationsBell";
 
 export type TopBarVariant = "dashboard" | "detail";
 
@@ -77,7 +78,10 @@ export function TopBar({
         <Breadcrumb root={breadcrumbRoot} leaf={breadcrumbLeaf} />
       </div>
 
-      <div className="flex items-center gap-6">{actions}</div>
+      <div className="flex items-center gap-6">
+        <NotificationsBell />
+        {actions}
+      </div>
 
       <span
         ref={borderRef}

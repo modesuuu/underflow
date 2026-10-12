@@ -2,12 +2,10 @@ import { Suspense } from "react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { AppShell } from "@/components/layout/AppShell";
-import { NotificationsBell } from "@/components/layout/NotificationsBell";
 import { getMyCollabProject } from "@/features/my-collaborations/api";
 import { MyCollabDetailContent } from "@/features/my-collaborations/components/MyCollabDetailContent";
 import { getCategory } from "@/features/my-collaborations/types";
 import { getNotifications } from "@/features/dashboard/api";
-import { NotificationsPanel } from "@/features/dashboard/components/NotificationsPanel";
 
 interface DetailPageProps {
   params: Promise<{ category: string; projectId: string }>;
@@ -34,16 +32,6 @@ export async function generateMetadata({
 function MyCollabDetailLoadingBody() {
   return (
     <AppShell
-      panel={
-        <div className="flex flex-col gap-5 p-6">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="flex flex-col gap-2 rounded-lg bg-bg p-4">
-              <div className="h-3.5 w-3/4 rounded bg-placeholder" />
-              <div className="h-3 w-1/2 rounded bg-placeholder" />
-            </div>
-          ))}
-        </div>
-      }
       variant="detail"
       backLabel="Category"
       backHref="/my-collaborations"
@@ -164,8 +152,7 @@ async function MyCollabDetailAsync({
       backHref={`/my-collaborations/${cat.slug}`}
       breadcrumbRoot={`Tools / My Collaborations / ${cat.crumbLabel}`}
       breadcrumbLeaf={project.title}
-      panel={<NotificationsPanel notifications={notifications} />}
-      actions={<NotificationsBell />}
+      actions={null}
     >
       <MyCollabDetailContent project={project} />
     </AppShell>

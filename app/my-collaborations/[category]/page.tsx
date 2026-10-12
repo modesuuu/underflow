@@ -2,7 +2,6 @@ import { Suspense } from "react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { AppShell } from "@/components/layout/AppShell";
-import { NotificationsBell } from "@/components/layout/NotificationsBell";
 import { getMyCollabProjects } from "@/features/my-collaborations/api";
 import { MyCollabCategoryGrid } from "@/features/my-collaborations/components/MyCollabCategoryGrid";
 import { getCategory } from "@/features/my-collaborations/types";
@@ -86,7 +85,7 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
       backHref="/my-collaborations"
       breadcrumbRoot="Tools / My Collaborations"
       breadcrumbLeaf={cat.crumbLabel}
-      actions={<NotificationsBell />}
+      actions={null}
     >
       <div className="flex flex-col gap-6 px-6 py-8">
         <div className="flex flex-col gap-2">

@@ -3,7 +3,6 @@ import { AppShell } from "@/components/layout/AppShell";
 import { PostButton } from "@/components/layout/PostButton";
 import { getDashboardPosts, getNotifications } from "@/features/dashboard/api";
 import { FeedColumn } from "@/features/dashboard/components/FeedColumn";
-import { NotificationsPanel } from "@/features/dashboard/components/NotificationsPanel";
 
 /**
  * The feed page keeps its own shaped skeleton (post-card stack + notifications
@@ -56,19 +55,10 @@ async function FeedColumnAsync() {
   return <FeedColumn posts={posts} />;
 }
 
-async function NotificationsPanelAsync() {
-  const notifications = await getNotifications();
-  return <NotificationsPanel notifications={notifications} />;
-}
 
 export default function Home() {
   return (
     <AppShell
-      panel={
-        <Suspense fallback={<NotificationsSkeleton />}>
-          <NotificationsPanelAsync />
-        </Suspense>
-      }
       actions={<PostButton />}
     >
       {/* P1-C #20: one real h1 per page — visually hidden so the

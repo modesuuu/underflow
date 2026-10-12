@@ -1,96 +1,62 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Icon } from "@/components/ui/Icon";
+import { NotificationDrawer } from "./NotificationDrawer";
 import { getNotifications } from "@/features/dashboard/api";
 import type { NotificationItem } from "@/features/dashboard/types";
 
 /**
- * Bell + notifications dropdown (read-only). Extracted from
- * CollabHeaderActions so /my-collaborations can reuse it without dragging in
- * the Create Project button. Outside-click / Escape close included.
+ * Bell in the TopBar. Opens the notification drawer (slide-over) instead of the
+ * old fixed right rail; the badge shows the unread count and the drawer keeps
+ * the panel's read/unread behaviour intact.
  */
 export function NotificationsBell() {
-  const [bellOpen, setBellOpen] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
 
-  const bellBtnRef = useRef<HTMLButtonElement>(null);
-  const bellPanelRef = useRef<HTMLDivElement>(null);
-
-  // Load notifications lazily on first bell open
+  // Seed the unread badge as soon as the bell mounts.
   useEffect(() => {
-    if (!bellOpen) return;
     let cancelled = false;
     getNotifications()
       .then((n) => {
-        if (!cancelled) setNotifications(n);
+        if (cancelled) return;
+        setNotifications(n);
       })
       .catch(() => {
-        /* mock path cannot fail; real API errors just leave the list empty */
+        /* mock path cannot fail */
       });
     return () => {
       cancelled = true;
     };
-  }, [bellOpen]);
+  }, []);
 
-  // Close on outside-click / Escape
-  useEffect(() => {
-    if (!bellOpen) return;
-
-    const onPointerDown = (e: PointerEvent) => {
-      const target = e.target as Node;
-      if (bellBtnRef.current?.contains(target)) return;
-      if (bellPanelRef.current?.contains(target)) return;
-      setBellOpen(false);
-    };
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setBellOpen(false);
-    };
-    document.addEventListener("pointerdown", onPointerDown);
-    document.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.removeEventListener("pointerdown", onPointerDown);
-      document.removeEventListener("keydown", onKeyDown);
-    };
-  }, [bellOpen]);
+  const unread = notifications.filter((n) => !n.read).length;
 
   return (
-    <div className="relative">
+    <>
       <button
-        ref={bellBtnRef}
         type="button"
         aria-label="Notifications"
-        aria-haspopup="true"
-        aria-expanded={bellOpen}
-        onClick={() => setBellOpen((v) => !v)}
-        className="pressable cursor-pointer rounded-md p-1 text-ink focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+        aria-haspopup="dialog"
+        aria-expanded={drawerOpen}
+        onClick={() => setDrawerOpen(true)}
+        className="pressable relative cursor-pointer rounded-md p-1 text-ink transition-colors hover:bg-bg focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
       >
         <Icon name="bell" size={20} />
+        {unread > 0 && (
+          <span
+            aria-live="polite"
+            className="absolute -right-0.5 -top-0.5 flex size-4 min-w-4 items-center justify-center rounded-pill bg-badge font-mono text-[9px] font-medium leading-none text-white"
+          >
+            {unread}
+          </span>
+        )}
       </button>
-      {bellOpen && (
-        <div
-          ref={bellPanelRef}
-          role="dialog"
-          aria-label="Notifications"
-          className="absolute right-0 top-full z-50 mt-2 w-80 rounded-lg border border-line bg-surface p-3 shadow-lg"
-        >
-          <h3 className="mb-2 text-sm font-medium text-ink">Notifications</h3>
-          {notifications.length === 0 ? (
-            <p className="text-xs text-muted">No notifications.</p>
-          ) : (
-            <ul className="flex flex-col divide-y divide-placeholder">
-              {notifications.slice(0, 5).map((n) => (
-                <li key={n.id} className="flex flex-col gap-0.5 py-2">
-                  <span className="text-xs font-medium text-ink">
-                    {n.action} {n.target}
-                  </span>
-                  <span className="text-2xs text-muted">{n.timeLabel}</span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      )}
-    </div>
+      <NotificationDrawer
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+      />
+    </>
   );
 }

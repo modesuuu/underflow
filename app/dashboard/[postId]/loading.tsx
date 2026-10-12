@@ -9,16 +9,6 @@ import { AppShell } from "@/components/layout/AppShell";
 export default function PostDetailLoading() {
   return (
     <AppShell
-      panel={
-        <div className="flex flex-col gap-5 p-6">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="flex flex-col gap-2 rounded-lg bg-bg p-4">
-              <div className="h-3.5 w-3/4 rounded bg-placeholder" />
-              <div className="h-3 w-1/2 rounded bg-placeholder" />
-            </div>
-          ))}
-        </div>
-      }
       variant="detail"
       backLabel="Feed"
       backHref="/"

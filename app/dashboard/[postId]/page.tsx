@@ -5,7 +5,6 @@ import { AppShell } from "@/components/layout/AppShell";
 import { getDashboardPosts, getNotifications } from "@/features/dashboard/api";
 import { CommentSection } from "@/features/dashboard/components/CommentSection";
 import { LikeButton } from "@/features/dashboard/components/LikeButton";
-import { NotificationsPanel } from "@/features/dashboard/components/NotificationsPanel";
 import { PhotoViewer } from "@/features/dashboard/components/PhotoViewer";
 import { formatCount } from "@/lib/format";
 import { Avatar } from "@/components/ui/Avatar";
@@ -109,10 +108,6 @@ function PostDetailSkeleton() {
   );
 }
 
-async function NotificationsPanelAsync() {
-  const notifications = await getNotifications();
-  return <NotificationsPanel notifications={notifications} />;
-}
 
 async function PostDetailAsync({
   postId,
@@ -180,11 +175,6 @@ export default async function PostDetailPage({ params, searchParams }: DetailPag
 
   return (
     <AppShell
-      panel={
-        <Suspense fallback={<NotificationsSkeleton />}>
-          <NotificationsPanelAsync />
-        </Suspense>
-      }
       variant="detail"
       backLabel="Feed"
       backHref="/"
