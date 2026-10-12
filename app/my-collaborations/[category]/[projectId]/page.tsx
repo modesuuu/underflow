@@ -37,9 +37,9 @@ function MyCollabDetailLoadingBody() {
       panel={
         <div className="flex flex-col gap-5 p-6">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="flex flex-col gap-2 rounded-lg bg-bg p-4">
-              <div className="h-3.5 w-3/4 rounded bg-placeholder" />
-              <div className="h-3 w-1/2 rounded bg-placeholder" />
+            <div key={i} className="sheet flex flex-col gap-2 p-4">
+              <div className="h-3.5 w-3/4 rounded-sm bg-placeholder" />
+              <div className="h-3 w-1/2 rounded-sm bg-placeholder" />
             </div>
           ))}
         </div>
@@ -48,93 +48,100 @@ function MyCollabDetailLoadingBody() {
       backLabel="Category"
       backHref="/my-collaborations"
     >
-      <div className="flex flex-col gap-6 px-6 pb-12 pt-6">
-        {/* 1. Status row */}
-        <div className="flex items-center gap-1.5">
-          <div className="size-4 rounded bg-placeholder" />
-          <div className="h-3.5 w-24 rounded bg-placeholder" />
-        </div>
-
-        {/* 2. Title + meta */}
-        <div className="flex flex-col gap-4">
-          <div className="h-10 w-2/3 rounded-lg bg-placeholder" />
+      <div className="mx-auto flex w-full max-w-(--uf-content-w) flex-col gap-5 py-6">
+        {/* 1. Header sheet */}
+        <div className="sheet flex flex-col gap-4 p-6">
+          <div className="h-6 w-24 rounded-pill border border-rule bg-placeholder/50" />
+          <div className="h-9 w-2/3 rounded-sm bg-placeholder" />
           <div className="flex items-center gap-4">
-            <div className="h-3.5 w-28 rounded bg-placeholder" />
-            <div className="h-3.5 w-24 rounded bg-placeholder" />
+            <div className="h-3.5 w-28 rounded-sm bg-placeholder" />
+            <div className="h-3.5 w-24 rounded-sm bg-placeholder" />
+          </div>
+          <div className="flex gap-[3px]">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div
+                key={i}
+                className="h-[12px] w-[12px] rounded-[1px] bg-placeholder"
+              />
+            ))}
+          </div>
+          <div className="grid h-[306px] grid-cols-2 grid-rows-2 gap-3">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="rounded-sm bg-placeholder/60" />
+            ))}
           </div>
         </div>
 
-        {/* 3. Photo grid — 2x2 like the adaptive PhotoGrid at 4 photos */}
-        <div className="grid h-[306px] grid-cols-2 grid-rows-2 gap-5">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="rounded-md bg-placeholder/60" />
-          ))}
-        </div>
-
-        {/* 4. Owner card + about + work items */}
-        <div className="flex flex-col gap-4 rounded-2xl bg-bg p-6">
-          <div className="h-3 w-24 rounded bg-placeholder" />
+        {/* 2. Owner + about sheet */}
+        <div className="sheet flex flex-col gap-5 p-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="size-[42px] shrink-0 rounded-full bg-placeholder" />
+              <div className="size-10 shrink-0 rounded-full bg-placeholder" />
               <div className="flex flex-col gap-1.5">
-                <div className="h-3.5 w-28 rounded bg-placeholder" />
-                <div className="h-3 w-20 rounded bg-placeholder" />
+                <div className="h-3.5 w-28 rounded-sm bg-placeholder" />
+                <div className="h-3 w-20 rounded-sm bg-placeholder" />
               </div>
             </div>
-            <div className="h-9 w-36 rounded-full bg-placeholder" />
+            <div className="h-8 w-32 rounded-sm border border-rule bg-placeholder/50" />
           </div>
-          <div className="flex flex-col gap-2">
-            <div className="h-5 w-44 rounded bg-placeholder" />
-            <div className="h-3 w-full rounded bg-placeholder" />
-            <div className="h-3 w-5/6 rounded bg-placeholder" />
-            <div className="h-3 w-2/3 rounded bg-placeholder" />
+          <div className="flex flex-col gap-2 border-t border-rule pt-5">
+            <div className="h-3 w-32 rounded-sm bg-placeholder" />
+            <div className="h-3 w-full rounded-sm bg-placeholder" />
+            <div className="h-3 w-5/6 rounded-sm bg-placeholder" />
+            <div className="h-3 w-2/3 rounded-sm bg-placeholder" />
           </div>
-          <div className="flex flex-col gap-1.5">
-            <div className="h-4 w-48 rounded bg-placeholder" />
+          <div className="flex flex-col gap-2 border-t border-rule pt-5">
+            <div className="h-3 w-36 rounded-sm bg-placeholder" />
             {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="flex items-center gap-2">
-                <div className="size-1.5 shrink-0 rounded-full bg-placeholder" />
-                <div className="h-3 w-3/4 rounded bg-placeholder" />
+              <div key={i} className="flex items-center gap-2.5">
+                <div className="h-2.5 w-4 shrink-0 rounded-sm bg-placeholder" />
+                <div className="h-3 w-3/4 rounded-sm bg-placeholder" />
               </div>
             ))}
           </div>
         </div>
 
-        {/* 5. Skills */}
-        <div className="flex flex-col gap-3">
-          <div className="h-5 w-28 rounded bg-placeholder" />
+        {/* 3. Skills sheet */}
+        <div className="sheet flex flex-col gap-3 p-6">
+          <div className="h-3 w-28 rounded-sm bg-placeholder" />
           <div className="flex flex-wrap gap-2">
             {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="h-8 w-24 rounded-full bg-placeholder/60" />
+              <div
+                key={i}
+                className="h-7 w-24 rounded-sm border border-rule bg-placeholder/50"
+              />
             ))}
           </div>
         </div>
 
-        {/* 6. Team — filled members + open slot */}
-        <div className="flex flex-col gap-4">
+        {/* 4. Team sheet */}
+        <div className="sheet flex flex-col gap-4 p-6">
           <div className="flex items-center justify-between">
-            <div className="h-5 w-16 rounded bg-placeholder" />
-            <div className="flex items-center gap-1.5">
-              <div className="h-3.5 w-10 rounded bg-placeholder" />
-              <div className="size-5 rounded bg-placeholder" />
+            <div className="h-3 w-16 rounded-sm bg-placeholder" />
+            <div className="flex gap-[3px]">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="h-[12px] w-[12px] rounded-[1px] bg-placeholder"
+                />
+              ))}
             </div>
           </div>
-          <div className="flex flex-wrap gap-4">
+          <div className="flex flex-wrap gap-5">
             {Array.from({ length: 4 }).map((_, i) => (
               <div key={i} className="flex items-center gap-2">
-                <div className="size-[32px] shrink-0 rounded-full bg-placeholder" />
+                <div className="size-8 shrink-0 rounded-full bg-placeholder" />
                 <div className="flex flex-col gap-1.5">
-                  <div className="h-3 w-24 rounded bg-placeholder" />
-                  <div className="h-2.5 w-16 rounded bg-placeholder" />
+                  <div className="h-3 w-24 rounded-sm bg-placeholder" />
+                  <div className="h-2.5 w-16 rounded-sm bg-placeholder" />
                 </div>
               </div>
             ))}
           </div>
         </div>
 
-        {/* 7. Bottom CTA — disabled "Closed" (presentational this phase) */}
-        <div className="mx-auto h-12 w-64 rounded-full bg-placeholder" />
+        {/* 5. Closing control */}
+        <div className="h-12 w-full rounded-sm border border-rule bg-placeholder/40" />
       </div>
     </AppShell>
   );

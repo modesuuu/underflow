@@ -34,7 +34,9 @@ function PillGroup<T extends string>({
 }) {
   return (
     <fieldset className="flex flex-col gap-2">
-      <legend className="text-xs font-medium text-muted">{legend}</legend>
+      <legend className="text-2xs font-semibold tracking-[0.06em] text-muted">
+        {legend}
+      </legend>
       <div className="flex flex-col gap-1.5">
         {options.map((opt) => (
           <label
@@ -96,7 +98,7 @@ function Dropdown({
         <div
           ref={panelRef}
           role="dialog"
-          className="absolute left-0 top-full z-50 mt-1 min-w-[160px] rounded-lg border border-line bg-surface p-3 shadow-lg"
+          className="sheet sheet-lift absolute left-0 top-full z-50 mt-1.5 min-w-[180px] p-3"
         >
           {panel}
         </div>
@@ -118,7 +120,7 @@ interface MyCollabSearchBarProps {
 /**
  * Search + sort + type-filter bar for My Collaborations (board & category).
  * Same shape as the public SearchFilterBar, minus the public status filter —
- * status here is the myStatus column/category, not a filter. All controls work.
+ * status here is the myStatus column/category, not a filter.
  */
 export function MyCollabSearchBar({
   draftQuery,
@@ -139,24 +141,25 @@ export function MyCollabSearchBar({
             <button
               type="button"
               aria-label="Sort"
-              aria-haspopup="true"
-              className="pressable flex size-[42px] cursor-pointer items-center justify-center rounded-sm bg-bg focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+              className="pressable flex size-[42px] cursor-pointer items-center justify-center rounded-sm border border-rule bg-surface focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
             >
               <Icon name="sort" size={20} className="text-ink" />
             </button>
           }
           panel={
             <div className="flex flex-col gap-1.5">
-              <span className="text-xs font-medium text-muted">Sort by</span>
+              <span className="text-2xs font-semibold tracking-[0.06em] text-muted">
+                Sort by
+              </span>
               {SORT_OPTIONS.map((opt) => (
                 <button
                   key={opt.value}
                   type="button"
                   onClick={() => onSortChange(opt.value)}
                   className={clsx(
-                    "pressable cursor-pointer rounded px-2 py-1 text-left text-sm transition-colors focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none",
+                    "pressable cursor-pointer rounded-sm px-2 py-1 text-left text-sm transition-colors focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none",
                     sortKey === opt.value
-                      ? "bg-accent font-medium text-ink"
+                      ? "bg-ink font-medium text-surface"
                       : "text-ink hover:bg-bg"
                   )}
                 >
@@ -171,12 +174,11 @@ export function MyCollabSearchBar({
             <button
               type="button"
               aria-label="Filter"
-              aria-haspopup="true"
-              className="pressable relative flex size-[42px] cursor-pointer items-center justify-center rounded-sm bg-bg focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+              className="pressable relative flex size-[42px] cursor-pointer items-center justify-center rounded-sm border border-rule bg-surface focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
             >
               <Icon name="filter" size={20} className="text-ink" />
               {activeFilterCount > 0 && (
-                <span className="absolute -right-1 -top-1 flex size-4 items-center justify-center rounded-full bg-badge text-2xs font-medium text-surface">
+                <span className="font-figures absolute -right-1 -top-1 flex size-4 items-center justify-center rounded-full bg-badge text-3xs font-medium text-surface">
                   {activeFilterCount}
                 </span>
               )}
@@ -194,7 +196,7 @@ export function MyCollabSearchBar({
       </div>
 
       <div className="flex items-center gap-2">
-        <div className="flex items-center gap-2 rounded-md border border-line bg-surface px-4 py-2.5">
+        <div className="flex items-center gap-2 border-b border-ink pb-1.5">
           <Icon name="search" size={16} className="text-muted" />
           <input
             type="text"
@@ -203,15 +205,15 @@ export function MyCollabSearchBar({
             onKeyDown={(e) => {
               if (e.key === "Enter") onSearch();
             }}
-            placeholder="Search projects..."
+            placeholder="Search projects"
             aria-label="Search projects"
-            className="w-40 bg-transparent text-sm font-medium text-ink outline-none placeholder:text-muted sm:w-56"
+            className="w-40 bg-transparent text-sm text-ink outline-none placeholder:text-subtle sm:w-56"
           />
         </div>
         <button
           type="button"
           onClick={onSearch}
-          className="pressable cursor-pointer rounded-md bg-accent px-4 py-2.5 text-sm font-medium text-ink transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+          className="pressable cursor-pointer rounded-sm bg-ink px-4 py-2 text-sm font-medium text-surface focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
         >
           Search
         </button>

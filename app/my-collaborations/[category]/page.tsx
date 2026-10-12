@@ -25,42 +25,49 @@ export function generateMetadata({
 
 /**
  * Fallback = the body of app/my-collaborations/[category]/loading.tsx minus
- * its AppShell and header (toolbar + 6-card grid), which renders here while
- * getMyCollabProjects() suspends. The category labels come from the sync
- * meta-map, so the shell + header render immediately.
+ * its AppShell and header (toolbar + card grid), which renders here while
+ * getMyCollabProjects() suspends. Category labels come from the sync meta-map,
+ * so the shell + header render immediately.
  */
 function MyCollabCategoryGridSkeleton() {
   return (
     <>
-      {/* Toolbar mirrors MyCollabSearchBar: sort+filter icon buttons left,
-          search group (input + Search button) right */}
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-2">
-          <div className="size-[42px] rounded-sm bg-placeholder" />
-          <div className="size-[42px] rounded-sm bg-placeholder" />
+          <div className="size-[42px] rounded-sm border border-rule bg-placeholder/50" />
+          <div className="size-[42px] rounded-sm border border-rule bg-placeholder/50" />
         </div>
         <div className="flex items-center gap-2">
-          <div className="flex h-[42px] w-64 items-center gap-2 rounded-md border border-line bg-surface px-4">
-            <div className="size-4 shrink-0 rounded-full bg-placeholder" />
-            <div className="h-3 flex-1 rounded bg-placeholder" />
-          </div>
-          <div className="h-[42px] w-24 rounded-md bg-placeholder" />
+          <div className="h-[38px] w-64 border-b border-rule" />
+          <div className="h-[38px] w-24 rounded-sm bg-placeholder" />
         </div>
       </div>
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
-        {Array.from({ length: 6 }).map((_, i) => (
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        {Array.from({ length: 8 }).map((_, i) => (
           <div
             key={i}
-            className="flex h-[235px] flex-col justify-between rounded-xl bg-bg p-5"
+            className="sheet flex h-[235px] flex-col gap-3 p-4"
           >
-            <div className="flex flex-col gap-2">
-              <div className="h-4 w-3/4 rounded bg-placeholder" />
-              <div className="h-3 w-1/2 rounded bg-placeholder" />
+            <div className="flex items-center gap-1.5">
+              <div className="size-1.5 rounded-full bg-placeholder" />
+              <div className="h-3 w-16 rounded-sm bg-placeholder" />
             </div>
-            <div className="h-28 rounded-lg bg-placeholder/60" />
-            <div className="flex items-center justify-between">
-              <div className="h-3 w-24 rounded bg-placeholder" />
-              <div className="h-3 w-16 rounded bg-placeholder" />
+            <div className="h-5 w-4/5 rounded-sm bg-placeholder" />
+            <div className="h-3 w-3/5 rounded-sm bg-placeholder" />
+            <div className="mt-1 flex gap-[3px]">
+              {Array.from({ length: 4 }).map((__, j) => (
+                <div
+                  key={j}
+                  className="h-[10px] w-[6px] rounded-[1px] bg-placeholder"
+                />
+              ))}
+            </div>
+            <div className="mt-auto flex items-center justify-between border-t border-rule pt-3">
+              <div className="h-5 w-24 rounded-sm bg-placeholder" />
+              <div className="flex items-center">
+                <div className="size-6 rounded-full bg-placeholder" />
+                <div className="-ml-2 size-6 rounded-full bg-placeholder" />
+              </div>
             </div>
           </div>
         ))}
@@ -88,12 +95,12 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
       breadcrumbLeaf={cat.crumbLabel}
       actions={<NotificationsBell />}
     >
-      <div className="flex flex-col gap-6 px-6 py-8">
-        <div className="flex flex-col gap-2">
-          <h1 className="text-[40px] font-medium leading-[1.02] text-ink">
+      <div className="mx-auto flex w-full max-w-[1180px] flex-col gap-7 px-8 py-8">
+        <div className="flex flex-col gap-2 border-b border-ink pb-4">
+          <h1 className="text-4xl font-bold leading-[1.05] tracking-[-0.02em] text-ink">
             {cat.boardLabel}
           </h1>
-          <p className="text-sm font-medium text-muted">{cat.subtitle}</p>
+          <p className="text-sm text-muted">{cat.subtitle}</p>
         </div>
         <Suspense fallback={<MyCollabCategoryGridSkeleton />}>
           <MyCollabCategoryGridAsync status={cat.slug} />
