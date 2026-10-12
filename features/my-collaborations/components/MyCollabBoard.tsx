@@ -17,22 +17,43 @@ import { MyCollabSearchBar } from "./MyCollabSearchBar";
 /** Cards shown per board column before the "View More" link. */
 const CARDS_PER_COLUMN = 2;
 
-interface StatCardProps {
+interface StatFigureProps {
   icon: string;
   value: string;
   label: string;
 }
 
-function StatCard({ icon, value, label }: StatCardProps) {
+function StatFigure({ icon, value, label }: StatFigureProps) {
   return (
-    <div className="flex flex-1 flex-col gap-3 rounded-xl border border-line bg-surface p-5">
-      <div className="flex size-9 shrink-0 items-center justify-center rounded-md bg-ink">
-        <Icon name={icon} size={18} className="text-surface" />
-      </div>
-      <span className="text-[32px] font-extrabold leading-none text-ink">
+    <div className="flex flex-1 flex-col gap-2 px-5 py-4">
+      <span className="font-figures text-[32px] font-medium leading-none text-ink tabular-nums">
         {value}
       </span>
-      <span className="text-xs font-medium text-muted">{label}</span>
+      <div className="flex items-center gap-2 text-muted">
+        <span className="flex size-6 shrink-0 items-center justify-center rounded-md bg-ink">
+          <Icon name={icon} size={13} className="text-surface" />
+        </span>
+        <span className="text-xs font-medium">{label}</span>
+      </div>
+    </div>
+  );
+}
+
+interface StatRegisterProps {
+  figures: StatFigureProps[];
+}
+
+/**
+ * One bordered register strip holding all four figures (from B2's register
+ * pattern, skinned in A): hairline dividers between cells, large number above
+ * its label.
+ */
+function StatRegister({ figures }: StatRegisterProps) {
+  return (
+    <div className="flex flex-col overflow-hidden rounded-lg border border-line bg-surface sm:flex-row sm:divide-x sm:divide-line">
+      {figures.map((f) => (
+        <StatFigure key={f.label} {...f} />
+      ))}
     </div>
   );
 }
@@ -89,12 +110,18 @@ export function MyCollabBoard({ projects }: MyCollabBoardProps) {
         </p>
       </div>
 
-      <div className="flex flex-wrap gap-4">
-        <StatCard icon="file" value={String(active)} label="Active Projects" />
-        <StatCard icon="check" value={pct} label="Percentage Complete" />
-        <StatCard icon="history" value={String(pending)} label="Project Pending" />
-        <StatCard icon="check-circle" value={String(complete)} label="Project Complete" />
-      </div>
+      <StatRegister
+        figures={[
+          { icon: "file", value: String(active), label: "Active Projects" },
+          { icon: "check", value: pct, label: "Percentage Complete" },
+          { icon: "history", value: String(pending), label: "Project Pending" },
+          {
+            icon: "check-circle",
+            value: String(complete),
+            label: "Project Complete",
+          },
+        ]}
+      />
 
       <MyCollabSearchBar
         draftQuery={draftQuery}
