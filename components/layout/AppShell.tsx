@@ -15,7 +15,10 @@ interface AppShellProps {
   actions?: ReactNode;
 }
 
-
+/* The shell is: the graphite rail (navigation), the ruled pad (the work
+   area), and the panel as a second column on the pad. The ruled grid lives
+   on the scrolling `main` (`.pad-ruled`) so it scrolls with the content and
+   never paints over the rail or the panel. */
 export function AppShell({
   children,
   panel,
@@ -28,9 +31,9 @@ export function AppShell({
   actions,
 }: AppShellProps) {
   return (
-    <div className="flex h-dvh w-full overflow-hidden">
+    <div className="flex h-dvh w-full overflow-hidden bg-bg">
       <Sidebar />
-      <main className="no-scrollbar min-w-0 flex-1 overflow-y-auto bg-surface">
+      <main className="pad-ruled no-scrollbar min-w-0 flex-1 overflow-y-auto bg-bg">
         {!hideTopBar && (
           <TopBar
             breadcrumbRoot={breadcrumbRoot}
@@ -44,7 +47,7 @@ export function AppShell({
         {children}
       </main>
       {panel !== undefined && (
-        <aside className="no-scrollbar w-(--uf-panel-w) shrink-0 overflow-y-auto border-l border-line bg-surface">
+        <aside className="no-scrollbar w-(--uf-panel-w) shrink-0 overflow-y-auto border-l border-line bg-bg">
           {panel}
         </aside>
       )}

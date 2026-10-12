@@ -1,23 +1,41 @@
 
 
 :root {
-  /* Colors */
-  --uf-bg: #f1f0ee;
-  --uf-surface: #ffffff;
-  --uf-ink: #000000;
-  --uf-muted: #6d6c6a;
-  --uf-subtle: #8e8e93;
-  --uf-accent: #dff66a;
-  --uf-badge: #ff383c;
-  --uf-heart: #ff2d55;
-  --uf-placeholder: #d9d9d9;
-  --uf-line: #6d6c6a;
+  /* Studio Log — the engineering computation pad. See DESIGN.md. Token NAMES
+     are inherited from main so every existing Tailwind utility (bg-bg,
+     text-ink, border-line…) keeps working; the VALUES are the new world. */
 
-  --uf-radius-sm: 4px;
-  --uf-radius-md: 6px;
-  --uf-radius-lg: 12px;
-  --uf-radius-xl: 20px;
-  --uf-radius-pill: 100px;
+  /* Colors */
+  --uf-bg: #e8ede1; /* paper — the ruled pad the app sits on */
+  --uf-surface: #f7f8f3; /* a fresh sheet laid on the pad */
+  --uf-ink: #1b1e19; /* graphite — text, full rules, the sidebar rail */
+  --uf-muted: #6c7268; /* graphite-light — secondary text, metadata */
+  --uf-subtle: #8a9083; /* tertiary text, timestamps */
+  --uf-accent: #2e5aac; /* ballpoint — selection, active, focus, links */
+  --uf-badge: #c2402f; /* margin rule — attention, counts */
+  --uf-heart: #c2402f; /* the like, same red as the margin rule */
+  --uf-placeholder: #d5dbcb; /* mist — filled blocks in photos/skeletons */
+  --uf-line: #c3ceb6; /* the ruled hairline and every divider */
+
+  /* New roles (Studio Log) */
+  --uf-rule: #c3ceb6;
+  --uf-mark: #e4e24e; /* highlighter — capacity figures only */
+  --uf-margin: #c2402f; /* the red margin rule: attention, never decoration */
+  --uf-rail: #1b1e19; /* the sidebar field */
+  --uf-rail-ink: #e8ede1; /* text on the rail */
+  --uf-rail-muted: #9aa192; /* secondary text on the rail */
+
+  /* Sheets are square; pills survive only where the incumbent semantics are
+     a pill (status tags, avatars, icon toolbar). */
+  --uf-radius-sm: 2px;
+  --uf-radius-md: 3px;
+  --uf-radius-lg: 4px;
+  --uf-radius-xl: 8px;
+  --uf-radius-pill: 999px;
+
+  /* A sheet's edge: 1px rule + a 2px OFFSET graphite shadow. No soft blur. */
+  --uf-sheet-shadow: 2px 2px 0 rgb(27 30 25 / 0.06);
+  --uf-sheet-shadow-lift: 3px 3px 0 rgb(27 30 25 / 0.1);
 
   --uf-sidebar-w: 246px;
   --uf-content-w: 636px;
@@ -26,44 +44,12 @@
   /* Single easing token (audit P1-E #29): one custom ease-out for every
      entrance/exit in the UI — no banned ease-in on exits. */
   --uf-ease-out: cubic-bezier(0.23, 1, 0.32, 1);
-}
 
-@font-face {
-  font-family: "PP Neue Montreal";
-  src: url("/font/ppneuemontreal-book.otf") format("opentype");
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "PP Neue Montreal";
-  src: url("/font/ppneuemontreal-italic.otf") format("opentype");
-  font-weight: 400;
-  font-style: italic;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "PP Neue Montreal";
-  src: url("/font/ppneuemontreal-medium.otf") format("opentype");
-  font-weight: 500;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "PP Neue Montreal";
-  src: url("/font/ppneuemontreal-semibolditalic.otf") format("opentype");
-  font-weight: 600;
-  font-style: italic;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "PP Neue Montreal";
-  src: url("/font/ppneuemontreal-bold.otf") format("opentype");
-  font-weight: 700;
-  font-style: normal;
-  font-display: swap;
+  /* Archivo (structural) and Spline Sans Mono (figures only) are loaded by
+     next/font in app/layout.tsx, exposing --font-archivo / --font-figures.
+     Fallbacks keep the UI legible if that fails. */
+  --uf-font-sans: var(--font-archivo), "Archivo", ui-sans-serif, system-ui,
+    -apple-system, "Segoe UI", sans-serif;
+  --uf-font-mono: var(--font-figures), "Spline Sans Mono", ui-monospace,
+    "SFMono-Regular", Menlo, monospace;
 }

@@ -1,7 +1,9 @@
 @import "tailwindcss";
 @import "./styles/tokens.css";
 
-/* Map raw tokens to Tailwind utilities (bg-bg, text-muted, rounded-lg, ...) */
+/* Map raw tokens to Tailwind utilities (bg-bg, text-muted, rounded-lg, ...).
+   Studio Log: same utility names as main, new values. New roles add
+   `bg-mark`, `text-margin`, `border-rule`, `bg-rail`, `font-figures`. */
 @theme inline {
   --color-bg: var(--uf-bg);
   --color-surface: var(--uf-surface);
@@ -14,12 +16,26 @@
   --color-placeholder: var(--uf-placeholder);
   --color-line: var(--uf-line);
 
-  --font-sans: "PP Neue Montreal", ui-sans-serif, system-ui, -apple-system,
-    sans-serif;
+  /* Studio Log roles */
+  --color-rule: var(--uf-rule);
+  --color-mark: var(--uf-mark);
+  --color-margin: var(--uf-margin);
+  --color-rail: var(--uf-rail);
+  --color-rail-ink: var(--uf-rail-ink);
+  --color-rail-muted: var(--uf-rail-muted);
 
-  /* Figma type scale 10px slot (12/14/16/20 = Tailwind xs/sm/base/xl) */
-  --text-2xs: 10px;
-  --text-2xs--line-height: 14px;
+  --font-sans: var(--uf-font-sans);
+  --font-mono: var(--uf-font-mono);
+
+  /* Figures are a first-class voice: `font-figures` on every number that
+     must align in a column (entry numbers, slot counts, dates, counts). */
+  --font-figures: var(--uf-font-mono);
+
+  /* Type scale — desktop-first. 11px labels sit below Tailwind's xs. */
+  --text-2xs: 11px;
+  --text-2xs--line-height: 15px;
+  --text-3xs: 10px;
+  --text-3xs--line-height: 13px;
 
   --radius-sm: var(--uf-radius-sm);
   --radius-md: var(--uf-radius-md);
@@ -36,17 +52,61 @@
   display: none;
 }
 
-/* --- Motion utilities (P2). All animations gated behind
+/* --- Studio Log surfaces ------------------------------------------------
+   The pad: the ruled computation grid under everything. Horizontal hairlines
+   every 24px; the grid is the world's measuring device, not decoration. */
+.pad-ruled {
+  background-image: repeating-linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--uf-rule) 42%, transparent) 0 1px,
+    transparent 1px 24px
+  );
+}
+
+/* A sheet laid on the pad: square corner, hairline rule, offset edge shadow.
+   No soft-blur drop shadow (banned). `.sheet-lift` is the one elevation a
+   sheet may reach. */
+.sheet {
+  background-color: var(--uf-surface);
+  border: 1px solid var(--uf-rule);
+  border-radius: var(--uf-radius-lg);
+  box-shadow: var(--uf-sheet-shadow);
+}
+.sheet-lift {
+  box-shadow: var(--uf-sheet-shadow-lift);
+}
+
+/* The red margin rule: 1px vertical line inset from a column's left edge,
+   like a ruled notebook's margin. Applied to a positioned ancestor. */
+.margin-rule::before {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  left: 0;
+  width: 1px;
+  background-color: color-mix(in srgb, var(--uf-margin) 55%, transparent);
+}
+
+/* --- Motion utilities. All animations gated behind
    prefers-reduced-motion: no-preference — reduced-motion users see static UI. */
 
 @keyframes uf-card-in {
   from {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateY(6px);
   }
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@keyframes uf-fill-in {
+  from {
+    background-color: transparent;
+  }
+  to {
+    background-color: var(--uf-ink);
   }
 }
 
@@ -71,47 +131,43 @@
 @keyframes uf-modal-in {
   from {
     opacity: 0;
-    transform: scale(0.96);
+    transform: scale(0.98) translateY(4px);
   }
   to {
     opacity: 1;
-    transform: scale(1);
+    transform: scale(1) translateY(0);
   }
 }
 
 @keyframes uf-modal-out {
   from {
     opacity: 1;
-    transform: scale(1);
+    transform: scale(1) translateY(0);
   }
   to {
     opacity: 0;
-    transform: scale(0.96);
+    transform: scale(0.98) translateY(4px);
   }
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  /* Grid entrance: one-shot per mount, 50ms stagger via --stagger-i.
-     300ms duration — with a 50ms stagger the tail item finishes inside the
-     300ms UI budget instead of ~1s (audit P1-E #30). */
-  .card-stagger {
-    animation: uf-card-in 300ms var(--uf-ease-out) backwards;
-    animation-delay: calc(var(--stagger-i, 0) * 50ms);
-  }
-
-  /* Page entrance: one fade+rise for the whole feed column when the user
-     lands on / (from another page or a hard load). Not a per-card stagger
-     — the column enters as one block (P1-F spec). */
+  /* Page entrance: one fade+rise for the whole column when the user lands on
+     a route. Not a per-card stagger — the column enters as one block. */
   .page-enter {
     animation: uf-card-in 320ms var(--uf-ease-out) backwards;
   }
 
-  /* Modal/lightbox open/close. Exits use the shared ease-out token and run
-     FASTER than the 280ms entrance (exits read as snappier; audit P1-E
-     #25/#29 — banned ease-in on exits). */
+  /* Capacity strip: ticks fill left→right, 30ms apart, once per mount. */
+  .tick-fill {
+    animation: uf-fill-in 260ms var(--uf-ease-out) backwards;
+    animation-delay: calc(var(--tick-i, 0) * 30ms);
+  }
+
   .modal-overlay-in {
     animation: uf-fade-in 280ms var(--uf-ease-out);
   }
+  /* Exits carry `forwards` so the end state (opacity 0) holds until unmount;
+     without it the element snaps back to opacity 1 before it unmounts. */
   .modal-overlay-out {
     animation: uf-fade-out 180ms var(--uf-ease-out) forwards;
   }
@@ -122,49 +178,47 @@
     animation: uf-modal-out 180ms var(--uf-ease-out) forwards;
   }
 
-  /* Press feedback: subtle scale on :active (transition lives unlayered
-     below so it cannot shadow Tailwind utility transitions). */
+  /* Press feedback: a colour change is the default; this scale is the one
+     movement allowed on press. */
   .pressable:active {
-    transform: scale(0.97);
+    transform: scale(0.98);
   }
 }
 
 /* Press feedback: transition is UNLAYERED, so it must enumerate every
    property Tailwind utilities animate on these elements — otherwise it
-   silently deletes their hover color/opacity transitions (audit P0-3).
-   .pressable:active stays gated in the reduced-motion block above. */
+   silently deletes their hover colour transitions. */
 .pressable {
   transition:
     transform 120ms ease-out,
     opacity 160ms ease-out,
     background-color 160ms ease-out,
-    color 160ms ease-out;
+    color 160ms ease-out,
+    border-color 160ms ease-out;
 }
 
-/* --- Sidebar motion on the GPU (audit P1-E #28 / P1-C #21) ---
-   The old implementation tweened backgroundColor, top/height, and
-   height:0<->auto with GSAP (all off-GPU / layout-triggering). Now:
-   hover bg + chevron + accordion are plain CSS transitions; the active
-   pill animates transform (translateY + scaleY) only. */
+/* --- Sidebar rail motion -------------------------------------------------
+   The rail is graphite; its active item is a sheet laid ON the rail. Only
+   transform + opacity animate (compositor-only). */
 .nav-row-hoverable {
-  transition: background-color 250ms var(--uf-ease-out);
+  transition:
+    background-color 220ms var(--uf-ease-out),
+    color 220ms var(--uf-ease-out);
 }
 .nav-row-hoverable:hover {
-  background-color: rgba(255, 255, 255, 0.6);
+  background-color: rgb(232 237 225 / 0.08);
 }
 .chevron-rot {
   transition: transform 250ms var(--uf-ease-out);
 }
-/* Active-row pill: the ONLY animated props are transform + opacity
-   (compositor-only, no layout) — replaces the GSAP top/height/opacity
-   tweens (audit P1-E #28). */
 .active-pill {
   transition:
-    transform 350ms var(--uf-ease-out),
-    opacity 350ms var(--uf-ease-out);
+    transform 320ms var(--uf-ease-out),
+    opacity 320ms var(--uf-ease-out);
 }
-/* Accordion open/close: the grid-template-rows 0fr<->1fr trick
-   (layout, but only on the occasional toggle — accepted per the audit). */
+
+/* Accordion open/close: the grid-template-rows 0fr<->1fr trick (layout, but
+   only on an occasional toggle). */
 .acc-wrap {
   display: grid;
   transition: grid-template-rows 300ms var(--uf-ease-out);
@@ -174,35 +228,25 @@
   overflow: hidden;
 }
 
-/* --- Collab card tilt (audit P1-E #27) ---
-   Gated behind a real pointer: on sticky-tap touch devices the old
-   :hover tilt got "stuck". The press feedback (active:scale 0.99)
-   still applies everywhere. */
+/* Collab card: the one interactive container that lifts. Pointer-gated so the
+   state cannot stick on touch. No rotation; the offset edge deepens. */
 @media (prefers-reduced-motion: no-preference) {
   @media (hover: hover) and (pointer: fine) {
     .collab-card {
       transition:
-        transform 200ms var(--uf-ease-out),
-        background-color 200ms var(--uf-ease-out),
-        box-shadow 200ms var(--uf-ease-out);
+        box-shadow 180ms var(--uf-ease-out),
+        border-color 180ms var(--uf-ease-out),
+        background-color 180ms var(--uf-ease-out);
     }
     .collab-card:hover {
-      transform: rotate(-8deg) scale(1.03);
-      background-color: var(--uf-surface);
-      box-shadow:
-        0 10px 15px -3px rgb(0 0 0 / 0.1),
-        0 4px 6px -4px rgb(0 0 0 / 0.1);
-    }
-    .collab-card:active {
-      transform: scale(0.99);
+      box-shadow: var(--uf-sheet-shadow-lift);
+      border-color: var(--uf-ink);
     }
   }
 }
 
-/* --- Global reduced-motion kill switch (audit P1-C #21) ---
-   Every transition/animation jumps to its final state for users with
-   prefers-reduced-motion: reduce. This covers the sidebar pill/accordion
-   (previously GSAP, which ignored the preference) and the card tilt. */
+/* --- Global reduced-motion kill switch: every transition/animation jumps to
+   its final state for users with prefers-reduced-motion: reduce. */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

@@ -23,12 +23,9 @@ import {
   type NavSection,
 } from "./nav";
 
-// P1-E #28 / P1-C #21: the sidebar no longer uses GSAP — the hover
-// background, chevron rotation, and section accordion are pure CSS
-// transitions (globals.css), so they run on the compositor where
-// possible and are fully respected by prefers-reduced-motion. GSAP's
-// only remaining job is moving the active pill (its Y/height follow
-// the row's layout box — a genuinely JS-positioned element).
+/* Studio Log rail. The sidebar is the graphite field the pad rests on: cream
+   ink on #1B1E19, and the active row is a *sheet laid on the rail* rather
+   than a white pill. Only transform + opacity animate (compositor-only). */
 
 type RegisterRef<T> = (id: string, el: T | null) => void;
 
@@ -42,11 +39,10 @@ interface NavRowProps {
 
 function NavRow({ item, active, badge, onSelect, registerRef }: NavRowProps) {
   // Items with an href are real <Link> anchors — Next.js prefetches the
-  // destination route shell on hover/appearance, so slow compiles no longer
-  // flash the wrong skeleton first (button + router.push had no prefetch).
-  // href-less items stay buttons. Either element is registered to the pill.
+  // destination route shell on hover/appearance, so a slow compile no longer
+  // flashes the wrong skeleton first (button + router.push has no prefetch).
   const className = clsx(
-    "relative z-10 flex w-full cursor-pointer items-center gap-1 rounded-md px-1 py-2 text-left",
+    "relative z-10 flex w-full cursor-pointer items-center gap-2 rounded-md px-2 py-2 text-left",
     !active && "nav-row-hoverable"
   );
 
@@ -54,18 +50,17 @@ function NavRow({ item, active, badge, onSelect, registerRef }: NavRowProps) {
     <>
       <Icon
         name={item.icon}
-        size={20}
-        className={active ? "text-ink" : "text-muted"}
+        size={18}
+        className={active ? "text-ink" : "text-rail-muted"}
       />
       <span
         className={clsx(
           "text-xs font-medium",
-          active ? "text-ink" : "text-muted"
+          active ? "text-ink" : "text-rail-muted"
         )}
       >
         {item.label}
       </span>
-      {/* Badge renders in every state: normal, hover, active */}
       {badge !== undefined && badge > 0 && (
         <Badge count={badge} tone="danger" className="ml-auto" />
       )}
@@ -82,10 +77,6 @@ function NavRow({ item, active, badge, onSelect, registerRef }: NavRowProps) {
         onClick={() => {
           onSelect(item.id);
         }}
-        // P1-E #28: hover background is the CSS `.nav-row-hoverable`
-        // transition (was a GSAP backgroundColor tween, off-GPU). Only
-        // non-active rows get the hover wash — the active row is pinned
-        // under the pill.
         className={className}
         aria-current={active ? "page" : undefined}
       >
@@ -131,34 +122,35 @@ function NavSectionBlock({
   registerRowRef,
 }: NavSectionBlockProps) {
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-2">
       <button
         type="button"
         onClick={() => onToggle(section.id)}
         aria-expanded={!collapsed}
         className="flex w-full cursor-pointer items-center justify-between text-left"
       >
-        <span className="text-xs font-medium text-muted">
+        {/* Section titles are 11px sentence-case labels, not all-caps
+            eyebrows (banned in DESIGN.md). */}
+        <span className="text-2xs font-semibold tracking-[0.06em] text-rail-muted">
           {section.title}
         </span>
-        {/* P1-E #28: chevron rotation is the CSS `.chevron-rot`
-            transition (was a GSAP rotation tween). `rotate` is
-            compositor-friendly. */}
         <span
           className={
             "chevron-rot inline-flex " +
             (collapsed ? "-rotate-90" : "rotate-0")
           }
         >
-          <Icon name="chevron-down" size={20} className="text-muted" />
+          <Icon name="chevron-down" size={18} className="text-rail-muted" />
         </span>
       </button>
-      {/* P1-E #28: section open/close is the grid-template-rows
-          0fr<->1fr trick (CSS `.acc-wrap`/`.acc-inner`) instead of a
-          GSAP height:0<->auto tween. Rows stay mounted so refs and
-          pill measurements survive. */}
-      <div className={collapsed ? "acc-wrap [grid-template-rows:0fr]" : "acc-wrap [grid-template-rows:1fr]"}>
-        <div className="acc-inner flex flex-col gap-1">
+      <div
+        className={
+          collapsed
+            ? "acc-wrap [grid-template-rows:0fr]"
+            : "acc-wrap [grid-template-rows:1fr]"
+        }
+      >
+        <div className="acc-inner flex flex-col gap-0.5">
           {section.items.map((item) => (
             <NavRow
               key={item.id}
@@ -185,7 +177,6 @@ function routeToNavId(pathname: string): string {
 
 export function Sidebar() {
   const pathname = usePathname();
-  // Route-aware active state: init from URL, sync on navigation.
   const [activeId, setActiveId] = useState(() => routeToNavId(pathname));
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const [inboxUnread, setInboxUnread] = useState(0);
@@ -195,7 +186,6 @@ export function Sidebar() {
   const rowRefs = useRef(new Map<string, HTMLElement>());
   const firstPill = useRef(true);
 
-  // Sync activeId with pathname on navigation.
   useEffect(() => {
     setActiveId(routeToNavId(pathname));
   }, [pathname]);
@@ -226,12 +216,9 @@ export function Sidebar() {
     return true;
   }, [activeId, collapsed]);
 
-  // P1-E #28: the pill is positioned with `transform: translateY()` and
-  // faded with `opacity` — the ONLY animated props — both compositor-only.
-  // The CSS `.active-pill` transition animates them (jump on first mount).
-  // Its fixed height (h-9) matches a standard nav row, so no `height`/`top`
-  // layout tweens are needed (the old GSAP implementation animated top,
-  // height, and opacity — all off-GPU / layout-triggering).
+  /* The active sheet is positioned with translateY + opacity only (both
+     compositor-only). Its fixed height matches a nav row, so no layout tween
+     is needed. */
   const positionPill = () => {
     const area = areaRef.current;
     const pill = pillRef.current;
@@ -241,7 +228,8 @@ export function Sidebar() {
       pill.style.opacity = "0";
       return;
     }
-    const y = row.getBoundingClientRect().top - area.getBoundingClientRect().top;
+    const y =
+      row.getBoundingClientRect().top - area.getBoundingClientRect().top;
     if (firstPill.current) {
       pill.style.transition = "none";
       pill.style.transform = `translateY(${y}px)`;
@@ -265,9 +253,6 @@ export function Sidebar() {
   const toggleSection = (id: string) => {
     const isCollapsed = !!collapsed[id];
     setCollapsed((prev) => ({ ...prev, [id]: !isCollapsed }));
-    // Re-measure the pill once the CSS accordion transition (300ms) settles,
-    // so it follows the row to its new position. (The chevron rotation and
-    // the open/close both run as pure CSS now — no GSAP.)
     window.setTimeout(() => positionPillRef.current(), 320);
   };
 
@@ -277,27 +262,37 @@ export function Sidebar() {
   };
 
   return (
-    <aside className="w-(--uf-sidebar-w) shrink-0 border-r-[0.5px] border-line bg-bg">
+    <aside className="w-(--uf-sidebar-w) shrink-0 bg-rail text-rail-ink">
       <div
         ref={areaRef}
         className="relative flex h-full flex-col justify-between px-6 py-6"
       >
+        {/* The active sheet laid on the rail. */}
         <div
           ref={pillRef}
-          className="active-pill absolute left-6 right-6 top-0 z-0 h-9 rounded-md bg-surface"
-          style={{ opacity: 0 }}
+          className="active-pill absolute left-6 right-6 top-0 z-0 h-9 rounded-md"
+          style={{ opacity: 0, backgroundColor: "var(--uf-rail-ink)" }}
         />
 
-        <div className="flex flex-col gap-6">
-          {/* Brand */}
+        <div className="flex flex-col gap-8">
+          {/* Brand: the mark is a ruled square, not a soft rounded placeholder */}
           <div className="flex items-center gap-3">
-            {/* TODO(design): swap placeholder for the real logo asset */}
-            <div className="h-[31px] w-[31px] rounded-sm bg-placeholder" />
-            <span className="text-base font-medium">Stack Underflow</span>
+            <div className="relative flex h-[30px] w-[30px] items-center justify-center rounded-sm border border-rail-muted/40">
+              <span className="h-px w-3 bg-rail-muted/70" />
+              <span className="absolute h-3 w-px bg-rail-muted/70" />
+            </div>
+            <div className="flex flex-col gap-0.5">
+              <span className="text-sm font-semibold text-rail-ink">
+                Stack Underflow
+              </span>
+              {/* The rail is the log's spine; this is its volume mark. */}
+              <span className="font-figures text-3xs text-rail-muted">
+                VOL. 01 — WORKLOG
+              </span>
+            </div>
           </div>
 
-          {/* Nav sections */}
-          <nav className="flex flex-col gap-6">
+          <nav className="flex flex-col gap-7">
             {NAV_SECTIONS.map((section) => (
               <NavSectionBlock
                 key={section.id}
@@ -313,9 +308,8 @@ export function Sidebar() {
           </nav>
         </div>
 
-        {/* Footer */}
-        <div className="flex flex-col gap-3">
-          <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-0.5">
             {FOOTER_LINKS.map((link) => (
               <NavRow
                 key={link.id}
@@ -326,22 +320,27 @@ export function Sidebar() {
               />
             ))}
           </div>
-          <div className="h-px w-full bg-line" />
 
-          {/* Profile card */}
-          <div className="relative z-10 flex items-center justify-between rounded-sm bg-surface p-1">
-            <div className="flex items-center gap-1">
+          <div className="h-px w-full bg-rail-ink/15" />
+
+          {/* Profile: a sheet edge on the rail. */}
+          <div className="relative z-10 flex items-center justify-between rounded-md border border-rail-ink/15 bg-rail-ink/[0.06] p-1.5">
+            <div className="flex items-center gap-2">
               <Avatar size={28} rounded="sm" alt={CURRENT_USER.name} />
               <div className="flex w-[97px] flex-col gap-0.5">
-                <span className="text-2xs font-medium">
+                <span className="text-2xs font-medium text-rail-ink">
                   {CURRENT_USER.name}
                 </span>
-                <span className="truncate text-2xs text-muted">
+                <span className="truncate font-figures text-3xs text-rail-muted">
                   {CURRENT_USER.email}
                 </span>
               </div>
             </div>
-            <Icon name="chevrons-up-down" size={20} className="text-muted" />
+            <Icon
+              name="chevrons-up-down"
+              size={18}
+              className="text-rail-muted"
+            />
           </div>
         </div>
       </div>
