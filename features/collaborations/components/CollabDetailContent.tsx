@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Icon } from "@/components/ui/Icon";
+import { CapacityStrip } from "@/components/ui/CapacityStrip";
 import { Avatar } from "@/components/ui/Avatar";
 import { PhotoGrid } from "@/components/ui/PhotoGrid";
 import { PhotoLightbox } from "@/components/ui/PhotoLightbox";
@@ -147,12 +148,7 @@ export function CollabDetailContent({ project }: CollabDetailContentProps) {
       <div className="flex flex-col gap-4">
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-medium text-ink">Team</h2>
-          <div className="flex items-center gap-1.5">
-            <span className="text-sm font-medium text-ink">
-              {project.slotsFilled}/{project.slotsTotal}
-            </span>
-            <Icon name="group" size={20} className="text-ink" />
-          </div>
+          <CapacityStrip filled={project.slotsFilled} total={project.slotsTotal} />
         </div>
         <div className="flex gap-4">
           {project.members.map((member) =>

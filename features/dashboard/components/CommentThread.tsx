@@ -20,7 +20,7 @@ function CommentItem({ comment, innerRef }: CommentItemProps) {
         <div className="flex items-center justify-center gap-1.5">
           <span className="text-base font-medium">{comment.author.name}</span>
           <span className="inline-block size-[2px] rounded-full bg-subtle" />
-          <span className="text-2xs text-subtle">{comment.postedAgo}</span>
+          <span className="font-figures text-2xs text-subtle tabular-nums">{comment.postedAgo}</span>
         </div>
       </div>
 

@@ -65,7 +65,7 @@ export function LikeButton({
           liked ? "text-heart" : "text-ink"
         )}
       >
-        {formatCount(likes)}
+        <span className="font-figures tabular-nums">{formatCount(likes)}</span>
       </span>
     </button>
   );

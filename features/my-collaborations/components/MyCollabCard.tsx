@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Icon } from "@/components/ui/Icon";
 import { Avatar } from "@/components/ui/Avatar";
+import { CapacityStrip } from "@/components/ui/CapacityStrip";
 import { formatDueDate } from "@/features/collaborations/sort";
 import type { MyCollabProject } from "../types";
 
@@ -54,7 +55,7 @@ export function MyCollabCard({ project, variant = "board" }: MyCollabCardProps) 
           <Icon name="calendar" solid size={14} className="text-ink" />
           <span className="text-[13px] text-muted">Due to:</span>
           <span className="text-[13px] font-semibold text-ink">
-            {formatDueDate(project.dueDate)}
+            <span className="font-figures tabular-nums">{formatDueDate(project.dueDate)}</span>
           </span>
         </div>
       </div>
@@ -82,9 +83,7 @@ export function MyCollabCard({ project, variant = "board" }: MyCollabCardProps) 
                 placeholderBg={avatarB?.avatarUrl ? undefined : "var(--uf-placeholder)"}
               />
             </div>
-            <span className="ml-2 text-xs text-muted">
-              {project.slotsFilled} / {project.slotsTotal}
-            </span>
+            <CapacityStrip filled={project.slotsFilled} total={project.slotsTotal} />
           </div>
         </div>
       </div>

@@ -23,7 +23,7 @@ export function PostCard({ post }: { post: Post }) {
           <Avatar size={32} src={post.author.avatarUrl} alt={post.author.name} />
           <div className="flex flex-col ">
             <span className="text-base font-medium">{post.author.name}</span>
-            <span className="text-2xs text-subtle">{post.postedAgo}</span>
+            <span className="font-figures text-2xs text-subtle tabular-nums">{post.postedAgo}</span>
           </div>
         </div>
       </div>
@@ -39,7 +39,7 @@ export function PostCard({ post }: { post: Post }) {
             <span className="flex items-center gap-1">
               <Icon name="show" size={24} className="text-ink" />
               <span className="text-2xs font-medium">
-                {formatCount(post.views)}
+                <span className="font-figures tabular-nums">{formatCount(post.views)}</span>
               </span>
             </span>
             <LikeButton
