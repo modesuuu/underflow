@@ -6,31 +6,32 @@ import { FeedColumn } from "@/features/dashboard/components/FeedColumn";
 import { NotificationsPanel } from "@/features/dashboard/components/NotificationsPanel";
 
 /**
- * The feed page keeps its own shaped skeleton (post-card stack + notifications
- * stack) by fetching inside two small async server components wrapped in
- * Suspense, instead of awaiting in the page itself and falling back to the
- * root loading boundary (which is now deliberately page-neutral).
+ * The feed page renders its shell synchronously and suspends only on the
+ * data-bound sections, so navigation shows this page's own shape instead of
+ * the root boundary. Fallbacks mirror the real sections.
  */
 
 function FeedColumnSkeleton() {
   return (
-    <div className="mx-auto flex w-full max-w-(--uf-content-w) flex-col gap-6 py-3">
+    <div className="mx-auto flex w-full max-w-(--uf-content-w) flex-col gap-5 py-6">
       {Array.from({ length: 3 }).map((_, i) => (
-        <div key={i} className="rounded-xl border border-line bg-surface p-5">
+        <div key={i} className="sheet flex flex-col gap-5 p-6">
           <div className="flex items-center gap-3">
-            <div className="size-8 rounded-full bg-placeholder" />
+            <div className="size-9 shrink-0 rounded-full bg-placeholder" />
             <div className="flex flex-col gap-1.5">
-              <div className="h-3.5 w-28 rounded bg-placeholder" />
-              <div className="h-3 w-16 rounded bg-placeholder" />
+              <div className="h-3.5 w-28 rounded-sm bg-placeholder" />
+              <div className="h-3 w-16 rounded-sm bg-placeholder" />
             </div>
           </div>
-          <div className="mt-4 flex flex-col gap-2">
-            <div className="h-3.5 w-full rounded bg-placeholder" />
-            <div className="h-3.5 w-2/3 rounded bg-placeholder" />
+          <div className="flex flex-col gap-2">
+            <div className="h-3.5 w-full rounded-sm bg-placeholder" />
+            <div className="h-3.5 w-2/3 rounded-sm bg-placeholder" />
           </div>
-          <div className="mt-4 grid grid-cols-2 gap-2">
-            <div className="aspect-square rounded-md bg-placeholder/60" />
-            <div className="aspect-square rounded-md bg-placeholder/60" />
+          <div className="h-[306px] w-full rounded-sm bg-placeholder/60" />
+          <div className="flex gap-5 border-t border-rule pt-4">
+            <div className="h-5 w-12 rounded-sm bg-placeholder" />
+            <div className="h-5 w-12 rounded-sm bg-placeholder" />
+            <div className="h-5 w-20 rounded-sm bg-placeholder" />
           </div>
         </div>
       ))}
@@ -40,11 +41,20 @@ function FeedColumnSkeleton() {
 
 function NotificationsSkeleton() {
   return (
-    <div className="flex flex-col gap-5 p-6">
+    <div className="flex flex-col gap-7 p-6">
+      <div className="h-5 w-32 rounded-sm bg-placeholder" />
+      <div className="flex h-8 w-full border border-rule">
+        <div className="flex-1 bg-placeholder/40" />
+        <div className="flex-1 border-l border-rule bg-placeholder/40" />
+        <div className="flex-1 border-l border-rule bg-placeholder/40" />
+      </div>
       {Array.from({ length: 4 }).map((_, i) => (
-        <div key={i} className="flex flex-col gap-2 rounded-lg bg-bg p-4">
-          <div className="h-3.5 w-3/4 rounded bg-placeholder" />
-          <div className="h-3 w-1/2 rounded bg-placeholder" />
+        <div key={i} className="flex items-start gap-4">
+          <div className="size-[30px] shrink-0 rounded-full bg-placeholder" />
+          <div className="flex flex-1 flex-col gap-2">
+            <div className="h-3.5 w-3/4 rounded-sm bg-placeholder" />
+            <div className="h-3 w-1/2 rounded-sm bg-placeholder" />
+          </div>
         </div>
       ))}
     </div>
@@ -71,8 +81,8 @@ export default function Home() {
       }
       actions={<PostButton />}
     >
-      {/* P1-C #20: one real h1 per page — visually hidden so the
-          breadcrumb in the TopBar stays the visual heading. */}
+      {/* One real h1 per page — visually hidden so the TopBar breadcrumb
+          stays the visual heading. */}
       <h1 className="sr-only">Feed</h1>
       <Suspense fallback={<FeedColumnSkeleton />}>
         <FeedColumnAsync />

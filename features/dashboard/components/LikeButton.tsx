@@ -50,19 +50,19 @@ export function LikeButton({
       type="button"
       aria-pressed={liked}
       onClick={handleClick}
-      className="flex cursor-pointer items-center gap-1"
+      className="pressable flex cursor-pointer items-center gap-1.5 rounded-sm"
     >
       <span ref={bumpRef} className="inline-flex">
         <HeartIcon
           filled={liked}
-          size={24}
-          className={liked ? "text-heart" : "text-ink"}
+          size={22}
+          className={liked ? "text-margin" : "text-muted"}
         />
       </span>
       <span
         className={clsx(
-          "text-2xs font-medium",
-          liked ? "text-heart" : "text-ink"
+          "font-figures text-2xs font-medium",
+          liked ? "text-margin" : "text-muted"
         )}
       >
         {formatCount(likes)}

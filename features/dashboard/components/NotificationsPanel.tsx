@@ -22,38 +22,30 @@ function filterByTab(items: NotificationItem[], tab: Tab): NotificationItem[] {
 
 function NotificationRow({ item }: { item: NotificationItem }) {
   // Contract base row data: title + body. The rich actor/action/target
-  // extension fields (mock today, backend-confirmed later) take over the
-  // name + subline when present; `body` is the wire fallback.
+  // extension fields take over the name + subline when present; `body` is
+  // the wire fallback.
   const name = item.actor?.name ?? item.title;
   const subline =
     item.action || item.target
       ? `${item.action ?? ""} ${item.target ?? ""}`.trim()
       : item.body;
   return (
-    <div className="flex min-h-[47px] items-center gap-5">
-      <div className="flex flex-1 items-start gap-2">
-        <Avatar size={32} src={item.actor?.avatarUrl} alt={name} />
-        <div className="flex min-w-0 flex-1 flex-col gap-2">
-          <div className="flex flex-col gap-1">
-            <span className="text-base font-medium">{name}</span>
-            {subline && (
-              <span className="flex gap-0.5">
-                <span className="text-xs text-muted">{subline}</span>
-              </span>
-            )}
-          </div>
-          <div className="flex items-center justify-between">
-            {(item.timeLabel ?? item.agoLabel) && (
-              <span className="text-xs">{item.timeLabel ?? item.agoLabel}</span>
-            )}
-          </div>
-        </div>
+    <div className="flex min-h-[47px] items-start gap-4">
+      <Avatar size={30} src={item.actor?.avatarUrl} alt={name} />
+      <div className="flex min-w-0 flex-1 flex-col gap-1">
+        <span className="text-sm font-medium text-ink">{name}</span>
+        {subline && <span className="text-xs text-muted">{subline}</span>}
+        {(item.timeLabel ?? item.agoLabel) && (
+          <span className="font-figures text-2xs text-subtle">
+            {item.timeLabel ?? item.agoLabel}
+          </span>
+        )}
       </div>
-      {/* Unread indicator (audit P1-C #20): the dot stays decorative, an
-          sr-only word carries the meaning for screen readers. */}
+      {/* Unread is marked in the margin red — the one colour that means
+          attention. The dot stays decorative; sr-only carries the meaning. */}
       {!item.read && (
-        <span className="flex shrink-0 items-center gap-1">
-          <span aria-hidden="true" className="size-1.5 rounded-full bg-accent" />
+        <span className="mt-1 flex shrink-0 items-center">
+          <span aria-hidden="true" className="size-1.5 rounded-full bg-margin" />
           <span className="sr-only">Unread</span>
         </span>
       )}
@@ -61,7 +53,7 @@ function NotificationRow({ item }: { item: NotificationItem }) {
   );
 }
 
-/** Right panel — Figma 515:150. "Unreed/Reed" in the design is a typo; labels are Unread/Read. */
+/** Right panel. The tabs are a segmented control with a mono count. */
 export function NotificationsPanel({
   notifications,
 }: {
@@ -81,33 +73,45 @@ export function NotificationsPanel({
   const visible = filterByTab(notifications, tab);
 
   return (
-    <div className="flex flex-col gap-[42px] p-6">
+    <div className="flex flex-col gap-7 p-6">
       <div className="flex flex-col gap-3">
-        <h2 className="text-xl font-medium">Notifications</h2>
-        <div className="inline-flex w-fit items-center gap-1.5 rounded-md bg-bg p-0.5">
-          {tabs.map((t) => (
+        <h2 className="text-lg font-semibold text-ink">Notifications</h2>
+        <div className="flex w-full border border-rule">
+          {tabs.map((t, i) => (
             <button
               key={t.id}
               type="button"
               onClick={() => setTab(t.id)}
               aria-pressed={tab === t.id}
               className={clsx(
-                "flex cursor-pointer items-center gap-1.5 rounded-sm px-1 py-1.5 text-sm font-medium transition-colors",
-                tab === t.id ? "bg-surface" : "hover:bg-surface/60"
+                "flex flex-1 cursor-pointer items-center justify-center gap-1.5 px-2 py-1.5 text-xs font-medium transition-colors",
+                i > 0 && "border-l border-rule",
+                tab === t.id
+                  ? "bg-ink text-surface"
+                  : "bg-transparent text-muted hover:bg-surface"
               )}
             >
               {t.label}
-              <Badge count={t.count} tone="accent" shape="pill" />
+              <span
+                className={clsx(
+                  "font-figures text-2xs",
+                  tab === t.id ? "text-surface/70" : "text-subtle"
+                )}
+              >
+                {t.count}
+              </span>
             </button>
           ))}
         </div>
       </div>
 
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col">
         {visible.map((item, i) => (
           <Fragment key={item.id}>
             <NotificationRow item={item} />
-            {i < visible.length - 1 && <div className="h-px w-full bg-placeholder" />}
+            {i < visible.length - 1 && (
+              <div className="my-3 h-px w-full bg-rule" />
+            )}
           </Fragment>
         ))}
         {visible.length === 0 && (
