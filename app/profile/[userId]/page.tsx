@@ -46,8 +46,8 @@ function ProfileSkeleton() {
       </div>
       <div className="w-full shrink-0 rounded-3xl bg-bg p-6 lg:w-[397px]">
         <div className="h-5 w-44 rounded bg-placeholder" />
-        <div className="mt-6 flex flex-col gap-3.5">
-          <div className="flex gap-5">
+        <div className="mt-5 flex flex-col gap-3">
+          <div className="flex gap-4">
             {Array.from({ length: 2 }).map((_, i) => (
               <div key={i} className="flex-1 rounded-xl border border-line p-3">
                 <div className="size-6 rounded bg-placeholder" />

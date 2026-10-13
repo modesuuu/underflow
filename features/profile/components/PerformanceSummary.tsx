@@ -37,7 +37,7 @@ function StatCard({
     </>
   );
   return (
-    <div className="flex w-full flex-col gap-3 rounded-xl border border-line p-3">
+    <div className="flex w-full flex-col gap-2.5 rounded-xl border border-line p-3">
       <div className="flex items-center justify-between gap-2">
         {icon}
         {href ? (
@@ -70,7 +70,7 @@ export function PerformanceSummary({ personId, stats }: PerformanceSummaryProps)
   return (
     <section
       aria-label="Performance summary"
-      className="flex w-full shrink-0 flex-col gap-6 rounded-3xl bg-bg p-6 lg:w-[397px]"
+      className="flex w-full shrink-0 flex-col gap-5 rounded-3xl bg-bg p-5 lg:w-[397px]"
     >
       <div className="flex items-center justify-between">
         <h2 className="text-[20px] font-medium text-ink">Performance Summary</h2>
@@ -83,8 +83,8 @@ export function PerformanceSummary({ personId, stats }: PerformanceSummaryProps)
         </button>
       </div>
 
-      <div className="flex flex-col gap-3.5">
-        <div className="flex gap-5">
+      <div className="flex flex-col gap-3">
+        <div className="flex gap-4">
           <div className="flex flex-1">
             <StatCard
               icon={<FolderCheckIcon />}

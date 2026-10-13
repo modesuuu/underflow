@@ -17,7 +17,7 @@ export function ProfileDetailCard({ person }: { person: PersonDetail }) {
   return (
     <section
       aria-label="Profile detail"
-      className="flex w-full shrink-0 flex-col gap-[42px] rounded-3xl bg-bg p-6 lg:w-[397px]"
+      className="flex w-full shrink-0 flex-col gap-8 rounded-3xl bg-bg p-5 lg:w-[397px]"
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -39,10 +39,10 @@ export function ProfileDetailCard({ person }: { person: PersonDetail }) {
         </button>
       </div>
 
-      <div className="flex flex-col items-center gap-3.5">
-        <div className="flex flex-col items-center gap-3">
+      <div className="flex flex-col items-center gap-3">
+        <div className="flex flex-col items-center gap-2.5">
           <Avatar size={100} alt={person.name} />
-          <div className="flex flex-col items-center gap-4 text-center">
+          <div className="flex flex-col items-center gap-3 text-center">
             <p className="text-[20px] font-medium text-ink">{person.name}</p>
             {person.bio && (
               <div className="text-sm font-normal text-subtle">
@@ -53,9 +53,9 @@ export function ProfileDetailCard({ person }: { person: PersonDetail }) {
           </div>
         </div>
 
-        <div className="flex flex-col items-center gap-3.5">
+        <div className="flex flex-col items-center gap-3">
           {person.socials && person.socials.length > 0 && (
-            <ul className="flex items-center gap-1.5" aria-label="Social links">
+            <ul className="flex items-center gap-1" aria-label="Social links">
               {person.socials.map((social) => (
                 <li key={social.label}>
                   <span
@@ -73,7 +73,7 @@ export function ProfileDetailCard({ person }: { person: PersonDetail }) {
           )}
 
           {person.skills && person.skills.length > 0 && (
-            <ul className="flex flex-wrap justify-center gap-1.5" aria-label="Skills">
+            <ul className="flex flex-wrap justify-center gap-1" aria-label="Skills">
               {person.skills.map((skill) => (
                 <li
                   key={skill.id}
@@ -88,15 +88,15 @@ export function ProfileDetailCard({ person }: { person: PersonDetail }) {
         </div>
       </div>
 
-      <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-5">
         <div className="flex items-center justify-between">
           <h3 className="text-[20px] font-medium text-ink">Detail Information</h3>
           <span className="text-ink" title="Editing is not available yet">
             <Icon name="edit-alt" size={24} />
           </span>
         </div>
-        <div className="flex flex-col gap-4">
-          <div className="flex items-center gap-[7px]">
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center gap-1.5">
             <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-accent text-ink">
               <Icon name="user" size={16} />
             </span>
@@ -106,7 +106,7 @@ export function ProfileDetailCard({ person }: { person: PersonDetail }) {
             </div>
           </div>
           {person.email && (
-            <div className="flex items-center gap-[7px]">
+            <div className="flex items-center gap-1.5">
               <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-accent text-ink">
                 <Icon name="envelope" size={16} />
               </span>
