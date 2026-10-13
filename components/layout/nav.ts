@@ -29,7 +29,7 @@ export const NAV_SECTIONS: NavSection[] = [
     id: "tools",
     title: "Tools",
     items: [
-      { id: "inbox", label: "Inbox", icon: "envelope" },
+      { id: "inbox", label: "Inbox", icon: "envelope", href: "/inbox" },
       { id: "my-collab", label: "My Collaborations", icon: "group", href: "/my-collaborations" },
     ],
   },

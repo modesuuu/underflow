@@ -179,6 +179,7 @@ function NavSectionBlock({
 function routeToNavId(pathname: string): string {
   if (pathname.startsWith("/my-collaborations")) return "my-collab";
   if (pathname.startsWith("/collaborations")) return "collaborations";
+  if (pathname.startsWith("/inbox")) return "inbox";
   if (pathname === "/" || pathname.startsWith("/dashboard")) return "feeds";
   return DEFAULT_ACTIVE_ID;
 }

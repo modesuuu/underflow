@@ -50,7 +50,7 @@ export function MessagesColumn({
           value={query}
           onChange={(event) => onQueryChange(event.target.value)}
           placeholder="Search"
-          className="w-full rounded-md border border-line bg-surface py-2 pr-3 pl-9 text-sm text-ink outline-none placeholder:text-muted focus-visible:ring-2 focus-visible:ring-accent"
+          className="h-[42px] w-full rounded-md border border-line bg-surface pr-3 pl-9 text-sm text-ink outline-none placeholder:text-muted focus-visible:ring-2 focus-visible:ring-accent"
         />
       </label>
 
@@ -64,16 +64,14 @@ export function MessagesColumn({
                 type="button"
                 onClick={() => onSelect(thread.id)}
                 aria-current={selected || undefined}
-                className={`flex w-full cursor-pointer items-center gap-3 rounded-xl p-2 text-left transition-colors ${
-                  selected ? "bg-surface" : "hover:bg-surface/60"
-                }`}
+                className="flex w-full cursor-pointer items-center gap-3 px-0 py-0 text-left transition-colors hover:bg-surface/60"
               >
                 <Avatar size={42} alt={thread.name} />
                 <span className="flex min-w-0 flex-1 flex-col">
-                  <span className="truncate text-base font-medium text-ink">
+                  <span className="truncate text-base leading-snug font-medium text-ink">
                     {thread.name}
                   </span>
-                  <span className="truncate text-sm text-muted">
+                  <span className="truncate text-sm leading-snug text-muted">
                     {last?.text ?? ""}
                   </span>
                 </span>

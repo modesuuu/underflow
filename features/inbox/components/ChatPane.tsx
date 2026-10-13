@@ -67,14 +67,16 @@ export function ChatPane({ conversation }: { conversation: Conversation | null }
       aria-label={`Conversation with ${conversation.name}`}
       className="flex min-w-0 flex-1 flex-col bg-surface"
     >
-      <div className="flex flex-col items-center gap-1 pt-4 pb-2">
-        <Avatar size={42} alt={conversation.name} />
-        <span className="rounded-full bg-[#d3cfff] px-3 py-0.5 text-sm font-medium text-ink">
-          {conversation.name}
-        </span>
-      </div>
-
       <div ref={scrollRef} className="no-scrollbar flex-1 overflow-y-auto px-5 py-4">
+        {/* Name chip — part of the scroll flow, as drawn in 386:5:
+            it floats over the top of the conversation (soft drop
+            shadow on the group) and scrolls away with the messages. */}
+        <div className="flex flex-col items-center gap-1 pb-6 [filter:drop-shadow(0_18px_20px_rgba(0,0,0,0.15))]">
+          <Avatar size={42} alt={conversation.name} />
+          <span className="min-w-[88px] rounded-full bg-[#d3cfff] px-3 py-1 text-center text-base font-medium text-ink">
+            {conversation.name}
+          </span>
+        </div>
         <div className="flex flex-col gap-6">
           {groups.map((group, groupIndex) => {
             const mine = group.from === "me";
@@ -94,8 +96,10 @@ export function ChatPane({ conversation }: { conversation: Conversation | null }
                   {group.messages.map((message) => (
                     <p
                       key={message.id}
-                      className={`max-w-[310px] rounded-2xl px-3 py-3 text-[15px] whitespace-pre-wrap ${
-                        mine ? "bg-accent text-ink" : "bg-bg text-ink"
+                      className={`max-w-[310px] rounded-2xl px-3 py-3 text-base whitespace-pre-wrap ${
+                        mine
+                          ? "rounded-br-[2px] bg-accent text-ink"
+                          : "rounded-bl-[2px] bg-bg text-ink"
                       }`}
                     >
                       {message.text}
