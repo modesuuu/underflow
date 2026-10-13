@@ -61,7 +61,7 @@ export function TopBar({
   return (
     <header
       ref={barRef}
-      className="sticky top-0 z-20 flex h-[79px] items-center justify-between bg-bg px-[42px]"
+      className="sticky top-0 z-20 flex h-[79px] items-center justify-between border-b border-line bg-bg px-[42px]"
     >
       <div className="flex items-center gap-3">
         {backHref && (

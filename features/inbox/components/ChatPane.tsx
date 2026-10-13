@@ -37,25 +37,24 @@ export function ChatPane({ conversation }: { conversation: Conversation | null }
 
   const { application } = conversation;
   // Consecutive same-sender messages form one stack (6px apart in
-  // the frame); stacks sit 24px apart. The application card rides
-  // right after the applicant's first stack: theirs for an incoming
-  // application, mine for an outgoing one.
-  const cardAfterFrom = application
-    ? application.direction === "incoming"
-      ? "them"
-      : "me"
-    : null;
-  const groups: { from: "me" | "them"; messages: typeof conversation.messages }[] =
-    [];
-  for (const message of conversation.messages) {
-    const lastGroup = groups[groups.length - 1];
-    if (lastGroup && lastGroup.from === message.from) {
-      lastGroup.messages.push(message);
+  // the frame); stacks sit 24px apart. The application card is
+  // pinned to the application MOMENT — right after the thread's
+  // first message (the application message itself) — so later
+  // messages flow below it and push it up, instead of the card
+  // trailing the whole conversation.
+  type Block =
+    | { kind: "stack"; from: "me" | "them"; messages: typeof conversation.messages }
+    | { kind: "card" };
+  const blocks: Block[] = [];
+  conversation.messages.forEach((message, index) => {
+    const lastBlock = blocks[blocks.length - 1];
+    if (lastBlock?.kind === "stack" && lastBlock.from === message.from) {
+      lastBlock.messages.push(message);
     } else {
-      groups.push({ from: message.from, messages: [message] });
+      blocks.push({ kind: "stack", from: message.from, messages: [message] });
     }
-  }
-  let cardInserted = false;
+    if (index === 0 && application) blocks.push({ kind: "card" });
+  });
 
   const handleSend = (event: React.FormEvent) => {
     event.preventDefault();
@@ -82,46 +81,44 @@ export function ChatPane({ conversation }: { conversation: Conversation | null }
         className="no-scrollbar flex-1 overflow-y-auto overscroll-contain px-6 pt-[104px] pb-6"
       >
         <div className="flex flex-col gap-6">
-          {groups.map((group, groupIndex) => {
-            const mine = group.from === "me";
-            const insertCard =
-              application && !cardInserted && cardAfterFrom === group.from;
-            if (insertCard) cardInserted = true;
+          {blocks.map((block, blockIndex) => {
+            if (block.kind === "card" && application) {
+              const mine = application.direction === "outgoing";
+              return (
+                <div
+                  key="application-card"
+                  className={`flex ${mine ? "justify-end" : "justify-start"}`}
+                >
+                  <ApplicationCard
+                    application={application}
+                    onResolve={(status) =>
+                      resolveApplication(conversation.id, status)
+                    }
+                  />
+                </div>
+              );
+            }
+            if (block.kind !== "stack") return null;
+            const mine = block.from === "me";
             return (
               <div
-                key={`${group.from}-${groupIndex}`}
-                className="flex flex-col gap-6"
+                key={`${block.from}-${blockIndex}`}
+                className={`flex flex-col gap-1.5 ${
+                  mine ? "items-end" : "items-start"
+                }`}
               >
-                <div
-                  className={`flex flex-col gap-1.5 ${
-                    mine ? "items-end" : "items-start"
-                  }`}
-                >
-                  {group.messages.map((message) => (
-                    <p
-                      key={message.id}
-                      className={`max-w-[310px] rounded-2xl px-3 py-3 text-base whitespace-pre-wrap ${
-                        mine
-                          ? "rounded-br-[2px] bg-accent text-ink"
-                          : "rounded-bl-[2px] bg-bg text-ink"
-                      }`}
-                    >
-                      {message.text}
-                    </p>
-                  ))}
-                </div>
-                {insertCard && application && (
-                  <div
-                    className={`flex ${mine ? "justify-end" : "justify-start"}`}
+                {block.messages.map((message) => (
+                  <p
+                    key={message.id}
+                    className={`max-w-[310px] rounded-2xl px-3 py-3 text-base whitespace-pre-wrap ${
+                      mine
+                        ? "rounded-br-[2px] bg-accent text-ink"
+                        : "rounded-bl-[2px] bg-bg text-ink"
+                    }`}
                   >
-                    <ApplicationCard
-                      application={application}
-                      onResolve={(status) =>
-                        resolveApplication(conversation.id, status)
-                      }
-                    />
-                  </div>
-                )}
+                    {message.text}
+                  </p>
+                ))}
               </div>
             );
           })}
