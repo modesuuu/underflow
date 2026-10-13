@@ -80,6 +80,28 @@ export function deleteThread(id: string) {
   emit();
 }
 
+/**
+ * Undo for Clear/Delete: put a snapshot back. A still-present
+ * thread is replaced in place; a deleted one re-enters at the top
+ * of its pin group (the list's sort does the rest).
+ */
+export function restoreThread(snapshot: Conversation) {
+  if (conversations.some((t) => t.id === snapshot.id)) {
+    conversations = conversations.map((t) =>
+      t.id === snapshot.id ? snapshot : t,
+    );
+  } else {
+    const pinnedCount = conversations.filter((t) => t.pinned).length;
+    const at = snapshot.pinned ? 0 : pinnedCount;
+    conversations = [
+      ...conversations.slice(0, at),
+      snapshot,
+      ...conversations.slice(at),
+    ];
+  }
+  emit();
+}
+
 /** Empty the history (Clear chat); the thread and its application stay. */
 export function clearThread(id: string) {
   replaceThread(id, (t) => ({ ...t, messages: [] }));

@@ -215,3 +215,19 @@
     animation-iteration-count: 1 !important;
   }
 }
+/* --- Toasts (Sonner): app tokens over the library defaults --- */
+[data-sonner-toast] {
+  font-family: inherit;
+}
+[data-sonner-toast] [data-title] {
+  font-weight: 600;
+}
+[data-sonner-toast] [data-description] {
+  color: var(--color-muted);
+}
+[data-sonner-toast] [data-button] {
+  background: var(--color-accent);
+  color: var(--color-ink);
+  border-radius: 999px;
+  font-weight: 500;
+}
