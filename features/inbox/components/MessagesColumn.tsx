@@ -3,7 +3,13 @@
 import { useState } from "react";
 import { Avatar } from "@/components/ui/Avatar";
 import { Icon } from "@/components/ui/Icon";
-import { clearThread, deleteThread, unreadCount } from "../store";
+import { toast } from "sonner";
+import {
+  clearThread,
+  deleteThread,
+  restoreThread,
+  unreadCount,
+} from "../store";
 import type { Conversation } from "../types";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { ThreadOptionsMenu } from "./ThreadOptionsMenu";
@@ -164,8 +170,28 @@ export function MessagesColumn({
           }
           confirmLabel={confirm.kind === "delete" ? "Delete chat" : "Clear chat"}
           onConfirm={() => {
-            if (confirm.kind === "delete") deleteThread(confirm.thread.id);
-            else clearThread(confirm.thread.id);
+            const snapshot = confirm.thread;
+            if (confirm.kind === "delete") {
+              deleteThread(snapshot.id);
+              toast("Chat deleted", {
+                description: snapshot.name,
+                duration: 5000,
+                action: {
+                  label: "Undo",
+                  onClick: () => restoreThread(snapshot),
+                },
+              });
+            } else {
+              clearThread(snapshot.id);
+              toast("Chat cleared", {
+                description: snapshot.name,
+                duration: 5000,
+                action: {
+                  label: "Undo",
+                  onClick: () => restoreThread(snapshot),
+                },
+              });
+            }
             setConfirm(null);
           }}
           onCancel={() => setConfirm(null)}

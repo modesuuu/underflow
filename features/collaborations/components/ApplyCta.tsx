@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Icon } from "@/components/ui/Icon";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { startApplicationThread, withdrawApplication } from "@/features/inbox/store";
 import { applyToCollab } from "../api";
 import { ApplyMessageModal } from "./ApplyMessageModal";
@@ -64,6 +65,9 @@ export function ApplyCta({
     setSubmitting(false);
     setState("pending");
     setModalOpen(false);
+    toast.success("Application sent", {
+      description: `Your message is on its way to ${ownerName}.`,
+    });
     router.push("/inbox");
   };
 
@@ -71,6 +75,7 @@ export function ApplyCta({
     // TODO(backend): DELETE /api/collaborations/:id/apply
     withdrawApplication(projectId);
     setState("default");
+    toast("Application withdrawn", { description: projectTitle });
   };
 
   return (

@@ -3,10 +3,12 @@
 import { useEffect, useRef, useState } from "react";
 import { Avatar } from "@/components/ui/Avatar";
 import { Icon } from "@/components/ui/Icon";
+import { toast } from "sonner";
 import {
   clearThread,
   deleteThread,
   resolveApplication,
+  restoreThread,
   sendMessage,
 } from "../store";
 import type { Conversation } from "../types";
@@ -64,6 +66,17 @@ export function ChatPane({ conversation }: { conversation: Conversation | null }
     if (index === 0 && application) blocks.push({ kind: "card" });
   });
 
+  const handleResolve = (status: "accepted" | "declined") => {
+    resolveApplication(conversation.id, status);
+    if (!application) return;
+    const description = `${conversation.name}'s application for ${application.projectTitle} was ${status}.`;
+    if (status === "accepted") {
+      toast.success("Application accepted", { description });
+    } else {
+      toast("Application declined", { description });
+    }
+  };
+
   const handleSend = (event: React.FormEvent) => {
     event.preventDefault();
     if (!draft.trim()) return;
@@ -113,9 +126,7 @@ export function ChatPane({ conversation }: { conversation: Conversation | null }
               >
                 <ApplicationCard
                   application={application}
-                  onResolve={(status) =>
-                    resolveApplication(conversation.id, status)
-                  }
+                  onResolve={handleResolve}
                 />
               </div>
             ) : (
@@ -133,9 +144,7 @@ export function ChatPane({ conversation }: { conversation: Conversation | null }
                 >
                   <ApplicationCard
                     application={application}
-                    onResolve={(status) =>
-                      resolveApplication(conversation.id, status)
-                    }
+                    onResolve={handleResolve}
                   />
                 </div>
               );
@@ -224,8 +233,28 @@ export function ChatPane({ conversation }: { conversation: Conversation | null }
           }
           confirmLabel={confirm === "delete" ? "Delete" : "Clear"}
           onConfirm={() => {
-            if (confirm === "delete") deleteThread(conversation.id);
-            else clearThread(conversation.id);
+            const snapshot = conversation;
+            if (confirm === "delete") {
+              deleteThread(conversation.id);
+              toast("Chat deleted", {
+                description: snapshot.name,
+                duration: 5000,
+                action: {
+                  label: "Undo",
+                  onClick: () => restoreThread(snapshot),
+                },
+              });
+            } else {
+              clearThread(conversation.id);
+              toast("Chat cleared", {
+                description: snapshot.name,
+                duration: 5000,
+                action: {
+                  label: "Undo",
+                  onClick: () => restoreThread(snapshot),
+                },
+              });
+            }
             setConfirm(null);
           }}
           onCancel={() => setConfirm(null)}

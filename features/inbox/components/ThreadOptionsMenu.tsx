@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { toast } from "sonner";
 import { Icon } from "@/components/ui/Icon";
 import {
   markThreadUnread,
@@ -152,6 +153,9 @@ export function ThreadOptionsMenu({
               onClick={() => {
                 setOpen(false);
                 toggleMuteThread(thread.id);
+                toast(thread.muted ? "Chat unmuted" : "Chat muted", {
+                  description: thread.name,
+                });
               }}
               className={itemClass}
             >

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent, type KeyboardEvent } from "react";
 import clsx from "clsx";
 import { Icon } from "@/components/ui/Icon";
+import { toast } from "sonner";
 import { createCollabProject } from "../api";
 import type { SkillTag } from "../types";
 
@@ -240,6 +241,9 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
     });
     setSubmitting(false);
     setClosing(false);
+    toast.success("Collaboration posted", {
+      description: `"${title.trim()}" is now on the board.`,
+    });
     onClose();
   };
 
