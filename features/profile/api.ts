@@ -3,6 +3,8 @@ import { ApiEnvelope, apiFetch, ApiError, isApiConfigured } from "@/lib/api-clie
 import { getCollabProjects } from "@/features/collaborations/api";
 import { getDashboardPosts } from "@/features/dashboard/api";
 import { getMyCollabProjects } from "@/features/my-collaborations/api";
+import type { CollabProject } from "@/features/collaborations/types";
+import type { Post } from "@/features/dashboard/types";
 import { PEOPLE } from "./mock";
 import type { PersonDetail, ProfileStats } from "./types";
 
@@ -62,4 +64,32 @@ export async function getProfileStats(person: PersonDetail): Promise<ProfileStat
     postFeed,
     activeProjects: memberships.length - completeProjects,
   };
+}
+
+/** Posts authored by the person (any alias) — feeds /profile/[userId]/posts. */
+export async function getPersonPosts(person: PersonDetail): Promise<Post[]> {
+  const posts = await getDashboardPosts();
+  return posts.filter((post) => person.aliases.includes(post.author.id));
+}
+
+/**
+ * The person's ACTIVE projects — feeds /profile/[userId]/projects.
+ * Same membership rule as getProfileStats, so the list length always
+ * matches the Active Projects figure on the Profile page.
+ */
+export async function getPersonProjects(
+  person: PersonDetail,
+): Promise<CollabProject[]> {
+  if (person.id === "me") {
+    const mine = await getMyCollabProjects();
+    return mine.filter((p) => p.myStatus !== "complete");
+  }
+  const projects = await getCollabProjects();
+  return projects.filter(
+    (project) =>
+      project.status !== "completed" &&
+      project.members.some(
+        (member) => !member.isOpenSlot && person.aliases.includes(member.id),
+      ),
+  );
 }
