@@ -41,6 +41,29 @@ import {
 const RAIL_STORAGE_KEY = "uf-sidebar-mini";
 const RAIL_WIDTH = 76;
 
+/** Panel glyph for the rail toggle — the pictogram the user
+ * picked: a rounded rect with a left panel and a content dash.
+ * Drawn inline; boxicons has no sidebar glyph. */
+function SidebarPanelIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <rect x="3" y="4.5" width="18" height="15" rx="2.5" />
+      <line x1="9.5" y1="4.5" x2="9.5" y2="19.5" />
+      <line x1="5.8" y1="12" x2="7.7" y2="12" strokeWidth="2.2" />
+    </svg>
+  );
+}
+
 type RegisterRef<T> = (id: string, el: T | null) => void;
 
 interface NavRowProps {
@@ -80,7 +103,7 @@ function NavRow({ item, active, badge, mini, onSelect, registerRef }: NavRowProp
       </span>
       <span
         className={clsx(
-          "overflow-hidden text-xs font-medium whitespace-nowrap transition-[max-width,opacity] duration-200",
+          "overflow-hidden text-xs font-medium whitespace-nowrap transition-[max-width,opacity] duration-300",
           active ? "text-ink" : "text-muted",
           mini ? "max-w-0 opacity-0" : "max-w-[140px] opacity-100"
         )}
@@ -239,6 +262,7 @@ export function Sidebar() {
   const inboxUnread = useInboxUnreadCount();
 
   const areaRef = useRef<HTMLDivElement>(null);
+  const stackRef = useRef<HTMLDivElement>(null);
   const pillRef = useRef<HTMLDivElement>(null);
   const rowRefs = useRef(new Map<string, HTMLElement>());
   const firstPill = useRef(true);
@@ -345,7 +369,20 @@ export function Sidebar() {
 
   useLayoutEffect(() => {
     positionPillRef.current();
-  }, [activeId, activeVisible]);
+  }, [activeId, activeVisible, mini]);
+
+  // Keep the pill glued to its row through ANY layout motion —
+  // accordion open/close, rail collapse (section headers swap for
+  // dividers, sections force-expand): a ResizeObserver on the nav
+  // stack re-measures whenever the stack's height changes, instead
+  // of guessing a settle timeout and letting the pill trail late.
+  useEffect(() => {
+    const stack = stackRef.current;
+    if (!stack || typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(() => positionPillRef.current());
+    observer.observe(stack);
+    return () => observer.disconnect();
+  }, []);
 
   const toggleSection = (id: string) => {
     const isCollapsed = !!collapsed[id];
@@ -367,7 +404,7 @@ export function Sidebar() {
       className={clsx(
         "w-(--uf-sidebar-w) shrink-0 border-r-[0.5px] border-line bg-bg",
         animateWidth &&
-          "transition-[width] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] motion-reduce:transition-none"
+          "transition-[width] duration-[380ms] ease-(--uf-ease-out) motion-reduce:transition-none"
       )}
     >
       <div
@@ -376,7 +413,7 @@ export function Sidebar() {
           "relative flex h-full flex-col justify-between py-6",
           mini ? "px-3" : "px-6",
           animateWidth &&
-            "transition-[padding] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] motion-reduce:transition-none"
+            "transition-[padding] duration-[380ms] ease-(--uf-ease-out) motion-reduce:transition-none"
         )}
       >
         <div
@@ -388,19 +425,7 @@ export function Sidebar() {
           style={{ opacity: 0 }}
         />
 
-        {/* Rail toggle — straddles the sidebar's right border */}
-        <button
-          type="button"
-          onClick={toggleMini}
-          aria-expanded={!mini}
-          aria-label={mini ? "Expand sidebar" : "Collapse sidebar"}
-          title={mini ? "Expand sidebar (Ctrl+B)" : "Collapse sidebar (Ctrl+B)"}
-          className="absolute top-[70px] -right-3 z-40 flex size-6 cursor-pointer items-center justify-center rounded-full border border-line bg-surface text-muted shadow-sm transition-colors hover:text-ink"
-        >
-          <Icon name={mini ? "chevrons-right" : "chevrons-left"} size={14} />
-        </button>
-
-        <div className="flex flex-col gap-6">
+        <div ref={stackRef} className="flex flex-col gap-6">
           {/* Brand */}
           <div
             className={clsx(
@@ -412,13 +437,46 @@ export function Sidebar() {
             <div className="h-[31px] w-[31px] shrink-0 rounded-sm bg-placeholder" />
             <span
               className={clsx(
-                "overflow-hidden text-base font-medium whitespace-nowrap transition-[max-width,opacity] duration-200",
+                "overflow-hidden text-base font-medium whitespace-nowrap transition-[max-width,opacity] duration-300",
                 mini ? "max-w-0 opacity-0" : "max-w-[160px] opacity-100"
               )}
             >
               Stack Underflow
             </span>
           </div>
+
+          {/* Rail toggle — a quiet nav-row carrying the panel
+              glyph (the floating circular edge button read as
+              clutter and looked broken in the rail). */}
+          <button
+            type="button"
+            onClick={toggleMini}
+            aria-expanded={!mini}
+            aria-label={mini ? "Expand sidebar" : "Collapse sidebar"}
+            title={mini ? "Expand sidebar (Ctrl+B)" : "Collapse sidebar (Ctrl+B)"}
+            className={clsx(
+              "group nav-row-hoverable relative z-10 flex w-full cursor-pointer items-center rounded-md py-2 text-left",
+              mini ? "justify-center gap-0 px-0" : "gap-1 px-1"
+            )}
+          >
+            <SidebarPanelIcon className="shrink-0 text-muted" />
+            <span
+              className={clsx(
+                "overflow-hidden text-xs font-medium whitespace-nowrap text-muted transition-[max-width,opacity] duration-300",
+                mini ? "max-w-0 opacity-0" : "max-w-[140px] opacity-100"
+              )}
+            >
+              Collapse sidebar
+            </span>
+            {mini && (
+              <span
+                aria-hidden="true"
+                className="pointer-events-none absolute top-1/2 left-full z-50 ml-3 -translate-y-1/2 translate-x-[-4px] rounded-lg bg-ink px-2.5 py-1.5 text-xs font-medium whitespace-nowrap text-white opacity-0 shadow-lg transition-all duration-150 group-hover:translate-x-0 group-hover:opacity-100 group-hover:delay-300 group-focus-visible:translate-x-0 group-focus-visible:opacity-100"
+              >
+                Expand sidebar
+              </span>
+            )}
+          </button>
 
           {/* Nav sections */}
           <nav className="flex flex-col gap-6">
@@ -467,7 +525,7 @@ export function Sidebar() {
               <Avatar size={28} rounded="sm" alt={CURRENT_USER.name} />
               <div
                 className={clsx(
-                  "flex flex-col gap-0.5 overflow-hidden transition-[max-width,opacity] duration-200",
+                  "flex flex-col gap-0.5 overflow-hidden transition-[max-width,opacity] duration-300",
                   mini ? "w-0 max-w-0 opacity-0" : "w-[97px] max-w-[97px] opacity-100"
                 )}
               >

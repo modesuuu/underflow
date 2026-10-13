@@ -155,13 +155,16 @@
 .chevron-rot {
   transition: transform 250ms var(--uf-ease-out);
 }
-/* Active-row pill: the ONLY animated props are transform + opacity
+/* Active-row pill: animated props are transform + opacity
    (compositor-only, no layout) — replaces the GSAP top/height/opacity
-   tweens (audit P1-E #28). */
+   tweens (audit P1-E #28). Left/right join the transition only so the
+   pill's insets can ride the sidebar rail's width animation. */
 .active-pill {
   transition:
-    transform 350ms var(--uf-ease-out),
-    opacity 350ms var(--uf-ease-out);
+    transform 220ms var(--uf-ease-out),
+    opacity 220ms var(--uf-ease-out),
+    left 380ms var(--uf-ease-out),
+    right 380ms var(--uf-ease-out);
 }
 /* Accordion open/close: the grid-template-rows 0fr<->1fr trick
    (layout, but only on the occasional toggle — accepted per the audit). */
