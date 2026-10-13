@@ -23,7 +23,7 @@ export default function PostDetailLoading() {
       backLabel="Feed"
       backHref="/"
     >
-      <div className="mx-auto flex w-full max-w-(--uf-content-w) flex-col gap-6 py-3">
+      <div className="ml-[28px] flex w-full max-w-(--uf-content-w) flex-col gap-6 py-3">
         {/* Post card */}
         <div className="rounded-xl border border-line bg-surface p-5">
           {/* Author row */}

@@ -56,7 +56,7 @@ function NotificationsSkeleton() {
 
 function PostDetailSkeleton() {
   return (
-    <div className="mx-auto flex w-full max-w-(--uf-content-w) flex-col gap-6 py-3">
+    <div className="ml-[28px] flex w-full max-w-(--uf-content-w) flex-col gap-6 py-3">
       {/* Post card */}
       <div className="rounded-xl border border-line bg-surface p-5">
         {/* Author row */}
@@ -195,7 +195,7 @@ export default async function PostDetailPage({ params, searchParams }: DetailPag
       backLabel="Feed"
       backHref="/"
     >
-      <div className="mx-auto flex w-full max-w-(--uf-content-w) flex-col gap-6 py-3">
+      <div className="ml-[28px] flex w-full max-w-(--uf-content-w) flex-col gap-6 py-3">
         {/* P1-C #20: one real h1 per page — visually hidden so the design
             (small author name span) is untouched. */}
         <Suspense fallback={<PostDetailSkeleton />}>

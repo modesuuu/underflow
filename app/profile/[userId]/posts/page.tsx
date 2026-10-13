@@ -25,7 +25,7 @@ export async function generateMetadata({
 
 function FeedColumnSkeleton() {
   return (
-    <div className="mx-auto flex w-full max-w-(--uf-content-w) flex-col gap-6 py-3">
+    <div className="ml-[28px] flex w-full max-w-(--uf-content-w) flex-col gap-6 py-3">
       {Array.from({ length: 3 }).map((_, i) => (
         <div key={i} className="rounded-xl border border-line bg-surface p-5">
           <div className="flex items-center gap-3">
@@ -68,7 +68,7 @@ async function PostsBody({ userId }: { userId: string }) {
   const posts = await getPersonPosts(person);
   if (posts.length === 0) {
     return (
-      <div className="mx-auto w-full max-w-(--uf-content-w) py-3">
+      <div className="ml-[28px] w-full max-w-(--uf-content-w) py-3">
         <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-line bg-surface px-6 py-16 text-center">
           <Icon name="image-add" size={32} className="text-muted" />
           <div className="flex flex-col gap-1">
@@ -110,7 +110,7 @@ export default async function ProfilePostsPage({ params }: ProfilePostsPageProps
       backHref={`/profile/${person.id}`}
     >
       <h1 className="sr-only">{`${person.name}'s posts`}</h1>
-      <div className="mx-auto w-full max-w-(--uf-content-w) pt-3">
+      <div className="ml-[28px] w-full max-w-(--uf-content-w) pt-3">
         <Link
           href={`/profile/${person.id}`}
           className="flex w-fit items-center gap-1 text-base font-medium text-ink hover:underline"
