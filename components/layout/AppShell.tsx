@@ -1,7 +1,6 @@
 import type { ReactNode } from "react";
 import { Sidebar } from "./Sidebar";
 import { TopBar, type TopBarVariant } from "./TopBar";
-import { BottomNav } from "./BottomNav";
 
 interface AppShellProps {
   children: ReactNode;
@@ -13,11 +12,12 @@ interface AppShellProps {
   variant?: TopBarVariant;
   hideTopBar?: boolean;
   /**
-   * "bottom" replaces the left Sidebar with a mobile-style bottom nav
-   * (Profile section — its Figma frames draw no sidebar). Default keeps
-   * the standard sidebar chrome every other page uses.
+   * "none" renders without the left Sidebar and without any bottom nav
+   * (Profile section — Figma 414:822 draws the Profile with no nav
+   * chrome at all). Default keeps the standard sidebar every other
+   * page uses.
    */
-  navVariant?: "sidebar" | "bottom";
+  navVariant?: "sidebar" | "none";
   /** Page-specific TopBar right-side actions; replaces the default Post button. */
   actions?: ReactNode;
 }
@@ -35,7 +35,7 @@ export function AppShell({
   actions,
   navVariant = "sidebar",
 }: AppShellProps) {
-  if (navVariant === "bottom") {
+  if (navVariant === "none") {
     return (
       <div className="flex h-dvh w-full flex-col overflow-hidden">
         <div className="flex min-h-0 flex-1">
@@ -58,7 +58,6 @@ export function AppShell({
             </aside>
           )}
         </div>
-        <BottomNav />
       </div>
     );
   }

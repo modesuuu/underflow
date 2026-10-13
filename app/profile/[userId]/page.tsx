@@ -26,7 +26,7 @@ export async function generateMetadata({
 function ProfileSkeleton() {
   return (
     <div className="flex flex-1 flex-col gap-6 lg:flex-row lg:justify-between">
-      <div className="w-full shrink-0 rounded-3xl bg-bg p-6 lg:w-[400px] xl:w-[440px]">
+      <div className="w-full shrink-0 rounded-3xl bg-bg p-6 lg:w-[397px]">
         <div className="h-5 w-28 rounded bg-placeholder" />
         <div className="mt-6 flex flex-col items-center">
           <div className="size-[100px] rounded-full bg-placeholder" />
@@ -44,20 +44,22 @@ function ProfileSkeleton() {
           ))}
         </div>
       </div>
-      <div className="w-full shrink-0 rounded-3xl bg-bg p-6 lg:w-[400px] xl:w-[440px]">
+      <div className="w-full shrink-0 rounded-3xl bg-bg p-6 lg:w-[397px]">
         <div className="h-5 w-44 rounded bg-placeholder" />
-        <div className="mt-6 grid grid-cols-2 gap-4">
-          {Array.from({ length: 2 }).map((_, i) => (
-            <div key={i} className="rounded-2xl border border-line bg-surface p-4">
-              <div className="size-8 rounded-lg bg-placeholder" />
-              <div className="mt-4 h-9 w-12 rounded bg-placeholder" />
-              <div className="mt-1.5 h-4 w-24 rounded bg-placeholder" />
-            </div>
-          ))}
-          <div className="col-span-2 rounded-2xl border border-line bg-surface p-4">
-            <div className="size-8 rounded-lg bg-placeholder" />
-            <div className="mt-4 h-9 w-12 rounded bg-placeholder" />
-            <div className="mt-1.5 h-4 w-24 rounded bg-placeholder" />
+        <div className="mt-6 flex flex-col gap-3.5">
+          <div className="flex gap-5">
+            {Array.from({ length: 2 }).map((_, i) => (
+              <div key={i} className="flex-1 rounded-xl border border-line p-3">
+                <div className="size-6 rounded bg-placeholder" />
+                <div className="mt-3 h-6 w-10 rounded bg-placeholder" />
+                <div className="mt-0.5 h-4 w-24 rounded bg-placeholder" />
+              </div>
+            ))}
+          </div>
+          <div className="rounded-xl border border-line p-3">
+            <div className="size-6 rounded bg-placeholder" />
+            <div className="mt-3 h-6 w-10 rounded bg-placeholder" />
+            <div className="mt-0.5 h-4 w-24 rounded bg-placeholder" />
           </div>
         </div>
       </div>
@@ -84,7 +86,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
 
   return (
     <AppShell
-      navVariant="bottom"
+      navVariant="none"
       breadcrumbRoot={person.name}
       breadcrumbLeaf="Profile"
       backLabel="Feed"

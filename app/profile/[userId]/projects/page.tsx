@@ -80,7 +80,7 @@ export default async function ProfileProjectsPage({
 
   return (
     <AppShell
-      navVariant="bottom"
+      navVariant="none"
       breadcrumbRoot={person.name}
       breadcrumbLeaf="Collaborations"
       backLabel={person.name}
