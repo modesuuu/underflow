@@ -85,7 +85,7 @@ function NavRow({ item, active, badge, mini, animate, onSelect, registerRef }: N
   // href-less items stay buttons. Either element is registered to the pill.
   const className = clsx(
     "group relative z-10 flex w-full cursor-pointer items-center gap-1 rounded-md py-2 text-left",
-    mini ? "pr-0 pl-4" : "justify-center px-1",
+    mini ? "pr-0 pl-4" : "px-1",
     animate &&
       "transition-[padding] duration-[380ms] ease-(--uf-ease-out) motion-reduce:transition-none",
     !active && "nav-row-hoverable"
@@ -93,11 +93,11 @@ function NavRow({ item, active, badge, mini, animate, onSelect, registerRef }: N
 
   const inner = (
     <>
-      <span className="relative shrink-0">
+      <span className="relative flex size-5 shrink-0 items-center justify-center">
         <Icon
           name={item.icon}
           size={20}
-          className={active ? "text-ink" : "text-muted"}
+          className={(active ? "text-ink" : "text-muted") + " leading-none"}
         />
         {/* Mini rail: the unread count becomes a dot badge on the icon */}
         {mini && badge !== undefined && badge > 0 && (
@@ -108,7 +108,7 @@ function NavRow({ item, active, badge, mini, animate, onSelect, registerRef }: N
       </span>
       <span
         className={clsx(
-          "overflow-hidden text-xs font-medium whitespace-nowrap",
+          "overflow-hidden text-xs leading-5 font-medium whitespace-nowrap",
           animate &&
             "transition-[max-width,opacity] duration-[380ms] ease-(--uf-ease-out) motion-reduce:transition-none",
           active ? "text-ink" : "text-muted",
@@ -119,11 +119,7 @@ function NavRow({ item, active, badge, mini, animate, onSelect, registerRef }: N
       </span>
       {/* Badge renders in every state: normal, hover, active */}
       {!mini && badge !== undefined && badge > 0 && (
-        <Badge
-          count={badge}
-          tone="danger"
-          className="absolute top-1/2 right-1 -translate-y-1/2"
-        />
+        <Badge count={badge} tone="danger" className="ml-auto" />
       )}
       {/* Tooltip — only on the icon rail */}
       {mini && (
@@ -224,7 +220,7 @@ function NavSectionBlock({
           aria-hidden={mini || undefined}
           tabIndex={mini ? -1 : undefined}
           className={
-            "absolute inset-x-0 top-0 flex w-full cursor-pointer items-center justify-center gap-1 text-left " +
+            "absolute inset-x-0 top-0 flex w-full cursor-pointer items-center justify-between text-left " +
             (animate ? "transition-opacity duration-200 " : "") +
             (mini ? "pointer-events-none opacity-0" : "opacity-100")
           }
@@ -241,7 +237,7 @@ function NavSectionBlock({
               (collapsed ? "-rotate-90" : "rotate-0")
             }
           >
-            <Icon name="chevron-down" size={20} className="text-muted" />
+            <Icon name="chevron-down" size={20} className="leading-none text-muted" />
           </span>
         </button>
         <div
@@ -489,8 +485,8 @@ export function Sidebar() {
               stays as the row's only element, centered. */}
           <div
             className={clsx(
-              "relative flex items-center",
-              mini ? "justify-center" : "justify-center gap-2"
+              "flex items-center",
+              mini ? "justify-center" : "gap-2"
             )}
           >
             <div
@@ -515,7 +511,7 @@ export function Sidebar() {
               title={mini ? "Expand sidebar (Ctrl+B)" : "Collapse sidebar (Ctrl+B)"}
               className={clsx(
                 "group nav-row-hoverable relative z-10 flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-lg text-muted transition-colors hover:text-ink",
-                !mini && "absolute top-1/2 right-0 -translate-y-1/2"
+                !mini && "ml-auto"
               )}
             >
               <SidebarPanelIcon />
@@ -572,7 +568,7 @@ export function Sidebar() {
             aria-label="View your profile"
             className={clsx(
               "group relative z-10 flex cursor-pointer items-center rounded-sm bg-surface p-1",
-              "justify-center"
+              mini ? "justify-center" : "justify-between"
             )}
           >
             <div className="flex items-center gap-1">
@@ -594,11 +590,7 @@ export function Sidebar() {
               </div>
             </div>
             {!mini && (
-              <Icon
-                name="chevrons-up-down"
-                size={20}
-                className="absolute top-1/2 right-2 -translate-y-1/2 text-muted"
-              />
+              <Icon name="chevrons-up-down" size={20} className="text-muted" />
             )}
             {mini && (
               <span
