@@ -29,6 +29,17 @@ import {
 // possible and are fully respected by prefers-reduced-motion. GSAP's
 // only remaining job is moving the active pill (its Y/height follow
 // the row's layout box — a genuinely JS-positioned element).
+//
+// The sidebar itself collapses to a 76px icon rail (user request,
+// 2026-10-13): the width animates on a 300ms Apple-style ease,
+// labels clip away via max-width + opacity, and icon-only rows get
+// hover tooltips. The preference persists in localStorage and
+// Ctrl/Cmd+B toggles it. The stored value is applied on mount
+// BEFORE the width transition is enabled, so a reload never
+// animates the rail shut on its own.
+
+const RAIL_STORAGE_KEY = "uf-sidebar-mini";
+const RAIL_WIDTH = 76;
 
 type RegisterRef<T> = (id: string, el: T | null) => void;
 
@@ -36,38 +47,59 @@ interface NavRowProps {
   item: NavItem;
   active: boolean;
   badge?: number;
+  mini?: boolean;
   onSelect: (id: string) => void;
   registerRef: RegisterRef<HTMLElement>;
 }
 
-function NavRow({ item, active, badge, onSelect, registerRef }: NavRowProps) {
+function NavRow({ item, active, badge, mini, onSelect, registerRef }: NavRowProps) {
   // Items with an href are real <Link> anchors — Next.js prefetches the
   // destination route shell on hover/appearance, so slow compiles no longer
   // flash the wrong skeleton first (button + router.push had no prefetch).
   // href-less items stay buttons. Either element is registered to the pill.
   const className = clsx(
-    "relative z-10 flex w-full cursor-pointer items-center gap-1 rounded-md px-1 py-2 text-left",
+    "group relative z-10 flex w-full cursor-pointer items-center rounded-md py-2 text-left",
+    mini ? "justify-center gap-0 px-0" : "gap-1 px-1",
     !active && "nav-row-hoverable"
   );
 
   const inner = (
     <>
-      <Icon
-        name={item.icon}
-        size={20}
-        className={active ? "text-ink" : "text-muted"}
-      />
+      <span className="relative shrink-0">
+        <Icon
+          name={item.icon}
+          size={20}
+          className={active ? "text-ink" : "text-muted"}
+        />
+        {/* Mini rail: the unread count becomes a dot badge on the icon */}
+        {mini && badge !== undefined && badge > 0 && (
+          <span className="absolute -top-1.5 -right-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#ff383c] px-1 text-[9px] font-semibold text-white">
+            {badge}
+          </span>
+        )}
+      </span>
       <span
         className={clsx(
-          "text-xs font-medium",
-          active ? "text-ink" : "text-muted"
+          "overflow-hidden text-xs font-medium whitespace-nowrap transition-[max-width,opacity] duration-200",
+          active ? "text-ink" : "text-muted",
+          mini ? "max-w-0 opacity-0" : "max-w-[140px] opacity-100"
         )}
       >
         {item.label}
       </span>
       {/* Badge renders in every state: normal, hover, active */}
-      {badge !== undefined && badge > 0 && (
+      {!mini && badge !== undefined && badge > 0 && (
         <Badge count={badge} tone="danger" className="ml-auto" />
+      )}
+      {/* Tooltip — only on the icon rail */}
+      {mini && (
+        <span
+          aria-hidden="true"
+          className="pointer-events-none absolute top-1/2 left-full z-50 ml-3 -translate-y-1/2 translate-x-[-4px] rounded-lg bg-ink px-2.5 py-1.5 text-xs font-medium whitespace-nowrap text-white opacity-0 shadow-lg transition-all duration-150 group-hover:translate-x-0 group-hover:opacity-100 group-hover:delay-300 group-focus-visible:translate-x-0 group-focus-visible:opacity-100"
+        >
+          {item.label}
+          {badge !== undefined && badge > 0 ? ` (${badge})` : ""}
+        </span>
       )}
     </>
   );
@@ -88,6 +120,7 @@ function NavRow({ item, active, badge, onSelect, registerRef }: NavRowProps) {
         // under the pill.
         className={className}
         aria-current={active ? "page" : undefined}
+        aria-label={mini ? item.label : undefined}
       >
         {inner}
       </Link>
@@ -105,6 +138,7 @@ function NavRow({ item, active, badge, onSelect, registerRef }: NavRowProps) {
       }}
       className={className}
       aria-current={active ? "page" : undefined}
+      aria-label={mini ? item.label : undefined}
     >
       {inner}
     </button>
@@ -115,6 +149,7 @@ interface NavSectionBlockProps {
   section: NavSection;
   activeId: string;
   collapsed: boolean;
+  mini?: boolean;
   badgeFor: (id: string) => number | undefined;
   onToggle: (id: string) => void;
   onSelect: (id: string) => void;
@@ -125,39 +160,48 @@ function NavSectionBlock({
   section,
   activeId,
   collapsed,
+  mini,
   badgeFor,
   onToggle,
   onSelect,
   registerRowRef,
 }: NavSectionBlockProps) {
+  // On the icon rail the section header becomes a hairline divider
+  // and the rows are always shown (an accordion makes no sense at
+  // 76px — there is nothing to read).
+  const sectionCollapsed = mini ? false : collapsed;
   return (
     <div className="flex flex-col gap-3">
-      <button
-        type="button"
-        onClick={() => onToggle(section.id)}
-        aria-expanded={!collapsed}
-        className="flex w-full cursor-pointer items-center justify-between text-left"
-      >
-        <span className="text-xs font-medium text-muted">
-          {section.title}
-        </span>
-        {/* P1-E #28: chevron rotation is the CSS `.chevron-rot`
-            transition (was a GSAP rotation tween). `rotate` is
-            compositor-friendly. */}
-        <span
-          className={
-            "chevron-rot inline-flex " +
-            (collapsed ? "-rotate-90" : "rotate-0")
-          }
+      {mini ? (
+        <div aria-hidden="true" className="mx-2 h-px bg-line" />
+      ) : (
+        <button
+          type="button"
+          onClick={() => onToggle(section.id)}
+          aria-expanded={!collapsed}
+          className="flex w-full cursor-pointer items-center justify-between text-left"
         >
-          <Icon name="chevron-down" size={20} className="text-muted" />
-        </span>
-      </button>
+          <span className="text-xs font-medium text-muted">
+            {section.title}
+          </span>
+          {/* P1-E #28: chevron rotation is the CSS `.chevron-rot`
+              transition (was a GSAP rotation tween). `rotate` is
+              compositor-friendly. */}
+          <span
+            className={
+              "chevron-rot inline-flex " +
+              (collapsed ? "-rotate-90" : "rotate-0")
+            }
+          >
+            <Icon name="chevron-down" size={20} className="text-muted" />
+          </span>
+        </button>
+      )}
       {/* P1-E #28: section open/close is the grid-template-rows
           0fr<->1fr trick (CSS `.acc-wrap`/`.acc-inner`) instead of a
           GSAP height:0<->auto tween. Rows stay mounted so refs and
           pill measurements survive. */}
-      <div className={collapsed ? "acc-wrap [grid-template-rows:0fr]" : "acc-wrap [grid-template-rows:1fr]"}>
+      <div className={sectionCollapsed ? "acc-wrap [grid-template-rows:0fr]" : "acc-wrap [grid-template-rows:1fr]"}>
         <div className="acc-inner flex flex-col gap-1">
           {section.items.map((item) => (
             <NavRow
@@ -165,6 +209,7 @@ function NavSectionBlock({
               item={item}
               active={item.id === activeId}
               badge={badgeFor(item.id)}
+              mini={mini}
               onSelect={onSelect}
               registerRef={registerRowRef}
             />
@@ -189,6 +234,8 @@ export function Sidebar() {
   // Route-aware active state: init from URL, sync on navigation.
   const [activeId, setActiveId] = useState(() => routeToNavId(pathname));
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+  const [mini, setMini] = useState(false);
+  const [animateWidth, setAnimateWidth] = useState(false);
   const inboxUnread = useInboxUnreadCount();
 
   const areaRef = useRef<HTMLDivElement>(null);
@@ -200,6 +247,57 @@ export function Sidebar() {
   useEffect(() => {
     setActiveId(routeToNavId(pathname));
   }, [pathname]);
+
+  // Apply the stored rail preference, then enable the width
+  // transition a frame later — the stored state snaps in without
+  // animating, every later toggle animates.
+  useEffect(() => {
+    try {
+      if (window.localStorage.getItem(RAIL_STORAGE_KEY) === "1") {
+        setMini(true);
+      }
+    } catch {
+      // Storage unavailable (private mode) — the rail just won't persist.
+    }
+    const frame = window.requestAnimationFrame(() => setAnimateWidth(true));
+    return () => window.cancelAnimationFrame(frame);
+  }, []);
+
+  const toggleMini = () => {
+    setMini((value) => {
+      const next = !value;
+      try {
+        window.localStorage.setItem(RAIL_STORAGE_KEY, next ? "1" : "0");
+      } catch {
+        // Non-fatal: persistence is a nicety, not the feature.
+      }
+      return next;
+    });
+  };
+
+  // Ctrl/Cmd+B toggles the rail (VS Code convention) — never while
+  // the user is typing in a field.
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (!(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== "b") {
+        return;
+      }
+      const target = event.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.tagName === "SELECT" ||
+          target.isContentEditable)
+      ) {
+        return;
+      }
+      event.preventDefault();
+      toggleMini();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, []);
 
   const badgeFor = (id: string) =>
     id === "inbox" && inboxUnread > 0 ? inboxUnread : undefined;
@@ -264,23 +362,62 @@ export function Sidebar() {
   };
 
   return (
-    <aside className="w-(--uf-sidebar-w) shrink-0 border-r-[0.5px] border-line bg-bg">
+    <aside
+      style={mini ? { width: RAIL_WIDTH } : undefined}
+      className={clsx(
+        "w-(--uf-sidebar-w) shrink-0 border-r-[0.5px] border-line bg-bg",
+        animateWidth &&
+          "transition-[width] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] motion-reduce:transition-none"
+      )}
+    >
       <div
         ref={areaRef}
-        className="relative flex h-full flex-col justify-between px-6 py-6"
+        className={clsx(
+          "relative flex h-full flex-col justify-between py-6",
+          mini ? "px-3" : "px-6",
+          animateWidth &&
+            "transition-[padding] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] motion-reduce:transition-none"
+        )}
       >
         <div
           ref={pillRef}
-          className="active-pill absolute left-6 right-6 top-0 z-0 h-9 rounded-md bg-surface"
+          className={clsx(
+            "active-pill absolute top-0 z-0 h-9 rounded-md bg-surface",
+            mini ? "right-3 left-3" : "right-6 left-6"
+          )}
           style={{ opacity: 0 }}
         />
 
+        {/* Rail toggle — straddles the sidebar's right border */}
+        <button
+          type="button"
+          onClick={toggleMini}
+          aria-expanded={!mini}
+          aria-label={mini ? "Expand sidebar" : "Collapse sidebar"}
+          title={mini ? "Expand sidebar (Ctrl+B)" : "Collapse sidebar (Ctrl+B)"}
+          className="absolute top-[70px] -right-3 z-40 flex size-6 cursor-pointer items-center justify-center rounded-full border border-line bg-surface text-muted shadow-sm transition-colors hover:text-ink"
+        >
+          <Icon name={mini ? "chevrons-right" : "chevrons-left"} size={14} />
+        </button>
+
         <div className="flex flex-col gap-6">
           {/* Brand */}
-          <div className="flex items-center gap-3">
+          <div
+            className={clsx(
+              "flex items-center gap-3",
+              mini && "justify-center gap-0"
+            )}
+          >
             {/* TODO(design): swap placeholder for the real logo asset */}
-            <div className="h-[31px] w-[31px] rounded-sm bg-placeholder" />
-            <span className="text-base font-medium">Stack Underflow</span>
+            <div className="h-[31px] w-[31px] shrink-0 rounded-sm bg-placeholder" />
+            <span
+              className={clsx(
+                "overflow-hidden text-base font-medium whitespace-nowrap transition-[max-width,opacity] duration-200",
+                mini ? "max-w-0 opacity-0" : "max-w-[160px] opacity-100"
+              )}
+            >
+              Stack Underflow
+            </span>
           </div>
 
           {/* Nav sections */}
@@ -291,6 +428,7 @@ export function Sidebar() {
                 section={section}
                 activeId={activeId}
                 collapsed={!!collapsed[section.id]}
+                mini={mini}
                 badgeFor={badgeFor}
                 onToggle={toggleSection}
                 onSelect={setActiveId}
@@ -308,6 +446,7 @@ export function Sidebar() {
                 key={link.id}
                 item={link}
                 active={link.id === activeId}
+                mini={mini}
                 onSelect={setActiveId}
                 registerRef={registerRow}
               />
@@ -319,20 +458,38 @@ export function Sidebar() {
           <Link
             href="/profile/me"
             aria-label="View your profile"
-            className="relative z-10 flex cursor-pointer items-center justify-between rounded-sm bg-surface p-1"
+            className={clsx(
+              "group relative z-10 flex cursor-pointer items-center rounded-sm bg-surface p-1",
+              mini ? "justify-center" : "justify-between"
+            )}
           >
             <div className="flex items-center gap-1">
               <Avatar size={28} rounded="sm" alt={CURRENT_USER.name} />
-              <div className="flex w-[97px] flex-col gap-0.5">
-                <span className="text-2xs font-medium">
+              <div
+                className={clsx(
+                  "flex flex-col gap-0.5 overflow-hidden transition-[max-width,opacity] duration-200",
+                  mini ? "w-0 max-w-0 opacity-0" : "w-[97px] max-w-[97px] opacity-100"
+                )}
+              >
+                <span className="text-2xs font-medium whitespace-nowrap">
                   {CURRENT_USER.name}
                 </span>
-                <span className="truncate text-2xs text-muted">
+                <span className="truncate text-2xs whitespace-nowrap text-muted">
                   {CURRENT_USER.email}
                 </span>
               </div>
             </div>
-            <Icon name="chevrons-up-down" size={20} className="text-muted" />
+            {!mini && (
+              <Icon name="chevrons-up-down" size={20} className="text-muted" />
+            )}
+            {mini && (
+              <span
+                aria-hidden="true"
+                className="pointer-events-none absolute top-1/2 left-full z-50 ml-3 -translate-y-1/2 translate-x-[-4px] rounded-lg bg-ink px-2.5 py-1.5 text-xs font-medium whitespace-nowrap text-white opacity-0 shadow-lg transition-all duration-150 group-hover:translate-x-0 group-hover:opacity-100 group-hover:delay-300"
+              >
+                {CURRENT_USER.name}
+              </span>
+            )}
           </Link>
         </div>
       </div>
