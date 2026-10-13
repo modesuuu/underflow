@@ -11,7 +11,10 @@
   --uf-badge: #ff383c;
   --uf-heart: #ff2d55;
   --uf-placeholder: #d9d9d9;
-  --uf-line: #6d6c6a;
+  /* Hairline for dividers/borders — lighter than muted text (#6d6c6a) so
+     rules read as structure, not as disabled text. */
+  --uf-line: #d5d3cf;
+  --uf-charcoal: #3a3a3a;
 
   --uf-radius-sm: 4px;
   --uf-radius-md: 6px;

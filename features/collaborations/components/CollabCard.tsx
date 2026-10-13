@@ -8,7 +8,8 @@ import { formatDueDate } from "../sort";
 import type { CollabProject } from "../types";
 
 /** Dark-charcoal fallback placeholder (no token — eyeballed from design). */
-const CHARCOAL_PLACEHOLDER = "#3a3a3a";
+// Initials/avatar placeholder fill — named token, not a loose hex.
+const CHARCOAL_PLACEHOLDER = "var(--uf-charcoal)";
 
 interface CollabCardProps {
   project: CollabProject;
