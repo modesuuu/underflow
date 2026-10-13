@@ -60,11 +60,11 @@ export function ProfileDetailCard({ person }: { person: PersonDetail }) {
                 <li key={social.label}>
                   <span
                     title={social.label}
-                    className="flex size-9 items-center justify-center rounded-full bg-accent text-ink"
+                    className="flex size-8 items-center justify-center rounded-full bg-accent text-ink"
                   >
                     <i
                       aria-hidden="true"
-                      className={`bx bxl-${social.icon} text-[24px]`}
+                      className={`bx bxl-${social.icon} text-[20px]`}
                     />
                   </span>
                 </li>
@@ -77,9 +77,9 @@ export function ProfileDetailCard({ person }: { person: PersonDetail }) {
               {person.skills.map((skill) => (
                 <li
                   key={skill.id}
-                  className="flex items-center gap-1 rounded-full bg-accent px-3 py-1.5 text-xs font-medium text-ink"
+                  className="flex items-center gap-1 rounded-full bg-accent px-2.5 py-1 text-xs font-medium text-ink"
                 >
-                  <Icon name="code-curly" size={16} />
+                  <Icon name="code-curly" size={14} />
                   {skill.label}
                 </li>
               ))}
