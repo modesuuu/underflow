@@ -34,9 +34,11 @@ import {
 // 2026-10-13): the width animates on a 300ms Apple-style ease,
 // labels clip away via max-width + opacity, and icon-only rows get
 // hover tooltips. The preference persists in localStorage and
-// Ctrl/Cmd+B toggles it. The stored value is applied on mount
-// BEFORE the width transition is enabled, so a reload never
-// animates the rail shut on its own.
+// Ctrl/Cmd+B toggles it. The stored value is applied in a layout
+// effect, before first paint: AppShell is rendered per page, so
+// the sidebar remounts on every navigation — a post-paint read
+// would flash the expanded rail, then replay the collapse
+// animation on each page change.
 
 const RAIL_STORAGE_KEY = "uf-sidebar-mini";
 const RAIL_WIDTH = 76;
@@ -272,10 +274,10 @@ export function Sidebar() {
     setActiveId(routeToNavId(pathname));
   }, [pathname]);
 
-  // Apply the stored rail preference, then enable the width
-  // transition a frame later — the stored state snaps in without
-  // animating, every later toggle animates.
-  useEffect(() => {
+  // Apply the stored rail preference BEFORE the browser paints
+  // (see the header note — this is what stops the collapse
+  // animation replaying on every page change).
+  useLayoutEffect(() => {
     try {
       if (window.localStorage.getItem(RAIL_STORAGE_KEY) === "1") {
         setMini(true);
@@ -283,6 +285,11 @@ export function Sidebar() {
     } catch {
       // Storage unavailable (private mode) — the rail just won't persist.
     }
+  }, []);
+
+  // Arm the width transition a frame after mount: the stored
+  // state above snaps in unanimated; every later toggle animates.
+  useEffect(() => {
     const frame = window.requestAnimationFrame(() => setAnimateWidth(true));
     return () => window.cancelAnimationFrame(frame);
   }, []);
@@ -426,57 +433,50 @@ export function Sidebar() {
         />
 
         <div ref={stackRef} className="flex flex-col gap-6">
-          {/* Brand */}
+          {/* Brand + rail toggle: the panel-glyph button sits at
+              the row's right edge, icon only (user placement). On
+              the rail the brand cluster clips away and the button
+              stays as the row's only element, centered. */}
           <div
             className={clsx(
-              "flex items-center gap-3",
-              mini && "justify-center gap-0"
+              "flex items-center",
+              mini ? "justify-center" : "gap-2"
             )}
           >
-            {/* TODO(design): swap placeholder for the real logo asset */}
-            <div className="h-[31px] w-[31px] shrink-0 rounded-sm bg-placeholder" />
-            <span
+            <div
               className={clsx(
-                "overflow-hidden text-base font-medium whitespace-nowrap transition-[max-width,opacity] duration-300",
-                mini ? "max-w-0 opacity-0" : "max-w-[160px] opacity-100"
+                "flex items-center gap-3 overflow-hidden transition-[max-width,opacity] duration-300",
+                mini ? "max-w-0 opacity-0" : "max-w-[200px] opacity-100"
               )}
             >
-              Stack Underflow
-            </span>
-          </div>
-
-          {/* Rail toggle — a quiet nav-row carrying the panel
-              glyph (the floating circular edge button read as
-              clutter and looked broken in the rail). */}
-          <button
-            type="button"
-            onClick={toggleMini}
-            aria-expanded={!mini}
-            aria-label={mini ? "Expand sidebar" : "Collapse sidebar"}
-            title={mini ? "Expand sidebar (Ctrl+B)" : "Collapse sidebar (Ctrl+B)"}
-            className={clsx(
-              "group nav-row-hoverable relative z-10 flex w-full cursor-pointer items-center rounded-md py-2 text-left",
-              mini ? "justify-center gap-0 px-0" : "gap-1 px-1"
-            )}
-          >
-            <SidebarPanelIcon className="shrink-0 text-muted" />
-            <span
-              className={clsx(
-                "overflow-hidden text-xs font-medium whitespace-nowrap text-muted transition-[max-width,opacity] duration-300",
-                mini ? "max-w-0 opacity-0" : "max-w-[140px] opacity-100"
-              )}
-            >
-              Collapse sidebar
-            </span>
-            {mini && (
-              <span
-                aria-hidden="true"
-                className="pointer-events-none absolute top-1/2 left-full z-50 ml-3 -translate-y-1/2 translate-x-[-4px] rounded-lg bg-ink px-2.5 py-1.5 text-xs font-medium whitespace-nowrap text-white opacity-0 shadow-lg transition-all duration-150 group-hover:translate-x-0 group-hover:opacity-100 group-hover:delay-300 group-focus-visible:translate-x-0 group-focus-visible:opacity-100"
-              >
-                Expand sidebar
+              {/* TODO(design): swap placeholder for the real logo asset */}
+              <div className="h-[31px] w-[31px] shrink-0 rounded-sm bg-placeholder" />
+              <span className="text-base font-medium whitespace-nowrap">
+                Stack Underflow
               </span>
-            )}
-          </button>
+            </div>
+            <button
+              type="button"
+              onClick={toggleMini}
+              aria-expanded={!mini}
+              aria-label={mini ? "Expand sidebar" : "Collapse sidebar"}
+              title={mini ? "Expand sidebar (Ctrl+B)" : "Collapse sidebar (Ctrl+B)"}
+              className={clsx(
+                "group nav-row-hoverable relative z-10 flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-lg text-muted transition-colors hover:text-ink",
+                !mini && "ml-auto"
+              )}
+            >
+              <SidebarPanelIcon />
+              {mini && (
+                <span
+                  aria-hidden="true"
+                  className="pointer-events-none absolute top-1/2 left-full z-50 ml-3 -translate-y-1/2 translate-x-[-4px] rounded-lg bg-ink px-2.5 py-1.5 text-xs font-medium whitespace-nowrap text-white opacity-0 shadow-lg transition-all duration-150 group-hover:translate-x-0 group-hover:opacity-100 group-hover:delay-300 group-focus-visible:translate-x-0 group-focus-visible:opacity-100"
+                >
+                  Expand sidebar
+                </span>
+              )}
+            </button>
+          </div>
 
           {/* Nav sections */}
           <nav className="flex flex-col gap-6">
