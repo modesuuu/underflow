@@ -33,7 +33,7 @@ function SheetOverlay({ className, ...props }: SheetPrimitive.Backdrop.Props) {
     <SheetPrimitive.Backdrop
       data-slot="sheet-overlay"
       className={clsx(
-        "fixed inset-0 z-50 bg-ink/60 transition-opacity duration-200 ease-[var(--uf-ease-out)] data-ending-style:opacity-0 data-starting-style:opacity-0",
+        "fixed inset-0 z-50 bg-ink/60 transition-opacity duration-200 ease-[var(--uf-ease-out)] motion-reduce:transition-none data-ending-style:opacity-0 data-starting-style:opacity-0",
         className
       )}
       {...props}
@@ -61,7 +61,7 @@ function SheetContent({
         data-side={side}
         className={clsx(
           "fixed z-50 flex h-dvh flex-col bg-surface text-ink shadow-lg",
-          "transition duration-200 ease-[var(--uf-ease-out)] data-ending-style:opacity-0 data-starting-style:opacity-0 overscroll-contain",
+          "transition duration-200 ease-[var(--uf-ease-out)] motion-reduce:transition-none data-ending-style:opacity-0 data-starting-style:opacity-0 overscroll-contain",
           side === "right" &&
             "inset-y-0 right-0 w-(--uf-panel-w) max-w-full rounded-l-xl border-l border-line data-ending-style:translate-x-[2.5rem] data-starting-style:translate-x-[2.5rem]",
           side === "left" &&

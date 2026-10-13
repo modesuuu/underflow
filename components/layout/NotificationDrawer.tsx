@@ -43,7 +43,7 @@ export function NotificationDrawer({ open, onClose }: NotificationDrawerProps) {
         if (!o) onClose();
       }}
     >
-      <SheetContent side="right" aria-describedby={undefined}>
+      <SheetContent side="right" aria-label="Notifications">
         <div className="no-scrollbar flex-1 overflow-y-auto">
           <NotificationsPanel notifications={notifications} />
         </div>
