@@ -1,13 +1,16 @@
-import { ApiEnvelope, apiFetch, isApiConfigured } from "@/lib/api-client";
-import { INBOX_SUMMARY } from "./mock";
-import type { InboxSummary } from "./types";
+import { CONVERSATIONS_SEED } from "./mock";
+import { countUnread } from "./store";
+import type { Conversation, InboxSummary } from "./types";
 
-// TODO(backend): replace with GET /api/inbox/summary (docs/api-contract.md
-// "Inbox" — was missing from the earlier draft, audit P1-A #12).
+// TODO(backend): replace with GET /api/inbox/summary and
+// GET /api/inbox/conversations (docs/api-contract.md "Inbox" — was
+// missing from the earlier draft, audit P1-A #12). Until the API
+// exists, the summary is computed from the session inbox store's
+// seed so the Sidebar badge and the Inbox page agree.
 export async function getInboxSummary(): Promise<InboxSummary> {
-  if (!isApiConfigured()) {
-    return INBOX_SUMMARY;
-  }
-  const res = await apiFetch<ApiEnvelope<InboxSummary>>("/api/inbox/summary");
-  return res.data;
+  return { unreadCount: countUnread(CONVERSATIONS_SEED) };
+}
+
+export async function getConversations(): Promise<Conversation[]> {
+  return CONVERSATIONS_SEED;
 }
