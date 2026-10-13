@@ -39,6 +39,8 @@ export interface ChatMessage {
   text: string;
   /** Preformatted relative label ("1min", "2h") — mock data has no real clock. */
   timeLabel: string;
+  /** Wall-clock "HH:MM", shown inside the chat bubble. */
+  clock: string;
 }
 
 export interface Conversation {

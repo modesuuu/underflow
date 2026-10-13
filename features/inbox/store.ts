@@ -61,6 +61,12 @@ export function markThreadRead(id: string) {
 
 let messageSeq = 0;
 
+const clockNow = () =>
+  new Date().toLocaleTimeString("en-GB", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
 export function sendMessage(threadId: string, text: string) {
   const trimmed = text.trim();
   if (!trimmed) return;
@@ -74,6 +80,7 @@ export function sendMessage(threadId: string, text: string) {
         from: "me" as const,
         text: trimmed,
         timeLabel: "now",
+        clock: clockNow(),
       },
     ],
   }));
@@ -128,6 +135,7 @@ export function startApplicationThread(input: OutgoingApplicationInput): string 
     from: "me" as const,
     text: input.messageText,
     timeLabel: "now",
+    clock: clockNow(),
   };
   if (existing) {
     replaceThread(existing.id, (t) => ({
