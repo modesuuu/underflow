@@ -2,7 +2,10 @@
 
 import { useState } from "react";
 import { Icon } from "@/components/ui/Icon";
+import { useRouter } from "next/navigation";
+import { startApplicationThread, withdrawApplication } from "@/features/inbox/store";
 import { applyToCollab } from "../api";
+import { ApplyMessageModal } from "./ApplyMessageModal";
 
 type ApplyState = "default" | "pending" | "entered" | "declined" | "closed";
 
@@ -11,6 +14,14 @@ const HELPER_TEXT =
 
 interface ApplyCtaProps {
   projectId: string;
+  projectTitle: string;
+  /** Cleaned need line for the thread's application card, e.g. "Need Frontend". */
+  projectMeta: string;
+  dueLabel: string;
+  /** Filled/total slots label, e.g. "3 / 5". */
+  slotsLabel: string;
+  ownerName: string;
+  ownerPersonId: string | null;
   /** True when slotsFilled >= slotsTotal: grey + disabled button, no interaction. */
   slotsFull?: boolean;
   /** Force a terminal state from server data once the backend exists. */
@@ -19,22 +30,46 @@ interface ApplyCtaProps {
 
 export function ApplyCta({
   projectId,
+  projectTitle,
+  projectMeta,
+  dueLabel,
+  slotsLabel,
+  ownerName,
+  ownerPersonId,
   slotsFull = false,
   initialState = "default",
 }: ApplyCtaProps) {
+  const router = useRouter();
   const [state, setState] = useState<ApplyState>(initialState);
   const [submitting, setSubmitting] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
 
-  const handleApply = async () => {
+  const handleApply = async (message: string) => {
     setSubmitting(true);
     // TODO(backend): POST /api/collaborations/:id/apply — response should set the real status
     await applyToCollab(projectId);
+    // Applying = messaging the owner: open the Inbox thread with the
+    // applicant's message and the outgoing application card, then go
+    // straight to it so the sender sees where the message landed.
+    startApplicationThread({
+      ownerPersonId,
+      ownerName,
+      projectId,
+      projectTitle,
+      projectMeta,
+      dueLabel,
+      slotsLabel,
+      messageText: message.trim(),
+    });
     setSubmitting(false);
     setState("pending");
+    setModalOpen(false);
+    router.push("/inbox");
   };
 
   const handleCancel = () => {
     // TODO(backend): DELETE /api/collaborations/:id/apply
+    withdrawApplication(projectId);
     setState("default");
   };
 
@@ -52,7 +87,7 @@ export function ApplyCta({
         ) : (
           <button
             type="button"
-            onClick={handleApply}
+            onClick={() => setModalOpen(true)}
             disabled={submitting}
             className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-accent py-3 text-base font-medium text-ink transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none disabled:opacity-50"
           >
@@ -96,6 +131,17 @@ export function ApplyCta({
 
       {/* Helper text below the button, per Figma "Collaborations - Details" */}
       <p className="text-xs text-muted">{HELPER_TEXT}</p>
+
+      {modalOpen && (
+        <ApplyMessageModal
+          projectTitle={projectTitle}
+          ownerName={ownerName}
+          roleLabel={projectMeta.replace(/^Need\s+/i, "")}
+          sending={submitting}
+          onClose={() => setModalOpen(false)}
+          onSend={handleApply}
+        />
+      )}
     </div>
   );
 }

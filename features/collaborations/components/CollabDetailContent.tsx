@@ -193,7 +193,16 @@ export function CollabDetailContent({ project }: CollabDetailContentProps) {
       </div>
 
       {/* 5. Apply CTA block (at the BOTTOM) */}
-      <ApplyCta projectId={project.id} slotsFull={isFull} />
+      <ApplyCta
+        projectId={project.id}
+        slotsFull={isFull}
+        projectTitle={project.title}
+        projectMeta={project.subtitle.replace(/\.+$/, "")}
+        dueLabel={project.dueDate}
+        slotsLabel={`${project.slotsFilled} / ${project.slotsTotal}`}
+        ownerName={project.owner.name}
+        ownerPersonId={resolvePersonId(project.owner.id) ?? project.owner.id}
+      />
     </div>
     {lightboxIndex !== null && (
       <PhotoLightbox

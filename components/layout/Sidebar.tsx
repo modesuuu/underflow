@@ -13,7 +13,7 @@ import { usePathname } from "next/navigation";
 import { Avatar } from "@/components/ui/Avatar";
 import { Badge } from "@/components/ui/Badge";
 import { Icon } from "@/components/ui/Icon";
-import { getInboxSummary } from "@/features/inbox/api";
+import { useInboxUnreadCount } from "@/features/inbox/store";
 import {
   CURRENT_USER,
   DEFAULT_ACTIVE_ID,
@@ -188,7 +188,7 @@ export function Sidebar() {
   // Route-aware active state: init from URL, sync on navigation.
   const [activeId, setActiveId] = useState(() => routeToNavId(pathname));
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
-  const [inboxUnread, setInboxUnread] = useState(0);
+  const inboxUnread = useInboxUnreadCount();
 
   const areaRef = useRef<HTMLDivElement>(null);
   const pillRef = useRef<HTMLDivElement>(null);
@@ -199,20 +199,6 @@ export function Sidebar() {
   useEffect(() => {
     setActiveId(routeToNavId(pathname));
   }, [pathname]);
-
-  useEffect(() => {
-    let cancelled = false;
-    getInboxSummary()
-      .then((summary) => {
-        if (!cancelled) setInboxUnread(summary.unreadCount);
-      })
-      .catch(() => {
-        // Mock path cannot fail; real API errors just hide the badge.
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   const badgeFor = (id: string) =>
     id === "inbox" && inboxUnread > 0 ? inboxUnread : undefined;
