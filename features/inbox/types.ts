@@ -41,6 +41,8 @@ export interface ChatMessage {
   timeLabel: string;
   /** Wall-clock "HH:MM", shown inside the chat bubble. */
   clock: string;
+  /** Incoming only: not true = unread. Own messages are always read. */
+  read?: boolean;
 }
 
 export interface Conversation {
@@ -49,8 +51,8 @@ export interface Conversation {
   personId: string | null;
   name: string;
   messages: ChatMessage[];
-  unread: number;
-  /** Muted threads still list, but their unread skips the total badge. */
+  /** Muted threads show the bell-off state (session model: their
+   * unread still counts — the badge must always match the messages). */
   muted?: boolean;
   /** Pinned threads sort above the rest of the list. */
   pinned?: boolean;

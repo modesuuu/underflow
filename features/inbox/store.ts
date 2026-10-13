@@ -34,9 +34,18 @@ export function useConversations(): Conversation[] {
   return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
 }
 
+/**
+ * The one source of truth for unread: incoming messages not yet
+ * read. Every badge (row, rail dot, Sidebar total) derives from
+ * the messages themselves, so the numbers can never drift apart.
+ */
+export function unreadCount(thread: Conversation): number {
+  return thread.messages.filter((m) => m.from === "them" && !m.read).length;
+}
+
 export function countUnread(list: Conversation[]): number {
   return list.reduce(
-    (sum, thread) => sum + (thread.muted ? 0 : thread.unread),
+    (sum, thread) => sum + unreadCount(thread),
     0,
   );
 }
@@ -58,8 +67,11 @@ function replaceThread(id: string, update: (thread: Conversation) => Conversatio
 
 export function markThreadRead(id: string) {
   const thread = conversations.find((t) => t.id === id);
-  if (!thread || thread.unread === 0) return;
-  replaceThread(id, (t) => ({ ...t, unread: 0 }));
+  if (!thread || unreadCount(thread) === 0) return;
+  replaceThread(id, (t) => ({
+    ...t,
+    messages: t.messages.map((m) => (m.read ? m : { ...m, read: true })),
+  }));
 }
 
 /** Remove the thread entirely (Delete chat, after confirmation). */
@@ -82,7 +94,17 @@ export function togglePinThread(id: string) {
 }
 
 export function markThreadUnread(id: string) {
-  replaceThread(id, (t) => (t.unread === 0 ? { ...t, unread: 1 } : t));
+  replaceThread(id, (t) => {
+    if (unreadCount(t) > 0) return t;
+    const lastIncoming = t.messages.map((m) => m.from).lastIndexOf("them");
+    if (lastIncoming === -1) return t;
+    return {
+      ...t,
+      messages: t.messages.map((m, i) =>
+        i === lastIncoming ? { ...m, read: false } : m,
+      ),
+    };
+  });
 }
 
 let messageSeq = 0;
@@ -205,7 +227,6 @@ export function startApplicationThread(input: OutgoingApplicationInput): string 
       id,
       personId: input.ownerPersonId,
       name: input.ownerName,
-      unread: 0,
       messages: [message],
       application: {
         projectId: input.projectId,

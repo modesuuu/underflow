@@ -7,6 +7,7 @@ import {
   markThreadUnread,
   toggleMuteThread,
   togglePinThread,
+  unreadCount,
 } from "../store";
 import type { Conversation } from "../types";
 
@@ -42,7 +43,7 @@ export function ThreadOptionsMenu({
   const rootRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  const itemCount = thread.unread === 0 ? 5 : 4;
+  const itemCount = unreadCount(thread) === 0 ? 5 : 4;
 
   const openMenu = () => {
     const rect = rootRef.current?.getBoundingClientRect();
@@ -131,7 +132,7 @@ export function ThreadOptionsMenu({
               <Icon name="pin" size={18} />
               {thread.pinned ? "Unpin chat" : "Pin chat"}
             </button>
-            {thread.unread === 0 && (
+            {unreadCount(thread) === 0 && (
               <button
                 type="button"
                 role="menuitem"

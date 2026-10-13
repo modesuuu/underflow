@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Avatar } from "@/components/ui/Avatar";
 import { Icon } from "@/components/ui/Icon";
-import { clearThread, deleteThread } from "../store";
+import { clearThread, deleteThread, unreadCount } from "../store";
 import type { Conversation } from "../types";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { ThreadOptionsMenu } from "./ThreadOptionsMenu";
@@ -73,7 +73,8 @@ export function MessagesColumn({
         {sorted.map((thread, index) => {
           const last = thread.messages[thread.messages.length - 1];
           const selected = thread.id === selectedId;
-          const unread = thread.unread > 0;
+          const threadUnread = unreadCount(thread);
+          const unread = threadUnread > 0;
           return (
             <li key={thread.id}>
               <div
@@ -124,7 +125,7 @@ export function MessagesColumn({
                     </span>
                     {unread ? (
                       <span className="flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-accent px-1.5 text-[10px] leading-none font-semibold text-ink">
-                        {thread.unread}
+                        {threadUnread}
                       </span>
                     ) : (
                       <span className="h-[18px]" />
