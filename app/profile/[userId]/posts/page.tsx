@@ -95,6 +95,7 @@ export default async function ProfilePostsPage({ params }: ProfilePostsPageProps
 
   return (
     <AppShell
+      navVariant="bottom"
       panel={
         <Suspense fallback={<NotificationsSkeleton />}>
           <NotificationsPanelAsync />

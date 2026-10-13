@@ -84,6 +84,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
 
   return (
     <AppShell
+      navVariant="bottom"
       breadcrumbRoot={person.name}
       breadcrumbLeaf="Profile"
       backLabel="Feed"
