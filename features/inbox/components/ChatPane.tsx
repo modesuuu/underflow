@@ -3,9 +3,15 @@
 import { useEffect, useRef, useState } from "react";
 import { Avatar } from "@/components/ui/Avatar";
 import { Icon } from "@/components/ui/Icon";
-import { resolveApplication, sendMessage } from "../store";
+import {
+  clearThread,
+  deleteThread,
+  resolveApplication,
+  sendMessage,
+} from "../store";
 import type { Conversation } from "../types";
 import { ApplicationCard } from "./ApplicationCard";
+import { ConfirmDialog } from "./ConfirmDialog";
 
 /**
  * Right side of the Inbox (Figma 386:5), WhatsApp-Web model: the
@@ -17,6 +23,7 @@ import { ApplicationCard } from "./ApplicationCard";
  */
 export function ChatPane({ conversation }: { conversation: Conversation | null }) {
   const [draft, setDraft] = useState("");
+  const [confirm, setConfirm] = useState<"clear" | "delete" | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -74,6 +81,27 @@ export function ChatPane({ conversation }: { conversation: Conversation | null }
         <span className="min-w-[88px] rounded-full bg-[#d3cfff] px-3 py-1 text-center text-base font-medium text-ink">
           {conversation.name}
         </span>
+      </div>
+
+      {/* The design's standalone action buttons (specimens drawn
+          next to the Inbox frame): Clear All / Delete Chat for the
+          open conversation. */}
+      <div className="absolute top-4 right-6 z-10 flex gap-2">
+        <button
+          type="button"
+          onClick={() => setConfirm("clear")}
+          className="flex h-10 cursor-pointer items-center rounded-xl bg-bg px-3.5 text-sm font-medium text-ink transition-colors hover:bg-line/50"
+        >
+          Clear All
+        </button>
+        <button
+          type="button"
+          onClick={() => setConfirm("delete")}
+          className="flex h-10 cursor-pointer items-center gap-2 rounded-xl bg-bg px-3.5 text-sm font-medium text-ink transition-colors hover:bg-line/50"
+        >
+          <Icon name="trash-alt" size={20} />
+          Delete Chat
+        </button>
       </div>
 
       <div
@@ -192,6 +220,24 @@ export function ChatPane({ conversation }: { conversation: Conversation | null }
           </button>
         </div>
       </form>
+
+      {confirm && (
+        <ConfirmDialog
+          title={confirm === "delete" ? "Delete chat" : "Clear chat"}
+          description={
+            confirm === "delete"
+              ? `Are you sure you want to delete the chat with ${conversation.name}? This action cannot be undone.`
+              : `Are you sure you want to clear the chat with ${conversation.name}? The conversation and its application stay here. This action cannot be undone.`
+          }
+          confirmLabel={confirm === "delete" ? "Delete" : "Clear"}
+          onConfirm={() => {
+            if (confirm === "delete") deleteThread(conversation.id);
+            else clearThread(conversation.id);
+            setConfirm(null);
+          }}
+          onCancel={() => setConfirm(null)}
+        />
+      )}
     </section>
   );
 }
