@@ -9,6 +9,7 @@ import {
 } from "react";
 import clsx from "clsx";
 import Link from "next/link";
+import { createPortal } from "react-dom";
 import { usePathname } from "next/navigation";
 import { Avatar } from "@/components/ui/Avatar";
 import { Badge } from "@/components/ui/Badge";
@@ -83,9 +84,40 @@ function NavRow({ item, active, badge, mini, animate, onSelect, registerRef }: N
   // destination route shell on hover/appearance, so slow compiles no longer
   // flash the wrong skeleton first (button + router.push had no prefetch).
   // href-less items stay buttons. Either element is registered to the pill.
+  // Rail tooltip state. The tooltip is portaled to <body>:
+  // section rows live inside the accordion's .acc-inner, which
+  // clips overflow — an in-flow tooltip can never escape the
+  // sidebar from there. Only the footer rows (outside any
+  // accordion) ever showed one; that asymmetry was the bug.
+  const [tipPos, setTipPos] = useState<{ x: number; y: number } | null>(
+    null,
+  );
+  const tipTimer = useRef<number | undefined>(undefined);
+  const showTip = (el: HTMLElement) => {
+    if (!mini) return;
+    window.clearTimeout(tipTimer.current);
+    tipTimer.current = window.setTimeout(() => {
+      const r = el.getBoundingClientRect();
+      setTipPos({ x: r.right + 12, y: r.top + r.height / 2 });
+    }, 300);
+  };
+  const hideTip = () => {
+    window.clearTimeout(tipTimer.current);
+    setTipPos(null);
+  };
+  useEffect(() => () => window.clearTimeout(tipTimer.current), []);
+  const tipHandlers = {
+    onMouseEnter: (e: React.MouseEvent<HTMLElement>) =>
+      showTip(e.currentTarget),
+    onMouseLeave: hideTip,
+    onFocus: (e: React.FocusEvent<HTMLElement>) =>
+      showTip(e.currentTarget),
+    onBlur: hideTip,
+  };
+
   const className = clsx(
-    "group relative z-10 flex w-full cursor-pointer items-center rounded-md text-left",
-    mini ? "justify-center gap-0 px-0 py-1.5" : "gap-1 px-1 py-2",
+    "group relative z-10 flex w-full cursor-pointer items-center gap-1 rounded-md py-2 text-left",
+    mini ? "pr-0 pl-4" : "px-1",
     animate &&
       "transition-[padding] duration-[380ms] ease-(--uf-ease-out) motion-reduce:transition-none",
     !active && "nav-row-hoverable"
@@ -93,35 +125,18 @@ function NavRow({ item, active, badge, mini, animate, onSelect, registerRef }: N
 
   const inner = (
     <>
-      <span className={clsx("flex flex-col items-center", mini && "gap-1")}>
-        <span className="relative flex size-5 shrink-0 items-center justify-center">
-          <Icon
-            name={item.icon}
-            size={20}
-            className={(active ? "text-ink" : "text-muted") + " leading-none"}
-          />
-          {/* Mini rail: the unread count becomes a dot badge on the icon */}
-          {mini && badge !== undefined && badge > 0 && (
-            <span className="absolute -top-1.5 -right-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#ff383c] px-1 text-[9px] font-semibold text-white">
-              {badge}
-            </span>
-          )}
-        </span>
-        {/* Rail micro-label: always mounted so it can grow/fade
-            with the rail; width- and height-collapsed to nothing
-            when the sidebar is expanded. */}
-        <span
-          aria-hidden="true"
-          className={clsx(
-            "overflow-hidden text-center text-[10px] leading-[1.15] font-medium whitespace-nowrap",
-            animate &&
-              "transition-[max-height,opacity] duration-[380ms] ease-(--uf-ease-out) motion-reduce:transition-none",
-            active ? "text-ink" : "text-muted",
-            mini ? "max-h-7 w-full opacity-100" : "max-h-0 w-0 opacity-0"
-          )}
-        >
-          {item.railLabel ?? item.label}
-        </span>
+      <span className="relative flex size-5 shrink-0 items-center justify-center">
+        <Icon
+          name={item.icon}
+          size={20}
+          className={(active ? "text-ink" : "text-muted") + " leading-none"}
+        />
+        {/* Mini rail: the unread count becomes a dot badge on the icon */}
+        {mini && badge !== undefined && badge > 0 && (
+          <span className="absolute -top-1.5 -right-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#ff383c] px-1 text-[9px] font-semibold text-white">
+            {badge}
+          </span>
+        )}
       </span>
       <span
         className={clsx(
@@ -138,16 +153,21 @@ function NavRow({ item, active, badge, mini, animate, onSelect, registerRef }: N
       {!mini && badge !== undefined && badge > 0 && (
         <Badge count={badge} tone="danger" className="ml-auto" />
       )}
-      {/* Tooltip — only on the icon rail */}
-      {mini && (
-        <span
-          aria-hidden="true"
-          className="pointer-events-none absolute top-1/2 left-full z-50 ml-3 -translate-y-1/2 translate-x-[-4px] rounded-lg bg-ink px-2.5 py-1.5 text-xs font-medium whitespace-nowrap text-white opacity-0 shadow-lg transition-all duration-150 group-hover:translate-x-0 group-hover:opacity-100 group-hover:delay-300 group-focus-visible:translate-x-0 group-focus-visible:opacity-100"
-        >
-          {item.label}
-          {badge !== undefined && badge > 0 ? ` (${badge})` : ""}
-        </span>
-      )}
+      {/* Tooltip — only on the icon rail; portaled so the
+          accordion's overflow clip cannot eat it (see showTip). */}
+      {mini &&
+        tipPos &&
+        createPortal(
+          <span
+            aria-hidden="true"
+            style={{ left: tipPos.x, top: tipPos.y }}
+            className="uf-tip pointer-events-none fixed z-[100] -translate-y-1/2 rounded-lg bg-ink px-2.5 py-1.5 text-xs font-medium whitespace-nowrap text-white shadow-lg"
+          >
+            {item.label}
+            {badge !== undefined && badge > 0 ? ` (${badge})` : ""}
+          </span>,
+          document.body,
+        )}
     </>
   );
 
@@ -165,6 +185,7 @@ function NavRow({ item, active, badge, mini, animate, onSelect, registerRef }: N
         // transition (was a GSAP backgroundColor tween, off-GPU). Only
         // non-active rows get the hover wash — the active row is pinned
         // under the pill.
+        {...tipHandlers}
         className={className}
         aria-current={active ? "page" : undefined}
         aria-label={mini ? item.label : undefined}
@@ -183,6 +204,7 @@ function NavRow({ item, active, badge, mini, animate, onSelect, registerRef }: N
       onClick={() => {
         onSelect(item.id);
       }}
+      {...tipHandlers}
       className={className}
       aria-current={active ? "page" : undefined}
       aria-label={mini ? item.label : undefined}
