@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Avatar } from "@/components/ui/Avatar";
 import { Icon } from "@/components/ui/Icon";
 import type { PersonDetail } from "../types";
@@ -19,7 +20,16 @@ export function ProfileDetailCard({ person }: { person: PersonDetail }) {
       className="flex w-full shrink-0 flex-col gap-[42px] rounded-3xl bg-bg p-6 lg:w-[397px]"
     >
       <div className="flex items-center justify-between">
-        <h2 className="text-[20px] font-medium text-ink">Profile Detail</h2>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/"
+            aria-label="Back to Feed"
+            className="flex size-8 items-center justify-center rounded-full text-ink transition-colors hover:bg-surface"
+          >
+            <Icon name="chevron-left" size={24} />
+          </Link>
+          <h2 className="text-[20px] font-medium text-ink">Profile Detail</h2>
+        </div>
         <button
           type="button"
           aria-label="Profile options"

@@ -1,7 +1,9 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import { AppShell } from "@/components/layout/AppShell";
+import { Icon } from "@/components/ui/Icon";
 import { CollabGrid } from "@/features/collaborations/components/CollabGrid";
 import { getPerson, getPersonProjects } from "@/features/profile/api";
 
@@ -81,19 +83,29 @@ export default async function ProfileProjectsPage({
   return (
     <AppShell
       navVariant="none"
+      hideTopBar
       breadcrumbRoot={person.name}
       breadcrumbLeaf="Collaborations"
       backLabel={person.name}
       backHref={`/profile/${person.id}`}
     >
       <div className="flex flex-col gap-6 px-6 py-8">
-        <div className="flex flex-col gap-2">
-          <h1 className="text-[28px] font-bold leading-[1.1] tracking-[-0.01em] text-ink">
-            Active Project {person.name}
-          </h1>
-          <p className="text-sm font-medium text-muted">
-            Queued and ready to start.
-          </p>
+        <div className="flex items-start gap-2">
+          <Link
+            href={`/profile/${person.id}`}
+            aria-label={`Back to ${person.name}'s profile`}
+            className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full text-ink transition-colors hover:bg-bg"
+          >
+            <Icon name="chevron-left" size={24} />
+          </Link>
+          <div className="flex flex-col gap-2">
+            <h1 className="text-[28px] font-bold leading-[1.1] tracking-[-0.01em] text-ink">
+              Active Project {person.name}
+            </h1>
+            <p className="text-sm font-medium text-muted">
+              Queued and ready to start.
+            </p>
+          </div>
         </div>
 
         <Suspense fallback={<ProjectsGridSkeleton />}>

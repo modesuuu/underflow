@@ -25,7 +25,7 @@ export async function generateMetadata({
  */
 function ProfileSkeleton() {
   return (
-    <div className="flex flex-1 flex-col gap-6 lg:flex-row lg:justify-between">
+    <div className="flex min-h-0 flex-1 flex-col gap-6 lg:flex-row lg:justify-between">
       <div className="w-full shrink-0 rounded-3xl bg-bg p-6 lg:w-[397px]">
         <div className="h-5 w-28 rounded bg-placeholder" />
         <div className="mt-6 flex flex-col items-center">
@@ -72,7 +72,7 @@ async function ProfileBody({ userId }: { userId: string }) {
   if (!person) notFound();
   const stats = await getProfileStats(person);
   return (
-    <div className="flex flex-1 flex-col gap-6 lg:flex-row lg:justify-between">
+    <div className="flex min-h-0 flex-1 flex-col gap-6 lg:flex-row lg:justify-between">
       <ProfileDetailCard person={person} />
       <PerformanceSummary personId={person.id} stats={stats} />
     </div>
@@ -87,13 +87,14 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
   return (
     <AppShell
       navVariant="none"
+      hideTopBar
       breadcrumbRoot={person.name}
       breadcrumbLeaf="Profile"
       backLabel="Feed"
       backHref="/"
     >
       <h1 className="sr-only">{person.name}</h1>
-      <div className="flex min-h-full flex-col px-6 py-6">
+      <div className="flex h-full flex-col px-6 py-6">
         <Suspense fallback={<ProfileSkeleton />}>
           <ProfileBody userId={userId} />
         </Suspense>

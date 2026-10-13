@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AppShell } from "@/components/layout/AppShell";
 import { PostButton } from "@/components/layout/PostButton";
@@ -96,6 +97,7 @@ export default async function ProfilePostsPage({ params }: ProfilePostsPageProps
   return (
     <AppShell
       navVariant="none"
+      hideTopBar
       panel={
         <Suspense fallback={<NotificationsSkeleton />}>
           <NotificationsPanelAsync />
@@ -108,6 +110,15 @@ export default async function ProfilePostsPage({ params }: ProfilePostsPageProps
       backHref={`/profile/${person.id}`}
     >
       <h1 className="sr-only">{`${person.name}'s posts`}</h1>
+      <div className="mx-auto w-full max-w-(--uf-content-w) pt-3">
+        <Link
+          href={`/profile/${person.id}`}
+          className="flex w-fit items-center gap-1 text-base font-medium text-ink hover:underline"
+        >
+          <Icon name="chevron-left" size={24} />
+          {person.name}
+        </Link>
+      </div>
       <Suspense fallback={<FeedColumnSkeleton />}>
         <PostsBody userId={userId} />
       </Suspense>
