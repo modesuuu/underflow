@@ -9,7 +9,7 @@ import { InboxShell } from "@/features/inbox/components/InboxShell";
  */
 export default function InboxPage() {
   return (
-    <AppShell breadcrumbRoot="Tools" breadcrumbLeaf="Inbox">
+    <AppShell breadcrumbRoot="Tools" breadcrumbLeaf="Inbox" fill>
       <h1 className="sr-only">Inbox</h1>
       <InboxShell />
     </AppShell>

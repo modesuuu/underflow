@@ -57,7 +57,7 @@ export function MessagesColumn({
         </label>
       </div>
 
-      <ul className="no-scrollbar flex flex-1 flex-col gap-3 overflow-y-auto px-6 pt-6 pb-2">
+      <ul className="no-scrollbar flex flex-1 flex-col gap-3 overflow-y-auto overscroll-contain px-6 pt-6 pb-2">
         {conversations.map((thread) => {
           const last = thread.messages[thread.messages.length - 1];
           const selected = thread.id === selectedId;

@@ -79,7 +79,7 @@ export function ChatPane({ conversation }: { conversation: Conversation | null }
 
       <div
         ref={scrollRef}
-        className="no-scrollbar flex-1 overflow-y-auto px-6 pt-[104px] pb-6"
+        className="no-scrollbar flex-1 overflow-y-auto overscroll-contain px-6 pt-[104px] pb-6"
       >
         <div className="flex flex-col gap-6">
           {groups.map((group, groupIndex) => {
