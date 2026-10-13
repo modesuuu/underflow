@@ -101,8 +101,8 @@ export function ProfileDetailCard({ person }: { person: PersonDetail }) {
               <Icon name="user" size={16} />
             </span>
             <div className="flex flex-col gap-0.5">
-              <span className="text-sm font-medium text-muted">Full Name</span>
-              <span className="text-base font-medium text-ink">{person.name}</span>
+              <span className="text-xs font-medium text-muted">Full Name</span>
+              <span className="text-sm font-medium text-ink">{person.name}</span>
             </div>
           </div>
           {person.email && (
@@ -111,8 +111,8 @@ export function ProfileDetailCard({ person }: { person: PersonDetail }) {
                 <Icon name="envelope" size={16} />
               </span>
               <div className="flex flex-col gap-0.5">
-                <span className="text-sm font-medium text-muted">Email</span>
-                <span className="text-base font-medium text-ink">{person.email}</span>
+                <span className="text-xs font-medium text-muted">Email</span>
+                <span className="text-sm font-medium text-ink">{person.email}</span>
               </div>
             </div>
           )}
