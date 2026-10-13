@@ -12,6 +12,7 @@ import {
 import type { Conversation } from "../types";
 import { ApplicationCard } from "./ApplicationCard";
 import { ConfirmDialog } from "./ConfirmDialog";
+import { ThreadOptionsMenu } from "./ThreadOptionsMenu";
 
 /**
  * Right side of the Inbox (Figma 386:5), WhatsApp-Web model: the
@@ -83,25 +84,17 @@ export function ChatPane({ conversation }: { conversation: Conversation | null }
         </span>
       </div>
 
-      {/* The design's standalone action buttons (specimens drawn
-          next to the Inbox frame): Clear All / Delete Chat for the
-          open conversation. */}
-      <div className="absolute top-4 right-6 z-10 flex gap-2">
-        <button
-          type="button"
-          onClick={() => setConfirm("clear")}
-          className="flex h-10 cursor-pointer items-center rounded-xl bg-bg px-3.5 text-sm font-medium text-ink transition-colors hover:bg-line/50"
-        >
-          Clear All
-        </button>
-        <button
-          type="button"
-          onClick={() => setConfirm("delete")}
-          className="flex h-10 cursor-pointer items-center gap-2 rounded-xl bg-bg px-3.5 text-sm font-medium text-ink transition-colors hover:bg-line/50"
-        >
-          <Icon name="trash-alt" size={20} />
-          Delete Chat
-        </button>
+      {/* Thread actions for the open conversation — one quiet
+          kebab at the pane's top-right (the design's standalone
+          Clear All / Delete Chat buttons floated here as labeled
+          pills; the user found them intrusive, so they live in
+          this menu now, same as on the rail rows). */}
+      <div className="absolute top-4 right-6 z-10">
+        <ThreadOptionsMenu
+          thread={conversation}
+          onClearRequest={() => setConfirm("clear")}
+          onDeleteRequest={() => setConfirm("delete")}
+        />
       </div>
 
       <div

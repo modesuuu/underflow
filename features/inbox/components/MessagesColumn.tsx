@@ -133,7 +133,6 @@ export function MessagesColumn({
                 </button>
                 <ThreadOptionsMenu
                   thread={thread}
-                  dropUp={index >= sorted.length - 2 && sorted.length > 2}
                   onClearRequest={(t) => setConfirm({ kind: "clear", thread: t })}
                   onDeleteRequest={(t) =>
                     setConfirm({ kind: "delete", thread: t })
