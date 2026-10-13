@@ -117,6 +117,13 @@ export function ChatPane({ conversation }: { conversation: Conversation | null }
                     }`}
                   >
                     {message.text}
+                    <span
+                      className={`float-right mt-2.5 ml-3 text-[10px] leading-none ${
+                        mine ? "text-ink/55" : "text-subtle"
+                      }`}
+                    >
+                      {message.clock}
+                    </span>
                   </p>
                 ))}
               </div>
