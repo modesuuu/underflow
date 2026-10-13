@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Icon } from "@/components/ui/Icon";
 import { Avatar } from "@/components/ui/Avatar";
 import { PhotoGrid } from "@/components/ui/PhotoGrid";
@@ -8,6 +9,7 @@ import { PhotoLightbox } from "@/components/ui/PhotoLightbox";
 import { ApplyCta } from "./ApplyCta";
 import { formatDueDate } from "../sort";
 import type { CollabProject } from "../types";
+import { resolvePersonId } from "@/features/profile/mock";
 
 /**
  * Collab photos are `string[]` (URLs per the API contract). The mock uses
@@ -82,15 +84,19 @@ export function CollabDetailContent({ project }: CollabDetailContentProps) {
       <div className="flex flex-col gap-4 rounded-2xl bg-bg p-6">
         {/* Project owner row */}
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
+          <Link
+            href={`/profile/${resolvePersonId(project.owner.id) ?? project.owner.id}`}
+            className="group flex items-center gap-3"
+            aria-label={`View ${project.owner.name}'s profile`}
+          >
             <Avatar size={42} src={project.owner.avatarUrl} alt={project.owner.name} />
             <div className="flex flex-col">
-              <span className="text-base font-medium text-ink">
+              <span className="text-base font-medium text-ink group-hover:underline">
                 {project.owner.name}
               </span>
               <span className="text-2xs text-muted">{project.owner.role}</span>
             </div>
-          </div>
+          </Link>
           {/* TODO(backend): open in-app chat / GET /api/chat/:ownerId */}
           <button
             type="button"
@@ -168,14 +174,19 @@ export function CollabDetailContent({ project }: CollabDetailContentProps) {
                 </div>
               </div>
             ) : (
-              /* Filled member: avatar + name + role */
-              <div key={member.id} className="flex items-center gap-2">
+              /* Filled member: avatar + name + role — links to profile */
+              <Link
+                key={member.id}
+                href={`/profile/${resolvePersonId(member.id) ?? member.id}`}
+                className="group flex items-center gap-2"
+                aria-label={`View ${member.name}'s profile`}
+              >
                 <Avatar size={32} src={member.avatarUrl} alt={member.name} />
                 <div className="flex flex-col">
-                  <span className="text-base font-medium text-ink">{member.name}</span>
+                  <span className="text-base font-medium text-ink group-hover:underline">{member.name}</span>
                   <span className="text-2xs text-muted">{member.role}</span>
                 </div>
-              </div>
+              </Link>
             )
           )}
         </div>

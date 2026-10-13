@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AppShell } from "@/components/layout/AppShell";
 import { getDashboardPosts, getNotifications } from "@/features/dashboard/api";
@@ -10,6 +11,7 @@ import { PhotoViewer } from "@/features/dashboard/components/PhotoViewer";
 import { formatCount } from "@/lib/format";
 import { Avatar } from "@/components/ui/Avatar";
 import { HeartIcon } from "@/components/ui/HeartIcon";
+import { resolvePersonId } from "@/features/profile/mock";
 import { Icon } from "@/components/ui/Icon";
 
 interface DetailPageProps {
@@ -130,13 +132,17 @@ async function PostDetailAsync({
       <h1 className="sr-only">Post by {post.author.name}</h1>
       {/* Post header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
+        <Link
+          href={`/profile/${resolvePersonId(post.author.id) ?? post.author.id}`}
+          className="group flex items-center gap-2"
+          aria-label={`View ${post.author.name}'s profile`}
+        >
           <Avatar size={32} src={post.author.avatarUrl} alt={post.author.name} />
           <div className="flex flex-col">
-            <span className="text-base font-medium">{post.author.name}</span>
+            <span className="text-base font-medium group-hover:underline">{post.author.name}</span>
             <span className="text-2xs text-subtle">{post.postedAgo}</span>
           </div>
-        </div>
+        </Link>
         {/* P1-C #18: the "Post options" button had no onClick / no menu —
             removed until the options menu exists (same for PostCard). */}
       </div>

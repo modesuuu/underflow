@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Avatar } from "@/components/ui/Avatar";
 import { Icon } from "@/components/ui/Icon";
@@ -7,6 +8,7 @@ import { formatCount } from "@/lib/format";
 import type { Post } from "../types";
 import { PhotoGrid } from "@/components/ui/PhotoGrid";
 import { LikeButton } from "./LikeButton";
+import { resolvePersonId } from "@/features/profile/mock";
 
 export function PostCard({ post }: { post: Post }) {
   const router = useRouter();
@@ -17,15 +19,19 @@ export function PostCard({ post }: { post: Post }) {
 
   return (
     <article className="flex flex-1 flex-col gap-6 py-3">
-      {/* Header */}
+      {/* Header — author byline links to the author's profile */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
+        <Link
+          href={`/profile/${resolvePersonId(post.author.id) ?? post.author.id}`}
+          className="group flex items-center gap-2"
+          aria-label={`View ${post.author.name}'s profile`}
+        >
           <Avatar size={32} src={post.author.avatarUrl} alt={post.author.name} />
           <div className="flex flex-col ">
-            <span className="text-base font-medium">{post.author.name}</span>
+            <span className="text-base font-medium group-hover:underline">{post.author.name}</span>
             <span className="text-2xs text-subtle">{post.postedAgo}</span>
           </div>
-        </div>
+        </Link>
       </div>
 
       {/* Body */}

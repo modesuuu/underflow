@@ -328,8 +328,12 @@ export function Sidebar() {
           </div>
           <div className="h-px w-full bg-line" />
 
-          {/* Profile card */}
-          <div className="relative z-10 flex items-center justify-between rounded-sm bg-surface p-1">
+          {/* Profile card — links to the current user's own profile */}
+          <Link
+            href="/profile/me"
+            aria-label="View your profile"
+            className="relative z-10 flex cursor-pointer items-center justify-between rounded-sm bg-surface p-1"
+          >
             <div className="flex items-center gap-1">
               <Avatar size={28} rounded="sm" alt={CURRENT_USER.name} />
               <div className="flex w-[97px] flex-col gap-0.5">
@@ -342,7 +346,7 @@ export function Sidebar() {
               </div>
             </div>
             <Icon name="chevrons-up-down" size={20} className="text-muted" />
-          </div>
+          </Link>
         </div>
       </div>
     </aside>

@@ -135,3 +135,12 @@ export const PEOPLE: PersonDetail[] = [
     ],
   },
 ];
+
+/**
+ * Sync alias → canonical-id lookup (client-safe: this module is data
+ * only). Bylines become profile links only when this resolves — generic
+ * mock commenters ("user-1", …) have no profile and stay plain text.
+ */
+export function resolvePersonId(id: string): string | undefined {
+  return PEOPLE.find((p) => p.id === id || p.aliases.includes(id))?.id;
+}
