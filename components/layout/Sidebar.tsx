@@ -73,18 +73,21 @@ interface NavRowProps {
   active: boolean;
   badge?: number;
   mini?: boolean;
+  animate?: boolean;
   onSelect: (id: string) => void;
   registerRef: RegisterRef<HTMLElement>;
 }
 
-function NavRow({ item, active, badge, mini, onSelect, registerRef }: NavRowProps) {
+function NavRow({ item, active, badge, mini, animate, onSelect, registerRef }: NavRowProps) {
   // Items with an href are real <Link> anchors — Next.js prefetches the
   // destination route shell on hover/appearance, so slow compiles no longer
   // flash the wrong skeleton first (button + router.push had no prefetch).
   // href-less items stay buttons. Either element is registered to the pill.
   const className = clsx(
-    "group relative z-10 flex w-full cursor-pointer items-center rounded-md py-2 text-left",
-    mini ? "justify-center gap-0 px-0" : "gap-1 px-1",
+    "group relative z-10 flex w-full cursor-pointer items-center gap-1 rounded-md py-2 text-left",
+    mini ? "pr-0 pl-3" : "px-1",
+    animate &&
+      "transition-[padding] duration-[380ms] ease-(--uf-ease-out) motion-reduce:transition-none",
     !active && "nav-row-hoverable"
   );
 
@@ -105,7 +108,9 @@ function NavRow({ item, active, badge, mini, onSelect, registerRef }: NavRowProp
       </span>
       <span
         className={clsx(
-          "overflow-hidden text-xs font-medium whitespace-nowrap transition-[max-width,opacity] duration-300",
+          "overflow-hidden text-xs font-medium whitespace-nowrap",
+          animate &&
+            "transition-[max-width,opacity] duration-[380ms] ease-(--uf-ease-out) motion-reduce:transition-none",
           active ? "text-ink" : "text-muted",
           mini ? "max-w-0 opacity-0" : "max-w-[140px] opacity-100"
         )}
@@ -175,6 +180,7 @@ interface NavSectionBlockProps {
   activeId: string;
   collapsed: boolean;
   mini?: boolean;
+  animate?: boolean;
   badgeFor: (id: string) => number | undefined;
   onToggle: (id: string) => void;
   onSelect: (id: string) => void;
@@ -186,6 +192,7 @@ function NavSectionBlock({
   activeId,
   collapsed,
   mini,
+  animate,
   badgeFor,
   onToggle,
   onSelect,
@@ -197,14 +204,26 @@ function NavSectionBlock({
   const sectionCollapsed = mini ? false : collapsed;
   return (
     <div className="flex flex-col gap-3">
-      {mini ? (
-        <div aria-hidden="true" className="mx-2 h-px bg-line" />
-      ) : (
+      <div
+        className={
+          "relative " +
+          (animate
+            ? "transition-[height] duration-[380ms] ease-(--uf-ease-out) motion-reduce:transition-none"
+            : "")
+        }
+        style={{ height: mini ? 1 : 20 }}
+      >
         <button
           type="button"
           onClick={() => onToggle(section.id)}
           aria-expanded={!collapsed}
-          className="flex w-full cursor-pointer items-center justify-between text-left"
+          aria-hidden={mini || undefined}
+          tabIndex={mini ? -1 : undefined}
+          className={
+            "absolute inset-x-0 top-0 flex w-full cursor-pointer items-center justify-between text-left " +
+            (animate ? "transition-opacity duration-200 " : "") +
+            (mini ? "pointer-events-none opacity-0" : "opacity-100")
+          }
         >
           <span className="text-xs font-medium text-muted">
             {section.title}
@@ -221,7 +240,15 @@ function NavSectionBlock({
             <Icon name="chevron-down" size={20} className="text-muted" />
           </span>
         </button>
-      )}
+        <div
+          aria-hidden="true"
+          className={
+            "absolute inset-x-2 top-0 h-px bg-line " +
+            (animate ? "transition-opacity delay-100 duration-300 " : "") +
+            (mini ? "opacity-100" : "opacity-0")
+          }
+        />
+      </div>
       {/* P1-E #28: section open/close is the grid-template-rows
           0fr<->1fr trick (CSS `.acc-wrap`/`.acc-inner`) instead of a
           GSAP height:0<->auto tween. Rows stay mounted so refs and
@@ -235,6 +262,7 @@ function NavSectionBlock({
               active={item.id === activeId}
               badge={badgeFor(item.id)}
               mini={mini}
+              animate={animate}
               onSelect={onSelect}
               registerRef={registerRowRef}
             />
@@ -420,7 +448,8 @@ export function Sidebar() {
           "relative flex h-full flex-col justify-between py-6",
           mini ? "px-3" : "px-6",
           animateWidth &&
-            "transition-[padding] duration-[380ms] ease-(--uf-ease-out) motion-reduce:transition-none"
+            "transition-[padding] duration-[380ms] ease-(--uf-ease-out) motion-reduce:transition-none",
+          !animateWidth && "[&_.active-pill]:[transition:none]"
         )}
       >
         <div
@@ -445,7 +474,9 @@ export function Sidebar() {
           >
             <div
               className={clsx(
-                "flex items-center gap-3 overflow-hidden transition-[max-width,opacity] duration-300",
+                "flex items-center gap-3 overflow-hidden",
+                animateWidth &&
+                  "transition-[max-width,opacity] duration-[380ms] ease-(--uf-ease-out) motion-reduce:transition-none",
                 mini ? "max-w-0 opacity-0" : "max-w-[200px] opacity-100"
               )}
             >
@@ -487,6 +518,7 @@ export function Sidebar() {
                 activeId={activeId}
                 collapsed={!!collapsed[section.id]}
                 mini={mini}
+                animate={animateWidth}
                 badgeFor={badgeFor}
                 onToggle={toggleSection}
                 onSelect={setActiveId}
@@ -505,6 +537,7 @@ export function Sidebar() {
                 item={link}
                 active={link.id === activeId}
                 mini={mini}
+                animate={animateWidth}
                 onSelect={setActiveId}
                 registerRef={registerRow}
               />
@@ -525,7 +558,9 @@ export function Sidebar() {
               <Avatar size={28} rounded="sm" alt={CURRENT_USER.name} />
               <div
                 className={clsx(
-                  "flex flex-col gap-0.5 overflow-hidden transition-[max-width,opacity] duration-300",
+                  "flex flex-col gap-0.5 overflow-hidden",
+                  animateWidth &&
+                    "transition-[max-width,opacity] duration-[380ms] ease-(--uf-ease-out) motion-reduce:transition-none",
                   mini ? "w-0 max-w-0 opacity-0" : "w-[97px] max-w-[97px] opacity-100"
                 )}
               >
