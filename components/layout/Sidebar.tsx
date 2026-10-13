@@ -84,8 +84,8 @@ function NavRow({ item, active, badge, mini, animate, onSelect, registerRef }: N
   // flash the wrong skeleton first (button + router.push had no prefetch).
   // href-less items stay buttons. Either element is registered to the pill.
   const className = clsx(
-    "group relative z-10 flex w-full cursor-pointer items-center gap-1 rounded-md py-2 text-left",
-    mini ? "pr-0 pl-4" : "px-1",
+    "group relative z-10 flex w-full cursor-pointer items-center rounded-md text-left",
+    mini ? "justify-center gap-0 px-0 py-1.5" : "gap-1 px-1 py-2",
     animate &&
       "transition-[padding] duration-[380ms] ease-(--uf-ease-out) motion-reduce:transition-none",
     !active && "nav-row-hoverable"
@@ -93,18 +93,35 @@ function NavRow({ item, active, badge, mini, animate, onSelect, registerRef }: N
 
   const inner = (
     <>
-      <span className="relative flex size-5 shrink-0 items-center justify-center">
-        <Icon
-          name={item.icon}
-          size={20}
-          className={(active ? "text-ink" : "text-muted") + " leading-none"}
-        />
-        {/* Mini rail: the unread count becomes a dot badge on the icon */}
-        {mini && badge !== undefined && badge > 0 && (
-          <span className="absolute -top-1.5 -right-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#ff383c] px-1 text-[9px] font-semibold text-white">
-            {badge}
-          </span>
-        )}
+      <span className={clsx("flex flex-col items-center", mini && "gap-1")}>
+        <span className="relative flex size-5 shrink-0 items-center justify-center">
+          <Icon
+            name={item.icon}
+            size={20}
+            className={(active ? "text-ink" : "text-muted") + " leading-none"}
+          />
+          {/* Mini rail: the unread count becomes a dot badge on the icon */}
+          {mini && badge !== undefined && badge > 0 && (
+            <span className="absolute -top-1.5 -right-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#ff383c] px-1 text-[9px] font-semibold text-white">
+              {badge}
+            </span>
+          )}
+        </span>
+        {/* Rail micro-label: always mounted so it can grow/fade
+            with the rail; width- and height-collapsed to nothing
+            when the sidebar is expanded. */}
+        <span
+          aria-hidden="true"
+          className={clsx(
+            "overflow-hidden text-center text-[10px] leading-[1.15] font-medium whitespace-nowrap",
+            animate &&
+              "transition-[max-height,opacity] duration-[380ms] ease-(--uf-ease-out) motion-reduce:transition-none",
+            active ? "text-ink" : "text-muted",
+            mini ? "max-h-7 w-full opacity-100" : "max-h-0 w-0 opacity-0"
+          )}
+        >
+          {item.railLabel ?? item.label}
+        </span>
       </span>
       <span
         className={clsx(

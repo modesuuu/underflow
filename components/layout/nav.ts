@@ -4,6 +4,8 @@ export interface NavItem {
   icon: string;
   /** Optional route path. When set, clicking the nav item navigates here. */
   href?: string;
+  /** Short label shown under the icon on the collapsed rail. */
+  railLabel?: string;
 }
 
 export interface NavSection {
@@ -21,7 +23,7 @@ export const NAV_SECTIONS: NavSection[] = [
     items: [
       { id: "feeds", label: "Feeds", icon: "grid-alt", href: "/" },
       { id: "tasks", label: "Tasks", icon: "collection" },
-      { id: "collaborations", label: "Collaborations", icon: "group", href: "/collaborations" },
+      { id: "collaborations", label: "Collaborations", icon: "group", href: "/collaborations", railLabel: "Collabs" },
       { id: "circle", label: "Circle", icon: "conversation" },
     ],
   },
@@ -30,13 +32,13 @@ export const NAV_SECTIONS: NavSection[] = [
     title: "Tools",
     items: [
       { id: "inbox", label: "Inbox", icon: "envelope", href: "/inbox" },
-      { id: "my-collab", label: "My Collaborations", icon: "group", href: "/my-collaborations" },
+      { id: "my-collab", label: "My Collaborations", icon: "group", href: "/my-collaborations", railLabel: "My Collabs" },
     ],
   },
 ];
 
 export const FOOTER_LINKS: NavItem[] = [
-  { id: "help-center", label: "Help Center", icon: "help-circle" },
+  { id: "help-center", label: "Help Center", icon: "help-circle", railLabel: "Help" },
   { id: "settings", label: "Setting", icon: "cog" },
 ];
 
