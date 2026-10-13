@@ -81,6 +81,27 @@ export function ChatPane({ conversation }: { conversation: Conversation | null }
         className="no-scrollbar flex-1 overflow-y-auto overscroll-contain px-6 pt-[104px] pb-6"
       >
         <div className="flex flex-col gap-6">
+          {conversation.messages.length === 0 &&
+            (application ? (
+              <div
+                className={`flex ${
+                  application.direction === "outgoing"
+                    ? "justify-end"
+                    : "justify-start"
+                }`}
+              >
+                <ApplicationCard
+                  application={application}
+                  onResolve={(status) =>
+                    resolveApplication(conversation.id, status)
+                  }
+                />
+              </div>
+            ) : (
+              <p className="py-10 text-center text-sm text-muted">
+                No messages yet — say hello to {conversation.name}.
+              </p>
+            ))}
           {blocks.map((block, blockIndex) => {
             if (block.kind === "card" && application) {
               const mine = application.direction === "outgoing";

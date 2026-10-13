@@ -50,5 +50,9 @@ export interface Conversation {
   name: string;
   messages: ChatMessage[];
   unread: number;
+  /** Muted threads still list, but their unread skips the total badge. */
+  muted?: boolean;
+  /** Pinned threads sort above the rest of the list. */
+  pinned?: boolean;
   application?: ThreadApplication;
 }

@@ -1,8 +1,12 @@
 "use client";
 
+import { useState } from "react";
 import { Avatar } from "@/components/ui/Avatar";
 import { Icon } from "@/components/ui/Icon";
+import { clearThread, deleteThread } from "../store";
 import type { Conversation } from "../types";
+import { ConfirmDialog } from "./ConfirmDialog";
+import { ThreadOptionsMenu } from "./ThreadOptionsMenu";
 
 interface MessagesColumnProps {
   conversations: Conversation[];
@@ -12,15 +16,15 @@ interface MessagesColumnProps {
   onSelect: (id: string) => void;
 }
 
+type ConfirmState = { kind: "clear" | "delete"; thread: Conversation } | null;
+
 /**
  * Left rail of the Inbox (Figma 386:5), WhatsApp-Web model: title
  * and search stay fixed, ONLY the list scrolls, hint pinned at the
- * bottom. Row grammar follows the frame (time above the lime
- * unread badge, 24px kebab to their right) but at legible sizes —
- * the frame's literal 8px time / 14px badge falls below any
- * readability floor, so both are scaled up a step, and rows gain
- * padding plus a real hover/selected surface so the open
- * conversation is visible at a glance.
+ * bottom. Pinned threads sort first (the store keeps the rest in
+ * latest-activity order). Every row carries the kebab menu with the
+ * thread actions; the destructive ones (Clear, Delete) confirm
+ * through a dialog owned here.
  */
 export function MessagesColumn({
   conversations,
@@ -29,6 +33,12 @@ export function MessagesColumn({
   onQueryChange,
   onSelect,
 }: MessagesColumnProps) {
+  const [confirm, setConfirm] = useState<ConfirmState>(null);
+
+  const sorted = [...conversations].sort(
+    (a, b) => Number(b.pinned ?? false) - Number(a.pinned ?? false),
+  );
+
   return (
     <section
       aria-label="Conversations"
@@ -60,36 +70,54 @@ export function MessagesColumn({
       </div>
 
       <ul className="no-scrollbar flex flex-1 flex-col gap-1 overflow-y-auto overscroll-contain px-4 pt-4 pb-2">
-        {conversations.map((thread) => {
+        {sorted.map((thread, index) => {
           const last = thread.messages[thread.messages.length - 1];
           const selected = thread.id === selectedId;
           const unread = thread.unread > 0;
           return (
             <li key={thread.id}>
-              <button
-                type="button"
-                onClick={() => onSelect(thread.id)}
-                aria-current={selected || undefined}
-                className={`flex w-full cursor-pointer items-center gap-3 rounded-xl px-2 py-2 text-left transition-colors ${
+              <div
+                className={`flex items-center rounded-xl pr-1 transition-colors ${
                   selected ? "bg-surface" : "hover:bg-surface/70"
                 }`}
               >
-                <Avatar size={42} alt={thread.name} />
-                <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                  <span className="truncate text-base leading-snug font-medium text-ink">
-                    {thread.name}
+                <button
+                  type="button"
+                  onClick={() => onSelect(thread.id)}
+                  aria-current={selected || undefined}
+                  className="flex min-w-0 flex-1 cursor-pointer items-center gap-3 px-2 py-2 text-left"
+                >
+                  <Avatar size={42} alt={thread.name} />
+                  <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                    <span className="flex items-center gap-1.5">
+                      <span className="truncate text-base leading-snug font-medium text-ink">
+                        {thread.name}
+                      </span>
+                      {thread.pinned && (
+                        <Icon
+                          name="pin"
+                          size={14}
+                          className="shrink-0 text-muted"
+                        />
+                      )}
+                      {thread.muted && (
+                        <Icon
+                          name="bell-off"
+                          size={14}
+                          className="shrink-0 text-muted"
+                        />
+                      )}
+                    </span>
+                    <span
+                      className={`truncate text-[13px] leading-snug ${
+                        unread ? "font-medium text-ink" : "text-muted"
+                      }`}
+                    >
+                      {last
+                        ? `${last.from === "me" ? "You: " : ""}${last.text}`
+                        : "No messages yet"}
+                    </span>
                   </span>
-                  <span
-                    className={`truncate text-[13px] leading-snug ${
-                      unread ? "font-medium text-ink" : "text-muted"
-                    }`}
-                  >
-                    {last
-                      ? `${last.from === "me" ? "You: " : ""}${last.text}`
-                      : ""}
-                  </span>
-                </span>
-                <span className="flex items-center gap-2">
                   <span className="flex h-[42px] flex-col items-end justify-between py-0.5">
                     <span className="text-[11px] leading-none font-medium text-muted">
                       {last?.timeLabel ?? ""}
@@ -102,11 +130,16 @@ export function MessagesColumn({
                       <span className="h-[18px]" />
                     )}
                   </span>
-                  <span className="text-muted">
-                    <Icon name="dots-vertical-rounded" size={24} />
-                  </span>
-                </span>
-              </button>
+                </button>
+                <ThreadOptionsMenu
+                  thread={thread}
+                  dropUp={index >= sorted.length - 2 && sorted.length > 2}
+                  onClearRequest={(t) => setConfirm({ kind: "clear", thread: t })}
+                  onDeleteRequest={(t) =>
+                    setConfirm({ kind: "delete", thread: t })
+                  }
+                />
+              </div>
             </li>
           );
         })}
@@ -120,6 +153,28 @@ export function MessagesColumn({
       <p className="shrink-0 px-6 pt-2 pb-6 text-sm text-muted">
         Chat with applicants
       </p>
+
+      {confirm && (
+        <ConfirmDialog
+          title={
+            confirm.kind === "delete"
+              ? `Delete chat with ${confirm.thread.name}?`
+              : `Clear chat with ${confirm.thread.name}?`
+          }
+          description={
+            confirm.kind === "delete"
+              ? "This conversation will be removed from your inbox. This can't be undone."
+              : "All messages in this conversation will be removed. The conversation itself — and its application — stays here."
+          }
+          confirmLabel={confirm.kind === "delete" ? "Delete chat" : "Clear chat"}
+          onConfirm={() => {
+            if (confirm.kind === "delete") deleteThread(confirm.thread.id);
+            else clearThread(confirm.thread.id);
+            setConfirm(null);
+          }}
+          onCancel={() => setConfirm(null)}
+        />
+      )}
     </section>
   );
 }

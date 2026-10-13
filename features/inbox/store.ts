@@ -35,7 +35,10 @@ export function useConversations(): Conversation[] {
 }
 
 export function countUnread(list: Conversation[]): number {
-  return list.reduce((sum, thread) => sum + thread.unread, 0);
+  return list.reduce(
+    (sum, thread) => sum + (thread.muted ? 0 : thread.unread),
+    0,
+  );
 }
 
 export function useInboxUnreadCount(): number {
@@ -59,6 +62,29 @@ export function markThreadRead(id: string) {
   replaceThread(id, (t) => ({ ...t, unread: 0 }));
 }
 
+/** Remove the thread entirely (Delete chat, after confirmation). */
+export function deleteThread(id: string) {
+  conversations = conversations.filter((thread) => thread.id !== id);
+  emit();
+}
+
+/** Empty the history (Clear chat); the thread and its application stay. */
+export function clearThread(id: string) {
+  replaceThread(id, (t) => ({ ...t, messages: [] }));
+}
+
+export function toggleMuteThread(id: string) {
+  replaceThread(id, (t) => ({ ...t, muted: !t.muted }));
+}
+
+export function togglePinThread(id: string) {
+  replaceThread(id, (t) => ({ ...t, pinned: !t.pinned }));
+}
+
+export function markThreadUnread(id: string) {
+  replaceThread(id, (t) => (t.unread === 0 ? { ...t, unread: 1 } : t));
+}
+
 let messageSeq = 0;
 
 const clockNow = () =>
@@ -70,11 +96,13 @@ const clockNow = () =>
 export function sendMessage(threadId: string, text: string) {
   const trimmed = text.trim();
   if (!trimmed) return;
+  const thread = conversations.find((t) => t.id === threadId);
+  if (!thread) return;
   messageSeq += 1;
-  replaceThread(threadId, (t) => ({
-    ...t,
+  const updated = {
+    ...thread,
     messages: [
-      ...t.messages,
+      ...thread.messages,
       {
         id: `${threadId}-sent-${messageSeq}`,
         from: "me" as const,
@@ -83,7 +111,14 @@ export function sendMessage(threadId: string, text: string) {
         clock: clockNow(),
       },
     ],
-  }));
+  };
+  // Latest activity rises: the thread moves to the top of its
+  // pin group (the list renders pinned threads first).
+  conversations = [
+    updated,
+    ...conversations.filter((t) => t.id !== threadId),
+  ];
+  emit();
 }
 
 export function resolveApplication(
