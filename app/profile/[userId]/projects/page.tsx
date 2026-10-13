@@ -81,17 +81,17 @@ export default async function ProfileProjectsPage({
   return (
     <AppShell
       breadcrumbRoot={person.name}
-      breadcrumbLeaf="Projects"
+      breadcrumbLeaf="Collaborations"
       backLabel={person.name}
       backHref={`/profile/${person.id}`}
     >
       <div className="flex flex-col gap-6 px-6 py-8">
         <div className="flex flex-col gap-2">
-          <h1 className="text-[40px] font-bold leading-[1.05] tracking-[-0.02em] text-ink">
-            Active Projects
+          <h1 className="text-[28px] font-bold leading-[1.1] tracking-[-0.01em] text-ink">
+            Active Project {person.name}
           </h1>
           <p className="text-sm font-medium text-muted">
-            Projects {person.name} is currently part of.
+            Queued and ready to start.
           </p>
         </div>
 
