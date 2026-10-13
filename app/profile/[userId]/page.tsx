@@ -19,37 +19,46 @@ export async function generateMetadata({
   return { title: `${person.name} — Bareng`, description: person.bio };
 }
 
-/** Mirrors the two cards of the Profile page (Figma 414:822). */
+/**
+ * Mirrors the built page (Figma 414:822): two flat gray cards of equal
+ * height, spread apart across the content area.
+ */
 function ProfileSkeleton() {
   return (
-    <div className="grid items-start gap-6 xl:grid-cols-2">
-      <div className="rounded-2xl border border-line bg-surface p-6">
-        <div className="h-4 w-28 rounded bg-placeholder" />
+    <div className="flex flex-1 flex-col gap-6 lg:flex-row lg:justify-between">
+      <div className="w-full shrink-0 rounded-3xl bg-bg p-6 lg:w-[400px] xl:w-[440px]">
+        <div className="h-5 w-28 rounded bg-placeholder" />
         <div className="mt-6 flex flex-col items-center">
-          <div className="size-20 rounded-full bg-placeholder" />
-          <div className="mt-3 h-5 w-32 rounded bg-placeholder" />
-          <div className="mt-2 h-3.5 w-24 rounded bg-placeholder" />
+          <div className="size-[100px] rounded-full bg-placeholder" />
+          <div className="mt-3 h-7 w-32 rounded bg-placeholder" />
+          <div className="mt-3 h-3.5 w-48 rounded bg-placeholder" />
         </div>
-        <div className="mt-6 flex flex-col gap-2">
-          <div className="h-3.5 w-full rounded bg-placeholder" />
-          <div className="h-3.5 w-2/3 rounded bg-placeholder" />
-        </div>
-        <div className="mt-5 flex gap-2">
+        <div className="mt-6 flex justify-center gap-2.5">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="h-7 w-20 rounded-full bg-placeholder/60" />
+            <div key={i} className="size-11 rounded-full bg-placeholder/60" />
+          ))}
+        </div>
+        <div className="mt-6 flex flex-wrap justify-center gap-2">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="h-8 w-24 rounded-full bg-placeholder/60" />
           ))}
         </div>
       </div>
-      <div className="rounded-2xl border border-line bg-surface p-6">
-        <div className="h-4 w-40 rounded bg-placeholder" />
-        <div className="mt-6 grid gap-4 sm:grid-cols-3">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="rounded-xl bg-bg p-4">
-              <div className="h-7 w-10 rounded bg-placeholder" />
-              <div className="mt-2 h-3.5 w-20 rounded bg-placeholder" />
-              <div className="mt-3 h-3.5 w-16 rounded bg-placeholder" />
+      <div className="w-full shrink-0 rounded-3xl bg-bg p-6 lg:w-[400px] xl:w-[440px]">
+        <div className="h-5 w-44 rounded bg-placeholder" />
+        <div className="mt-6 grid grid-cols-2 gap-4">
+          {Array.from({ length: 2 }).map((_, i) => (
+            <div key={i} className="rounded-2xl border border-line bg-surface p-4">
+              <div className="size-8 rounded-lg bg-placeholder" />
+              <div className="mt-4 h-9 w-12 rounded bg-placeholder" />
+              <div className="mt-1.5 h-4 w-24 rounded bg-placeholder" />
             </div>
           ))}
+          <div className="col-span-2 rounded-2xl border border-line bg-surface p-4">
+            <div className="size-8 rounded-lg bg-placeholder" />
+            <div className="mt-4 h-9 w-12 rounded bg-placeholder" />
+            <div className="mt-1.5 h-4 w-24 rounded bg-placeholder" />
+          </div>
         </div>
       </div>
     </div>
@@ -61,7 +70,7 @@ async function ProfileBody({ userId }: { userId: string }) {
   if (!person) notFound();
   const stats = await getProfileStats(person);
   return (
-    <div className="grid items-start gap-6 xl:grid-cols-2">
+    <div className="flex flex-1 flex-col gap-6 lg:flex-row lg:justify-between">
       <ProfileDetailCard person={person} />
       <PerformanceSummary personId={person.id} stats={stats} />
     </div>
@@ -81,7 +90,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
       backHref="/"
     >
       <h1 className="sr-only">{person.name}</h1>
-      <div className="mx-auto w-full max-w-6xl px-6 py-6 lg:px-10">
+      <div className="flex min-h-full flex-col px-6 py-6">
         <Suspense fallback={<ProfileSkeleton />}>
           <ProfileBody userId={userId} />
         </Suspense>
