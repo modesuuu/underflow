@@ -8,10 +8,12 @@ import type { Conversation } from "../types";
 import { ApplicationCard } from "./ApplicationCard";
 
 /**
- * Right side of the Inbox (Figma 386:5): no header bar — a floating
- * name chip, the message stack (incoming gray bubbles left, outgoing
- * lime bubbles right, application card riding in the applicant's
- * stack), and the composer pinned to the bottom.
+ * Right side of the Inbox (Figma 386:5), WhatsApp-Web model: the
+ * pane fills the main area and only the message list scrolls. The
+ * name chip (avatar + lavender capsule, soft group shadow) floats
+ * at the top-center with NO bar behind it — just the photo and the
+ * name stay while messages scroll underneath. The composer is a
+ * full-width pill with a circular lime send button.
  */
 export function ChatPane({ conversation }: { conversation: Conversation | null }) {
   const [draft, setDraft] = useState("");
@@ -65,18 +67,20 @@ export function ChatPane({ conversation }: { conversation: Conversation | null }
   return (
     <section
       aria-label={`Conversation with ${conversation.name}`}
-      className="flex min-w-0 flex-1 flex-col bg-surface"
+      className="relative flex min-w-0 flex-1 flex-col bg-surface"
     >
-      <div ref={scrollRef} className="no-scrollbar flex-1 overflow-y-auto px-5 py-4">
-        {/* Name chip — part of the scroll flow, as drawn in 386:5:
-            it floats over the top of the conversation (soft drop
-            shadow on the group) and scrolls away with the messages. */}
-        <div className="flex flex-col items-center gap-1 pb-6 [filter:drop-shadow(0_18px_20px_rgba(0,0,0,0.15))]">
-          <Avatar size={42} alt={conversation.name} />
-          <span className="min-w-[88px] rounded-full bg-[#d3cfff] px-3 py-1 text-center text-base font-medium text-ink">
-            {conversation.name}
-          </span>
-        </div>
+      {/* Floating identity chip — photo + name only, no bar. */}
+      <div className="pointer-events-none absolute top-4 left-1/2 z-10 flex -translate-x-1/2 flex-col items-center gap-1 [filter:drop-shadow(0_18px_20px_rgba(0,0,0,0.15))]">
+        <Avatar size={42} alt={conversation.name} />
+        <span className="min-w-[88px] rounded-full bg-[#d3cfff] px-3 py-1 text-center text-base font-medium text-ink">
+          {conversation.name}
+        </span>
+      </div>
+
+      <div
+        ref={scrollRef}
+        className="no-scrollbar flex-1 overflow-y-auto px-6 pt-[104px] pb-6"
+      >
         <div className="flex flex-col gap-6">
           {groups.map((group, groupIndex) => {
             const mine = group.from === "me";
@@ -124,38 +128,40 @@ export function ChatPane({ conversation }: { conversation: Conversation | null }
         </div>
       </div>
 
-      <form onSubmit={handleSend} className="px-5 pt-2 pb-6">
-        <div className="flex w-full max-w-[636px] items-center gap-2 rounded-xl border border-line bg-surface p-3">
-          <label className="sr-only" htmlFor={`composer-${conversation.id}`}>
-            Message {conversation.name}
-          </label>
-          <input
-            id={`composer-${conversation.id}`}
-            type="text"
-            value={draft}
-            onChange={(event) => setDraft(event.target.value)}
-            placeholder="Aa"
-            className="min-w-0 flex-1 bg-transparent text-base text-ink outline-none placeholder:text-muted"
-          />
-          <button
-            type="button"
-            aria-label="Voice message (not available yet)"
-            className="shrink-0 cursor-pointer text-muted transition-colors hover:text-ink"
-          >
-            <Icon name="microphone" size={22} />
-          </button>
-          <button
-            type="button"
-            aria-label="Attach a file (not available yet)"
-            className="shrink-0 cursor-pointer text-muted transition-colors hover:text-ink"
-          >
-            <Icon name="paperclip" size={22} />
-          </button>
+      <form onSubmit={handleSend} className="shrink-0 px-6 pt-2 pb-6">
+        <div className="flex items-center gap-3">
+          <div className="flex min-w-0 flex-1 items-center gap-1 rounded-full bg-bg px-4 py-2 transition-shadow focus-within:ring-2 focus-within:ring-accent">
+            <label className="sr-only" htmlFor={`composer-${conversation.id}`}>
+              Message {conversation.name}
+            </label>
+            <input
+              id={`composer-${conversation.id}`}
+              type="text"
+              value={draft}
+              onChange={(event) => setDraft(event.target.value)}
+              placeholder="Aa"
+              className="h-8 min-w-0 flex-1 bg-transparent text-base text-ink outline-none placeholder:text-muted"
+            />
+            <button
+              type="button"
+              aria-label="Voice message (not available yet)"
+              className="flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-full text-muted transition-colors hover:bg-surface hover:text-ink"
+            >
+              <Icon name="microphone" size={20} />
+            </button>
+            <button
+              type="button"
+              aria-label="Attach a file (not available yet)"
+              className="flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-full text-muted transition-colors hover:bg-surface hover:text-ink"
+            >
+              <Icon name="paperclip" size={20} />
+            </button>
+          </div>
           <button
             type="submit"
             aria-label="Send message"
             disabled={!draft.trim()}
-            className="shrink-0 cursor-pointer rounded-lg bg-accent p-2 text-ink transition-opacity hover:opacity-85 disabled:cursor-not-allowed disabled:opacity-40"
+            className="flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-full bg-accent text-ink transition-opacity hover:opacity-85 disabled:cursor-not-allowed disabled:opacity-40"
           >
             <Icon name="send" size={20} />
           </button>
