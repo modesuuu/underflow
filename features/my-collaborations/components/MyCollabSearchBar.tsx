@@ -56,7 +56,12 @@ function PillGroup<T extends string>({
   );
 }
 
-/** Dropdown with outside-click / Escape close + aria state. */
+/**
+ * Dropdown with outside-click / Escape close + aria state. The
+ * trigger span owns the toggle (the trigger button itself is
+ * presentational); a click inside the panel on an element with
+ * data-close-panel closes it.
+ */
 function Dropdown({
   trigger,
   panel,
@@ -85,18 +90,28 @@ function Dropdown({
       document.removeEventListener("pointerdown", onPointerDown);
       document.removeEventListener("keydown", onKeyDown);
     };
-  }, [open]);
+  }, [open ]);
 
   return (
     <div className="relative">
-      <span ref={triggerRef} aria-haspopup="true" aria-expanded={open}>
+      <span
+        ref={triggerRef}
+        aria-haspopup="true"
+        aria-expanded={open}
+        onClick={() => setOpen((v) => !v)}
+      >
         {trigger}
       </span>
       {open && (
         <div
           ref={panelRef}
           role="dialog"
-          className="absolute left-0 top-full z-50 mt-1 min-w-[160px] rounded-lg border border-line bg-surface p-3 shadow-lg"
+          className="absolute right-0 top-full z-50 mt-1 min-w-[180px] rounded-lg border border-line bg-surface p-3 shadow-lg"
+          onMouseDown={(e) => {
+            if ((e.target as HTMLElement).closest("[data-close-panel]")) {
+              setOpen(false);
+            }
+          }}
         >
           {panel}
         </div>
@@ -116,9 +131,11 @@ interface MyCollabSearchBarProps {
 }
 
 /**
- * Search + sort + type-filter bar for My Collaborations (board & category).
- * Same shape as the public SearchFilterBar, minus the public status filter —
- * status here is the myStatus column/category, not a filter. All controls work.
+ * Search + sort + type-filter bar for My Collaborations (board &
+ * category). Search-first like the public board: the search group
+ * leads and widens, sort and filter are labeled buttons that say
+ * what they hold. Status is not a filter here — it is the
+ * section/category structure itself. All controls work.
  */
 export function MyCollabSearchBar({
   draftQuery,
@@ -130,19 +147,58 @@ export function MyCollabSearchBar({
   onTypeChange,
 }: MyCollabSearchBarProps) {
   const activeFilterCount = typeFilter !== "all" ? 1 : 0;
+  const sortLabel =
+    SORT_OPTIONS.find((o) => o.value === sortKey)?.label ?? "Sort";
 
   return (
-    <div className="flex items-center justify-between gap-4">
-      <div className="flex items-center gap-2">
+    <div className="flex flex-wrap items-center gap-3">
+      {/* Search leads */}
+      <div className="flex min-w-0 flex-1 items-center gap-2 sm:max-w-md">
+        <div className="flex h-11 flex-1 items-center gap-2 rounded-xl border border-line bg-surface px-3.5 transition-shadow focus-within:ring-2 focus-within:ring-accent">
+          <Icon name="search" size={18} className="shrink-0 text-muted" />
+          <input
+            type="text"
+            value={draftQuery}
+            onChange={(e) => onDraftChange(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") onSearch();
+            }}
+            placeholder="Search projects..."
+            aria-label="Search projects"
+            className="min-w-0 flex-1 bg-transparent text-sm font-medium text-ink outline-none placeholder:text-muted"
+          />
+          {draftQuery !== "" && (
+            <button
+              type="button"
+              aria-label="Clear search"
+              onClick={() => onDraftChange("")}
+              className="flex size-5 shrink-0 cursor-pointer items-center justify-center rounded-full bg-bg text-muted transition-colors hover:text-ink focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+            >
+              <Icon name="x" size={12} />
+            </button>
+          )}
+        </div>
+        <button
+          type="button"
+          onClick={onSearch}
+          className="pressable h-11 shrink-0 cursor-pointer rounded-xl bg-accent px-4 text-sm font-medium text-ink transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+        >
+          Search
+        </button>
+      </div>
+
+      {/* Labeled sort + filter */}
+      <div className="ms-auto flex items-center gap-2">
         <Dropdown
           trigger={
             <button
               type="button"
-              aria-label="Sort"
               aria-haspopup="true"
-              className="pressable flex size-[42px] cursor-pointer items-center justify-center rounded-sm bg-bg focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+              className="pressable flex h-11 cursor-pointer items-center gap-2 rounded-xl bg-bg px-3.5 text-sm font-medium text-ink focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
             >
-              <Icon name="sort" size={20} className="text-ink" />
+              <Icon name="sort" size={18} />
+              <span className="hidden sm:inline">{sortLabel}</span>
+              <Icon name="chevron-down" size={16} className="text-muted" />
             </button>
           }
           panel={
@@ -152,6 +208,7 @@ export function MyCollabSearchBar({
                 <button
                   key={opt.value}
                   type="button"
+                  data-close-panel
                   onClick={() => onSortChange(opt.value)}
                   className={clsx(
                     "pressable cursor-pointer rounded px-2 py-1 text-left text-sm transition-colors focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none",
@@ -170,13 +227,13 @@ export function MyCollabSearchBar({
           trigger={
             <button
               type="button"
-              aria-label="Filter"
               aria-haspopup="true"
-              className="pressable relative flex size-[42px] cursor-pointer items-center justify-center rounded-sm bg-bg focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+              className="pressable relative flex h-11 cursor-pointer items-center gap-2 rounded-xl bg-bg px-3.5 text-sm font-medium text-ink focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
             >
-              <Icon name="filter" size={20} className="text-ink" />
+              <Icon name="filter" size={18} />
+              <span className="hidden sm:inline">Filters</span>
               {activeFilterCount > 0 && (
-                <span className="absolute -right-1 -top-1 flex size-4 items-center justify-center rounded-full bg-badge text-2xs font-medium text-surface">
+                <span className="absolute -top-1.5 -right-1.5 flex size-[18px] items-center justify-center rounded-full bg-badge text-2xs font-semibold text-surface">
                   {activeFilterCount}
                 </span>
               )}
@@ -191,30 +248,6 @@ export function MyCollabSearchBar({
             />
           }
         />
-      </div>
-
-      <div className="flex items-center gap-2">
-        <div className="flex items-center gap-2 rounded-md border border-line bg-surface px-4 py-2.5">
-          <Icon name="search" size={16} className="text-muted" />
-          <input
-            type="text"
-            value={draftQuery}
-            onChange={(e) => onDraftChange(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") onSearch();
-            }}
-            placeholder="Search projects..."
-            aria-label="Search projects"
-            className="w-40 bg-transparent text-sm font-medium text-ink outline-none placeholder:text-muted sm:w-56"
-          />
-        </div>
-        <button
-          type="button"
-          onClick={onSearch}
-          className="pressable cursor-pointer rounded-md bg-accent px-4 py-2.5 text-sm font-medium text-ink transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
-        >
-          Search
-        </button>
       </div>
     </div>
   );

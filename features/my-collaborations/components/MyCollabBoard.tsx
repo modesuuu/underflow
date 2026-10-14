@@ -1,39 +1,155 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type CSSProperties } from "react";
 import Link from "next/link";
+import { Avatar } from "@/components/ui/Avatar";
 import { Icon } from "@/components/ui/Icon";
 import { CURRENT_USER } from "@/components/layout/nav";
+import { formatDueDate, parseDueDate } from "@/features/collaborations/sort";
 import { sortMyProjects } from "../sort";
 import type {
   CollabFilterType,
   CollabSortKey,
 } from "@/features/collaborations/types";
 import { MY_COLLAB_CATEGORIES } from "../types";
-import type { MyCollabProject } from "../types";
-import { MyCollabCard } from "./MyCollabCard";
+import type { MyCollabCategory, MyCollabProject, MyCollabStatus } from "../types";
 import { MyCollabSearchBar } from "./MyCollabSearchBar";
 
-/** Cards shown per board column before the "View More" link. */
-const CARDS_PER_COLUMN = 2;
+/**
+ * Sections are ordered by actionability, not by the canonical
+ * category table: what needs the user first (Revise), then what
+ * they are waiting on (Pending), then the queue (Not started),
+ * then the archive (Complete).
+ */
+const SECTION_ORDER: MyCollabStatus[] = [
+  "revise",
+  "pending",
+  "not-started",
+  "complete",
+];
 
-interface StatCardProps {
-  icon: string;
-  value: string;
-  label: string;
-}
+const PUBLIC_STATUS_LABEL: Record<MyCollabProject["status"], string> = {
+  open: "Open",
+  "in-progress": "In progress",
+  completed: "Completed",
+};
 
-function StatCard({ icon, value, label }: StatCardProps) {
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+function StatCell({ value, label }: { value: string; label: string }) {
   return (
-    <div className="flex flex-1 flex-col gap-3 rounded-xl border border-line bg-surface p-5">
-      <div className="flex size-9 shrink-0 items-center justify-center rounded-md bg-ink">
-        <Icon name={icon} size={18} className="text-surface" />
-      </div>
-      <span className="text-[32px] font-extrabold leading-none text-ink">
+    <div className="flex flex-col gap-0.5">
+      <span className="text-2xl leading-none font-semibold text-ink tabular-nums">
         {value}
       </span>
       <span className="text-xs font-medium text-muted">{label}</span>
     </div>
+  );
+}
+
+/** One dense row of a status section — the whole row opens the detail. */
+function ProjectRow({ project }: { project: MyCollabProject }) {
+  const dueMs = parseDueDate(project.dueDate);
+  const daysLeft =
+    dueMs === Infinity
+      ? null
+      : Math.ceil((dueMs - Date.now()) / DAY_MS);
+  const urgent =
+    project.myStatus !== "complete" && daysLeft !== null && daysLeft <= 7;
+  const faces = project.members.filter((m) => !m.isOpenSlot).slice(0, 2);
+
+  return (
+    <article className="group relative flex items-center gap-3 py-3">
+      <Link
+        href={`/my-collaborations/${project.myStatus}/${project.id}`}
+        aria-label={`View ${project.title}`}
+        className="absolute inset-0 z-0 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+      />
+      <div className="pointer-events-none relative z-10 min-w-0 flex-1">
+        <h3 className="truncate text-[15px] font-semibold text-ink">
+          {project.title}
+        </h3>
+        <p className="truncate text-[13px] text-muted">{project.subtitle}</p>
+      </div>
+
+      <span
+        className={`relative z-10 hidden shrink-0 items-center gap-1.5 text-xs sm:flex ${
+          urgent ? "font-semibold text-badge" : "text-muted"
+        }`}
+      >
+        <Icon name="calendar" size={14} />
+        Due {formatDueDate(project.dueDate)}
+        {urgent &&
+          ` · ${daysLeft !== null && daysLeft <= 0 ? "due now" : `${daysLeft}d left`}`}
+      </span>
+
+      <span className="relative z-10 hidden shrink-0 items-center gap-2 md:flex">
+        <span className="flex">
+          {faces.map((member, i) => (
+            <Avatar
+              key={member.id}
+              size={24}
+              src={member.avatarUrl}
+              alt={member.name}
+              className={i > 0 ? "-ml-2 ring-2 ring-bg" : "ring-2 ring-bg"}
+            />
+          ))}
+        </span>
+        <span className="text-xs text-muted tabular-nums">
+          {project.slotsFilled} / {project.slotsTotal}
+        </span>
+      </span>
+
+      <span className="relative z-10 hidden w-[92px] shrink-0 text-right text-xs text-muted lg:block">
+        {PUBLIC_STATUS_LABEL[project.status]}
+      </span>
+      <Icon
+        name="chevron-right"
+        size={18}
+        className="relative z-10 shrink-0 text-placeholder transition-transform duration-200 group-hover:translate-x-0.5"
+      />
+    </article>
+  );
+}
+
+function StatusSection({
+  category,
+  items,
+}: {
+  category: MyCollabCategory;
+  items: MyCollabProject[];
+}) {
+  return (
+    <section className="flex flex-col gap-3">
+      <div className="flex items-center gap-3">
+        <span
+          className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${category.pillClassName}`}
+        >
+          <Icon name={category.icon} size={14} />
+          {category.boardLabel}
+        </span>
+        <span className="text-xs font-medium text-subtle tabular-nums">
+          {items.length}
+        </span>
+        <span className="hidden text-xs text-muted sm:block">
+          {category.subtitle}
+        </span>
+        <Link
+          href={`/my-collaborations/${category.slug}`}
+          className="ms-auto flex shrink-0 cursor-pointer items-center gap-1 text-[13px] font-medium text-ink hover:underline focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+        >
+          View all
+          <Icon name="chevron-right" size={14} />
+        </Link>
+      </div>
+      <div className="flex flex-col divide-y divide-placeholder rounded-2xl bg-bg px-4">
+        {items.length === 0 ? (
+          <p className="py-4 text-xs text-muted">No projects here yet.</p>
+        ) : (
+          items.map((p) => <ProjectRow key={p.id} project={p} />)
+        )}
+      </div>
+    </section>
   );
 }
 
@@ -42,9 +158,14 @@ interface MyCollabBoardProps {
 }
 
 /**
- * Board (frame 1): 4 status columns + a stats row. Search/sort/filter apply
- * across all columns at once (a match in any column still shows in its own
- * column). Empty columns get a muted hint.
+ * The user's project cockpit (2026 redesign): a one-bar stat
+ * register with a real completion track, an attention strip
+ * computed from the data (revisions waiting, the next deadline,
+ * pending applications), then the portfolio as status sections
+ * ordered by actionability. Sections show every project as a
+ * dense row — no two-card truncation hiding the rest behind a
+ * drill-down. Search/sort/type-filter apply across all sections;
+ * stats always describe the full portfolio, never the filter.
  */
 export function MyCollabBoard({ projects }: MyCollabBoardProps) {
   const [draftQuery, setDraftQuery] = useState("");
@@ -68,33 +189,137 @@ export function MyCollabBoard({ projects }: MyCollabBoardProps) {
     return sortMyProjects(result, sortKey);
   }, [projects, query, typeFilter, sortKey]);
 
-  // Stats are always computed from the FULL list, not the filtered one —
-  // the numbers describe the user's portfolio, not the current search.
+  const searching = query.trim() !== "" || typeFilter !== "all";
+
+  // Stats describe the FULL portfolio, never the filtered view.
   const active = projects.filter((p) => p.myStatus !== "complete").length;
-  const pending = projects.filter((p) => p.myStatus === "pending").length;
+  const pendingItems = projects.filter((p) => p.myStatus === "pending");
   const complete = projects.filter((p) => p.myStatus === "complete").length;
-  const pct =
-    projects.length === 0
-      ? "0.00%"
-      : `${((complete / projects.length) * 100).toFixed(2)}%`;
+  const pctNum =
+    projects.length === 0 ? 0 : (complete / projects.length) * 100;
+  const pct = `${pctNum.toFixed(2)}%`;
+
+  // Attention: only cards with something real behind them render.
+  const reviseItems = projects.filter((p) => p.myStatus === "revise");
+  const nextDeadline = projects
+    .filter((p) => p.myStatus !== "complete")
+    .map((p) => ({ project: p, due: parseDueDate(p.dueDate) }))
+    .filter((x) => x.due !== Infinity)
+    .sort((a, b) => a.due - b.due)[0];
+
+  const attention: {
+    icon: string;
+    label: string;
+    title: string;
+    sub: string;
+    href: string;
+  }[] = [];
+  if (reviseItems.length > 0) {
+    attention.push({
+      icon: "revision",
+      label: "Needs another pass",
+      title: `${reviseItems.length} project${reviseItems.length > 1 ? "s" : ""} waiting on you`,
+      sub: reviseItems[0].title,
+      href: "/my-collaborations/revise",
+    });
+  }
+  if (nextDeadline) {
+    attention.push({
+      icon: "calendar",
+      label: "Next deadline",
+      title: nextDeadline.project.title,
+      sub: `Due ${formatDueDate(nextDeadline.project.dueDate)}`,
+      href: `/my-collaborations/${nextDeadline.project.myStatus}/${nextDeadline.project.id}`,
+    });
+  }
+  if (pendingItems.length > 0) {
+    attention.push({
+      icon: "loader-circle",
+      label: "Waiting for review",
+      title: `${pendingItems.length} application${pendingItems.length > 1 ? "s" : ""} pending`,
+      sub: pendingItems[0].title,
+      href: "/my-collaborations/pending",
+    });
+  }
+
+  const bySlug = new Map<MyCollabStatus, MyCollabCategory>(
+    MY_COLLAB_CATEGORIES.map((c) => [c.slug, c])
+  );
 
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-2">
-        <h1 className="text-[40px] font-medium leading-[1.02] text-ink">
+        <h1 className="text-[28px] font-semibold text-ink">
           Welcome back, {CURRENT_USER.name}
         </h1>
-        <p className="text-sm font-medium text-muted">
-          See your projects here.
-        </p>
+        <p className="text-sm text-muted">See your projects here.</p>
       </div>
 
-      <div className="flex flex-wrap gap-4">
-        <StatCard icon="file" value={String(active)} label="Active Projects" />
-        <StatCard icon="check" value={pct} label="Percentage Complete" />
-        <StatCard icon="history" value={String(pending)} label="Project Pending" />
-        <StatCard icon="check-circle" value={String(complete)} label="Project Complete" />
+      {/* Stat register — one bar, real numbers, completion track */}
+      <div className="flex flex-col gap-4 rounded-2xl bg-bg p-5">
+        <div className="grid grid-cols-2 gap-x-4 gap-y-5 lg:grid-cols-4">
+          <StatCell value={String(active)} label="Active Projects" />
+          <StatCell value={String(pendingItems.length)} label="Project Pending" />
+          <StatCell value={String(complete)} label="Project Complete" />
+          <StatCell value={pct} label="Percentage Complete" />
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <div
+            className="h-1.5 w-full overflow-hidden rounded-full bg-placeholder"
+            role="img"
+            aria-label={`${complete} of ${projects.length} projects complete`}
+          >
+            <div
+              className="h-full rounded-full bg-accent transition-[width] duration-500"
+              style={{ width: `${pctNum}%` }}
+            />
+          </div>
+          <div className="flex items-baseline justify-between">
+            <span className="text-xs text-muted">
+              {complete} of {projects.length} projects complete
+            </span>
+            <span className="text-xs font-semibold text-ink tabular-nums">
+              {pct}
+            </span>
+          </div>
+        </div>
       </div>
+
+      {/* Attention strip — or one calm line when nothing needs you */}
+      {attention.length === 0 ? (
+        <p className="flex items-center gap-2 text-sm text-muted">
+          <Icon name="check-circle" size={18} className="text-ink" />
+          You&rsquo;re all caught up — nothing needs you right now.
+        </p>
+      ) : (
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          {attention.map((card) => (
+            <Link
+              key={card.label}
+              href={card.href}
+              className="group flex cursor-pointer items-center gap-3 rounded-2xl border border-line bg-surface p-4 transition-[border-color,box-shadow] duration-200 hover:border-ink/30 hover:shadow-[0_1px_2px_rgba(17,17,17,0.05),0_12px_28px_-12px_rgba(17,17,17,0.18)] focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+            >
+              <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-bg">
+                <Icon name={card.icon} size={18} className="text-ink" />
+              </span>
+              <span className="flex min-w-0 flex-1 flex-col">
+                <span className="text-[11px] font-medium tracking-wide text-subtle uppercase">
+                  {card.label}
+                </span>
+                <span className="truncate text-sm font-semibold text-ink">
+                  {card.title}
+                </span>
+                <span className="truncate text-xs text-muted">{card.sub}</span>
+              </span>
+              <Icon
+                name="chevron-right"
+                size={18}
+                className="shrink-0 text-placeholder transition-transform duration-200 group-hover:translate-x-0.5"
+              />
+            </Link>
+          ))}
+        </div>
+      )}
 
       <MyCollabSearchBar
         draftQuery={draftQuery}
@@ -106,58 +331,45 @@ export function MyCollabBoard({ projects }: MyCollabBoardProps) {
         onTypeChange={setTypeFilter}
       />
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-        {MY_COLLAB_CATEGORIES.map((cat) => {
-          const items = filtered.filter((p) => p.myStatus === cat.slug);
-          const shown = items.slice(0, CARDS_PER_COLUMN);
-          const remaining = items.length - shown.length;
-
+      {filtered.length === 0 ? (
+        <div className="flex flex-col items-center gap-2 rounded-2xl bg-bg px-6 py-14 text-center">
+          <span className="flex size-11 items-center justify-center rounded-full bg-surface">
+            <Icon name="search" size={20} className="text-muted" />
+          </span>
+          <p className="text-base font-semibold text-ink">No projects match</p>
+          <p className="max-w-sm text-sm text-muted">
+            Nothing in your collaborations matches that search and filter
+            set. Try a different title, or clear them to see everything.
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              setDraftQuery("");
+              setQuery("");
+              setTypeFilter("all");
+            }}
+            className="pressable mt-2 cursor-pointer rounded-full bg-ink px-4 py-2 text-sm font-medium text-surface transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+          >
+            Clear search &amp; filters
+          </button>
+        </div>
+      ) : (
+        SECTION_ORDER.map((slug, i) => {
+          const category = bySlug.get(slug);
+          if (!category) return null;
+          const items = filtered.filter((p) => p.myStatus === slug);
+          if (searching && items.length === 0) return null;
           return (
-            <section
-              key={cat.slug}
-              className="flex min-w-0 flex-col gap-4 rounded-xl bg-surface p-4"
+            <div
+              key={slug}
+              className="card-stagger"
+              style={{ "--stagger-i": String(i) } as CSSProperties}
             >
-              <div className="flex items-center justify-between gap-2">
-                <span
-                  className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ${cat.pillClassName}`}
-                >
-                  <Icon name={cat.icon} size={14} className="shrink-0" />
-                  <span className="truncate">{cat.boardLabel}</span>
-                  <span className="ml-auto flex size-5 shrink-0 items-center justify-center rounded-full bg-ink/10 text-2xs font-semibold text-ink">
-                    {items.length}
-                  </span>
-                </span>
-                <Link
-                  href={`/my-collaborations/${cat.slug}`}
-                  aria-label={`View all ${cat.crumbLabel} projects`}
-                  className="pressable flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-md text-muted transition-colors hover:bg-bg hover:text-ink focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
-                >
-                  <Icon name="dots-vertical" size={18} />
-                </Link>
-              </div>
-
-              {shown.length === 0 ? (
-                <p className="px-1 text-xs text-muted">No projects here yet.</p>
-              ) : (
-                <div className="flex flex-col gap-4">
-                  {shown.map((p) => (
-                    <MyCollabCard key={p.id} project={p} variant="board" />
-                  ))}
-                </div>
-              )}
-
-              {remaining > 0 && (
-                <Link
-                  href={`/my-collaborations/${cat.slug}`}
-                  className="pressable mt-auto flex w-full cursor-pointer items-center justify-center rounded-md bg-accent py-2.5 text-sm font-medium text-ink transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
-                >
-                  View More
-                </Link>
-              )}
-            </section>
+              <StatusSection category={category} items={items} />
+            </div>
           );
-        })}
-      </div>
+        })
+      )}
     </div>
   );
 }

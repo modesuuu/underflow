@@ -25,7 +25,7 @@ export function MyCollabCard({ project, variant = "board" }: MyCollabCardProps) 
   const avatarB = project.members[1];
 
   return (
-    <article className="collab-card group relative flex origin-center flex-col rounded-xl bg-bg p-5 h-full active:scale-[0.99]">
+    <article className="group relative flex h-full flex-col rounded-xl bg-bg p-5">
       <Link
         href={`/my-collaborations/${project.myStatus}/${project.id}`}
         aria-label={`View ${project.title}`}
@@ -42,7 +42,7 @@ export function MyCollabCard({ project, variant = "board" }: MyCollabCardProps) 
           </div>
         )}
 
-        <h3 className="mt-2 line-clamp-2 text-[28px] font-extrabold leading-[1.15] text-ink">
+        <h3 className="mt-2 line-clamp-2 text-xl leading-snug font-semibold text-ink">
           {project.title}
         </h3>
         <p className="mt-2 line-clamp-1 text-[15px] font-medium text-muted">
