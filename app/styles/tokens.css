@@ -33,26 +33,28 @@
   --uf-ease-out: cubic-bezier(0.23, 1, 0.32, 1);
 }
 
-/* Dark theme — "deep lime forest" (v3, direction A by the
-   user's pick): the base itself is the brand. Wells and canvas
-   are deep greens in the lime's own family, so the app reads
-   unmistakably green from the first second; sage carries the
-   supporting text, moss the quiet tracks and lines, and the
-   acid lime stays the single loud voice on its own stage.
-   Lavender retires to its one accent (the inbox name chip).
-   Roles stay identical (surface = raised canvas, bg = recessed
-   well), so every component flips with no dark: variants. */
+/* Dark theme — "Forest & Cream" (v4): the ColorHunt palette
+   the user picked (191a19 / 1e5128 / 4e9f3d / d8e9a8) mapped
+   onto the token roles. The canvas is a true deep forest, the
+   wells near-black green, and the palette's cream-lime becomes
+   the dark theme's own star — softer than the light theme's
+   acid lime, at home on the forest. Supporting text is pale
+   sage; lines and tracks are moss steps derived from the
+   palette's leaf green. Roles stay identical (surface = raised
+   canvas, bg = recessed well), so every component flips with
+   no dark: variants anywhere. */
 [data-theme="dark"] {
-  --uf-bg: #0d120b;
-  --uf-surface: #171e11;
-  --uf-ink: #eff3e2;
-  --uf-muted: #9ba58c;
-  --uf-subtle: #71805f;
+  --uf-bg: #191a19;
+  --uf-surface: #1e5128;
+  --uf-ink: #eff4de;
+  --uf-muted: #a9bfa0;
+  --uf-subtle: #7e9474;
+  --uf-accent: #d8e9a8;
   --uf-badge: #ff5a5f;
   --uf-heart: #ff5c7a;
-  --uf-placeholder: #232b1a;
-  --uf-line: #2e3a22;
-  --uf-nav-hover: rgba(239, 243, 226, 0.06);
+  --uf-placeholder: #25402a;
+  --uf-line: #2f5a33;
+  --uf-nav-hover: rgba(238, 244, 222, 0.07);
   --uf-shadow-rgb: 0, 0, 0;
   color-scheme: dark;
 }
