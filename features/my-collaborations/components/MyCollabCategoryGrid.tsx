@@ -87,7 +87,7 @@ export function MyCollabCategoryGrid({ projects }: MyCollabCategoryGridProps) {
         </div>
       ) : (
         <>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 px-3">
             <p className="text-sm text-muted">
               <span className="font-semibold text-ink">{filtered.length}</span>{" "}
               project{filtered.length === 1 ? "" : "s"}

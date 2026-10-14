@@ -108,7 +108,7 @@ function StatusSection({
 }) {
   return (
     <section className="flex flex-col gap-3">
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 px-3">
         <span
           className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${category.pillClassName}`}
         >

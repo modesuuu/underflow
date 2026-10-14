@@ -31,17 +31,17 @@ export function MyCollabRow({ project }: { project: MyCollabProject }) {
   const faces = project.members.filter((m) => !m.isOpenSlot).slice(0, 2);
 
   return (
-    <article className="group relative flex items-center gap-3 rounded-xl px-3 py-3.5 transition-colors duration-150 hover:bg-bg">
+    <article className="group relative flex items-center gap-4 rounded-xl px-3 py-3.5 transition-colors duration-150 hover:bg-bg">
       <Link
         href={`/my-collaborations/${project.myStatus}/${project.id}`}
         aria-label={`View ${project.title}`}
         className="absolute inset-0 z-0 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
       />
       <div className="pointer-events-none relative z-10 min-w-0 flex-1">
-        <h3 className="truncate text-[15px] font-semibold text-ink">
+        <h3 className="truncate text-[15px] leading-snug font-semibold text-ink">
           {project.title}
         </h3>
-        <p className="truncate text-[13px] text-muted">{project.subtitle}</p>
+        <p className="truncate text-[13px] leading-snug text-muted">{project.subtitle}</p>
       </div>
 
       <span
