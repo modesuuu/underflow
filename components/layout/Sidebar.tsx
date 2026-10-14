@@ -69,6 +69,9 @@ function SidebarPanelIcon({ className }: { className?: string }) {
 
 type RegisterRef<T> = (id: string, el: T | null) => void;
 
+/** When the last rail tooltip closed — neighbours reopen instantly. */
+let lastTipClosedAt = 0;
+
 interface NavRowProps {
   item: NavItem;
   active: boolean;
@@ -92,20 +95,51 @@ function NavRow({ item, active, badge, mini, animate, onSelect, registerRef }: N
   const [tipPos, setTipPos] = useState<{ x: number; y: number } | null>(
     null,
   );
+  const [tipOpen, setTipOpen] = useState(false);
+  const [tipInstant, setTipInstant] = useState(false);
   const tipTimer = useRef<number | undefined>(undefined);
+  const tipExitTimer = useRef<number | undefined>(undefined);
   const showTip = (el: HTMLElement) => {
     if (!mini) return;
     window.clearTimeout(tipTimer.current);
-    tipTimer.current = window.setTimeout(() => {
+    window.clearTimeout(tipExitTimer.current);
+    // Recipe detail: once one tooltip has shown, gliding to a
+    // neighbour reopens instantly — no delay, no transition.
+    const instant = Date.now() - lastTipClosedAt < 400;
+    const open = () => {
       const r = el.getBoundingClientRect();
+      setTipInstant(instant);
       setTipPos({ x: r.right + 12, y: r.top + r.height / 2 });
-    }, 300);
+      if (instant) {
+        setTipOpen(true);
+      } else {
+        // Mount in the closed style, then flip: a CSS transition
+        // retargets smoothly; a keyframe would restart from zero.
+        requestAnimationFrame(() =>
+          requestAnimationFrame(() => setTipOpen(true)),
+        );
+      }
+    };
+    if (instant) open();
+    else tipTimer.current = window.setTimeout(open, 300);
   };
   const hideTip = () => {
     window.clearTimeout(tipTimer.current);
-    setTipPos(null);
+    setTipOpen(false);
+    lastTipClosedAt = Date.now();
+    window.clearTimeout(tipExitTimer.current);
+    tipExitTimer.current = window.setTimeout(
+      () => setTipPos(null),
+      tipInstant ? 30 : 140,
+    );
   };
-  useEffect(() => () => window.clearTimeout(tipTimer.current), []);
+  useEffect(
+    () => () => {
+      window.clearTimeout(tipTimer.current);
+      window.clearTimeout(tipExitTimer.current);
+    },
+    [],
+  );
   const tipHandlers = {
     onMouseEnter: (e: React.MouseEvent<HTMLElement>) =>
       showTip(e.currentTarget),
@@ -160,6 +194,8 @@ function NavRow({ item, active, badge, mini, animate, onSelect, registerRef }: N
         createPortal(
           <span
             aria-hidden="true"
+            data-open={tipOpen}
+            data-instant={tipInstant || undefined}
             style={{ left: tipPos.x, top: tipPos.y }}
             className="uf-tip pointer-events-none fixed z-[100] -translate-y-1/2 rounded-lg bg-ink px-2.5 py-1.5 text-xs font-medium whitespace-nowrap text-white shadow-lg"
           >
