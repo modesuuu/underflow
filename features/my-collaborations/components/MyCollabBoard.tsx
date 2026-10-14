@@ -29,10 +29,10 @@ const SECTION_ORDER: MyCollabStatus[] = [
 ];
 
 /**
- * The portfolio strip's color code — one color per myStatus,
- * taught once by the legend under the strip and reused by the
- * section pills below. Complete earns the accent; revise is
- * the one red moment; pending is ink; not-started stays quiet.
+ * The status color code — one color per myStatus. The band's
+ * register dots teach it once and the section pills below
+ * reuse it. Complete earns the accent; revise is the one red
+ * moment; pending is ink; not-started stays quiet.
  */
 const STATUS_SEGMENT_CLASS: Record<MyCollabStatus, string> = {
   revise: "bg-badge",
@@ -40,6 +40,64 @@ const STATUS_SEGMENT_CLASS: Record<MyCollabStatus, string> = {
   "not-started": "bg-placeholder",
   complete: "bg-accent",
 };
+
+interface AttentionItem {
+  icon: string;
+  label: string;
+  title: string;
+  sub: string;
+  href: string;
+  hot?: boolean;
+}
+
+/**
+ * One attention card. The most urgent item renders as the
+ * spotlight (full width, larger disc and title); the rest
+ * pair up beneath it. The revise card's disc is the red one:
+ * it is the only item that demands action from the user.
+ */
+function AttentionCard({
+  card,
+  spotlight = false,
+}: {
+  card: AttentionItem;
+  spotlight?: boolean;
+}) {
+  return (
+    <Link
+      href={card.href}
+      className={`group flex cursor-pointer items-center gap-3 rounded-2xl border border-line bg-surface transition-[border-color,box-shadow] duration-200 hover:border-ink/30 hover:shadow-[0_1px_2px_rgba(var(--uf-shadow-rgb),0.05),0_12px_28px_-12px_rgba(var(--uf-shadow-rgb),0.18)] focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none ${
+        spotlight ? "p-5" : "p-4"
+      }`}
+    >
+      <span
+        className={`flex shrink-0 items-center justify-center ${
+          spotlight ? "size-11 rounded-xl" : "size-9 rounded-lg"
+        } ${card.hot ? "bg-badge/10 text-badge" : "bg-bg text-ink"}`}
+      >
+        <Icon name={card.icon} size={spotlight ? 20 : 18} />
+      </span>
+      <span className="flex min-w-0 flex-1 flex-col">
+        <span className="text-[11px] font-medium tracking-wide text-subtle uppercase">
+          {card.label}
+        </span>
+        <span
+          className={`truncate font-semibold text-ink ${
+            spotlight ? "text-[15px]" : "text-sm"
+          }`}
+        >
+          {card.title}
+        </span>
+        <span className="truncate text-xs text-muted">{card.sub}</span>
+      </span>
+      <Icon
+        name="chevron-right"
+        size={18}
+        className="shrink-0 text-placeholder transition-all duration-200 group-hover:translate-x-0.5 group-hover:text-ink"
+      />
+    </Link>
+  );
+}
 
 function StatusSection({
   category,
@@ -87,18 +145,19 @@ interface MyCollabBoardProps {
 }
 
 /**
- * The user's project cockpit (2026 redesign v2 — family first):
- * the portfolio band (completion as a display figure, every
- * project one segment of a single bar, the legend teaching
- * the status color code), then what needs the user as ONE
- * activity card with divided rows, then the toolbar, then
- * status sections ordered by actionability. Everything sits
- * in the app's own container language (bg-bg cards on the
- * sage canvas, surface cards with hairlines for the floating
- * layer); the rows borrow the collaborations river's seat
- * meter so the two project lists rhyme. Search/sort/filter
- * apply across sections; stats always describe the full
- * portfolio, never the filter.
+ * The user's project cockpit (2026 redesign v3): the
+ * portfolio band as a register (the completion count as the
+ * lead figure, the four status counts as a clickable
+ * register whose dots teach the color code, one thin track
+ * for the proportion; every number appears exactly once),
+ * then what needs the user with the most urgent item leading
+ * as a spotlight card, then the toolbar, then status
+ * sections ordered by actionability. Everything sits in the
+ * app's own container language; the rows borrow the
+ * collaborations river's seat meter so the two project
+ * lists rhyme. Search/sort/filter apply across sections;
+ * stats always describe the full portfolio, never the
+ * filter.
  */
 export function MyCollabBoard({ projects }: MyCollabBoardProps) {
   const [draftQuery, setDraftQuery] = useState("");
@@ -130,11 +189,10 @@ export function MyCollabBoard({ projects }: MyCollabBoardProps) {
   const complete = projects.filter((p) => p.myStatus === "complete").length;
   const pctNum =
     projects.length === 0 ? 0 : (complete / projects.length) * 100;
-  const pct = `${pctNum.toFixed(2)}%`;
-  // The hero figure typesets the integer huge and the decimals small.
-  const [pctInt, pctDec] = pctNum.toFixed(2).split(".");
+  // A whole percent: 3 of 12 projects does not need decimals.
+  const pctInt = Math.round(pctNum);
 
-  // Attention: only rows with something real behind them render.
+  // Attention: only items with something real behind them render.
   const reviseItems = projects.filter((p) => p.myStatus === "revise");
   const nextDeadline = projects
     .filter((p) => p.myStatus !== "complete")
@@ -142,14 +200,7 @@ export function MyCollabBoard({ projects }: MyCollabBoardProps) {
     .filter((x) => x.due !== Infinity)
     .sort((a, b) => a.due - b.due)[0];
 
-  const attention: {
-    icon: string;
-    label: string;
-    title: string;
-    sub: string;
-    href: string;
-    hot?: boolean;
-  }[] = [];
+  const attention: AttentionItem[] = [];
   if (reviseItems.length > 0) {
     attention.push({
       icon: "revision",
@@ -183,13 +234,6 @@ export function MyCollabBoard({ projects }: MyCollabBoardProps) {
     MY_COLLAB_CATEGORIES.map((c) => [c.slug, c])
   );
 
-  // The portfolio strip: every project becomes one segment,
-  // grouped by status in section order.
-  const stripSegments = SECTION_ORDER.flatMap((slug) =>
-    projects
-      .filter((p) => p.myStatus === slug)
-      .map((p) => ({ project: p, slug }))
-  );
   const statusCounts = new Map<MyCollabStatus, number>(
     SECTION_ORDER.map((slug) => [
       slug,
@@ -203,95 +247,74 @@ export function MyCollabBoard({ projects }: MyCollabBoardProps) {
         Welcome back, {CURRENT_USER.name}
       </h1>
 
-      {/* The band — the portfolio in one line: completion as a
-          display figure, companion counts, and a bar where every
-          project is one segment colored by its status. The
-          legend under the bar teaches the color code the
-          section pills below reuse. */}
+      {/* The band — the portfolio as a register: the completion
+          count as the lead figure, the four status counts as a
+          clickable register (their dots teach the color code),
+          and one thin track for the proportion. Every number
+          appears exactly once. */}
       <div
         className="card-stagger flex flex-col gap-5 rounded-[24px] bg-bg p-5 sm:p-6"
         style={{ "--stagger-i": "0" } as CSSProperties}
       >
-        <div className="flex flex-wrap items-end gap-x-10 gap-y-4">
-          <div className="flex flex-col gap-1.5">
-            <span className="text-[56px] leading-[0.85] font-medium tracking-tight text-ink tabular-nums sm:text-[68px]">
-              {pctInt}
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:gap-8">
+          <div className="flex shrink-0 flex-col gap-1">
+            <span className="text-[56px] leading-[0.85] font-medium tracking-tight text-ink tabular-nums sm:text-[64px]">
+              {complete}
               <span className="text-[24px] font-medium text-muted sm:text-[28px]">
-                .{pctDec}%
+                {" "}
+                / {projects.length}
               </span>
             </span>
-            <span className="text-sm text-muted">
-              of your portfolio is complete · {active} active of{" "}
-              {projects.length} projects
+            <span className="text-xs font-medium tracking-wide text-subtle uppercase">
+              Projects complete
             </span>
           </div>
-          <div className="ms-auto flex items-end gap-6 sm:gap-8">
-            <div className="flex flex-col gap-0.5">
-              <span className="text-xl leading-none font-semibold text-ink tabular-nums">
-                {active}
-              </span>
-              <span className="text-xs font-medium text-muted">Active</span>
-            </div>
-            <div className="flex flex-col gap-0.5">
-              <span className="text-xl leading-none font-semibold text-ink tabular-nums">
-                {pendingItems.length}
-              </span>
-              <span className="text-xs font-medium text-muted">Pending</span>
-            </div>
-            <div className="flex flex-col gap-0.5">
-              <span className="text-xl leading-none font-semibold text-ink tabular-nums">
-                {complete}
-              </span>
-              <span className="text-xs font-medium text-muted">Complete</span>
-            </div>
+
+          <div className="grid flex-1 grid-cols-2 gap-1 sm:grid-cols-4 lg:border-l lg:border-line lg:pl-8">
+            {SECTION_ORDER.map((slug) => {
+              const cat = bySlug.get(slug);
+              if (!cat) return null;
+              return (
+                <Link
+                  key={slug}
+                  href={`/my-collaborations/${slug}`}
+                  className="group flex flex-col gap-1.5 rounded-xl px-3 py-2 transition-colors duration-150 hover:bg-surface focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+                >
+                  <span className="flex items-center gap-1.5 text-xs font-medium text-muted">
+                    <span
+                      className={`size-2 rounded-full ${STATUS_SEGMENT_CLASS[slug]}`}
+                    />
+                    {cat.crumbLabel}
+                  </span>
+                  <span className="text-2xl leading-none font-semibold text-ink tabular-nums">
+                    {statusCounts.get(slug)}
+                  </span>
+                </Link>
+              );
+            })}
           </div>
         </div>
 
-        {/* The strip + its legend (the counts are the legend) */}
         <div className="flex flex-col gap-2">
           <div
-            className="flex gap-1"
-            role="list"
-            aria-label="Your projects by status"
+            className="h-2 overflow-hidden rounded-full bg-placeholder"
+            role="img"
+            aria-label={`${complete} of ${projects.length} projects complete`}
           >
-            {stripSegments.map(({ project, slug }, i) => (
-              <Link
-                key={project.id}
-                href={`/my-collaborations/${slug}/${project.id}`}
-                role="listitem"
-                aria-label={`${project.title} — ${bySlug.get(slug)?.crumbLabel ?? slug}`}
-                className={`group relative h-3.5 min-w-3 flex-1 rounded-full ${STATUS_SEGMENT_CLASS[slug]} transition-transform duration-200 motion-safe:hover:scale-y-125 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none [animation:uf-card-in_320ms_var(--uf-ease-out)_backwards]`}
-                style={{ animationDelay: `${Math.min(i, 11) * 30}ms` }}
-              >
-                <span className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-2 max-w-[160px] -translate-x-1/2 translate-y-1 truncate rounded-md bg-ink px-2 py-1 text-[11px] font-medium text-surface opacity-0 transition-all duration-150 group-hover:translate-y-0 group-hover:opacity-100">
-                  {project.title}
-                </span>
-              </Link>
-            ))}
+            <div
+              className="h-full rounded-full bg-accent"
+              style={{ width: `${pctNum}%` }}
+            />
           </div>
-          <div className="flex flex-wrap gap-x-4 gap-y-1">
-            {SECTION_ORDER.map((slug) => (
-              <span
-                key={slug}
-                className="flex items-center gap-1.5 text-xs text-muted"
-              >
-                <span
-                  className={`size-2 rounded-full ${STATUS_SEGMENT_CLASS[slug]}`}
-                />
-                {bySlug.get(slug)?.crumbLabel}
-                <span className="font-semibold text-ink tabular-nums">
-                  {statusCounts.get(slug)}
-                </span>
-              </span>
-            ))}
-          </div>
+          <p className="text-sm text-muted">
+            {pctInt}% of your portfolio is complete · {active} still in
+            motion
+          </p>
         </div>
       </div>
 
-      {/* What needs the user — one activity card, divided rows,
-          only rows with something real behind them. The revise
-          row's disc is the card's one red moment: it is the
-          only row that demands action from the user. */}
+      {/* What needs the user — the most urgent item leads as a
+          full-width spotlight; the rest pair up beneath it. */}
       {attention.length === 0 ? (
         <p className="flex items-center gap-2 text-sm text-muted">
           <Icon name="check-circle" size={18} className="text-ink" />
@@ -299,38 +322,19 @@ export function MyCollabBoard({ projects }: MyCollabBoardProps) {
         </p>
       ) : (
         <div
-          className="card-stagger flex flex-col divide-y divide-placeholder rounded-2xl border border-line bg-surface"
+          className="card-stagger flex flex-col gap-3"
           style={{ "--stagger-i": "1" } as CSSProperties}
         >
-          {attention.map((card) => (
-            <Link
-              key={card.label}
-              href={card.href}
-              className="group flex cursor-pointer items-center gap-3 px-4 py-3.5 transition-colors duration-150 first:rounded-t-2xl last:rounded-b-2xl hover:bg-bg/70 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+          <AttentionCard card={attention[0]} spotlight />
+          {attention.length > 1 && (
+            <div
+              className={`grid gap-3 ${attention.length > 2 ? "sm:grid-cols-2" : ""}`}
             >
-              <span
-                className={`flex size-9 shrink-0 items-center justify-center rounded-lg ${
-                  card.hot ? "bg-badge/10 text-badge" : "bg-bg text-ink"
-                }`}
-              >
-                <Icon name={card.icon} size={18} />
-              </span>
-              <span className="flex min-w-0 flex-1 flex-col">
-                <span className="text-[11px] font-medium tracking-wide text-subtle uppercase">
-                  {card.label}
-                </span>
-                <span className="truncate text-sm font-semibold text-ink">
-                  {card.title}
-                </span>
-                <span className="truncate text-xs text-muted">{card.sub}</span>
-              </span>
-              <Icon
-                name="chevron-right"
-                size={18}
-                className="shrink-0 text-placeholder transition-all duration-200 group-hover:translate-x-0.5 group-hover:text-ink"
-              />
-            </Link>
-          ))}
+              {attention.slice(1).map((card) => (
+                <AttentionCard key={card.label} card={card} />
+              ))}
+            </div>
+          )}
         </div>
       )}
 

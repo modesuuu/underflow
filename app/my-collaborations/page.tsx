@@ -24,29 +24,25 @@ function MyCollabBoardSkeleton() {
 
       {/* The band */}
       <div className="flex flex-col gap-5 rounded-[24px] bg-bg p-6">
-        <div className="flex items-end justify-between gap-6">
-          <div className="h-14 w-44 rounded bg-placeholder" />
-          <div className="hidden gap-6 sm:flex">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="h-9 w-14 rounded bg-placeholder" />
+        <div className="flex items-center gap-8">
+          <div className="h-14 w-36 rounded bg-placeholder" />
+          <div className="hidden flex-1 gap-4 sm:grid sm:grid-cols-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="h-11 rounded bg-placeholder" />
             ))}
           </div>
         </div>
-        <div className="h-3.5 w-full rounded-full bg-placeholder" />
+        <div className="h-2 w-full rounded-full bg-placeholder" />
         <div className="h-3 w-64 rounded bg-placeholder" />
       </div>
 
-      {/* Attention card */}
-      <div className="flex flex-col divide-y divide-placeholder rounded-2xl border border-line bg-surface">
-        {Array.from({ length: 3 }).map((_, i) => (
-          <div key={i} className="flex items-center gap-3 px-4 py-3.5">
-            <div className="size-9 shrink-0 rounded-lg bg-placeholder" />
-            <div className="flex flex-1 flex-col gap-1.5">
-              <div className="h-3 w-24 rounded bg-placeholder" />
-              <div className="h-3.5 w-1/3 rounded bg-placeholder" />
-            </div>
-          </div>
-        ))}
+      {/* Attention: spotlight + pair */}
+      <div className="flex flex-col gap-3">
+        <div className="h-[84px] rounded-2xl border border-line bg-surface" />
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="h-[76px] rounded-2xl border border-line bg-surface" />
+          <div className="h-[76px] rounded-2xl border border-line bg-surface" />
+        </div>
       </div>
 
       {/* Toolbar */}
