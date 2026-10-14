@@ -117,6 +117,48 @@ export const PEOPLE: PersonDetail[] = [
     ],
   },
   {
+    id: "user-1",
+    aliases: ["user-1"],
+    name: "Nadia",
+    bio: "Informatics student who hikes on weekends.",
+    email: "nadia@gmail.com",
+    socials: [{ label: "Instagram", icon: "instagram" }],
+    skills: [
+      { id: "user-1-sk1", label: "Coding", icon: "code-alt" },
+      { id: "user-1-sk2", label: "Writing", icon: "pencil" },
+    ],
+  },
+  {
+    id: "user-2",
+    aliases: ["user-2"],
+    name: "Bimo",
+    bio: "Frontend learner. Coffee first, commits second.",
+    email: "bimo@gmail.com",
+    socials: [
+      { label: "Instagram", icon: "instagram" },
+      { label: "GitHub", icon: "github" },
+    ],
+    skills: [
+      { id: "user-2-sk1", label: "Coding", icon: "code-alt" },
+      { id: "user-2-sk2", label: "Mobile", icon: "mobile-alt" },
+    ],
+  },
+  {
+    id: "user-3",
+    aliases: ["user-3"],
+    name: "Rafi",
+    bio: "Design student. Posters, mostly.",
+    email: "rafi@gmail.com",
+    socials: [
+      { label: "Instagram", icon: "instagram" },
+      { label: "LinkedIn", icon: "linkedin" },
+    ],
+    skills: [
+      { id: "user-3-sk1", label: "UI Design", icon: "palette" },
+      { id: "user-3-sk2", label: "Writing", icon: "pencil" },
+    ],
+  },
+  {
     // The signed-in user. The id matches the author id the comment
     // composer already fabricates for the current user ("me").
     id: "me",
@@ -138,8 +180,8 @@ export const PEOPLE: PersonDetail[] = [
 
 /**
  * Sync alias → canonical-id lookup (client-safe: this module is data
- * only). Bylines become profile links only when this resolves — generic
- * mock commenters ("user-1", …) have no profile and stay plain text.
+ * only). Every author in the mocks has a PEOPLE entry, so bylines
+ * resolve and link; an id with no entry stays plain text.
  */
 export function resolvePersonId(id: string): string | undefined {
   return PEOPLE.find((p) => p.id === id || p.aliases.includes(id))?.id;

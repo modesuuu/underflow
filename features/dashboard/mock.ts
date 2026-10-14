@@ -22,8 +22,8 @@ export const POSTS: Post[] = [
     comments: [
       {
         id: "post-1-c1",
-        author: { id: "user-1", name: "User" },
-        text: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.",
+        author: { id: "user-1", name: "Nadia" },
+        text: "The light in this photo is unreal. Which trail is this?",
         createdAt: "2026-10-07T11:20:00Z",
         postedAgo: "2 hours ago",
         likes: 1000,
@@ -31,8 +31,8 @@ export const POSTS: Post[] = [
       },
       {
         id: "post-1-c2",
-        author: { id: "user-2", name: "User" },
-        text: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.",
+        author: { id: "user-2", name: "Bimo" },
+        text: "Went there last semester. The sunrise is worth the climb.",
         createdAt: "2026-10-07T11:40:00Z",
         postedAgo: "2 hours ago",
         likes: 1000,
@@ -40,8 +40,8 @@ export const POSTS: Post[] = [
       },
       {
         id: "post-1-c3",
-        author: { id: "user-3", name: "User" },
-        text: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.",
+        author: { id: "user-3", name: "Rafi" },
+        text: "Saving this for our trip plan.",
         createdAt: "2026-10-07T11:55:00Z",
         postedAgo: "2 hours ago",
         likes: 1000,
