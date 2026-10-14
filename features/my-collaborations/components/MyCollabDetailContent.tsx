@@ -37,7 +37,7 @@ export function MyCollabDetailContent({ project }: MyCollabDetailContentProps) {
 
   return (
     <>
-      <div className="flex flex-col gap-6 px-6 pb-12 pt-6">
+      <div className="page-enter flex flex-col gap-6 px-6 pb-12 pt-6">
         {/* 1. Plain status row above the title (frame 3 — no pill band) */}
         <div className="flex items-center gap-1.5">
           <Icon name="joystick" size={16} className="text-ink" />

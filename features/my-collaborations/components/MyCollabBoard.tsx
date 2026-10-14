@@ -2,7 +2,6 @@
 
 import { useMemo, useState, type CSSProperties } from "react";
 import Link from "next/link";
-import { Avatar } from "@/components/ui/Avatar";
 import { Icon } from "@/components/ui/Icon";
 import { CURRENT_USER } from "@/components/layout/nav";
 import { formatDueDate, parseDueDate } from "@/features/collaborations/sort";
@@ -13,6 +12,7 @@ import type {
 } from "@/features/collaborations/types";
 import { MY_COLLAB_CATEGORIES } from "../types";
 import type { MyCollabCategory, MyCollabProject, MyCollabStatus } from "../types";
+import { MyCollabRow } from "./MyCollabRow";
 import { MyCollabSearchBar } from "./MyCollabSearchBar";
 
 /**
@@ -28,14 +28,6 @@ const SECTION_ORDER: MyCollabStatus[] = [
   "complete",
 ];
 
-const PUBLIC_STATUS_LABEL: Record<MyCollabProject["status"], string> = {
-  open: "Open",
-  "in-progress": "In progress",
-  completed: "Completed",
-};
-
-const DAY_MS = 24 * 60 * 60 * 1000;
-
 /**
  * The portfolio strip's color code — one color per myStatus,
  * taught once by the legend under the strip and reused by the
@@ -48,71 +40,6 @@ const STATUS_SEGMENT_CLASS: Record<MyCollabStatus, string> = {
   "not-started": "bg-placeholder",
   complete: "bg-accent",
 };
-
-/** One dense row of a status section — the whole row opens the detail. */
-function ProjectRow({ project }: { project: MyCollabProject }) {
-  const dueMs = parseDueDate(project.dueDate);
-  const daysLeft =
-    dueMs === Infinity
-      ? null
-      : Math.ceil((dueMs - Date.now()) / DAY_MS);
-  const urgent =
-    project.myStatus !== "complete" && daysLeft !== null && daysLeft <= 7;
-  const faces = project.members.filter((m) => !m.isOpenSlot).slice(0, 2);
-
-  return (
-    <article className="group relative flex items-center gap-3 py-3">
-      <Link
-        href={`/my-collaborations/${project.myStatus}/${project.id}`}
-        aria-label={`View ${project.title}`}
-        className="absolute inset-0 z-0 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
-      />
-      <div className="pointer-events-none relative z-10 min-w-0 flex-1">
-        <h3 className="truncate text-[15px] font-semibold text-ink">
-          {project.title}
-        </h3>
-        <p className="truncate text-[13px] text-muted">{project.subtitle}</p>
-      </div>
-
-      <span
-        className={`relative z-10 hidden shrink-0 items-center gap-1.5 text-xs sm:flex ${
-          urgent ? "font-semibold text-badge" : "text-muted"
-        }`}
-      >
-        <Icon name="calendar" size={14} />
-        Due {formatDueDate(project.dueDate)}
-        {urgent &&
-          ` · ${daysLeft !== null && daysLeft <= 0 ? "due now" : `${daysLeft}d left`}`}
-      </span>
-
-      <span className="relative z-10 hidden shrink-0 items-center gap-2 md:flex">
-        <span className="flex">
-          {faces.map((member, i) => (
-            <Avatar
-              key={member.id}
-              size={24}
-              src={member.avatarUrl}
-              alt={member.name}
-              className={i > 0 ? "-ml-2 ring-2 ring-bg" : "ring-2 ring-bg"}
-            />
-          ))}
-        </span>
-        <span className="text-xs text-muted tabular-nums">
-          {project.slotsFilled} / {project.slotsTotal}
-        </span>
-      </span>
-
-      <span className="relative z-10 hidden w-[92px] shrink-0 text-right text-xs text-muted lg:block">
-        {PUBLIC_STATUS_LABEL[project.status]}
-      </span>
-      <Icon
-        name="chevron-right"
-        size={18}
-        className="relative z-10 shrink-0 text-placeholder transition-transform duration-200 group-hover:translate-x-0.5"
-      />
-    </article>
-  );
-}
 
 function StatusSection({
   category,
@@ -148,7 +75,7 @@ function StatusSection({
         {items.length === 0 ? (
           <p className="py-4 text-xs text-muted">No projects here yet.</p>
         ) : (
-          items.map((p) => <ProjectRow key={p.id} project={p} />)
+          items.map((p) => <MyCollabRow key={p.id} project={p} />)
         )}
       </div>
     </section>
@@ -278,7 +205,10 @@ export function MyCollabBoard({ projects }: MyCollabBoardProps) {
           hoverable and clickable: the whole portfolio in one
           line, with the completion figure set as a display
           numeral beside it. */}
-      <div className="flex flex-col gap-5 rounded-2xl bg-bg p-5 sm:p-6">
+      <div
+        className="card-stagger flex flex-col gap-5 rounded-2xl bg-bg p-5 sm:p-6"
+        style={{ "--stagger-i": "0" } as CSSProperties}
+      >
         <div className="flex flex-wrap items-end gap-x-10 gap-y-4">
           <div className="flex flex-col gap-1.5">
             <span className="text-[56px] leading-[0.85] font-medium tracking-tight text-ink tabular-nums sm:text-[68px]">
@@ -363,11 +293,12 @@ export function MyCollabBoard({ projects }: MyCollabBoardProps) {
         </p>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          {attention.map((card) => (
+          {attention.map((card, ai) => (
             <Link
               key={card.label}
               href={card.href}
-              className="group flex cursor-pointer items-center gap-3 rounded-2xl border border-line bg-surface p-4 transition-[border-color,box-shadow] duration-200 hover:border-ink/30 hover:shadow-[0_1px_2px_rgba(17,17,17,0.05),0_12px_28px_-12px_rgba(17,17,17,0.18)] focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+              style={{ "--stagger-i": String(ai + 1) } as CSSProperties}
+              className="card-stagger group flex cursor-pointer items-center gap-3 rounded-2xl border border-line bg-surface p-4 transition-[border-color,box-shadow] duration-200 hover:border-ink/30 hover:shadow-[0_1px_2px_rgba(17,17,17,0.05),0_12px_28px_-12px_rgba(17,17,17,0.18)] focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
             >
               <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-bg">
                 <Icon name={card.icon} size={18} className="text-ink" />
@@ -433,7 +364,11 @@ export function MyCollabBoard({ projects }: MyCollabBoardProps) {
             <div
               key={slug}
               className="card-stagger"
-              style={{ "--stagger-i": String(i) } as CSSProperties}
+              style={
+                {
+                  "--stagger-i": String(i + attention.length + 1),
+                } as CSSProperties
+              }
             >
               <StatusSection category={category} items={items} />
             </div>
