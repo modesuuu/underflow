@@ -19,7 +19,7 @@ import { ThreadOptionsMenu } from "./ThreadOptionsMenu";
 /**
  * Right side of the Inbox (Figma 386:5), WhatsApp-Web model: the
  * pane fills the main area and only the message list scrolls. The
- * name chip (avatar + lavender capsule, soft group shadow) floats
+ * name chip (avatar + accent capsule, soft group shadow) floats
  * at the top-center with NO bar behind it — just the photo and the
  * name stay while messages scroll underneath. The composer is a
  * full-width pill with a circular lime send button.
@@ -92,7 +92,7 @@ export function ChatPane({ conversation }: { conversation: Conversation | null }
       {/* Floating identity chip — photo + name only, no bar. */}
       <div className="pointer-events-none absolute top-4 left-1/2 z-10 flex -translate-x-1/2 flex-col items-center gap-1 [filter:drop-shadow(0_18px_20px_rgba(0,0,0,0.15))]">
         <Avatar size={42} alt={conversation.name} />
-        <span className="min-w-[88px] rounded-full bg-lav px-3 py-1 text-center text-base font-medium text-on-lav">
+        <span className="min-w-[88px] rounded-full bg-accent px-3 py-1 text-center text-base font-medium text-on-accent">
           {conversation.name}
         </span>
       </div>
@@ -170,7 +170,7 @@ export function ChatPane({ conversation }: { conversation: Conversation | null }
                     {message.text}
                     <span
                       className={`float-right mt-2.5 ml-3 text-[10px] leading-none ${
-                        mine ? "text-ink/55" : "text-subtle"
+                        mine ? "text-on-accent/70" : "text-subtle"
                       }`}
                     >
                       {message.clock}
