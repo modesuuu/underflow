@@ -2,10 +2,11 @@ import { AppShell } from "@/components/layout/AppShell";
 import { NotificationsBell } from "@/components/layout/NotificationsBell";
 
 /**
- * Loading skeleton for /my-collaborations/[category] — shaped like
- * the redesigned category page: pill + title + subtitle header, a
- * search-first toolbar, and a hairline row list. Loading receives
- * no params, so the labels are generic by design.
+ * Loading skeleton for /my-collaborations/[category] — shaped
+ * like the staged category page: pill + title + subtitle
+ * header, a search-first toolbar, and the stage with its
+ * hairline row list. Loading receives no params, so the
+ * labels are generic by design.
  */
 export default function MyCollabCategoryLoading() {
   return (
@@ -33,12 +34,12 @@ export default function MyCollabCategoryLoading() {
           </div>
         </div>
 
-        {/* Rows */}
-        <div className="flex flex-col gap-3 rounded-2xl bg-bg px-4 py-2">
+        {/* The stage with rows */}
+        <div className="flex flex-col divide-y divide-surface/10 rounded-[28px] bg-ink px-6 py-2">
           {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="flex flex-col gap-1.5 py-1">
-              <div className="h-4 w-1/3 rounded bg-placeholder" />
-              <div className="h-3 w-1/4 rounded bg-placeholder" />
+            <div key={i} className="flex flex-col gap-1.5 py-3">
+              <div className="h-4 w-1/3 rounded bg-surface/15" />
+              <div className="h-3 w-1/4 rounded bg-surface/10" />
             </div>
           ))}
         </div>

@@ -26,7 +26,7 @@ export function generateMetadata({
 
 /**
  * Fallback = the body of app/my-collaborations/[category]/loading.tsx minus
- * its AppShell and header (search-first toolbar + row list), which renders
+ * its AppShell and header (search-first toolbar + the stage), which renders
  * here while getMyCollabProjects() suspends. The category labels come from
  * the sync meta-map, so the shell + header render immediately.
  */
@@ -42,12 +42,12 @@ function MyCollabCategoryGridSkeleton() {
           <div className="h-11 w-28 rounded-xl bg-placeholder" />
         </div>
       </div>
-      {/* Rows */}
-      <div className="flex flex-col gap-3 rounded-2xl bg-bg px-4 py-2">
+      {/* The stage with rows */}
+      <div className="flex flex-col divide-y divide-surface/10 rounded-[28px] bg-ink px-6 py-2">
         {Array.from({ length: 5 }).map((_, i) => (
-          <div key={i} className="flex flex-col gap-1.5 py-1">
-            <div className="h-4 w-1/3 rounded bg-placeholder" />
-            <div className="h-3 w-1/4 rounded bg-placeholder" />
+          <div key={i} className="flex flex-col gap-1.5 py-3">
+            <div className="h-4 w-1/3 rounded bg-surface/15" />
+            <div className="h-3 w-1/4 rounded bg-surface/10" />
           </div>
         ))}
       </div>

@@ -12,15 +12,17 @@ export const metadata: Metadata = {
 };
 
 /**
- * Fallback = the body of app/my-collaborations/loading.tsx minus its AppShell
- * and header (stat register + attention + toolbar + sections), which
- * renders here while getMyCollabProjects() suspends.
+ * Fallback = the body of app/my-collaborations/loading.tsx minus its
+ * AppShell (the band, the toolbar, and the stage), which renders
+ * here while getMyCollabProjects() suspends.
  */
 function MyCollabBoardSkeleton() {
   return (
     <div className="flex flex-col gap-6">
-      {/* Portfolio header */}
-      <div className="flex flex-col gap-5 rounded-2xl bg-bg p-5">
+      <div className="h-9 w-72 rounded-lg bg-placeholder" />
+
+      {/* The band */}
+      <div className="flex flex-col gap-5 rounded-[24px] bg-bg p-6">
         <div className="flex items-end justify-between gap-6">
           <div className="h-14 w-44 rounded bg-placeholder" />
           <div className="hidden gap-6 sm:flex">
@@ -33,16 +35,6 @@ function MyCollabBoardSkeleton() {
         <div className="h-3 w-64 rounded bg-placeholder" />
       </div>
 
-      {/* Attention cards */}
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-        {Array.from({ length: 3 }).map((_, i) => (
-          <div
-            key={i}
-            className="h-[76px] rounded-2xl border border-line bg-surface"
-          />
-        ))}
-      </div>
-
       {/* Toolbar */}
       <div className="flex items-center gap-3">
         <div className="h-11 flex-1 rounded-xl border border-line bg-surface sm:max-w-md" />
@@ -53,20 +45,27 @@ function MyCollabBoardSkeleton() {
         </div>
       </div>
 
-      {/* Sections */}
-      {Array.from({ length: 2 }).map((_, s) => (
-        <div key={s} className="flex flex-col gap-3">
-          <div className="h-6 w-40 rounded-full bg-placeholder" />
-          <div className="flex flex-col gap-3 rounded-2xl bg-bg px-4 py-2">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="flex flex-col gap-1.5 py-1">
-                <div className="h-4 w-1/3 rounded bg-placeholder" />
-                <div className="h-3 w-1/4 rounded bg-placeholder" />
-              </div>
-            ))}
-          </div>
+      {/* The stage */}
+      <div className="flex flex-col gap-8 rounded-[28px] bg-ink p-7">
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="h-[76px] rounded-2xl bg-surface/10" />
+          ))}
         </div>
-      ))}
+        {Array.from({ length: 2 }).map((_, s) => (
+          <div key={s} className="flex flex-col gap-3">
+            <div className="h-5 w-40 rounded-full bg-surface/15" />
+            <div className="flex flex-col divide-y divide-surface/10">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="flex flex-col gap-1.5 py-3">
+                  <div className="h-4 w-1/3 rounded bg-surface/15" />
+                  <div className="h-3 w-1/4 rounded bg-surface/10" />
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

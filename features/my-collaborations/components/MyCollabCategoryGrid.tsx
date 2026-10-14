@@ -19,11 +19,12 @@ interface MyCollabCategoryGridProps {
 }
 
 /**
- * Category page body (2026 redesign): the same dense rows the
- * board's sections use — one family across board and category,
- * instead of a separate card grid. Search + sort + type-filter
- * pipeline is unchanged; a results line with a clear action and
- * a composed empty state match the board's behavior.
+ * Category page body: the board's stage language at category
+ * scale — the same stage-native rows inside one ink panel, so
+ * board and category read as one product. Search + sort +
+ * type-filter pipeline is unchanged; a results line with a
+ * clear action sits on the canvas, and the empty state moves
+ * onto the stage with stage colors.
  */
 export function MyCollabCategoryGrid({ projects }: MyCollabCategoryGridProps) {
   const [draftQuery, setDraftQuery] = useState("");
@@ -68,19 +69,21 @@ export function MyCollabCategoryGrid({ projects }: MyCollabCategoryGridProps) {
       />
 
       {filtered.length === 0 ? (
-        <div className="flex flex-col items-center gap-2 rounded-2xl bg-bg px-6 py-14 text-center">
-          <span className="flex size-11 items-center justify-center rounded-full bg-surface">
-            <Icon name="search" size={20} className="text-muted" />
+        <div className="flex flex-col items-center gap-2 rounded-[28px] bg-ink px-6 py-14 text-center text-surface">
+          <span className="flex size-11 items-center justify-center rounded-full bg-surface/10">
+            <Icon name="search" size={20} className="text-surface/60" />
           </span>
-          <p className="text-base font-semibold text-ink">No projects match</p>
-          <p className="max-w-sm text-sm text-muted">
+          <p className="text-base font-semibold text-surface">
+            No projects match
+          </p>
+          <p className="max-w-sm text-sm text-surface/60">
             No projects in this category match your search and filters.
             Clear them to see all projects in this category.
           </p>
           <button
             type="button"
             onClick={clearAll}
-            className="pressable mt-2 cursor-pointer rounded-full bg-ink px-4 py-2 text-sm font-medium text-surface transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+            className="pressable mt-2 cursor-pointer rounded-full bg-surface px-4 py-2 text-sm font-medium text-ink transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-surface focus-visible:outline-none"
           >
             Clear search &amp; filters
           </button>
@@ -103,7 +106,7 @@ export function MyCollabCategoryGrid({ projects }: MyCollabCategoryGridProps) {
               </button>
             )}
           </div>
-          <div className="flex flex-col divide-y divide-placeholder rounded-2xl bg-bg px-4">
+          <div className="flex flex-col divide-y divide-surface/10 rounded-[28px] bg-ink px-5 py-2 text-surface sm:px-6">
             {filtered.map((project, i) => (
               <div
                 key={project.id}
