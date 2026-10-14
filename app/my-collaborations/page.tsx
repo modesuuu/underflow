@@ -19,17 +19,18 @@ export const metadata: Metadata = {
 function MyCollabBoardSkeleton() {
   return (
     <div className="flex flex-col gap-6">
-      {/* Stat register */}
-      <div className="flex flex-col gap-4 rounded-2xl bg-bg p-5">
-        <div className="grid grid-cols-2 gap-5 lg:grid-cols-4">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="flex flex-col gap-1.5">
-              <div className="h-7 w-12 rounded bg-placeholder" />
-              <div className="h-3 w-24 rounded bg-placeholder" />
-            </div>
-          ))}
+      {/* Portfolio header */}
+      <div className="flex flex-col gap-5 rounded-2xl bg-bg p-5">
+        <div className="flex items-end justify-between gap-6">
+          <div className="h-14 w-44 rounded bg-placeholder" />
+          <div className="hidden gap-6 sm:flex">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="h-9 w-14 rounded bg-placeholder" />
+            ))}
+          </div>
         </div>
-        <div className="h-1.5 w-full rounded-full bg-placeholder" />
+        <div className="h-3.5 w-full rounded-full bg-placeholder" />
+        <div className="h-3 w-64 rounded bg-placeholder" />
       </div>
 
       {/* Attention cards */}

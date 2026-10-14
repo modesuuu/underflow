@@ -36,16 +36,18 @@ const PUBLIC_STATUS_LABEL: Record<MyCollabProject["status"], string> = {
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-function StatCell({ value, label }: { value: string; label: string }) {
-  return (
-    <div className="flex flex-col gap-0.5">
-      <span className="text-2xl leading-none font-semibold text-ink tabular-nums">
-        {value}
-      </span>
-      <span className="text-xs font-medium text-muted">{label}</span>
-    </div>
-  );
-}
+/**
+ * The portfolio strip's color code — one color per myStatus,
+ * taught once by the legend under the strip and reused by the
+ * section pills below. Complete earns the lime; revise is the
+ * one red moment; pending is ink; not-started stays quiet.
+ */
+const STATUS_SEGMENT_CLASS: Record<MyCollabStatus, string> = {
+  revise: "bg-badge",
+  pending: "bg-ink",
+  "not-started": "bg-placeholder",
+  complete: "bg-accent",
+};
 
 /** One dense row of a status section — the whole row opens the detail. */
 function ProjectRow({ project }: { project: MyCollabProject }) {
@@ -198,6 +200,8 @@ export function MyCollabBoard({ projects }: MyCollabBoardProps) {
   const pctNum =
     projects.length === 0 ? 0 : (complete / projects.length) * 100;
   const pct = `${pctNum.toFixed(2)}%`;
+  // The hero figure typesets the integer huge and the decimals small.
+  const [pctInt, pctDec] = pctNum.toFixed(2).split(".");
 
   // Attention: only cards with something real behind them render.
   const reviseItems = projects.filter((p) => p.myStatus === "revise");
@@ -246,6 +250,20 @@ export function MyCollabBoard({ projects }: MyCollabBoardProps) {
     MY_COLLAB_CATEGORIES.map((c) => [c.slug, c])
   );
 
+  // The portfolio strip: every project becomes one segment,
+  // grouped by status in section order.
+  const stripSegments = SECTION_ORDER.flatMap((slug) =>
+    projects
+      .filter((p) => p.myStatus === slug)
+      .map((p) => ({ project: p, slug }))
+  );
+  const statusCounts = new Map<MyCollabStatus, number>(
+    SECTION_ORDER.map((slug) => [
+      slug,
+      projects.filter((p) => p.myStatus === slug).length,
+    ])
+  );
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-2">
@@ -255,32 +273,84 @@ export function MyCollabBoard({ projects }: MyCollabBoardProps) {
         <p className="text-sm text-muted">See your projects here.</p>
       </div>
 
-      {/* Stat register — one bar, real numbers, completion track */}
-      <div className="flex flex-col gap-4 rounded-2xl bg-bg p-5">
-        <div className="grid grid-cols-2 gap-x-4 gap-y-5 lg:grid-cols-4">
-          <StatCell value={String(active)} label="Active Projects" />
-          <StatCell value={String(pendingItems.length)} label="Project Pending" />
-          <StatCell value={String(complete)} label="Project Complete" />
-          <StatCell value={pct} label="Percentage Complete" />
-        </div>
-        <div className="flex flex-col gap-1.5">
-          <div
-            className="h-1.5 w-full overflow-hidden rounded-full bg-placeholder"
-            role="img"
-            aria-label={`${complete} of ${projects.length} projects complete`}
-          >
-            <div
-              className="h-full rounded-full bg-accent transition-[width] duration-500"
-              style={{ width: `${pctNum}%` }}
-            />
+      {/* Portfolio header — the signature strip. Every project is
+          one segment of a single bar, colored by its status,
+          hoverable and clickable: the whole portfolio in one
+          line, with the completion figure set as a display
+          numeral beside it. */}
+      <div className="flex flex-col gap-5 rounded-2xl bg-bg p-5 sm:p-6">
+        <div className="flex flex-wrap items-end gap-x-10 gap-y-4">
+          <div className="flex flex-col gap-1.5">
+            <span className="text-[56px] leading-[0.85] font-medium tracking-tight text-ink tabular-nums sm:text-[68px]">
+              {pctInt}
+              <span className="text-[24px] font-medium text-muted sm:text-[28px]">
+                .{pctDec}%
+              </span>
+            </span>
+            <span className="text-sm text-muted">
+              of your portfolio is complete · {active} active of{" "}
+              {projects.length} projects
+            </span>
           </div>
-          <div className="flex items-baseline justify-between">
-            <span className="text-xs text-muted">
-              {complete} of {projects.length} projects complete
-            </span>
-            <span className="text-xs font-semibold text-ink tabular-nums">
-              {pct}
-            </span>
+          <div className="ms-auto flex items-end gap-6 sm:gap-8">
+            <div className="flex flex-col gap-0.5">
+              <span className="text-xl leading-none font-semibold text-ink tabular-nums">
+                {active}
+              </span>
+              <span className="text-xs font-medium text-muted">Active</span>
+            </div>
+            <div className="flex flex-col gap-0.5">
+              <span className="text-xl leading-none font-semibold text-ink tabular-nums">
+                {pendingItems.length}
+              </span>
+              <span className="text-xs font-medium text-muted">Pending</span>
+            </div>
+            <div className="flex flex-col gap-0.5">
+              <span className="text-xl leading-none font-semibold text-ink tabular-nums">
+                {complete}
+              </span>
+              <span className="text-xs font-medium text-muted">Complete</span>
+            </div>
+          </div>
+        </div>
+
+        {/* The strip + its legend (the counts are the legend) */}
+        <div className="flex flex-col gap-2">
+          <div
+            className="flex gap-1"
+            role="list"
+            aria-label="Your projects by status"
+          >
+            {stripSegments.map(({ project, slug }, i) => (
+              <Link
+                key={project.id}
+                href={`/my-collaborations/${slug}/${project.id}`}
+                role="listitem"
+                aria-label={`${project.title} — ${bySlug.get(slug)?.crumbLabel ?? slug}`}
+                className={`group relative h-3.5 min-w-3 flex-1 rounded-full ${STATUS_SEGMENT_CLASS[slug]} transition-transform duration-200 motion-safe:hover:scale-y-125 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none [animation:uf-card-in_320ms_var(--uf-ease-out)_backwards]`}
+                style={{ animationDelay: `${Math.min(i, 11) * 30}ms` }}
+              >
+                <span className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-2 max-w-[160px] -translate-x-1/2 translate-y-1 truncate rounded-md bg-ink px-2 py-1 text-[11px] font-medium text-surface opacity-0 transition-all duration-150 group-hover:translate-y-0 group-hover:opacity-100">
+                  {project.title}
+                </span>
+              </Link>
+            ))}
+          </div>
+          <div className="flex flex-wrap gap-x-4 gap-y-1">
+            {SECTION_ORDER.map((slug) => (
+              <span
+                key={slug}
+                className="flex items-center gap-1.5 text-xs text-muted"
+              >
+                <span
+                  className={`size-2 rounded-full ${STATUS_SEGMENT_CLASS[slug]}`}
+                />
+                {bySlug.get(slug)?.crumbLabel}
+                <span className="font-semibold text-ink tabular-nums">
+                  {statusCounts.get(slug)}
+                </span>
+              </span>
+            ))}
           </div>
         </div>
       </div>
