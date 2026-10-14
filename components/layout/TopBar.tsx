@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { Icon } from "@/components/ui/Icon";
 
@@ -15,8 +15,6 @@ interface TopBarProps {
   /** Page-specific right-side actions; rendered INSTEAD of the default Post button. */
   actions?: ReactNode;
 }
-
-const SCROLL_THRESHOLD = 24;
 
 function Breadcrumb({ root, leaf }: { root: string; leaf: string }) {
   return (
@@ -33,25 +31,9 @@ export function TopBar({
   breadcrumbLeaf = "Feed",
   backLabel = "Feed",
   backHref,
-  variant = "dashboard",
   actions,
 }: TopBarProps) {
   const router = useRouter();
-  const barRef = useRef<HTMLElement>(null);
-  const borderRef = useRef<HTMLSpanElement>(null);
-  const [scrolled, setScrolled] = useState(false);
-
-  // P2: border fade is now a CSS transition (GSAP dropped for trivial opacity)
-  useEffect(() => {
-    const bar = barRef.current;
-    if (!bar) return;
-    const scroller = bar.closest("main");
-    if (!scroller) return;
-    const onScroll = () => setScrolled(scroller.scrollTop > SCROLL_THRESHOLD);
-    onScroll();
-    scroller.addEventListener("scroll", onScroll, { passive: true });
-    return () => scroller.removeEventListener("scroll", onScroll);
-  }, []);
 
   const handleBack = () => {
     if (backHref) router.push(backHref);
@@ -59,10 +41,7 @@ export function TopBar({
   };
 
   return (
-    <header
-      ref={barRef}
-      className="sticky top-0 z-20 flex h-[79px] items-center justify-between border-b border-line bg-chrome px-[42px]"
-    >
+    <header className="sticky top-0 z-20 flex h-[79px] items-center justify-between border-b border-line bg-chrome px-[42px]">
       <div className="flex items-center gap-3">
         {backHref && (
           <button
@@ -79,19 +58,6 @@ export function TopBar({
 
       <div className="flex items-center gap-6">{actions}</div>
 
-      <span
-        ref={borderRef}
-        aria-hidden="true"
-        className={
-          "pointer-events-none absolute inset-x-0 bottom-0 h-px bg-line " +
-          (variant === "detail"
-            ? "opacity-100"
-            : scrolled
-              ? "opacity-100"
-              : "opacity-0") +
-          " transition-opacity duration-200 motion-reduce:transition-none"
-        }
-      />
     </header>
   );
 }
