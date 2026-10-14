@@ -14,13 +14,9 @@ import { NotificationsPanel } from "@/features/dashboard/components/Notification
 
 function FeedColumnSkeleton() {
   return (
-    <div className="ml-[28px] flex w-full max-w-(--uf-content-w) flex-col gap-4 py-3">
-      <div className="flex items-center gap-3 rounded-2xl border border-line bg-surface p-4">
-        <div className="size-9 rounded-full bg-placeholder" />
-        <div className="h-10 flex-1 rounded-full bg-bg" />
-      </div>
+    <div className="ml-[28px] flex w-full max-w-(--uf-content-w) flex-col gap-5 py-3">
       {Array.from({ length: 3 }).map((_, i) => (
-        <div key={i} className="rounded-2xl border border-line bg-surface p-5">
+        <div key={i} className="px-1 py-2">
           <div className="flex items-center gap-3">
             <div className="size-8 rounded-full bg-placeholder" />
             <div className="flex flex-col gap-1.5">

@@ -13,13 +13,12 @@ import { PostOptionsMenu } from "./PostOptionsMenu";
 import { resolvePersonId } from "@/features/profile/mock";
 
 /**
- * Feed post, 2026 redesign: a bordered surface card (the old
- * design ran posts flat on the page). Flat by default — on hover
- * the border firms up first and the shadow arrives 40ms later,
- * so the lift reads as two beats, not one slab moving.
+ * Feed post: flat on the page surface — no card border (the
+ * user pulled the bordered treatment back out). Rhythm and the
+ * internal hairline above the comment entry separate posts.
+ * Body text reads in Book, not Medium.
  */
-const CARD_CHROME =
-  "rounded-2xl border border-line bg-surface p-5 transition-[border-color,box-shadow] duration-200 [transition-delay:0ms,40ms] hover:border-ink/30 hover:shadow-[0_1px_2px_rgba(17,17,17,0.05),0_16px_36px_-16px_rgba(17,17,17,0.22)]";
+const CARD_CHROME = "px-1 py-2";
 
 export function PostCard({ post }: { post: Post }) {
   const router = useRouter();
@@ -32,7 +31,7 @@ export function PostCard({ post }: { post: Post }) {
   if (reported) {
     return (
       <article className={CARD_CHROME}>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 rounded-xl border border-line px-4 py-3">
           <Icon name="flag" size={20} className="shrink-0 text-muted" />
           <p className="flex-1 text-sm text-muted">
             <span className="font-medium text-ink">You reported this post.</span>{" "}
