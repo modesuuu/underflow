@@ -3,7 +3,6 @@
 import { Fragment, useState } from "react";
 import clsx from "clsx";
 import { Avatar } from "@/components/ui/Avatar";
-import { Badge } from "@/components/ui/Badge";
 import type { NotificationItem } from "../types";
 
 type Tab = "all" | "unread" | "read";
@@ -12,6 +11,18 @@ interface TabDef {
   id: Tab;
   label: string;
 }
+
+const TABS: TabDef[] = [
+  { id: "all", label: "All" },
+  { id: "unread", label: "Unread" },
+  { id: "read", label: "Read" },
+];
+
+const EMPTY_COPY: Record<Tab, string> = {
+  all: "Nothing yet — activity from your projects lands here.",
+  unread: "All caught up. Nothing unread.",
+  read: "Nothing here yet. Open a notification and it moves to Read.",
+};
 
 function filterByTab(items: NotificationItem[], tab: Tab): NotificationItem[] {
   // Contract field is `read` (audit P1-A #6) — the inverse of the old `unread`.
@@ -30,29 +41,28 @@ function NotificationRow({ item }: { item: NotificationItem }) {
       ? `${item.action ?? ""} ${item.target ?? ""}`.trim()
       : item.body;
   return (
-    <div className="flex min-h-[47px] items-center gap-5">
-      <div className="flex flex-1 items-start gap-2">
-        <Avatar size={32} src={item.actor?.avatarUrl} alt={name} />
-        <div className="flex min-w-0 flex-1 flex-col gap-2">
-          <div className="flex flex-col gap-1">
-            <span className="text-base font-medium">{name}</span>
-            {subline && (
-              <span className="flex gap-0.5">
-                <span className="text-xs text-muted">{subline}</span>
-              </span>
-            )}
-          </div>
-          <div className="flex items-center justify-between">
-            {(item.timeLabel ?? item.agoLabel) && (
-              <span className="text-xs">{item.timeLabel ?? item.agoLabel}</span>
-            )}
-          </div>
-        </div>
+    <div className="flex items-start gap-3">
+      <Avatar size={32} src={item.actor?.avatarUrl} alt={name} />
+      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <span
+          className={clsx(
+            "text-sm",
+            item.read ? "text-muted" : "font-medium text-ink",
+          )}
+        >
+          {name}
+        </span>
+        {subline && <span className="text-xs leading-snug text-muted">{subline}</span>}
+        {(item.timeLabel ?? item.agoLabel) && (
+          <span className="text-[11px] text-subtle">
+            {item.timeLabel ?? item.agoLabel}
+          </span>
+        )}
       </div>
-      {/* Unread indicator (audit P1-C #20): the dot stays decorative, an
-          sr-only word carries the meaning for screen readers. */}
+      {/* Unread marker — a real state, so the dot earns its place;
+          the sr-only word carries the meaning. */}
       {!item.read && (
-        <span className="flex shrink-0 items-center gap-1">
+        <span className="mt-1.5 flex shrink-0 items-center">
           <span aria-hidden="true" className="size-1.5 rounded-full bg-accent" />
           <span className="sr-only">Unread</span>
         </span>
@@ -61,7 +71,11 @@ function NotificationRow({ item }: { item: NotificationItem }) {
   );
 }
 
-/** Right panel — Figma 515:150. "Unreed/Reed" in the design is a typo; labels are Unread/Read. */
+/**
+ * Right panel, 2026 redesign: a segmented tab control with a
+ * sliding indicator (the transitions.dev pattern) instead of
+ * three loose buttons, and rows that quiet down once read.
+ */
 export function NotificationsPanel({
   notifications,
 }: {
@@ -70,34 +84,42 @@ export function NotificationsPanel({
   const [tab, setTab] = useState<Tab>("all");
 
   const unreadCount = notifications.filter((n) => !n.read).length;
-  const readCount = notifications.length - unreadCount;
-
-  const tabs: (TabDef & { count: number })[] = [
-    { id: "all", label: "View all", count: notifications.length },
-    { id: "unread", label: "Unread", count: unreadCount },
-    { id: "read", label: "Read", count: readCount },
-  ];
-
+  const counts: Record<Tab, number> = {
+    all: notifications.length,
+    unread: unreadCount,
+    read: notifications.length - unreadCount,
+  };
+  const tabIndex = TABS.findIndex((t) => t.id === tab);
   const visible = filterByTab(notifications, tab);
 
   return (
-    <div className="flex flex-col gap-[42px] p-6">
-      <div className="flex flex-col gap-3">
-        <h2 className="text-xl font-medium">Notifications</h2>
-        <div className="inline-flex w-fit items-center gap-1.5 rounded-md bg-bg p-0.5">
-          {tabs.map((t) => (
+    <div className="page-enter flex flex-col gap-6 p-6">
+      <div className="flex flex-col gap-4">
+        <h2 className="text-base font-semibold">Notifications</h2>
+        <div
+          role="tablist"
+          aria-label="Notification filter"
+          className="relative grid grid-cols-3 rounded-full bg-bg p-1"
+        >
+          <span
+            aria-hidden="true"
+            className="absolute top-1 bottom-1 left-1 w-[calc((100%-8px)/3)] rounded-full bg-surface shadow-[0_1px_3px_rgba(17,17,17,0.14)] transition-transform duration-200 ease-(--uf-ease-out)"
+            style={{ transform: `translateX(${tabIndex * 100}%)` }}
+          />
+          {TABS.map((t) => (
             <button
               key={t.id}
+              role="tab"
               type="button"
               onClick={() => setTab(t.id)}
-              aria-pressed={tab === t.id}
+              aria-selected={tab === t.id}
               className={clsx(
-                "flex cursor-pointer items-center gap-1.5 rounded-sm px-1 py-1.5 text-sm font-medium transition-colors",
-                tab === t.id ? "bg-surface" : "hover:bg-surface/60"
+                "relative z-10 flex cursor-pointer items-center justify-center gap-1.5 rounded-full py-1.5 text-[13px] font-medium transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none",
+                tab === t.id ? "text-ink" : "text-muted hover:text-ink",
               )}
             >
               {t.label}
-              <Badge count={t.count} tone="accent" shape="pill" />
+              <span className="text-[11px] text-subtle">{counts[t.id]}</span>
             </button>
           ))}
         </div>
@@ -107,11 +129,13 @@ export function NotificationsPanel({
         {visible.map((item, i) => (
           <Fragment key={item.id}>
             <NotificationRow item={item} />
-            {i < visible.length - 1 && <div className="h-px w-full bg-placeholder" />}
+            {i < visible.length - 1 && (
+              <div className="h-px w-full bg-placeholder" aria-hidden="true" />
+            )}
           </Fragment>
         ))}
         {visible.length === 0 && (
-          <p className="text-xs text-muted">No notifications here.</p>
+          <p className="text-sm leading-relaxed text-muted">{EMPTY_COPY[tab]}</p>
         )}
       </div>
     </div>
