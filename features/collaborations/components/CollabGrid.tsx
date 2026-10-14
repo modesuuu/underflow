@@ -182,7 +182,7 @@ export function CollabGrid({ projects }: CollabGridProps) {
             </div>
           </div>
           {selected && (
-            <aside className="sticky top-8 hidden w-[380px] shrink-0 rounded-2xl bg-bg p-5 lg:block">
+            <aside className="sticky top-8 hidden max-h-[calc(100dvh-9rem)] w-[380px] shrink-0 flex-col overflow-hidden rounded-2xl bg-bg lg:flex">
               <ProjectPreview project={selected} />
             </aside>
           )}
