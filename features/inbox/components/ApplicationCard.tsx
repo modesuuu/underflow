@@ -5,7 +5,7 @@ import { Icon } from "@/components/ui/Icon";
 import type { ThreadApplication } from "../types";
 
 const STATUS_CHIP: Record<string, { label: string; className: string }> = {
-  accepted: { label: "Accepted", className: "bg-accent text-ink" },
+  accepted: { label: "Accepted", className: "bg-accent text-on-accent" },
   declined: { label: "Declined", className: "bg-placeholder text-muted" },
   withdrawn: { label: "Withdrawn", className: "bg-placeholder text-muted" },
 };
@@ -67,7 +67,7 @@ export function ApplicationCard({
             <button
               type="button"
               onClick={() => onResolve("accepted")}
-              className="flex-1 cursor-pointer rounded-full bg-accent py-2 text-sm font-medium text-ink transition-opacity hover:opacity-85"
+              className="flex-1 cursor-pointer rounded-full bg-accent py-2 text-sm font-medium text-on-accent transition-opacity hover:opacity-85"
             >
               Accept
             </button>

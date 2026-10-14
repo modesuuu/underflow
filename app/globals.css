@@ -13,6 +13,8 @@
   --color-heart: var(--uf-heart);
   --color-placeholder: var(--uf-placeholder);
   --color-line: var(--uf-line);
+  --color-on-accent: var(--uf-on-accent);
+  --color-lav: var(--uf-lav);
 
   --font-sans: "PP Neue Montreal", ui-sans-serif, system-ui, -apple-system,
     sans-serif;
@@ -150,7 +152,7 @@
   transition: background-color 250ms var(--uf-ease-out);
 }
 .nav-row-hoverable:hover {
-  background-color: rgba(255, 255, 255, 0.6);
+  background-color: var(--uf-nav-hover);
 }
 .chevron-rot {
   transition: transform 250ms var(--uf-ease-out);
@@ -202,7 +204,7 @@
 }
 [data-sonner-toast] [data-button] {
   background: var(--color-accent);
-  color: var(--color-ink);
+  color: var(--uf-on-accent);
   border-radius: 999px;
   font-weight: 500;
 }
@@ -229,4 +231,10 @@
     transform: none;
     transition-property: opacity;
   }
+}
+
+/* Brand selection — lime in both themes, always dark text. */
+::selection {
+  background: var(--uf-accent);
+  color: var(--uf-on-accent);
 }

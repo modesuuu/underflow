@@ -65,7 +65,7 @@ function StatusSection({
         </span>
         <Link
           href={`/my-collaborations/${category.slug}`}
-          className="ms-auto flex shrink-0 cursor-pointer items-center gap-1 text-[13px] font-medium text-ink hover:underline focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+          className="ms-auto flex shrink-0 cursor-pointer items-center gap-1 text-[13px] font-medium text-on-accent hover:underline focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
         >
           View all
           <Icon name="chevron-right" size={14} />
@@ -298,7 +298,7 @@ export function MyCollabBoard({ projects }: MyCollabBoardProps) {
               key={card.label}
               href={card.href}
               style={{ "--stagger-i": String(ai + 1) } as CSSProperties}
-              className="card-stagger group flex cursor-pointer items-center gap-3 rounded-2xl border border-line bg-surface p-4 transition-[border-color,box-shadow] duration-200 hover:border-ink/30 hover:shadow-[0_1px_2px_rgba(17,17,17,0.05),0_12px_28px_-12px_rgba(17,17,17,0.18)] focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+              className="card-stagger group flex cursor-pointer items-center gap-3 rounded-2xl border border-line bg-surface p-4 transition-[border-color,box-shadow] duration-200 hover:border-ink/30 hover:shadow-[0_1px_2px_rgba(var(--uf-shadow-rgb),0.05),0_12px_28px_-12px_rgba(var(--uf-shadow-rgb),0.18)] focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
             >
               <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-bg">
                 <Icon name={card.icon} size={18} className="text-ink" />

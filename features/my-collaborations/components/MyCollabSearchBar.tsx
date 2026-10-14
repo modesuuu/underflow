@@ -181,7 +181,7 @@ export function MyCollabSearchBar({
         <button
           type="button"
           onClick={onSearch}
-          className="pressable h-11 shrink-0 cursor-pointer rounded-xl bg-accent px-4 text-sm font-medium text-ink transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+          className="pressable h-11 shrink-0 cursor-pointer rounded-xl bg-accent px-4 text-sm font-medium text-on-accent transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
         >
           Search
         </button>
@@ -213,7 +213,7 @@ export function MyCollabSearchBar({
                   className={clsx(
                     "pressable cursor-pointer rounded px-2 py-1 text-left text-sm transition-colors focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none",
                     sortKey === opt.value
-                      ? "bg-accent font-medium text-ink"
+                      ? "bg-accent font-medium text-on-accent"
                       : "text-ink hover:bg-bg"
                   )}
                 >

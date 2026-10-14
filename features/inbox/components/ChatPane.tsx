@@ -92,7 +92,7 @@ export function ChatPane({ conversation }: { conversation: Conversation | null }
       {/* Floating identity chip — photo + name only, no bar. */}
       <div className="pointer-events-none absolute top-4 left-1/2 z-10 flex -translate-x-1/2 flex-col items-center gap-1 [filter:drop-shadow(0_18px_20px_rgba(0,0,0,0.15))]">
         <Avatar size={42} alt={conversation.name} />
-        <span className="min-w-[88px] rounded-full bg-[#d3cfff] px-3 py-1 text-center text-base font-medium text-ink">
+        <span className="min-w-[88px] rounded-full bg-lav px-3 py-1 text-center text-base font-medium text-on-accent">
           {conversation.name}
         </span>
       </div>
@@ -163,7 +163,7 @@ export function ChatPane({ conversation }: { conversation: Conversation | null }
                     key={message.id}
                     className={`max-w-[310px] rounded-2xl px-3 py-3 text-base whitespace-pre-wrap ${
                       mine
-                        ? "rounded-br-[2px] bg-accent text-ink"
+                        ? "rounded-br-[2px] bg-accent text-on-accent"
                         : "rounded-bl-[2px] bg-bg text-ink"
                     }`}
                   >
@@ -195,19 +195,19 @@ export function ChatPane({ conversation }: { conversation: Conversation | null }
               value={draft}
               onChange={(event) => setDraft(event.target.value)}
               placeholder="Aa"
-              className="h-8 min-w-0 flex-1 bg-transparent text-base text-ink outline-none placeholder:text-muted"
+              className="h-8 min-w-0 flex-1 bg-transparent text-base text-on-accent outline-none placeholder:text-muted"
             />
             <button
               type="button"
               aria-label="Voice message (not available yet)"
-              className="flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-full text-muted transition-colors hover:bg-surface hover:text-ink"
+              className="flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-full text-muted transition-colors hover:bg-surface hover:text-on-accent"
             >
               <Icon name="microphone" size={20} />
             </button>
             <button
               type="button"
               aria-label="Attach a file (not available yet)"
-              className="flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-full text-muted transition-colors hover:bg-surface hover:text-ink"
+              className="flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-full text-muted transition-colors hover:bg-surface hover:text-on-accent"
             >
               <Icon name="paperclip" size={20} />
             </button>
@@ -216,7 +216,7 @@ export function ChatPane({ conversation }: { conversation: Conversation | null }
             type="submit"
             aria-label="Send message"
             disabled={!draft.trim()}
-            className="flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-full bg-accent text-ink transition-opacity hover:opacity-85 disabled:cursor-not-allowed disabled:opacity-40"
+            className="flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-full bg-accent text-on-accent transition-opacity hover:opacity-85 disabled:cursor-not-allowed disabled:opacity-40"
           >
             <Icon name="send" size={20} />
           </button>

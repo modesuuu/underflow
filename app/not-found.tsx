@@ -17,7 +17,7 @@ export default function NotFound() {
       <div className="flex items-center gap-3">
         <Link
           href="/collaborations"
-          className="rounded-md bg-accent px-4 py-2.5 text-sm font-medium text-ink transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+          className="rounded-md bg-accent px-4 py-2.5 text-sm font-medium text-on-accent transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
         >
           Back to Collaborations
         </Link>

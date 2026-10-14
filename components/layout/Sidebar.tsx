@@ -12,6 +12,7 @@ import Link from "next/link";
 import { createPortal } from "react-dom";
 import { usePathname } from "next/navigation";
 import { Avatar } from "@/components/ui/Avatar";
+import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { Badge } from "@/components/ui/Badge";
 import { Icon } from "@/components/ui/Icon";
 import { useInboxUnreadCount } from "@/features/inbox/store";
@@ -164,7 +165,7 @@ function NavRow({ item, active, badge, mini, animate, onSelect, registerRef }: N
         />
         {/* Mini rail: the unread count becomes a dot badge on the icon */}
         {mini && badge !== undefined && badge > 0 && (
-          <span className="absolute -top-1.5 -right-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#ff383c] px-1 text-[9px] font-semibold text-white">
+          <span className="absolute -top-1.5 -right-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-badge px-1 text-[9px] font-semibold text-white">
             {badge}
           </span>
         )}
@@ -193,7 +194,7 @@ function NavRow({ item, active, badge, mini, animate, onSelect, registerRef }: N
             aria-hidden="true"
             data-open={tipOpen}
             style={{ left: tipPos.x, top: tipPos.y }}
-            className="uf-tip pointer-events-none fixed z-[100] -translate-y-1/2 rounded-lg bg-ink px-2.5 py-1.5 text-xs font-medium whitespace-nowrap text-white shadow-lg"
+            className="uf-tip pointer-events-none fixed z-[100] -translate-y-1/2 rounded-lg bg-ink px-2.5 py-1.5 text-xs font-medium whitespace-nowrap text-surface shadow-lg"
           >
             {item.label}
             {badge !== undefined && badge > 0 ? ` (${badge})` : ""}
@@ -576,7 +577,7 @@ export function Sidebar() {
               {mini && (
                 <span
                   aria-hidden="true"
-                  className="pointer-events-none absolute top-1/2 left-full z-50 ml-3 -translate-y-1/2 translate-x-[-4px] rounded-lg bg-ink px-2.5 py-1.5 text-xs font-medium whitespace-nowrap text-white opacity-0 shadow-lg transition-all duration-150 group-hover:translate-x-0 group-hover:opacity-100 group-hover:delay-300 group-focus-visible:translate-x-0 group-focus-visible:opacity-100"
+                  className="pointer-events-none absolute top-1/2 left-full z-50 ml-3 -translate-y-1/2 translate-x-[-4px] rounded-lg bg-ink px-2.5 py-1.5 text-xs font-medium whitespace-nowrap text-surface opacity-0 shadow-lg transition-all duration-150 group-hover:translate-x-0 group-hover:opacity-100 group-hover:delay-300 group-focus-visible:translate-x-0 group-focus-visible:opacity-100"
                 >
                   Expand sidebar
                 </span>
@@ -620,6 +621,19 @@ export function Sidebar() {
           </div>
           <div className="h-px w-full bg-line" />
 
+          {/* Theme — light / system / dark, persisted per device */}
+          <div
+            className={clsx(
+              "flex items-center",
+              mini ? "justify-center" : "justify-between px-1"
+            )}
+          >
+            {!mini && (
+              <span className="text-xs font-medium text-muted">Theme</span>
+            )}
+            <ThemeToggle variant={mini ? "rail" : "full"} />
+          </div>
+
           {/* Profile card — links to the current user's own profile */}
           <Link
             href="/profile/me"
@@ -653,7 +667,7 @@ export function Sidebar() {
             {mini && (
               <span
                 aria-hidden="true"
-                className="pointer-events-none absolute top-1/2 left-full z-50 ml-3 -translate-y-1/2 translate-x-[-4px] rounded-lg bg-ink px-2.5 py-1.5 text-xs font-medium whitespace-nowrap text-white opacity-0 shadow-lg transition-all duration-150 group-hover:translate-x-0 group-hover:opacity-100 group-hover:delay-300"
+                className="pointer-events-none absolute top-1/2 left-full z-50 ml-3 -translate-y-1/2 translate-x-[-4px] rounded-lg bg-ink px-2.5 py-1.5 text-xs font-medium whitespace-nowrap text-surface opacity-0 shadow-lg transition-all duration-150 group-hover:translate-x-0 group-hover:opacity-100 group-hover:delay-300"
               >
                 {CURRENT_USER.name}
               </span>

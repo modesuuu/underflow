@@ -359,7 +359,7 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
                 type="button"
                 onClick={addCustomRole}
                 aria-label="Add custom role"
-                className="pressable flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-sm bg-accent focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+                className="pressable flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-sm bg-accent text-on-accent focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
               >
                 <Icon name="plus" size={14} className="text-ink" />
               </button>
@@ -386,7 +386,7 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
               {customRoles.map((role, i) => (
                 <span
                   key={`role-${i}`}
-                  className="flex items-center gap-1 rounded-full bg-accent px-3 py-1.5 text-xs font-medium text-ink"
+                  className="flex items-center gap-1 rounded-full bg-accent px-3 py-1.5 text-xs font-medium text-on-accent"
                 >
                   <Icon name="purchase-tag" size={14} />
                   {role}
@@ -531,7 +531,7 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
           <button
             type="submit"
             disabled={submitting}
-            className="pressable flex w-full cursor-pointer items-center justify-center gap-2 rounded-md bg-accent py-3 text-base font-medium text-ink transition-opacity hover:opacity-85 disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+            className="pressable flex w-full cursor-pointer items-center justify-center gap-2 rounded-md bg-accent py-3 text-base font-medium text-on-accent transition-opacity hover:opacity-85 disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
           >
             <Icon name="send" size={20} />
             Create Project

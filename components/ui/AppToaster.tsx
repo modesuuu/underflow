@@ -24,17 +24,17 @@ export function AppToaster() {
           border: "1px solid var(--color-line)",
           color: "var(--color-ink)",
           borderRadius: "16px",
-          boxShadow: "0 16px 40px rgba(17, 17, 17, 0.14)",
+          boxShadow: "0 16px 40px rgba(var(--uf-shadow-rgb), 0.14)",
           padding: "14px 16px",
         },
       }}
       icons={{
         success: (
           <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true">
-            <circle cx="10" cy="10" r="10" fill="#dff66a" />
+            <circle cx="10" cy="10" r="10" fill="var(--uf-accent)" />
             <path
               d="M6 10.5 8.8 13 14 7.5"
-              stroke="#111111"
+              stroke="var(--uf-on-accent)"
               strokeWidth="2"
               fill="none"
               strokeLinecap="round"
@@ -44,7 +44,7 @@ export function AppToaster() {
         ),
         error: (
           <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true">
-            <circle cx="10" cy="10" r="10" fill="#ff383c" />
+            <circle cx="10" cy="10" r="10" fill="var(--uf-badge)" />
             <path
               d="M10 5.5v5"
               stroke="#ffffff"
@@ -56,7 +56,7 @@ export function AppToaster() {
         ),
         info: (
           <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true">
-            <circle cx="10" cy="10" r="10" fill="#111111" />
+            <circle cx="10" cy="10" r="10" fill="var(--uf-on-accent)" />
             <path
               d="M10 9.5v5"
               stroke="#ffffff"

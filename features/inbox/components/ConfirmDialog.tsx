@@ -51,7 +51,7 @@ export function ConfirmDialog({
           <Icon
             name="error-circle"
             size={24}
-            className="shrink-0 text-[#ff383c]"
+            className="shrink-0 text-badge"
           />
           <h3 className="text-lg font-bold text-ink">{title}</h3>
         </div>
@@ -61,14 +61,14 @@ export function ConfirmDialog({
             type="button"
             autoFocus
             onClick={onCancel}
-            className="cursor-pointer rounded-xl bg-bg px-4 py-2 text-sm font-medium text-[#6d6c6a] transition-colors hover:bg-line/50"
+            className="cursor-pointer rounded-xl bg-bg px-4 py-2 text-sm font-medium text-muted transition-colors hover:bg-line/50"
           >
             Cancel
           </button>
           <button
             type="button"
             onClick={onConfirm}
-            className="cursor-pointer rounded-xl bg-[#ff383c] px-4 py-2 text-sm font-medium text-white transition-opacity hover:opacity-85"
+            className="cursor-pointer rounded-xl bg-badge px-4 py-2 text-sm font-medium text-white transition-opacity hover:opacity-85"
           >
             {confirmLabel}
           </button>

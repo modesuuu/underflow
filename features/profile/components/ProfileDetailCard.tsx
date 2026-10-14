@@ -60,7 +60,7 @@ export function ProfileDetailCard({ person }: { person: PersonDetail }) {
                 <li key={social.label}>
                   <span
                     title={social.label}
-                    className="flex size-8 items-center justify-center rounded-full bg-accent text-ink"
+                    className="flex size-8 items-center justify-center rounded-full bg-accent text-on-accent"
                   >
                     <i
                       aria-hidden="true"
@@ -77,7 +77,7 @@ export function ProfileDetailCard({ person }: { person: PersonDetail }) {
               {person.skills.map((skill) => (
                 <li
                   key={skill.id}
-                  className="flex items-center gap-1 rounded-full bg-accent px-2.5 py-1 text-xs font-medium text-ink"
+                  className="flex items-center gap-1 rounded-full bg-accent px-2.5 py-1 text-xs font-medium text-on-accent"
                 >
                   <Icon name="code-curly" size={14} />
                   {skill.label}
@@ -97,7 +97,7 @@ export function ProfileDetailCard({ person }: { person: PersonDetail }) {
         </div>
         <div className="flex flex-col gap-3">
           <div className="flex items-center gap-1.5">
-            <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-accent text-ink">
+            <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-accent text-on-accent">
               <Icon name="user" size={16} />
             </span>
             <div className="flex flex-col gap-0.5">
@@ -107,7 +107,7 @@ export function ProfileDetailCard({ person }: { person: PersonDetail }) {
           </div>
           {person.email && (
             <div className="flex items-center gap-1.5">
-              <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-accent text-ink">
+              <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-accent text-on-accent">
                 <Icon name="envelope" size={16} />
               </span>
               <div className="flex flex-col gap-0.5">

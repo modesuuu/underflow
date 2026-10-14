@@ -123,7 +123,7 @@ function Dropdown({
               setOpen(false);
             }
           }}
-          className="absolute top-full right-0 z-50 mt-2 min-w-[180px] rounded-xl border border-line bg-surface p-2 shadow-[0_16px_40px_-12px_rgba(17,17,17,0.25)]"
+          className="absolute top-full right-0 z-50 mt-2 min-w-[180px] rounded-xl border border-line bg-surface p-2 shadow-[0_16px_40px_-12px_rgba(var(--uf-shadow-rgb),0.25)]"
         >
           {panel}
         </div>
@@ -199,7 +199,7 @@ export function SearchFilterBar({
       <button
         type="button"
         onClick={onSearch}
-        className="pressable h-11 cursor-pointer rounded-xl bg-accent px-5 text-sm font-semibold text-ink transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+        className="pressable h-11 cursor-pointer rounded-xl bg-accent px-5 text-sm font-semibold text-on-accent transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
       >
         Search
       </button>

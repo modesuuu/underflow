@@ -76,7 +76,7 @@ function BandApply({ project }: { project: CollabProject }) {
         className={
           isFull
             ? "rounded-full bg-placeholder px-4 py-2 text-sm font-semibold text-muted"
-            : "pressable cursor-pointer rounded-full bg-accent px-4 py-2 text-sm font-semibold text-ink transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+            : "pressable cursor-pointer rounded-full bg-accent px-4 py-2 text-sm font-semibold text-on-accent transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
         }
       >
         {isFull ? "Full" : "Apply"}
@@ -117,7 +117,7 @@ export function ProjectBand({
   const hero = project.photos[0];
 
   return (
-    <article className="group relative flex gap-4 rounded-2xl bg-bg p-4 transition-[background-color,box-shadow] duration-200 hover:bg-surface hover:shadow-[0_1px_2px_rgba(17,17,17,0.05),0_16px_36px_-16px_rgba(17,17,17,0.20)]">
+    <article className="group relative flex gap-4 rounded-2xl bg-bg p-4 transition-[background-color,box-shadow] duration-200 hover:bg-surface hover:shadow-[0_1px_2px_rgba(var(--uf-shadow-rgb),0.05),0_16px_36px_-16px_rgba(var(--uf-shadow-rgb),0.20)]">
       {/* Stretched link — whole band clickable, keyboard reachable */}
       <Link
         href={`/collaborations/${project.id}`}
@@ -137,7 +137,7 @@ export function ProjectBand({
             />
           ) : (
             <span className="flex size-[84px] items-center justify-center rounded-xl bg-accent">
-              <Icon name="image" size={24} className="text-ink/35" />
+              <Icon name="image" size={24} className="text-on-accent/40" />
             </span>
           ))}
       </div>

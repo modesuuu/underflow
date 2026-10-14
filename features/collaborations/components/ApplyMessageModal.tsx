@@ -97,7 +97,7 @@ export function ApplyMessageModal({
             type="button"
             onClick={() => onSend(message)}
             disabled={!message.trim() || sending}
-            className="flex cursor-pointer items-center gap-2 rounded-full bg-accent px-5 py-2.5 text-sm font-medium text-ink transition-opacity hover:opacity-85 disabled:cursor-not-allowed disabled:opacity-40"
+            className="flex cursor-pointer items-center gap-2 rounded-full bg-accent px-5 py-2.5 text-sm font-medium text-on-accent transition-opacity hover:opacity-85 disabled:cursor-not-allowed disabled:opacity-40"
           >
             <Icon name="send" size={18} />
             {sending ? "Sending…" : "Send application"}

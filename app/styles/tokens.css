@@ -12,6 +12,11 @@
   --uf-heart: #ff2d55;
   --uf-placeholder: #d9d9d9;
   --uf-line: #6d6c6a;
+  --uf-on-accent: #111111;
+  --uf-lav: #d3cfff;
+  --uf-nav-hover: rgba(255, 255, 255, 0.6);
+  --uf-shadow-rgb: 17, 17, 17;
+  color-scheme: light;
 
   --uf-radius-sm: 4px;
   --uf-radius-md: 6px;
@@ -26,6 +31,25 @@
   /* Single easing token (audit P1-E #29): one custom ease-out for every
      entrance/exit in the UI — no banned ease-in on exits. */
   --uf-ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+/* Dark theme — "midnight paper": the same warm family, deepened.
+   Only what changes is redeclared; accent, heart, lavender and
+   on-accent carry over. Roles stay identical (surface is the
+   raised canvas, bg the recessed well), so every component
+   flips coherently with no dark: variants anywhere. */
+[data-theme="dark"] {
+  --uf-bg: #171615;
+  --uf-surface: #232221;
+  --uf-ink: #f4f2ed;
+  --uf-muted: #a7a49d;
+  --uf-subtle: #74726b;
+  --uf-badge: #ff4d51;
+  --uf-placeholder: #35332f;
+  --uf-line: #55534e;
+  --uf-nav-hover: rgba(255, 255, 255, 0.07);
+  --uf-shadow-rgb: 0, 0, 0;
+  color-scheme: dark;
 }
 
 @font-face {

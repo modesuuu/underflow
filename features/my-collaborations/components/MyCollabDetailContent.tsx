@@ -90,7 +90,7 @@ export function MyCollabDetailContent({ project }: MyCollabDetailContentProps) {
             {/* TODO(backend): open in-app chat / GET /api/chat/:ownerId */}
             <button
               type="button"
-              className="flex cursor-pointer items-center gap-1 rounded-full bg-accent px-4 py-2 text-xs font-medium text-ink transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+              className="flex cursor-pointer items-center gap-1 rounded-full bg-accent px-4 py-2 text-xs font-medium text-on-accent transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
             >
               <Icon name="message-rounded" size={14} />
               Chat with owner
@@ -128,7 +128,7 @@ export function MyCollabDetailContent({ project }: MyCollabDetailContentProps) {
             {project.skills.map((skill) => (
               <span
                 key={skill.id}
-                className="flex items-center gap-1.5 rounded-full bg-accent px-3 py-1.5 text-xs font-medium text-ink"
+                className="flex items-center gap-1.5 rounded-full bg-accent px-3 py-1.5 text-xs font-medium text-on-accent"
               >
                 {skill.icon && <Icon name={skill.icon} size={14} />}
                 {skill.label}

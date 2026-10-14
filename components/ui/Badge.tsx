@@ -18,7 +18,7 @@ export function Badge({
       className={clsx(
         "inline-flex min-w-4 items-center justify-center px-1 text-xs font-medium leading-4",
         shape === "pill" ? "rounded-pill text-2xs" : "rounded-[2px]",
-        tone === "danger" ? "bg-badge text-surface" : "bg-accent text-ink",
+        tone === "danger" ? "bg-badge text-white" : "bg-accent text-on-accent",
         className
       )}
     >

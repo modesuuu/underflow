@@ -130,7 +130,7 @@ export function MessagesColumn({
                       {last?.timeLabel ?? ""}
                     </span>
                     {unread ? (
-                      <span className="flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-accent px-1.5 text-[10px] leading-none font-semibold text-ink">
+                      <span className="flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-accent px-1.5 text-[10px] leading-none font-semibold text-on-accent">
                         {threadUnread}
                       </span>
                     ) : (

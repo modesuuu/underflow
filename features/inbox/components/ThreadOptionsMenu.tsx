@@ -181,7 +181,7 @@ export function ThreadOptionsMenu({
                 setOpen(false);
                 onDeleteRequest(thread);
               }}
-              className="flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-medium text-[#ff383c] transition-colors hover:bg-bg"
+              className="flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-medium text-badge transition-colors hover:bg-bg"
             >
               <Icon name="trash" size={18} />
               Delete chat

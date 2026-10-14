@@ -91,7 +91,7 @@ export function CollabDetailContent({ project }: CollabDetailContentProps) {
           >
             <Avatar size={42} src={project.owner.avatarUrl} alt={project.owner.name} />
             <div className="flex flex-col">
-              <span className="text-base font-medium text-ink group-hover:underline">
+              <span className="text-base font-medium text-on-accent group-hover:underline">
                 {project.owner.name}
               </span>
               <span className="text-2xs text-muted">{project.owner.role}</span>
@@ -100,7 +100,7 @@ export function CollabDetailContent({ project }: CollabDetailContentProps) {
           {/* TODO(backend): open in-app chat / GET /api/chat/:ownerId */}
           <button
             type="button"
-            className="flex cursor-pointer items-center gap-1 rounded-full bg-accent px-4 py-2 text-xs font-medium text-ink transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+            className="flex cursor-pointer items-center gap-1 rounded-full bg-accent px-4 py-2 text-xs font-medium text-on-accent transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
           >
             <Icon name="message-rounded" size={14} />
             Chat with owner
@@ -109,8 +109,8 @@ export function CollabDetailContent({ project }: CollabDetailContentProps) {
 
         {/* About the project */}
         <div className="flex flex-col gap-2">
-          <h2 className="text-xl font-medium text-ink">About the project</h2>
-          <p className="text-sm leading-relaxed text-ink">
+          <h2 className="text-xl font-medium text-on-accent">About the project</h2>
+          <p className="text-sm leading-relaxed text-on-accent">
             {project.description}
           </p>
         </div>
@@ -118,12 +118,12 @@ export function CollabDetailContent({ project }: CollabDetailContentProps) {
         {/* What you'll work on */}
         {project.workItems.length > 0 && (
           <div className="flex flex-col gap-2">
-            <h3 className="text-base font-medium text-ink">
+            <h3 className="text-base font-medium text-on-accent">
               What you&apos;ll work on
             </h3>
             <ul className="flex flex-col gap-1.5">
               {project.workItems.map((item, i) => (
-                <li key={i} className="flex items-start gap-2 text-sm text-ink">
+                <li key={i} className="flex items-start gap-2 text-sm text-on-accent">
                   <span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-ink" />
                   {item}
                 </li>
@@ -135,12 +135,12 @@ export function CollabDetailContent({ project }: CollabDetailContentProps) {
 
       {/* 3. Skills needed (heading on white, lime pills with icon + label) */}
       <div className="flex flex-col gap-3">
-        <h2 className="text-xl font-medium text-ink">Skills needed</h2>
+        <h2 className="text-xl font-medium text-on-accent">Skills needed</h2>
         <div className="flex flex-wrap gap-2">
           {project.skills.map((skill) => (
             <span
               key={skill.id}
-              className="flex items-center gap-1.5 rounded-full bg-accent px-3 py-1.5 text-xs font-medium text-ink"
+              className="flex items-center gap-1.5 rounded-full bg-accent px-3 py-1.5 text-xs font-medium text-on-accent"
             >
               {skill.icon && <Icon name={skill.icon} size={14} />}
               {skill.label}
@@ -152,12 +152,12 @@ export function CollabDetailContent({ project }: CollabDetailContentProps) {
       {/* 4. Team: heading + slot count top-right; filled members AND open slots */}
       <div className="flex flex-col gap-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-xl font-medium text-ink">Team</h2>
+          <h2 className="text-xl font-medium text-on-accent">Team</h2>
           <div className="flex items-center gap-1.5">
-            <span className="text-sm font-medium text-ink">
+            <span className="text-sm font-medium text-on-accent">
               {project.slotsFilled}/{project.slotsTotal}
             </span>
-            <Icon name="group" size={20} className="text-ink" />
+            <Icon name="group" size={20} className="text-on-accent" />
           </div>
         </div>
         <div className="flex gap-4">
@@ -169,7 +169,7 @@ export function CollabDetailContent({ project }: CollabDetailContentProps) {
                   <Icon name="plus" size={14} className="text-surface" />
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-base font-medium text-ink">{member.name}</span>
+                  <span className="text-base font-medium text-on-accent">{member.name}</span>
                   <span className="text-2xs text-muted">{member.role}</span>
                 </div>
               </div>

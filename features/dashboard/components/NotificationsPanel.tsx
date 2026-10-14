@@ -199,7 +199,7 @@ export function NotificationsPanel({
         >
           <span
             aria-hidden="true"
-            className="absolute top-1 bottom-1 left-1 w-[calc((100%-8px)/3)] rounded-full bg-surface shadow-[0_1px_3px_rgba(17,17,17,0.14)] transition-transform duration-200 ease-(--uf-ease-out)"
+            className="absolute top-1 bottom-1 left-1 w-[calc((100%-8px)/3)] rounded-full bg-surface shadow-[0_1px_3px_rgba(var(--uf-shadow-rgb),0.14)] transition-transform duration-200 ease-(--uf-ease-out)"
             style={{ transform: `translateX(${tabIndex * 100}%)` }}
           />
           {TABS.map((t) => (

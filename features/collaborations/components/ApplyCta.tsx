@@ -94,7 +94,7 @@ export function ApplyCta({
             type="button"
             onClick={() => setModalOpen(true)}
             disabled={submitting}
-            className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-accent py-3 text-base font-medium text-ink transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none disabled:opacity-50"
+            className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-accent py-3 text-base font-medium text-on-accent transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none disabled:opacity-50"
           >
             <Icon name="send" size={20} />
             Apply to this project
@@ -117,7 +117,7 @@ export function ApplyCta({
       )}
 
       {state === "entered" && (
-        <div className="rounded-full bg-accent py-3 text-center text-base font-medium text-ink">
+        <div className="rounded-full bg-accent py-3 text-center text-base font-medium text-on-accent">
           You have entered this project
         </div>
       )}

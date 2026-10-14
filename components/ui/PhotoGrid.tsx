@@ -53,7 +53,7 @@ function Tile({ photo, overlayCount = 0, onClick, className }: TileProps) {
         />
       ) : (
         <span className="absolute inset-0 flex items-center justify-center bg-accent">
-          <i className="bx bx-image-add text-2xl text-ink/40" aria-hidden="true" />
+          <i className="bx bx-image-add text-2xl text-on-accent/40" aria-hidden="true" />
         </span>
       )}
       {overlayCount > 0 && (
