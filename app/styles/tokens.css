@@ -6,10 +6,15 @@
    bg (chrome, wells, inputs, containers) is a pale sage tint
    of the forest, and the palette's green-black (#191a19, the
    dark theme's ground) becomes the ink. The mid steps are sage
-   tints of the palette's leaf. The accent stays the brand
-   acid lime #dff66a — the dark theme's cream-lime is its pale
-   sibling; each is tuned to pop on its own ground (cream on a
-   cream ground would vanish). Signal colors (badge, heart)
+   tints of the palette's leaf. The main color is the
+   palette's leaf green #4e9f3d — until now only the dark
+   theme's glow color. On a cream ground it leads clearly,
+   and dark text holds about 5:1 on it, so on-accent stays
+   the green-black. The dark theme keeps its cream-lime:
+   each main color is tuned to its own ground. The acid lime
+   #dff66a is retired from the light theme entirely (the
+   photo tiles move to a pale leaf tint with it). Signal
+   colors (badge, heart)
    keep their light-tuned values on purpose: white text on the
    dark theme's softer red loses contrast on a light ground. */
 :root {
@@ -19,14 +24,14 @@
   --uf-ink: #191a19;
   --uf-muted: #55624e;
   --uf-subtle: #7e8b6f;
-  --uf-accent: #dff66a;
+  --uf-accent: #4e9f3d;
   --uf-badge: #ff383c;
   --uf-heart: #ff2d55;
   --uf-placeholder: #d9e2c4;
   --uf-line: #66755c;
   --uf-on-accent: #191a19;
   --uf-lav: #d3cfff;
-  --uf-tile: #dff66a;
+  --uf-tile: #cfe3b8;
   --uf-tile-icon: rgba(25, 26, 25, 0.4);
   --uf-chrome: #e9eeda;
   --uf-active: #ffffff;
