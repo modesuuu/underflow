@@ -37,11 +37,9 @@ function filterByTab(items: NotificationItem[], tab: Tab): NotificationItem[] {
 
 function NotificationRow({
   item,
-  open,
   onPress,
 }: {
   item: NotificationItem;
-  open: boolean;
   onPress: () => void;
 }) {
   // Contract base row data: title + body. The rich actor/action/target
@@ -52,7 +50,6 @@ function NotificationRow({
     item.action || item.target
       ? `${item.action ?? ""} ${item.target ?? ""}`.trim()
       : item.body;
-  const detailText = item.body ?? subline;
   const actorId = item.actor ? resolvePersonId(item.actor.id) : null;
 
   return (
@@ -72,7 +69,6 @@ function NotificationRow({
         <button
           type="button"
           onClick={onPress}
-          aria-expanded={item.href ? undefined : open}
           className="flex min-w-0 flex-1 cursor-pointer items-start gap-3 text-left focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
         >
           <span className="flex min-w-0 flex-1 flex-col gap-0.5">
@@ -101,50 +97,16 @@ function NotificationRow({
               <span className="sr-only">Unread</span>
             </span>
           )}
-          {item.href ? (
+          {item.href && (
             <Icon
               name="chevron-right"
               size={18}
               className="mt-0.5 shrink-0 text-subtle"
             />
-          ) : (
-            <Icon
-              name="chevron-down"
-              size={18}
-              className={clsx(
-                "mt-0.5 shrink-0 text-subtle transition-transform duration-300",
-                open && "rotate-180",
-              )}
-            />
           )}
         </button>
       </div>
 
-      {/* Detail — expands under the row, for rows without a
-          destination. Rows with a resolved href navigate on press
-          instead (Instagram-style tap-to-open); the avatar always
-          links to the actor's profile. Opening or navigating
-          marks the row read (the panel owns read state). */}
-      <div
-        className="grid transition-[grid-template-rows] duration-300 ease-(--uf-ease-out)"
-        style={{ gridTemplateRows: open ? "1fr" : "0fr" }}
-      >
-        <div className="min-h-0 overflow-hidden">
-          <div className="flex flex-col gap-1.5 pt-3 pl-11">
-            <p className="text-sm font-medium text-ink">{item.title}</p>
-            {detailText && (
-              <p className="text-sm leading-relaxed text-muted">{detailText}</p>
-            )}
-            <div className="flex items-center gap-4 pt-0.5">
-              {(item.timeLabel ?? item.agoLabel) && (
-                <span className="text-[11px] text-subtle">
-                  {item.timeLabel ?? item.agoLabel}
-                </span>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }
@@ -162,7 +124,6 @@ export function NotificationsPanel({
 }) {
   const [tab, setTab] = useState<Tab>("all");
   const [items, setItems] = useState<NotificationItem[]>(notifications);
-  const [openId, setOpenId] = useState<string | null>(null);
 
   const unreadCount = items.filter((n) => !n.read).length;
   const counts: Record<Tab, number> = {
@@ -183,25 +144,16 @@ export function NotificationsPanel({
     }
   };
 
-  const toggle = (item: NotificationItem) => {
-    if (openId === item.id) {
-      setOpenId(null);
-      return;
-    }
-    setOpenId(item.id);
-    markRead(item);
-  };
-
-  // Instagram-style tap-to-open: a row with a resolved destination
-  // navigates to the thing the notification is about; rows without
-  // one expand in place.
+  // Instagram-style tap-to-open: pressing a row marks it read
+  // and, when it has a resolved destination, navigates to the
+  // thing the notification is about. There is no expanded
+  // detail anymore — the destination IS the detail. A row
+  // without a destination only marks itself read.
   const press = (item: NotificationItem) => {
+    markRead(item);
     if (item.href) {
-      markRead(item);
       router.push(item.href);
-      return;
     }
-    toggle(item);
   };
 
   const markAllRead = () =>
@@ -256,7 +208,6 @@ export function NotificationsPanel({
           <Fragment key={item.id}>
             <NotificationRow
               item={item}
-              open={openId === item.id}
               onPress={() => press(item)}
             />
             {i < visible.length - 1 && (

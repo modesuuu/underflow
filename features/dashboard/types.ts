@@ -83,8 +83,8 @@ export interface NotificationItem {
   link?: string;
   /** Tap-to-open destination, resolved by getNotifications from
    *  `link` and validated against the local registries. Absent
-   *  when the link does not resolve — the row then expands in
-   *  place instead of navigating. */
+   *  when the link does not resolve — pressing the row then
+   *  only marks it read. */
   href?: string;
 
   // Frontend extension fields (see note above):

@@ -16,8 +16,8 @@ export async function getDashboardPosts(): Promise<Post[]> {
 
 // Tap-to-open, but only to destinations that exist: a link whose
 // target is not in the local registries resolves to nothing, and
-// the panel expands that row in place instead of navigating to a
-// dead page. TODO(backend): the server should validate links when
+// pressing that row only marks it read instead of navigating to
+// a dead page. TODO(backend): the server should validate links when
 // the API is live; keep this check as the seatbelt.
 function resolveNotificationHref(item: NotificationItem): string | undefined {
   const collab = item.link?.match(/^\/collaborations\/([\w-]+)$/);
