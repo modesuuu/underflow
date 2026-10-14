@@ -33,23 +33,26 @@
   --uf-ease-out: cubic-bezier(0.23, 1, 0.32, 1);
 }
 
-/* Dark theme — "midnight paper" v2: green-graphite tiers with
-   real separation, sage body text, a lavender whisper in the
-   subtle role (the brand's secondary, from the inbox chip),
-   and the acid lime kept as the one loud voice. Roles stay
-   identical (surface = raised canvas, bg = recessed well), so
-   every component flips coherently with no dark: variants. */
+/* Dark theme — "deep lime forest" (v3, direction A by the
+   user's pick): the base itself is the brand. Wells and canvas
+   are deep greens in the lime's own family, so the app reads
+   unmistakably green from the first second; sage carries the
+   supporting text, moss the quiet tracks and lines, and the
+   acid lime stays the single loud voice on its own stage.
+   Lavender retires to its one accent (the inbox name chip).
+   Roles stay identical (surface = raised canvas, bg = recessed
+   well), so every component flips with no dark: variants. */
 [data-theme="dark"] {
-  --uf-bg: #0f110e;
-  --uf-surface: #1b1e19;
-  --uf-ink: #f0f3e6;
-  --uf-muted: #a4a89b;
-  --uf-subtle: #84879c;
+  --uf-bg: #0d120b;
+  --uf-surface: #171e11;
+  --uf-ink: #eff3e2;
+  --uf-muted: #9ba58c;
+  --uf-subtle: #71805f;
   --uf-badge: #ff5a5f;
   --uf-heart: #ff5c7a;
-  --uf-placeholder: #272a24;
-  --uf-line: #3b4038;
-  --uf-nav-hover: rgba(240, 243, 230, 0.06);
+  --uf-placeholder: #232b1a;
+  --uf-line: #2e3a22;
+  --uf-nav-hover: rgba(239, 243, 226, 0.06);
   --uf-shadow-rgb: 0, 0, 0;
   color-scheme: dark;
 }

@@ -292,12 +292,12 @@ html.theme-anim *::after {
   background: transparent;
 }
 
-/* Dark-only atmosphere: two faint brand glows fixed to the app
-   canvas — lavender top-right, lime bottom-left. Depth behind
-   the content, never decoration on top of it. */
+/* Dark-only atmosphere: two faint lime glows fixed to the app
+   canvas — soft lime top-right, brand lime bottom-left. Depth
+   behind the content, never decoration on top of it. */
 [data-theme="dark"] .app-canvas {
   background-image:
-    radial-gradient(900px 480px at 100% 0%, rgba(211, 207, 255, 0.055), transparent 62%),
+    radial-gradient(900px 480px at 100% 0%, rgba(190, 242, 100, 0.05), transparent 62%),
     radial-gradient(820px 460px at 0% 100%, rgba(223, 246, 106, 0.05), transparent 62%);
   background-attachment: fixed;
 }
