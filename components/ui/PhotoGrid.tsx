@@ -34,7 +34,7 @@ function Tile({ photo, overlayCount = 0, onClick, className }: TileProps) {
       onClick={onClick}
       disabled={!onClick}
       className={clsx(
-        "relative overflow-hidden rounded-md bg-accent",
+        "relative overflow-hidden rounded-md bg-tile",
         // P1-C #19: a keyboard-visible focus ring was missing on the tiles.
         "focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none",
         onClick && "cursor-pointer",
@@ -42,7 +42,7 @@ function Tile({ photo, overlayCount = 0, onClick, className }: TileProps) {
       )}
     >
       {/* P1-C #19: a broken/missing URL paints a placeholder frame
-          (the lime `bg-accent` tile + a small image icon) instead of a
+          (the `bg-tile` placeholder + a small image icon) instead of a
           broken-image glyph. */}
       {photo.url && !broken ? (
         <img
@@ -52,8 +52,8 @@ function Tile({ photo, overlayCount = 0, onClick, className }: TileProps) {
           className="absolute inset-0 h-full w-full object-cover"
         />
       ) : (
-        <span className="absolute inset-0 flex items-center justify-center bg-accent">
-          <i className="bx bx-image-add text-2xl text-on-accent/40" aria-hidden="true" />
+        <span className="absolute inset-0 flex items-center justify-center bg-tile">
+          <i className="bx bx-image-add text-2xl text-[color:var(--uf-tile-icon)]" aria-hidden="true" />
         </span>
       )}
       {overlayCount > 0 && (

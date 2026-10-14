@@ -14,6 +14,8 @@
   --uf-line: #6d6c6a;
   --uf-on-accent: #111111;
   --uf-lav: #d3cfff;
+  --uf-tile: #dff66a;
+  --uf-tile-icon: rgba(17, 17, 17, 0.4);
   --uf-nav-hover: rgba(255, 255, 255, 0.6);
   --uf-shadow-rgb: 17, 17, 17;
   color-scheme: light;
@@ -33,19 +35,19 @@
   --uf-ease-out: cubic-bezier(0.23, 1, 0.32, 1);
 }
 
-/* Dark theme — "Forest & Cream" (v4): the ColorHunt palette
-   the user picked (191a19 / 1e5128 / 4e9f3d / d8e9a8) mapped
-   onto the token roles. The canvas is a true deep forest, the
-   wells near-black green, and the palette's cream-lime becomes
-   the dark theme's own star — softer than the light theme's
-   acid lime, at home on the forest. Supporting text is pale
-   sage; lines and tracks are moss steps derived from the
-   palette's leaf green. Roles stay identical (surface = raised
-   canvas, bg = recessed well), so every component flips with
-   no dark: variants anywhere. */
+/* Dark theme — "Forest & Cream" (v4 palette, v5 placement):
+   the ColorHunt palette the user picked (191a19 / 1e5128 /
+   4e9f3d / d8e9a8), placed by proportion, not by palette
+   order. The near-black is the GROUND (surface: app canvas,
+   modals, popovers — the quiet 60%); the deep forest is the
+   COMPONENT color (bg: chrome, rails, wells, inputs, board
+   containers — the present 30%); the cream-lime is rationed
+   to accents (the 10%). v4 had ground and component swapped
+   and the canvas shouted. Supporting text is pale sage;
+   lines and tracks are moss steps from the palette's leaf. */
 [data-theme="dark"] {
-  --uf-bg: #191a19;
-  --uf-surface: #1e5128;
+  --uf-bg: #1e5128;
+  --uf-surface: #191a19;
   --uf-ink: #eff4de;
   --uf-muted: #a9bfa0;
   --uf-subtle: #7e9474;
@@ -54,6 +56,8 @@
   --uf-heart: #ff5c7a;
   --uf-placeholder: #25402a;
   --uf-line: #2f5a33;
+  --uf-tile: #2a4a2e;
+  --uf-tile-icon: rgba(216, 233, 168, 0.6);
   --uf-nav-hover: rgba(238, 244, 222, 0.07);
   --uf-shadow-rgb: 0, 0, 0;
   color-scheme: dark;

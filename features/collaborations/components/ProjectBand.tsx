@@ -136,8 +136,8 @@ export function ProjectBand({
               className="size-[84px] rounded-xl object-cover"
             />
           ) : (
-            <span className="flex size-[84px] items-center justify-center rounded-xl bg-accent">
-              <Icon name="image" size={24} className="text-on-accent/40" />
+            <span className="flex size-[84px] items-center justify-center rounded-xl bg-tile">
+              <Icon name="image" size={24} className="text-[color:var(--uf-tile-icon)]" />
             </span>
           ))}
       </div>

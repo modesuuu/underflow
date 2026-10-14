@@ -15,6 +15,7 @@
   --color-line: var(--uf-line);
   --color-on-accent: var(--uf-on-accent);
   --color-lav: var(--uf-lav);
+  --color-tile: var(--uf-tile);
 
   --font-sans: "PP Neue Montreal", ui-sans-serif, system-ui, -apple-system,
     sans-serif;
