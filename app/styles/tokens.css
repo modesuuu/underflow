@@ -6,11 +6,13 @@
    bg (chrome, wells, inputs, containers) is a pale sage tint
    of the forest, and the palette's green-black (#191a19, the
    dark theme's ground) becomes the ink. The mid steps are sage
-   tints of the palette's leaf. The main color is the
-   palette's leaf green #4e9f3d — until now only the dark
-   theme's glow color. On a cream ground it leads clearly,
-   and dark text holds about 5:1 on it, so on-accent stays
-   the green-black. The dark theme keeps its cream-lime:
+   tints of the palette's leaf. The main color is a deepened
+   leaf, #35702b. The palette's raw #4e9f3d sits at the
+   luminance crossover (about 0.27) where neither dark nor
+   light text separates cleanly — dark text on it read as
+   mud — so the value is pushed decisively dark and the
+   text on it is the family cream #eff4de (about 5.3:1).
+   The dark block pins its own dark on-accent value. The dark theme keeps its cream-lime:
    each main color is tuned to its own ground. The acid lime
    #dff66a is retired from the light theme entirely (the
    photo tiles move to a pale leaf tint with it). Signal
@@ -24,13 +26,14 @@
   --uf-ink: #191a19;
   --uf-muted: #55624e;
   --uf-subtle: #7e8b6f;
-  --uf-accent: #4e9f3d;
+  --uf-accent: #35702b;
   --uf-badge: #ff383c;
   --uf-heart: #ff2d55;
   --uf-placeholder: #d9e2c4;
   --uf-line: #66755c;
-  --uf-on-accent: #191a19;
+  --uf-on-accent: #eff4de;
   --uf-lav: #d3cfff;
+  --uf-on-lav: #191a19;
   --uf-tile: #cfe3b8;
   --uf-tile-icon: rgba(25, 26, 25, 0.4);
   --uf-chrome: #e9eeda;
@@ -75,6 +78,7 @@
   --uf-heart: #ff5c7a;
   --uf-placeholder: #25402a;
   --uf-line: #2f5a33;
+  --uf-on-accent: #191a19;
   --uf-tile: #2a4a2e;
   --uf-tile-icon: rgba(216, 233, 168, 0.6);
   --uf-chrome: #191a19;

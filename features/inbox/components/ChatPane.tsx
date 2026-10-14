@@ -92,7 +92,7 @@ export function ChatPane({ conversation }: { conversation: Conversation | null }
       {/* Floating identity chip — photo + name only, no bar. */}
       <div className="pointer-events-none absolute top-4 left-1/2 z-10 flex -translate-x-1/2 flex-col items-center gap-1 [filter:drop-shadow(0_18px_20px_rgba(0,0,0,0.15))]">
         <Avatar size={42} alt={conversation.name} />
-        <span className="min-w-[88px] rounded-full bg-lav px-3 py-1 text-center text-base font-medium text-on-accent">
+        <span className="min-w-[88px] rounded-full bg-lav px-3 py-1 text-center text-base font-medium text-on-lav">
           {conversation.name}
         </span>
       </div>
