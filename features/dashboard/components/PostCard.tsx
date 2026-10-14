@@ -10,6 +10,7 @@ import type { Post } from "../types";
 import { PhotoGrid } from "@/components/ui/PhotoGrid";
 import { LikeButton } from "./LikeButton";
 import { PostOptionsMenu } from "./PostOptionsMenu";
+import { ReportedPostNotice } from "./ReportedPostNotice";
 import { resolvePersonId } from "@/features/profile/mock";
 
 /**
@@ -31,20 +32,7 @@ export function PostCard({ post }: { post: Post }) {
   if (reported) {
     return (
       <article className={CARD_CHROME}>
-        <div className="flex items-center gap-3 rounded-xl border border-line px-4 py-3">
-          <Icon name="flag" size={20} className="shrink-0 text-muted" />
-          <p className="flex-1 text-sm text-muted">
-            <span className="font-medium text-ink">You reported this post.</span>{" "}
-            Thanks — our team will review it.
-          </p>
-          <button
-            type="button"
-            onClick={() => setReported(false)}
-            className="shrink-0 cursor-pointer text-sm font-medium text-ink hover:underline"
-          >
-            Undo
-          </button>
-        </div>
+        <ReportedPostNotice onUndo={() => setReported(false)} />
       </article>
     );
   }

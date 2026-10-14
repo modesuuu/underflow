@@ -1,18 +1,11 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AppShell } from "@/components/layout/AppShell";
 import { getDashboardPosts, getNotifications } from "@/features/dashboard/api";
 import { CommentSection } from "@/features/dashboard/components/CommentSection";
-import { LikeButton } from "@/features/dashboard/components/LikeButton";
 import { NotificationsPanel } from "@/features/dashboard/components/NotificationsPanel";
-import { PhotoViewer } from "@/features/dashboard/components/PhotoViewer";
-import { formatCount } from "@/lib/format";
-import { Avatar } from "@/components/ui/Avatar";
-import { HeartIcon } from "@/components/ui/HeartIcon";
-import { resolvePersonId } from "@/features/profile/mock";
-import { Icon } from "@/components/ui/Icon";
+import { PostDetailBody } from "@/features/dashboard/components/PostDetailBody";
 
 interface DetailPageProps {
   params: Promise<{ postId: string }>;
@@ -57,41 +50,41 @@ function NotificationsSkeleton() {
 function PostDetailSkeleton() {
   return (
     <div className="ml-[28px] flex w-full max-w-(--uf-content-w) flex-col gap-6 py-3">
-      {/* Post card */}
-      <div className="rounded-xl border border-line bg-surface p-5">
+      {/* Post body — flat, mirroring PostDetailBody's rhythm */}
+      <div className="flex flex-col gap-4">
         {/* Author row */}
-        <div className="flex items-center gap-3">
-          <div className="size-8 shrink-0 rounded-full bg-placeholder" />
+        <div className="flex items-center gap-2.5">
+          <div className="size-9 shrink-0 rounded-full bg-placeholder" />
           <div className="flex flex-col gap-1.5">
             <div className="h-3.5 w-28 rounded bg-placeholder" />
             <div className="h-3 w-16 rounded bg-placeholder" />
           </div>
         </div>
         {/* Body */}
-        <div className="mt-4 flex flex-col gap-2">
+        <div className="flex flex-col gap-2">
           <div className="h-3.5 w-full rounded bg-placeholder" />
           <div className="h-3.5 w-5/6 rounded bg-placeholder" />
           <div className="h-3.5 w-2/3 rounded bg-placeholder" />
         </div>
         {/* Photo area — single big block like the real PhotoViewer/PhotoGrid,
             not a small 2x2 grid */}
-        <div className="mt-4 h-[306px] rounded-md bg-placeholder/60" />
+        <div className="h-[306px] rounded-md bg-placeholder/60" />
         {/* Action counters */}
-        <div className="mt-4 flex items-center gap-3">
-          <div className="h-6 w-14 rounded bg-placeholder" />
-          <div className="h-6 w-14 rounded bg-placeholder" />
-          <div className="h-6 w-20 rounded bg-placeholder" />
+        <div className="flex items-center gap-4">
+          <div className="h-5 w-14 rounded bg-placeholder" />
+          <div className="h-5 w-14 rounded bg-placeholder" />
+          <div className="h-5 w-20 rounded bg-placeholder" />
         </div>
       </div>
 
+      <div className="h-px w-full bg-placeholder" />
+
       {/* Comment section */}
       <div className="flex flex-col gap-6">
-        {/* Input bar */}
-        <div className="flex items-center gap-3">
-          <div className="size-8 shrink-0 rounded-full bg-placeholder" />
-          <div className="flex h-[42px] flex-1 items-center rounded-lg border border-accent bg-surface p-2">
-            <div className="h-3.5 w-1/2 rounded bg-placeholder" />
-          </div>
+        {/* Input bar — the feed-pill shape */}
+        <div className="flex items-center gap-2.5">
+          <div className="size-7 shrink-0 rounded-full bg-placeholder" />
+          <div className="h-10 flex-1 rounded-full bg-placeholder/60" />
         </div>
         {/* Comment rows */}
         {Array.from({ length: 3 }).map((_, i) => (
@@ -130,49 +123,12 @@ async function PostDetailAsync({
   return (
     <>
       <h1 className="sr-only">Post by {post.author.name}</h1>
-      {/* Post header */}
-      <div className="flex items-center justify-between">
-        <Link
-          href={`/profile/${resolvePersonId(post.author.id) ?? post.author.id}`}
-          className="group flex items-center gap-2"
-          aria-label={`View ${post.author.name}'s profile`}
-        >
-          <Avatar size={32} src={post.author.avatarUrl} alt={post.author.name} />
-          <div className="flex flex-col">
-            <span className="text-base font-medium group-hover:underline">{post.author.name}</span>
-            <span className="text-2xs text-subtle">{post.postedAgo}</span>
-          </div>
-        </Link>
-        {/* P1-C #18: the "Post options" button had no onClick / no menu —
-            removed until the options menu exists (same for PostCard). */}
-      </div>
-
-      {/* Body */}
-      <div className="flex flex-col gap-6">
-        <p className="text-base font-medium">{post.text}</p>
-        <div className="flex flex-col gap-6">
-          <PhotoViewer photos={post.photos} />
-          {/* Counters */}
-          <div className="flex items-center gap-3">
-            <span className="flex items-center gap-1">
-              <Icon name="show" size={24} className="text-ink" />
-              <span className="text-2xs font-medium">{formatCount(post.views)}</span>
-            </span>
-            <span className="flex items-center gap-1">
-              <LikeButton
-                storeKey={post.id}
-                initialLiked={post.liked}
-                initialLikes={post.likes}
-              />
-            </span>
-            <span className="flex items-center gap-1">
-              <Icon name="message-rounded" size={24} className="text-ink" />
-              <span className="text-2xs font-medium">Comment</span>
-            </span>
-          </div>
-        </div>
-      </div>
-
+      {/* The post itself is the feed card's twin (PostDetailBody):
+          byline, Book body, photos, quiet counters, ••• report menu */}
+      <PostDetailBody post={post} />
+      {/* Hairline above the comments — the same divider the feed
+          card draws above its comment entry */}
+      <div className="h-px w-full bg-placeholder" aria-hidden="true" />
       <CommentSection
         initialComments={post.comments}
         autoFocusComment={focus === "comment"}
@@ -195,7 +151,7 @@ export default async function PostDetailPage({ params, searchParams }: DetailPag
       backLabel="Feed"
       backHref="/"
     >
-      <div className="ml-[28px] flex w-full max-w-(--uf-content-w) flex-col gap-6 py-3">
+      <div className="page-enter ml-[28px] flex w-full max-w-(--uf-content-w) flex-col gap-6 py-3">
         {/* P1-C #20: one real h1 per page — visually hidden so the design
             (small author name span) is untouched. */}
         <Suspense fallback={<PostDetailSkeleton />}>
