@@ -65,7 +65,7 @@ function StatusSection({
         </span>
         <Link
           href={`/my-collaborations/${category.slug}`}
-          className="ms-auto flex shrink-0 cursor-pointer items-center gap-1 text-[13px] font-medium text-on-accent hover:underline focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+          className="ms-auto flex shrink-0 cursor-pointer items-center gap-1 text-[13px] font-medium text-ink hover:underline focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
         >
           View all
           <Icon name="chevron-right" size={14} />

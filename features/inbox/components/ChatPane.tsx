@@ -195,19 +195,19 @@ export function ChatPane({ conversation }: { conversation: Conversation | null }
               value={draft}
               onChange={(event) => setDraft(event.target.value)}
               placeholder="Aa"
-              className="h-8 min-w-0 flex-1 bg-transparent text-base text-on-accent outline-none placeholder:text-muted"
+              className="h-8 min-w-0 flex-1 bg-transparent text-base text-ink outline-none placeholder:text-muted"
             />
             <button
               type="button"
               aria-label="Voice message (not available yet)"
-              className="flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-full text-muted transition-colors hover:bg-surface hover:text-on-accent"
+              className="flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-full text-muted transition-colors hover:bg-surface hover:text-ink"
             >
               <Icon name="microphone" size={20} />
             </button>
             <button
               type="button"
               aria-label="Attach a file (not available yet)"
-              className="flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-full text-muted transition-colors hover:bg-surface hover:text-on-accent"
+              className="flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-full text-muted transition-colors hover:bg-surface hover:text-ink"
             >
               <Icon name="paperclip" size={20} />
             </button>
