@@ -367,7 +367,6 @@ export function Sidebar() {
   const pillRef = useRef<HTMLDivElement>(null);
   const rowRefs = useRef(new Map<string, HTMLElement>());
   const firstPill = useRef(true);
-  const pillArmedRef = useRef(false);
 
   // Sync activeId with pathname on navigation.
   useEffect(() => {
@@ -461,14 +460,14 @@ export function Sidebar() {
     if (firstPill.current) {
       pill.style.transition = "none";
       pill.style.transform = `translateY(${y}px)`;
-      pill.style.opacity = pillArmedRef.current && activeVisible ? "1" : "0";
+      pill.style.opacity = activeVisible ? "1" : "0";
       void pill.offsetWidth; // flush so the next change animates via CSS
       pill.style.transition = "";
       firstPill.current = false;
       return;
     }
     pill.style.transform = `translateY(${y}px)`;
-    pill.style.opacity = pillArmedRef.current && activeVisible ? "1" : "0";
+    pill.style.opacity = activeVisible ? "1" : "0";
   };
 
   const positionPillRef = useRef(positionPill);
@@ -477,22 +476,6 @@ export function Sidebar() {
   useLayoutEffect(() => {
     positionPillRef.current();
   }, [activeId, activeVisible, mini]);
-
-  // Arm the pill two frames after mount, then fade it in at the
-  // position already measured (see pillArmedRef in positionPill).
-  useEffect(() => {
-    let second = 0;
-    const first = window.requestAnimationFrame(() => {
-      second = window.requestAnimationFrame(() => {
-        pillArmedRef.current = true;
-        positionPillRef.current();
-      });
-    });
-    return () => {
-      window.cancelAnimationFrame(first);
-      window.cancelAnimationFrame(second);
-    };
-  }, []);
 
   // Keep the pill glued to its row through ANY layout motion —
   // accordion open/close, rail collapse (section headers swap for
