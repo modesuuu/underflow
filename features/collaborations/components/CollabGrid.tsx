@@ -2,8 +2,10 @@
 
 import { useMemo, useState, type CSSProperties } from "react";
 import { Icon } from "@/components/ui/Icon";
-import { CollabCard } from "./CollabCard";
+import { ProjectIndexRow } from "./ProjectIndexRow";
+import { ProjectPreview } from "./ProjectPreview";
 import { SearchFilterBar } from "./SearchFilterBar";
+import { useRouter } from "next/navigation";
 import { sortProjects } from "../sort";
 import type {
   CollabFilterType,
@@ -23,10 +25,11 @@ const STAGGER_CAP = 11;
  * Search + filter + sort + responsive card grid (Figma "Collaborations" frame).
  * Pipeline: committed search → type filter → status filter → sort.
  *
- * 2026 redesign: a uniform grid (no featured span — a sortable,
- * searchable grid must not imply a ranking that doesn't exist),
- * a one-shot mount stagger (50ms/item, CSS-gated behind reduced
- * motion), and a results line that can clear the filter state.
+ * 2026 redesign v2: an index + preview split instead of a card
+ * grid (the works-index pattern from award-winning portfolio
+ * sites, adapted for an app), a one-shot mount stagger (50ms
+ * per item, CSS-gated behind reduced motion), and a results
+ * line that can clear the filter state.
  *
  * No positional numbering: this is a filterable/sortable/searchable data
  * grid — index numbers reshuffle on every interaction and imply a ranking
@@ -39,6 +42,8 @@ export function CollabGrid({ projects }: CollabGridProps) {
   const [sortKey, setSortKey] = useState<CollabSortKey>("recommended");
   const [typeFilter, setTypeFilter] = useState<CollabFilterType>("all");
   const [statusFilter, setStatusFilter] = useState<CollabStatusFilter>("all");
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const router = useRouter();
 
   const filtered = useMemo(() => {
     let result = projects;
@@ -67,6 +72,20 @@ export function CollabGrid({ projects }: CollabGridProps) {
     // Deterministic sort (no Date.parse for two-digit years)
     return sortProjects(result, sortKey);
   }, [projects, query, typeFilter, statusFilter, sortKey]);
+
+  // The preview follows the selection; a filter change that
+  // drops the selected project falls back to the first result.
+  const selected =
+    filtered.find((p) => p.id === selectedId) ?? filtered[0] ?? null;
+
+  const handleSelect = (project: CollabProject) => {
+    // Below lg there is no preview pane — the tap goes to the detail.
+    if (window.matchMedia("(max-width: 1023px)").matches) {
+      router.push(`/collaborations/${project.id}`);
+      return;
+    }
+    setSelectedId(project.id);
+  };
 
   return (
     <div className="flex flex-col gap-6">
@@ -133,19 +152,40 @@ export function CollabGrid({ projects }: CollabGridProps) {
           </button>
         </div>
       ) : (
-        /* Card grid — columns owned by the grid, card is responsive.
-           The wrapper div carries the stagger + rhythm; CollabCard itself is
-           untouched (revert-friendly). */
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {filtered.map((project, i) => (
-            <div
-              key={project.id}
-              className="card-stagger h-full"
-              style={{ "--stagger-i": String(Math.min(i, STAGGER_CAP)) } as CSSProperties}
-            >
-              <CollabCard project={project} />
+        /* Index + preview split: hairline rows carry the
+           scanning facts; the sticky pane holds the selected
+           project's brief, so comparing never leaves the page. */
+        <div className="flex items-start gap-8">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-4 px-3 pb-2 text-[11px] font-medium text-subtle">
+              <span className="flex-1">Project</span>
+              <span className="hidden w-24 text-right sm:block">Seats</span>
+              <span className="hidden w-14 text-right md:block">Due</span>
+              <span className="w-[18px]" aria-hidden="true" />
             </div>
-          ))}
+            <div className="flex flex-col divide-y divide-placeholder border-y border-placeholder">
+              {filtered.map((project, i) => (
+                <div
+                  key={project.id}
+                  className="card-stagger"
+                  style={
+                    { "--stagger-i": String(Math.min(i, STAGGER_CAP)) } as CSSProperties
+                  }
+                >
+                  <ProjectIndexRow
+                    project={project}
+                    selected={selected?.id === project.id}
+                    onSelect={() => handleSelect(project)}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+          {selected && (
+            <aside className="sticky top-8 hidden w-[380px] shrink-0 rounded-2xl bg-bg p-5 lg:block">
+              <ProjectPreview project={selected} />
+            </aside>
+          )}
         </div>
       )}
     </div>
