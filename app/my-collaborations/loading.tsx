@@ -3,10 +3,10 @@ import { NotificationsBell } from "@/components/layout/NotificationsBell";
 
 /**
  * Route-level loading.tsx for /my-collaborations — skeleton
- * shaped like the staged board: header, the summary band,
- * the search-first toolbar, then the stage (attention panels
- * and two status sections on ink). Nested category/detail
- * routes have their own shaped skeletons.
+ * shaped like the board: header, the portfolio band, the
+ * attention card, the search-first toolbar, two status
+ * sections. Nested category/detail routes have their own
+ * shaped skeletons.
  */
 export default function MyCollaborationsLoading() {
   return (
@@ -32,6 +32,19 @@ export default function MyCollaborationsLoading() {
           <div className="h-3 w-64 rounded bg-placeholder" />
         </div>
 
+        {/* Attention card */}
+        <div className="flex flex-col divide-y divide-placeholder rounded-2xl border border-line bg-surface">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="flex items-center gap-3 px-4 py-3.5">
+              <div className="size-9 shrink-0 rounded-lg bg-placeholder" />
+              <div className="flex flex-1 flex-col gap-1.5">
+                <div className="h-3 w-24 rounded bg-placeholder" />
+                <div className="h-3.5 w-1/3 rounded bg-placeholder" />
+              </div>
+            </div>
+          ))}
+        </div>
+
         {/* Toolbar */}
         <div className="flex items-center gap-3">
           <div className="h-11 flex-1 rounded-xl border border-line bg-surface sm:max-w-md" />
@@ -42,30 +55,20 @@ export default function MyCollaborationsLoading() {
           </div>
         </div>
 
-        {/* The stage */}
-        <div className="flex flex-col gap-8 rounded-[28px] bg-ink p-7">
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <div
-                key={i}
-                className="h-[76px] rounded-2xl bg-surface/10"
-              />
-            ))}
-          </div>
-          {Array.from({ length: 2 }).map((_, s) => (
-            <div key={s} className="flex flex-col gap-3">
-              <div className="h-5 w-40 rounded-full bg-surface/15" />
-              <div className="flex flex-col divide-y divide-surface/10">
-                {Array.from({ length: 3 }).map((_, i) => (
-                  <div key={i} className="flex flex-col gap-1.5 py-3">
-                    <div className="h-4 w-1/3 rounded bg-surface/15" />
-                    <div className="h-3 w-1/4 rounded bg-surface/10" />
-                  </div>
-                ))}
-              </div>
+        {/* Sections */}
+        {Array.from({ length: 2 }).map((_, s) => (
+          <div key={s} className="flex flex-col gap-3">
+            <div className="h-6 w-40 rounded-full bg-placeholder" />
+            <div className="flex flex-col gap-3 rounded-2xl bg-bg px-4 py-2">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="flex flex-col gap-1.5 py-1">
+                  <div className="h-4 w-1/3 rounded bg-placeholder" />
+                  <div className="h-3 w-1/4 rounded bg-placeholder" />
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+          </div>
+        ))}
       </div>
     </AppShell>
   );

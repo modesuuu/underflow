@@ -31,9 +31,8 @@ const SECTION_ORDER: MyCollabStatus[] = [
 /**
  * The portfolio strip's color code — one color per myStatus,
  * taught once by the legend under the strip and reused by the
- * section dots on the stage below. Complete earns the accent;
- * revise is the one red moment; pending is ink; not-started
- * stays quiet.
+ * section pills below. Complete earns the accent; revise is
+ * the one red moment; pending is ink; not-started stays quiet.
  */
 const STATUS_SEGMENT_CLASS: Record<MyCollabStatus, string> = {
   revise: "bg-badge",
@@ -50,34 +49,31 @@ function StatusSection({
   items: MyCollabProject[];
 }) {
   return (
-    <section className="flex flex-col">
-      <div className="flex items-center gap-2.5 px-1 pb-1.5">
+    <section className="flex flex-col gap-3">
+      <div className="flex items-center gap-3">
         <span
-          aria-hidden="true"
-          className={`size-2.5 shrink-0 rounded-full ring-1 ring-surface/25 ${STATUS_SEGMENT_CLASS[category.slug]}`}
-        />
-        <h2 className="text-[15px] font-semibold text-surface">
+          className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${category.pillClassName}`}
+        >
+          <Icon name={category.icon} size={14} />
           {category.boardLabel}
-        </h2>
-        <span className="text-xs font-medium text-surface/50 tabular-nums">
+        </span>
+        <span className="text-xs font-medium text-subtle tabular-nums">
           {items.length}
         </span>
-        <span className="hidden text-xs text-surface/45 sm:block">
+        <span className="hidden text-xs text-muted sm:block">
           {category.subtitle}
         </span>
         <Link
           href={`/my-collaborations/${category.slug}`}
-          className="ms-auto flex shrink-0 cursor-pointer items-center gap-1 text-[13px] font-medium text-surface/70 transition-colors hover:text-surface focus-visible:ring-2 focus-visible:ring-surface focus-visible:outline-none"
+          className="ms-auto flex shrink-0 cursor-pointer items-center gap-1 text-[13px] font-medium text-ink hover:underline focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
         >
           View all
           <Icon name="chevron-right" size={14} />
         </Link>
       </div>
-      <div className="flex flex-col divide-y divide-surface/10">
+      <div className="flex flex-col divide-y divide-placeholder rounded-2xl bg-bg px-4">
         {items.length === 0 ? (
-          <p className="px-1 py-3 text-xs text-surface/45">
-            No projects in this section.
-          </p>
+          <p className="py-4 text-xs text-muted">No projects in this section.</p>
         ) : (
           items.map((p) => <MyCollabRow key={p.id} project={p} />)
         )}
@@ -91,19 +87,18 @@ interface MyCollabBoardProps {
 }
 
 /**
- * The user's project cockpit, staged (2026 redesign, from the
- * reference the user supplied): a summary band on the canvas
- * (completion set as a display figure, every project one
- * segment of a single bar), the toolbar, then THE STAGE — one
- * ink panel (cream in the dark theme) holding the work: the
- * attention row computed from the data, then status sections
- * ordered by actionability. The stage gives the working area
- * one ground and makes it the screen's focal object; inside
- * it every color is a stage color (text-surface and its alpha
- * steps), and the status color code is carried by dots
- * because pills would fight the stage ground. Search, sort,
- * and type-filter apply across sections; stats always
- * describe the full portfolio, never the filter.
+ * The user's project cockpit (2026 redesign v2 — family first):
+ * the portfolio band (completion as a display figure, every
+ * project one segment of a single bar, the legend teaching
+ * the status color code), then what needs the user as ONE
+ * activity card with divided rows, then the toolbar, then
+ * status sections ordered by actionability. Everything sits
+ * in the app's own container language (bg-bg cards on the
+ * sage canvas, surface cards with hairlines for the floating
+ * layer); the rows borrow the collaborations river's seat
+ * meter so the two project lists rhyme. Search/sort/filter
+ * apply across sections; stats always describe the full
+ * portfolio, never the filter.
  */
 export function MyCollabBoard({ projects }: MyCollabBoardProps) {
   const [draftQuery, setDraftQuery] = useState("");
@@ -139,7 +134,7 @@ export function MyCollabBoard({ projects }: MyCollabBoardProps) {
   // The hero figure typesets the integer huge and the decimals small.
   const [pctInt, pctDec] = pctNum.toFixed(2).split(".");
 
-  // Attention: only cards with something real behind them render.
+  // Attention: only rows with something real behind them render.
   const reviseItems = projects.filter((p) => p.myStatus === "revise");
   const nextDeadline = projects
     .filter((p) => p.myStatus !== "complete")
@@ -211,8 +206,8 @@ export function MyCollabBoard({ projects }: MyCollabBoardProps) {
       {/* The band — the portfolio in one line: completion as a
           display figure, companion counts, and a bar where every
           project is one segment colored by its status. The
-          legend under the bar teaches the color code the stage
-          below reuses as dots. */}
+          legend under the bar teaches the color code the
+          section pills below reuse. */}
       <div
         className="card-stagger flex flex-col gap-5 rounded-[24px] bg-bg p-5 sm:p-6"
         style={{ "--stagger-i": "0" } as CSSProperties}
@@ -293,6 +288,52 @@ export function MyCollabBoard({ projects }: MyCollabBoardProps) {
         </div>
       </div>
 
+      {/* What needs the user — one activity card, divided rows,
+          only rows with something real behind them. The revise
+          row's disc is the card's one red moment: it is the
+          only row that demands action from the user. */}
+      {attention.length === 0 ? (
+        <p className="flex items-center gap-2 text-sm text-muted">
+          <Icon name="check-circle" size={18} className="text-ink" />
+          Nothing needs your attention.
+        </p>
+      ) : (
+        <div
+          className="card-stagger flex flex-col divide-y divide-placeholder rounded-2xl border border-line bg-surface"
+          style={{ "--stagger-i": "1" } as CSSProperties}
+        >
+          {attention.map((card) => (
+            <Link
+              key={card.label}
+              href={card.href}
+              className="group flex cursor-pointer items-center gap-3 px-4 py-3.5 transition-colors duration-150 first:rounded-t-2xl last:rounded-b-2xl hover:bg-bg/70 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+            >
+              <span
+                className={`flex size-9 shrink-0 items-center justify-center rounded-lg ${
+                  card.hot ? "bg-badge/10 text-badge" : "bg-bg text-ink"
+                }`}
+              >
+                <Icon name={card.icon} size={18} />
+              </span>
+              <span className="flex min-w-0 flex-1 flex-col">
+                <span className="text-[11px] font-medium tracking-wide text-subtle uppercase">
+                  {card.label}
+                </span>
+                <span className="truncate text-sm font-semibold text-ink">
+                  {card.title}
+                </span>
+                <span className="truncate text-xs text-muted">{card.sub}</span>
+              </span>
+              <Icon
+                name="chevron-right"
+                size={18}
+                className="shrink-0 text-placeholder transition-all duration-200 group-hover:translate-x-0.5 group-hover:text-ink"
+              />
+            </Link>
+          ))}
+        </div>
+      )}
+
       <MyCollabSearchBar
         draftQuery={draftQuery}
         onDraftChange={setDraftQuery}
@@ -303,103 +344,49 @@ export function MyCollabBoard({ projects }: MyCollabBoardProps) {
         onTypeChange={setTypeFilter}
       />
 
-      {/* THE STAGE — one ground for all the work: what needs the
-          user first, then every section on the same ink. */}
-      <div
-        className="card-stagger flex flex-col gap-8 rounded-[28px] bg-ink p-5 text-surface sm:p-7"
-        style={{ "--stagger-i": "1" } as CSSProperties}
-      >
-        {filtered.length === 0 ? (
-          <div className="flex flex-col items-center gap-2 px-6 py-12 text-center">
-            <span className="flex size-11 items-center justify-center rounded-full bg-surface/10">
-              <Icon name="search" size={20} className="text-surface/60" />
-            </span>
-            <p className="text-base font-semibold text-surface">
-              No projects match
-            </p>
-            <p className="max-w-sm text-sm text-surface/60">
-              No projects match your search and filters. Clear them to see
-              all projects.
-            </p>
-            <button
-              type="button"
-              onClick={() => {
-                setDraftQuery("");
-                setQuery("");
-                setTypeFilter("all");
-              }}
-              className="pressable mt-2 cursor-pointer rounded-full bg-surface px-4 py-2 text-sm font-medium text-ink transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-surface focus-visible:outline-none"
+      {filtered.length === 0 ? (
+        <div className="flex flex-col items-center gap-2 rounded-2xl bg-bg px-6 py-14 text-center">
+          <span className="flex size-11 items-center justify-center rounded-full bg-surface">
+            <Icon name="search" size={20} className="text-muted" />
+          </span>
+          <p className="text-base font-semibold text-ink">No projects match</p>
+          <p className="max-w-sm text-sm text-muted">
+            No projects match your search and filters. Clear them to see
+            all projects.
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              setDraftQuery("");
+              setQuery("");
+              setTypeFilter("all");
+            }}
+            className="pressable mt-2 cursor-pointer rounded-full bg-ink px-4 py-2 text-sm font-medium text-surface transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+          >
+            Clear search &amp; filters
+          </button>
+        </div>
+      ) : (
+        SECTION_ORDER.map((slug, i) => {
+          const category = bySlug.get(slug);
+          if (!category) return null;
+          const items = filtered.filter((p) => p.myStatus === slug);
+          if (searching && items.length === 0) return null;
+          return (
+            <div
+              key={slug}
+              className="card-stagger"
+              style={
+                {
+                  "--stagger-i": String(i + 2),
+                } as CSSProperties
+              }
             >
-              Clear search &amp; filters
-            </button>
-          </div>
-        ) : (
-          <>
-            {/* Attention row — only cards with something real
-                behind them. The revise card's disc is the stage's
-                one saturated moment: it is the only card that
-                demands action from the user. */}
-            {attention.length === 0 ? (
-              <p className="flex items-center gap-2 text-sm text-surface/70">
-                <Icon name="check-circle" size={18} className="text-surface" />
-                Nothing needs your attention.
-              </p>
-            ) : (
-              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                {attention.map((card) => (
-                  <Link
-                    key={card.label}
-                    href={card.href}
-                    className="group flex cursor-pointer items-center gap-3 rounded-2xl bg-surface/10 p-4 transition-colors duration-200 hover:bg-surface/15 focus-visible:ring-2 focus-visible:ring-surface focus-visible:outline-none"
-                  >
-                    <span
-                      className={`flex size-9 shrink-0 items-center justify-center rounded-lg ${
-                        card.hot
-                          ? "bg-badge text-white"
-                          : "bg-surface/12 text-surface"
-                      }`}
-                    >
-                      <Icon name={card.icon} size={18} />
-                    </span>
-                    <span className="flex min-w-0 flex-1 flex-col">
-                      <span className="text-[11px] font-medium tracking-wide text-surface/50 uppercase">
-                        {card.label}
-                      </span>
-                      <span className="truncate text-sm font-semibold text-surface">
-                        {card.title}
-                      </span>
-                      <span className="truncate text-xs text-surface/55">
-                        {card.sub}
-                      </span>
-                    </span>
-                    <Icon
-                      name="chevron-right"
-                      size={18}
-                      className="shrink-0 text-surface/40 transition-transform duration-200 group-hover:translate-x-0.5"
-                    />
-                  </Link>
-                ))}
-              </div>
-            )}
-
-            <div className="flex flex-col gap-8">
-              {SECTION_ORDER.map((slug) => {
-                const category = bySlug.get(slug);
-                if (!category) return null;
-                const items = filtered.filter((p) => p.myStatus === slug);
-                if (searching && items.length === 0) return null;
-                return (
-                  <StatusSection
-                    key={slug}
-                    category={category}
-                    items={items}
-                  />
-                );
-              })}
+              <StatusSection category={category} items={items} />
             </div>
-          </>
-        )}
-      </div>
+          );
+        })
+      )}
     </div>
   );
 }
