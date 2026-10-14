@@ -81,6 +81,11 @@ export interface NotificationItem {
   read: boolean;
   /** Deep link, e.g. "/collaborations/collab-1". */
   link?: string;
+  /** Tap-to-open destination, resolved by getNotifications from
+   *  `link` and validated against the local registries. Absent
+   *  when the link does not resolve — the row then expands in
+   *  place instead of navigating. */
+  href?: string;
 
   // Frontend extension fields (see note above):
   actor?: PostAuthor;

@@ -2,6 +2,7 @@
 
 import { Fragment, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import clsx from "clsx";
 import { Avatar } from "@/components/ui/Avatar";
 import { Icon } from "@/components/ui/Icon";
@@ -37,11 +38,11 @@ function filterByTab(items: NotificationItem[], tab: Tab): NotificationItem[] {
 function NotificationRow({
   item,
   open,
-  onToggle,
+  onPress,
 }: {
   item: NotificationItem;
   open: boolean;
-  onToggle: () => void;
+  onPress: () => void;
 }) {
   // Contract base row data: title + body. The rich actor/action/target
   // extension fields (mock today, backend-confirmed later) take over the
@@ -56,55 +57,74 @@ function NotificationRow({
 
   return (
     <div className="flex flex-col">
-      <button
-        type="button"
-        onClick={onToggle}
-        aria-expanded={open}
-        className="flex w-full cursor-pointer items-start gap-3 text-left focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
-      >
-        <Avatar size={32} src={item.actor?.avatarUrl} alt={name} />
-        <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-          <span
-            className={clsx(
-              "text-sm",
-              item.read ? "text-muted" : "font-medium text-ink",
-            )}
+      <div className="flex items-start gap-3">
+        {actorId && item.actor ? (
+          <Link
+            href={`/profile/${actorId}`}
+            aria-label={`View ${item.actor.name}'s profile`}
+            className="shrink-0 rounded-full focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
           >
-            {name}
+            <Avatar size={32} src={item.actor?.avatarUrl} alt={name} />
+          </Link>
+        ) : (
+          <Avatar size={32} src={item.actor?.avatarUrl} alt={name} />
+        )}
+        <button
+          type="button"
+          onClick={onPress}
+          aria-expanded={item.href ? undefined : open}
+          className="flex min-w-0 flex-1 cursor-pointer items-start gap-3 text-left focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+        >
+          <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+            <span
+              className={clsx(
+                "text-sm",
+                item.read ? "text-muted" : "font-medium text-ink",
+              )}
+            >
+              {name}
+            </span>
+            {subline && (
+              <span className="text-xs leading-snug text-muted">{subline}</span>
+            )}
+            {(item.timeLabel ?? item.agoLabel) && (
+              <span className="text-[11px] text-subtle">
+                {item.timeLabel ?? item.agoLabel}
+              </span>
+            )}
           </span>
-          {subline && (
-            <span className="text-xs leading-snug text-muted">{subline}</span>
-          )}
-          {(item.timeLabel ?? item.agoLabel) && (
-            <span className="text-[11px] text-subtle">
-              {item.timeLabel ?? item.agoLabel}
+          {/* Unread marker — a real state, so the dot earns its place;
+              the sr-only word carries the meaning. */}
+          {!item.read && (
+            <span className="mt-1.5 flex shrink-0 items-center">
+              <span aria-hidden="true" className="size-1.5 rounded-full bg-accent" />
+              <span className="sr-only">Unread</span>
             </span>
           )}
-        </span>
-        {/* Unread marker — a real state, so the dot earns its place;
-            the sr-only word carries the meaning. */}
-        {!item.read && (
-          <span className="mt-1.5 flex shrink-0 items-center">
-            <span aria-hidden="true" className="size-1.5 rounded-full bg-accent" />
-            <span className="sr-only">Unread</span>
-          </span>
-        )}
-        <Icon
-          name="chevron-down"
-          size={18}
-          className={clsx(
-            "mt-0.5 shrink-0 text-subtle transition-transform duration-300",
-            open && "rotate-180",
+          {item.href ? (
+            <Icon
+              name="chevron-right"
+              size={18}
+              className="mt-0.5 shrink-0 text-subtle"
+            />
+          ) : (
+            <Icon
+              name="chevron-down"
+              size={18}
+              className={clsx(
+                "mt-0.5 shrink-0 text-subtle transition-transform duration-300",
+                open && "rotate-180",
+              )}
+            />
           )}
-        />
-      </button>
+        </button>
+      </div>
 
-      {/* Detail — expands under the row. Opening a notification
-          marks it read (the panel owns read state for the session).
-          The contract's `link` field is deliberately not rendered
-          yet: the mock values point at project ids that do not
-          exist, and a dead link is worse than none. TODO(backend):
-          render it once links resolve to real routes. */}
+      {/* Detail — expands under the row, for rows without a
+          destination. Rows with a resolved href navigate on press
+          instead (Instagram-style tap-to-open); the avatar always
+          links to the actor's profile. Opening or navigating
+          marks the row read (the panel owns read state). */}
       <div
         className="grid transition-[grid-template-rows] duration-300 ease-(--uf-ease-out)"
         style={{ gridTemplateRows: open ? "1fr" : "0fr" }}
@@ -116,14 +136,6 @@ function NotificationRow({
               <p className="text-sm leading-relaxed text-muted">{detailText}</p>
             )}
             <div className="flex items-center gap-4 pt-0.5">
-              {actorId && item.actor && (
-                <Link
-                  href={`/profile/${actorId}`}
-                  className="text-xs font-medium text-ink hover:underline focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
-                >
-                  View {item.actor.name}&rsquo;s profile
-                </Link>
-              )}
               {(item.timeLabel ?? item.agoLabel) && (
                 <span className="text-[11px] text-subtle">
                   {item.timeLabel ?? item.agoLabel}
@@ -161,17 +173,35 @@ export function NotificationsPanel({
   const tabIndex = TABS.findIndex((t) => t.id === tab);
   const visible = filterByTab(items, tab);
 
+  const router = useRouter();
+
+  const markRead = (item: NotificationItem) => {
+    if (!item.read) {
+      setItems((prev) =>
+        prev.map((n) => (n.id === item.id ? { ...n, read: true } : n)),
+      );
+    }
+  };
+
   const toggle = (item: NotificationItem) => {
     if (openId === item.id) {
       setOpenId(null);
       return;
     }
     setOpenId(item.id);
-    if (!item.read) {
-      setItems((prev) =>
-        prev.map((n) => (n.id === item.id ? { ...n, read: true } : n)),
-      );
+    markRead(item);
+  };
+
+  // Instagram-style tap-to-open: a row with a resolved destination
+  // navigates to the thing the notification is about; rows without
+  // one expand in place.
+  const press = (item: NotificationItem) => {
+    if (item.href) {
+      markRead(item);
+      router.push(item.href);
+      return;
     }
+    toggle(item);
   };
 
   const markAllRead = () =>
@@ -227,7 +257,7 @@ export function NotificationsPanel({
             <NotificationRow
               item={item}
               open={openId === item.id}
-              onToggle={() => toggle(item)}
+              onPress={() => press(item)}
             />
             {i < visible.length - 1 && (
               <div className="h-px w-full bg-placeholder" aria-hidden="true" />

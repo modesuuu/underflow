@@ -1,4 +1,5 @@
 import { ApiEnvelope, apiFetch, isApiConfigured } from "@/lib/api-client";
+import { COLLAB_PROJECTS } from "@/features/collaborations/mock";
 import { NOTIFICATIONS, POSTS } from "./mock";
 import type { NotificationItem, Post } from "./types";
 
@@ -13,13 +14,30 @@ export async function getDashboardPosts(): Promise<Post[]> {
   return res.data;
 }
 
+// Tap-to-open, but only to destinations that exist: a link whose
+// target is not in the local registries resolves to nothing, and
+// the panel expands that row in place instead of navigating to a
+// dead page. TODO(backend): the server should validate links when
+// the API is live; keep this check as the seatbelt.
+function resolveNotificationHref(item: NotificationItem): string | undefined {
+  const collab = item.link?.match(/^\/collaborations\/([\w-]+)$/);
+  if (collab && COLLAB_PROJECTS.some((p) => p.id === collab[1])) {
+    return item.link;
+  }
+  return undefined;
+}
+
 // TODO(backend): replace with GET /api/dashboard/notifications
 export async function getNotifications(): Promise<NotificationItem[]> {
-  if (!isApiConfigured()) {
-    return NOTIFICATIONS;
-  }
-  const res = await apiFetch<ApiEnvelope<NotificationItem[]>>(
-    "/api/dashboard/notifications"
-  );
-  return res.data;
+  const items = !isApiConfigured()
+    ? NOTIFICATIONS
+    : (
+        await apiFetch<ApiEnvelope<NotificationItem[]>>(
+          "/api/dashboard/notifications"
+        )
+      ).data;
+  return items.map((item) => ({
+    ...item,
+    href: resolveNotificationHref(item),
+  }));
 }
