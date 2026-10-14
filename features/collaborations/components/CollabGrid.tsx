@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState, type CSSProperties } from "react";
-import clsx from "clsx";
 import { Icon } from "@/components/ui/Icon";
 import { CollabCard } from "./CollabCard";
 import { SearchFilterBar } from "./SearchFilterBar";
@@ -24,10 +23,10 @@ const STAGGER_CAP = 11;
  * Search + filter + sort + responsive card grid (Figma "Collaborations" frame).
  * Pipeline: committed search → type filter → status filter → sort.
  *
- * P2 rhythm (revert = delete the `i === 0` span class and the wrapper div →
- * cards go back to being direct grid children):
- * - first card spans 2 columns (featured) from sm up;
- * - one-shot mount stagger (50ms/item, CSS-gated behind reduced motion).
+ * 2026 redesign: a uniform grid (no featured span — a sortable,
+ * searchable grid must not imply a ranking that doesn't exist),
+ * a one-shot mount stagger (50ms/item, CSS-gated behind reduced
+ * motion), and a results line that can clear the filter state.
  *
  * No positional numbering: this is a filterable/sortable/searchable data
  * grid — index numbers reshuffle on every interaction and imply a ranking
@@ -83,25 +82,65 @@ export function CollabGrid({ projects }: CollabGridProps) {
         onStatusChange={setStatusFilter}
       />
 
+      {/* Results line — the count is real, and a filtered view can
+          be cleared from here (and from the empty state). */}
+      <div className="flex items-center justify-between gap-4">
+        <p className="text-sm text-muted">
+          <span className="font-medium text-ink">{filtered.length}</span>{" "}
+          {filtered.length === 1 ? "project" : "projects"}
+          {(query.trim() !== "" ||
+            typeFilter !== "all" ||
+            statusFilter !== "all") && <> of {projects.length}</>}
+        </p>
+        {(query.trim() !== "" ||
+          typeFilter !== "all" ||
+          statusFilter !== "all") && (
+          <button
+            type="button"
+            onClick={() => {
+              setDraftQuery("");
+              setQuery("");
+              setTypeFilter("all");
+              setStatusFilter("all");
+            }}
+            className="cursor-pointer text-sm font-medium text-ink hover:underline focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+          >
+            Clear search & filters
+          </button>
+        )}
+      </div>
+
       {filtered.length === 0 ? (
         /* P2 #12: proper empty view instead of a blank area */
         <div className="flex flex-col items-center gap-3 py-16 text-center">
           <Icon name="search-alt" size={40} className="text-placeholder" />
           <p className="text-lg font-medium text-ink">No projects found</p>
           <p className="max-w-xs text-sm text-muted">
-            Adjust your search or filters — or create a project and be the
-            first to show up here.
+            Nothing matches that search and filter set. Clear them to see
+            every project again.
           </p>
+          <button
+            type="button"
+            onClick={() => {
+              setDraftQuery("");
+              setQuery("");
+              setTypeFilter("all");
+              setStatusFilter("all");
+            }}
+            className="pressable mt-1 cursor-pointer rounded-full border border-line bg-surface px-4 py-2 text-sm font-medium text-ink transition-colors hover:border-ink/40 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+          >
+            Clear search & filters
+          </button>
         </div>
       ) : (
         /* Card grid — columns owned by the grid, card is responsive.
            The wrapper div carries the stagger + rhythm; CollabCard itself is
            untouched (revert-friendly). */
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {filtered.map((project, i) => (
             <div
               key={project.id}
-              className={clsx("card-stagger", i === 0 && "sm:col-span-2")}
+              className="card-stagger h-full"
               style={{ "--stagger-i": String(Math.min(i, STAGGER_CAP)) } as CSSProperties}
             >
               <CollabCard project={project} />

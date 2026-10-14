@@ -37,13 +37,11 @@ function CollabGridSkeleton() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {Array.from({ length: 8 }).map((_, i) => (
           <div
             key={i}
-            className={`flex h-[235px] flex-col justify-between rounded-xl bg-bg p-5 ${
-              i === 0 ? "sm:col-span-2" : ""
-            }`}
+            className="flex h-[235px] flex-col justify-between rounded-2xl border border-line bg-surface p-5"
           >
             {/* status row */}
             <div className="h-3.5 w-12 rounded bg-placeholder" />
@@ -80,14 +78,15 @@ export default function CollaborationsPage() {
       actions={<CollabHeaderActions />}
     >
       <div className="flex flex-col gap-6 px-6 py-8">
-        {/* Page header — P2 #15: display-style lockup (56px, tight leading,
-            em italic accent on one word). Revert = restore the 40px/medium h1. */}
-        <div className="flex flex-col gap-2">
-          <h1 className="text-[56px] font-bold leading-[1.02] tracking-[-0.02em] text-ink">
-            Build in <em>collaboration</em>
+        {/* Page header — a working header, not a billboard: the
+            page's job is scanning open projects, so the title is
+            plain and the toolbar below does the talking. */}
+        <div className="flex flex-col gap-1.5">
+          <h1 className="text-[28px] font-semibold tracking-[-0.01em] text-ink">
+            Collaborations
           </h1>
-          <p className="text-sm font-medium text-muted">
-            Find projects to build your portfolio and recruit your team.
+          <p className="text-sm text-muted">
+            Open projects from students looking for teammates.
           </p>
         </div>
 

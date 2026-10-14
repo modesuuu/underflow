@@ -177,31 +177,6 @@
   overflow: hidden;
 }
 
-/* --- Collab card tilt (audit P1-E #27) ---
-   Gated behind a real pointer: on sticky-tap touch devices the old
-   :hover tilt got "stuck". The press feedback (active:scale 0.99)
-   still applies everywhere. */
-@media (prefers-reduced-motion: no-preference) {
-  @media (hover: hover) and (pointer: fine) {
-    .collab-card {
-      transition:
-        transform 200ms var(--uf-ease-out),
-        background-color 200ms var(--uf-ease-out),
-        box-shadow 200ms var(--uf-ease-out);
-    }
-    .collab-card:hover {
-      transform: rotate(-8deg) scale(1.03);
-      background-color: var(--uf-surface);
-      box-shadow:
-        0 10px 15px -3px rgb(0 0 0 / 0.1),
-        0 4px 6px -4px rgb(0 0 0 / 0.1);
-    }
-    .collab-card:active {
-      transform: scale(0.99);
-    }
-  }
-}
-
 /* --- Global reduced-motion kill switch (audit P1-C #21) ---
    Every transition/animation jumps to its final state for users with
    prefers-reduced-motion: reduce. This covers the sidebar pill/accordion

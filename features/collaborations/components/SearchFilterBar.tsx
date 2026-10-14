@@ -45,12 +45,12 @@ function PillGroup<T extends string>({
 }) {
   return (
     <fieldset className="flex flex-col gap-2">
-      <legend className="text-xs font-medium text-muted">{legend}</legend>
-      <div className="flex flex-col gap-1.5">
+      <legend className="text-xs font-semibold text-ink">{legend}</legend>
+      <div className="flex flex-col">
         {options.map((opt) => (
           <label
             key={opt.value}
-            className="flex cursor-pointer items-center gap-2 text-sm text-ink"
+            className="flex cursor-pointer items-center gap-2 rounded-md px-1 py-1.5 text-sm text-ink transition-colors hover:bg-bg"
           >
             <input
               type="radio"
@@ -67,18 +67,19 @@ function PillGroup<T extends string>({
   );
 }
 
-/** Dropdown with outside-click / Escape close + aria state. */
+/**
+ * Dropdown with outside-click / Escape close + aria state. The
+ * trigger span owns the toggle (the previous version rendered a
+ * trigger that never opened — the click had no handler). A panel
+ * marked data-close-panel closes when an option inside is picked.
+ */
 function Dropdown({
   trigger,
   panel,
-  children,
 }: {
   trigger: ReactNode;
   panel: ReactNode;
-  children?: never;
 }) {
-  // (no children — kept for signature clarity)
-  void children;
   const [open, setOpen] = useState(false);
   const triggerRef = useRef<HTMLSpanElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -100,18 +101,29 @@ function Dropdown({
       document.removeEventListener("pointerdown", onPointerDown);
       document.removeEventListener("keydown", onKeyDown);
     };
-  }, [open]);
+  }, [open ]);
 
   return (
     <div className="relative">
-      <span ref={triggerRef} aria-haspopup="true" aria-expanded={open}>
+      <span
+        ref={triggerRef}
+        aria-haspopup="true"
+        aria-expanded={open}
+        onClick={() => setOpen((v) => !v)}
+        className="block"
+      >
         {trigger}
       </span>
       {open && (
         <div
           ref={panelRef}
           role="dialog"
-          className="absolute left-0 top-full z-50 mt-1 min-w-[160px] rounded-lg border border-line bg-surface p-3 shadow-lg"
+          onClick={(e) => {
+            if ((e.target as HTMLElement).closest("[data-close-panel]")) {
+              setOpen(false);
+            }
+          }}
+          className="absolute top-full right-0 z-50 mt-2 min-w-[180px] rounded-xl border border-line bg-surface p-2 shadow-[0_16px_40px_-12px_rgba(17,17,17,0.25)]"
         >
           {panel}
         </div>
@@ -132,11 +144,14 @@ interface SearchFilterBarProps {
   onStatusChange: (s: CollabStatusFilter) => void;
 }
 
+const TRIGGER_CHROME =
+  "pressable flex h-11 cursor-pointer items-center gap-2 rounded-xl border border-line bg-surface px-3.5 transition-colors hover:border-ink/30 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none";
+
 /**
- * Search + sort + filter bar (Figma "Collaborations" frame).
- * Left: sort icon-button + filter icon-button (42px, bg-bg).
- * Right: search input + lime "Search" button (commit on click or Enter).
- * Type pills moved into the filter dropdown — deliberate change.
+ * Search + sort + filter bar, 2026 redesign: search leads (the
+ * page's job is finding a project), the sort and filter triggers
+ * are labeled buttons instead of bare icons, and the search
+ * commits on Enter or the Search button, as before.
  */
 export function SearchFilterBar({
   draftQuery,
@@ -151,41 +166,70 @@ export function SearchFilterBar({
 }: SearchFilterBarProps) {
   const activeFilterCount =
     (typeFilter !== "all" ? 1 : 0) + (statusFilter !== "all" ? 1 : 0);
+  const sortLabel =
+    SORT_OPTIONS.find((o) => o.value === sortKey)?.label ?? "Sort";
 
   return (
-    <div className="flex items-center justify-between gap-4">
-      {/* Left: sort + filter icon buttons */}
-      <div className="flex items-center gap-2">
+    <div className="flex flex-wrap items-center gap-3">
+      {/* Search — the primary tool on this page */}
+      <div className="flex h-11 min-w-52 flex-1 items-center gap-2 rounded-xl border border-line bg-surface px-4 transition-colors focus-within:border-ink/40 sm:max-w-md">
+        <Icon name="search" size={18} className="shrink-0 text-muted" />
+        <input
+          type="text"
+          value={draftQuery}
+          onChange={(e) => onDraftChange(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") onSearch();
+          }}
+          placeholder="Search projects…"
+          aria-label="Search projects"
+          className="min-w-0 flex-1 bg-transparent text-sm font-medium text-ink outline-none placeholder:text-muted"
+        />
+        {draftQuery && (
+          <button
+            type="button"
+            aria-label="Clear search"
+            onClick={() => onDraftChange("")}
+            className="shrink-0 cursor-pointer text-muted transition-colors hover:text-ink"
+          >
+            <Icon name="x" size={16} />
+          </button>
+        )}
+      </div>
+      <button
+        type="button"
+        onClick={onSearch}
+        className="pressable h-11 cursor-pointer rounded-xl bg-accent px-5 text-sm font-semibold text-ink transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+      >
+        Search
+      </button>
+
+      {/* Sort + filter, labeled */}
+      <div className="ms-auto flex items-center gap-2">
         <Dropdown
           trigger={
-            <button
-              type="button"
-              aria-label="Sort"
-              aria-haspopup="true"
-              onClick={() => {
-                /* toggle handled by Dropdown's own state — use a controlled variant below */
-              }}
-              className="pressable flex size-[42px] cursor-pointer items-center justify-center rounded-sm bg-bg focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
-            >
-              <Icon name="sort" size={20} className="text-ink" />
+            <button type="button" aria-label="Sort" className={TRIGGER_CHROME}>
+              <Icon name="sort" size={18} className="text-ink" />
+              <span className="text-sm font-medium text-ink">{sortLabel}</span>
+              <Icon name="chevron-down" size={16} className="text-muted" />
             </button>
           }
           panel={
-            <div className="flex flex-col gap-1.5">
-              <span className="text-xs font-medium text-muted">Sort by</span>
+            <div className="flex flex-col" data-close-panel>
               {SORT_OPTIONS.map((opt) => (
                 <button
                   key={opt.value}
                   type="button"
                   onClick={() => onSortChange(opt.value)}
                   className={clsx(
-                    "pressable cursor-pointer rounded px-2 py-1 text-left text-sm transition-colors focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none",
+                    "flex cursor-pointer items-center justify-between rounded-lg px-2.5 py-2 text-left text-sm transition-colors focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none",
                     sortKey === opt.value
-                      ? "bg-accent font-medium text-ink"
-                      : "text-ink hover:bg-bg"
+                      ? "font-medium text-ink"
+                      : "text-muted hover:bg-bg hover:text-ink",
                   )}
                 >
                   {opt.label}
+                  {sortKey === opt.value && <Icon name="check" size={16} />}
                 </button>
               ))}
             </div>
@@ -193,22 +237,19 @@ export function SearchFilterBar({
         />
         <Dropdown
           trigger={
-            <button
-              type="button"
-              aria-label="Filter"
-              aria-haspopup="true"
-              className="pressable relative flex size-[42px] cursor-pointer items-center justify-center rounded-sm bg-bg focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
-            >
-              <Icon name="filter" size={20} className="text-ink" />
+            <button type="button" aria-label="Filter" className={TRIGGER_CHROME}>
+              <Icon name="filter" size={18} className="text-ink" />
+              <span className="text-sm font-medium text-ink">Filters</span>
               {activeFilterCount > 0 && (
-                <span className="absolute -right-1 -top-1 flex size-4 items-center justify-center rounded-full bg-badge text-2xs font-medium text-surface">
+                <span className="flex size-[18px] items-center justify-center rounded-full bg-badge text-[11px] font-semibold text-surface">
                   {activeFilterCount}
                 </span>
               )}
+              <Icon name="chevron-down" size={16} className="text-muted" />
             </button>
           }
           panel={
-            <div className="flex flex-col gap-4">
+            <div className="flex min-w-52 flex-col gap-4 p-2">
               <PillGroup
                 legend="Type"
                 options={TYPE_OPTIONS}
@@ -224,31 +265,6 @@ export function SearchFilterBar({
             </div>
           }
         />
-      </div>
-
-      {/* Right: search input + Search button */}
-      <div className="flex items-center gap-2">
-        <div className="flex items-center gap-2 rounded-md border border-line bg-surface px-4 py-2.5">
-          <Icon name="search" size={16} className="text-muted" />
-          <input
-            type="text"
-            value={draftQuery}
-            onChange={(e) => onDraftChange(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") onSearch();
-            }}
-            placeholder="Search projects..."
-            aria-label="Search projects"
-            className="w-40 bg-transparent text-sm font-medium text-ink outline-none placeholder:text-muted sm:w-56"
-          />
-        </div>
-        <button
-          type="button"
-          onClick={onSearch}
-          className="pressable cursor-pointer rounded-md bg-accent px-4 py-2.5 text-sm font-medium text-ink transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
-        >
-          Search
-        </button>
       </div>
     </div>
   );
