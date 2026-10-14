@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import "boxicons/css/boxicons.min.css";
 import { RootShell } from "@/components/layout/RootShell";
 import { AppToaster } from "@/components/ui/AppToaster";
@@ -22,10 +23,19 @@ const THEME_SCRIPT = `(function(){try{var m=localStorage.getItem("uf-theme-mode"
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className="h-full antialiased" suppressHydrationWarning>
-      <head>
-        <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
-      </head>
       <body className="min-h-dvh bg-bg font-sans text-ink">
+        {/* beforeInteractive: Next serves this in the initial head
+            and runs it before hydration. suppressHydrationWarning
+            covers the script node itself — browser extensions are
+            known to rewrite stray head scripts (emptying __html,
+            swapping src) before React loads, which otherwise reads
+            as a hydration mismatch on this element. */}
+        <Script
+          id="uf-theme-init"
+          strategy="beforeInteractive"
+          suppressHydrationWarning
+          dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }}
+        />
         <RootShell>{children}</RootShell>
         <AppToaster />
       </body>
