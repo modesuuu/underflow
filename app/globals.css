@@ -52,6 +52,17 @@
   }
 }
 
+@keyframes uf-page-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.995);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
 @keyframes uf-fade-in {
   from {
     opacity: 0;
@@ -105,7 +116,7 @@
      lands on / (from another page or a hard load). Not a per-card stagger
      — the column enters as one block (P1-F spec). */
   .page-enter {
-    animation: uf-card-in 320ms var(--uf-ease-out) backwards;
+    animation: uf-page-in 420ms var(--uf-ease-out) backwards;
   }
 
   /* Modal/lightbox open/close. Exits use the shared ease-out token and run
@@ -237,4 +248,56 @@
 ::selection {
   background: var(--uf-accent);
   color: var(--uf-on-accent);
+}
+
+/* Theme switching cross-fades the whole app: the toggle stamps
+   .theme-anim on <html> for the swap (globals transitions are
+   scoped to it), then removes it — no transition cost at rest. */
+html.theme-anim *,
+html.theme-anim *::before,
+html.theme-anim *::after {
+  transition:
+    background-color 400ms ease,
+    border-color 400ms ease,
+    color 200ms ease,
+    fill 400ms ease,
+    stroke 400ms ease,
+    box-shadow 400ms ease !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  html.theme-anim *,
+  html.theme-anim *::before,
+  html.theme-anim *::after {
+    transition: none !important;
+  }
+}
+
+/* Token-driven scrollbars (overlay scrollers keep .no-scrollbar). */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--uf-placeholder) transparent;
+}
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-thumb {
+  background: var(--uf-placeholder);
+  border-radius: 8px;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--uf-subtle);
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Dark-only atmosphere: two faint brand glows fixed to the app
+   canvas — lavender top-right, lime bottom-left. Depth behind
+   the content, never decoration on top of it. */
+[data-theme="dark"] .app-canvas {
+  background-image:
+    radial-gradient(900px 480px at 100% 0%, rgba(211, 207, 255, 0.055), transparent 62%),
+    radial-gradient(820px 460px at 0% 100%, rgba(223, 246, 106, 0.05), transparent 62%);
+  background-attachment: fixed;
 }

@@ -47,7 +47,7 @@ export function AppShell({
     return (
       <div className="flex h-dvh w-full flex-col overflow-hidden">
         <div className="flex min-h-0 flex-1">
-          <main className="no-scrollbar min-w-0 flex-1 overflow-y-auto bg-surface">
+          <main className="no-scrollbar min-w-0 flex-1 overflow-y-auto bg-surface app-canvas">
             {!hideTopBar && (
               <TopBar
                 breadcrumbRoot={breadcrumbRoot}
@@ -75,8 +75,8 @@ export function AppShell({
       <main
         className={
           fill
-            ? "no-scrollbar flex min-w-0 flex-1 flex-col overflow-hidden bg-surface"
-            : "no-scrollbar min-w-0 flex-1 overflow-y-auto bg-surface"
+            ? "no-scrollbar flex min-w-0 flex-1 flex-col overflow-hidden bg-surface app-canvas"
+            : "no-scrollbar min-w-0 flex-1 overflow-y-auto bg-surface app-canvas"
         }
       >
         {!hideTopBar && (

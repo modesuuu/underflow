@@ -33,21 +33,23 @@
   --uf-ease-out: cubic-bezier(0.23, 1, 0.32, 1);
 }
 
-/* Dark theme — "midnight paper": the same warm family, deepened.
-   Only what changes is redeclared; accent, heart, lavender and
-   on-accent carry over. Roles stay identical (surface is the
-   raised canvas, bg the recessed well), so every component
-   flips coherently with no dark: variants anywhere. */
+/* Dark theme — "midnight paper" v2: green-graphite tiers with
+   real separation, sage body text, a lavender whisper in the
+   subtle role (the brand's secondary, from the inbox chip),
+   and the acid lime kept as the one loud voice. Roles stay
+   identical (surface = raised canvas, bg = recessed well), so
+   every component flips coherently with no dark: variants. */
 [data-theme="dark"] {
-  --uf-bg: #171615;
-  --uf-surface: #232221;
-  --uf-ink: #f4f2ed;
-  --uf-muted: #a7a49d;
-  --uf-subtle: #74726b;
-  --uf-badge: #ff4d51;
-  --uf-placeholder: #35332f;
-  --uf-line: #55534e;
-  --uf-nav-hover: rgba(255, 255, 255, 0.07);
+  --uf-bg: #0f110e;
+  --uf-surface: #1b1e19;
+  --uf-ink: #f0f3e6;
+  --uf-muted: #a4a89b;
+  --uf-subtle: #84879c;
+  --uf-badge: #ff5a5f;
+  --uf-heart: #ff5c7a;
+  --uf-placeholder: #272a24;
+  --uf-line: #3b4038;
+  --uf-nav-hover: rgba(240, 243, 230, 0.06);
   --uf-shadow-rgb: 0, 0, 0;
   color-scheme: dark;
 }

@@ -23,7 +23,12 @@ function resolveMode(mode: ThemeMode): "light" | "dark" {
 }
 
 function applyMode(mode: ThemeMode) {
-  document.documentElement.setAttribute("data-theme", resolveMode(mode));
+  const root = document.documentElement;
+  // Cross-fade the whole app into the new palette (globals.css
+  // scopes the transitions to .theme-anim), then clean up.
+  root.classList.add("theme-anim");
+  root.setAttribute("data-theme", resolveMode(mode));
+  window.setTimeout(() => root.classList.remove("theme-anim"), 500);
 }
 
 /**
