@@ -238,15 +238,16 @@
    tooltips render with data-instant and skip the transition. */
 .uf-tip {
   opacity: 0;
-  transform: scale(0.97);
+  transform: translateX(-6px) scale(0.92);
   transform-origin: left center;
   transition:
-    opacity 125ms var(--uf-ease-out),
-    transform 125ms var(--uf-ease-out);
+    opacity 140ms var(--uf-ease-out),
+    transform 140ms var(--uf-ease-out);
 }
 .uf-tip[data-open="true"] {
   opacity: 1;
-  transform: scale(1);
+  transform: translateX(0) scale(1);
+  transition-duration: 180ms;
 }
 .uf-tip[data-instant="true"] {
   transition-duration: 0ms;

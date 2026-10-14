@@ -110,15 +110,12 @@ function NavRow({ item, active, badge, mini, animate, onSelect, registerRef }: N
       const r = el.getBoundingClientRect();
       setTipInstant(instant);
       setTipPos({ x: r.right + 12, y: r.top + r.height / 2 });
-      if (instant) {
-        setTipOpen(true);
-      } else {
-        // Mount in the closed style, then flip: a CSS transition
-        // retargets smoothly; a keyframe would restart from zero.
-        requestAnimationFrame(() =>
-          requestAnimationFrame(() => setTipOpen(true)),
-        );
-      }
+      // Non-instant: the flip to open happens in the effect below,
+      // after the closed style has actually committed — a rAF
+      // chain here can outrun React's commit and batch the flip
+      // into the mount, which kills the transition (the pop the
+      // user kept seeing).
+      if (instant) setTipOpen(true);
     };
     if (instant) open();
     else tipTimer.current = window.setTimeout(open, 300);
@@ -130,9 +127,18 @@ function NavRow({ item, active, badge, mini, animate, onSelect, registerRef }: N
     window.clearTimeout(tipExitTimer.current);
     tipExitTimer.current = window.setTimeout(
       () => setTipPos(null),
-      tipInstant ? 30 : 140,
+      tipInstant ? 30 : 155,
     );
   };
+  // Flip to the open style one frame AFTER the tooltip mounts in
+  // its closed style — effects run post-commit, so the transition
+  // always gets a real starting point.
+  useEffect(() => {
+    if (!tipPos || tipInstant) return;
+    const raf = requestAnimationFrame(() => setTipOpen(true));
+    return () => cancelAnimationFrame(raf);
+  }, [tipPos, tipInstant]);
+
   useEffect(
     () => () => {
       window.clearTimeout(tipTimer.current);
