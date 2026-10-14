@@ -10,6 +10,8 @@ interface LikeButtonProps {
   storeKey: string;
   initialLiked: boolean;
   initialLikes: number;
+  /** "sm" = the compact, muted variant for secondary content (comments). */
+  size?: "md" | "sm";
 }
 
 /**
@@ -22,6 +24,7 @@ export function LikeButton({
   storeKey,
   initialLiked,
   initialLikes,
+  size = "md",
 }: LikeButtonProps) {
   const bumpRef = useRef<HTMLSpanElement>(null);
   const [{ liked, likes }, toggle] = useLikeState(
@@ -45,24 +48,32 @@ export function LikeButton({
     toggle();
   };
 
+  const sm = size === "sm";
+  const idle = sm
+    ? "text-muted transition-colors group-hover:text-ink"
+    : "text-ink";
   return (
     <button
       type="button"
       aria-pressed={liked}
       onClick={handleClick}
-      className="flex cursor-pointer items-center gap-1"
+      className={
+        sm
+          ? "group flex cursor-pointer items-center gap-1.5"
+          : "flex cursor-pointer items-center gap-1"
+      }
     >
       <span ref={bumpRef} className="inline-flex">
         <HeartIcon
           filled={liked}
-          size={24}
-          className={liked ? "text-heart" : "text-ink"}
+          size={sm ? 18 : 24}
+          className={liked ? "text-heart" : idle}
         />
       </span>
       <span
         className={clsx(
-          "text-2xs font-medium",
-          liked ? "text-heart" : "text-ink"
+          sm ? "text-xs font-medium" : "text-2xs font-medium",
+          liked ? "text-heart" : idle
         )}
       >
         {formatCount(likes)}
