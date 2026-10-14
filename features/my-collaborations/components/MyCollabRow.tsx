@@ -31,7 +31,7 @@ export function MyCollabRow({ project }: { project: MyCollabProject }) {
   const faces = project.members.filter((m) => !m.isOpenSlot).slice(0, 2);
 
   return (
-    <article className="group relative -mx-3 flex items-center gap-3 rounded-xl px-3 py-3 transition-colors duration-150 hover:bg-surface">
+    <article className="group relative flex items-center gap-3 rounded-xl px-3 py-3.5 transition-colors duration-150 hover:bg-bg">
       <Link
         href={`/my-collaborations/${project.myStatus}/${project.id}`}
         aria-label={`View ${project.title}`}
@@ -63,7 +63,7 @@ export function MyCollabRow({ project }: { project: MyCollabProject }) {
               size={24}
               src={member.avatarUrl}
               alt={member.name}
-              className={i > 0 ? "-ml-2 ring-2 ring-bg" : "ring-2 ring-bg"}
+              className={i > 0 ? "-ml-2 ring-2 ring-surface" : "ring-2 ring-surface"}
             />
           ))}
         </span>
@@ -98,7 +98,7 @@ export function MyCollabRow({ project }: { project: MyCollabProject }) {
       <Icon
         name="chevron-right"
         size={18}
-        className="relative z-10 shrink-0 text-placeholder transition-transform duration-200 group-hover:translate-x-0.5"
+        className="relative z-10 shrink-0 text-subtle transition-transform duration-200 group-hover:translate-x-0.5"
       />
     </article>
   );

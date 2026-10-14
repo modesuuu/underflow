@@ -129,7 +129,7 @@ function StatusSection({
           <Icon name="chevron-right" size={14} />
         </Link>
       </div>
-      <div className="flex flex-col divide-y divide-placeholder rounded-2xl bg-bg px-4">
+      <div className="flex flex-col divide-y divide-line/50 border-y border-line/50">
         {items.length === 0 ? (
           <p className="py-4 text-xs text-muted">No projects in this section.</p>
         ) : (

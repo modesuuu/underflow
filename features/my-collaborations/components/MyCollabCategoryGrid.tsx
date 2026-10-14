@@ -103,7 +103,7 @@ export function MyCollabCategoryGrid({ projects }: MyCollabCategoryGridProps) {
               </button>
             )}
           </div>
-          <div className="flex flex-col divide-y divide-placeholder rounded-2xl bg-bg px-4">
+          <div className="flex flex-col divide-y divide-line/50 border-y border-line/50">
             {filtered.map((project, i) => (
               <div
                 key={project.id}

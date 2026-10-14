@@ -47,7 +47,7 @@ export function Avatar({
   }, [src]);
 
   if (!src || errored) {
-    const showInitials = errored && src ? initialsOf(alt) : "";
+    const showInitials = initialsOf(alt);
     return (
       <div
         role="img"

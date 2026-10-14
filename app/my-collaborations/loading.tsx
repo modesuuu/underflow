@@ -55,9 +55,9 @@ export default function MyCollaborationsLoading() {
         {Array.from({ length: 2 }).map((_, s) => (
           <div key={s} className="flex flex-col gap-3">
             <div className="h-6 w-40 rounded-full bg-placeholder" />
-            <div className="flex flex-col gap-3 rounded-2xl bg-bg px-4 py-2">
+            <div className="flex flex-col divide-y divide-line/50 border-y border-line/50">
               {Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="flex flex-col gap-1.5 py-1">
+                <div key={i} className="flex flex-col gap-1.5 py-3">
                   <div className="h-4 w-1/3 rounded bg-placeholder" />
                   <div className="h-3 w-1/4 rounded bg-placeholder" />
                 </div>
