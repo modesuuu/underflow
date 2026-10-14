@@ -1,5 +1,4 @@
 import type { ReactNode } from "react";
-import { Sidebar } from "./Sidebar";
 import { TopBar, type TopBarVariant } from "./TopBar";
 
 interface AppShellProps {
@@ -72,8 +71,7 @@ export function AppShell({
   }
 
   return (
-    <div className="flex h-dvh w-full overflow-hidden">
-      <Sidebar />
+    <div className="flex min-w-0 flex-1 overflow-hidden">
       <main
         className={
           fill

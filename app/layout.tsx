@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "boxicons/css/boxicons.min.css";
+import { RootShell } from "@/components/layout/RootShell";
 import { AppToaster } from "@/components/ui/AppToaster";
 import "./globals.css";
 
@@ -13,7 +14,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className="h-full antialiased">
       <body className="min-h-dvh bg-bg font-sans text-ink">
-        {children}
+        <RootShell>{children}</RootShell>
         <AppToaster />
       </body>
     </html>

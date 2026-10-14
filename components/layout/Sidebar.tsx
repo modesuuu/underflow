@@ -366,7 +366,7 @@ export function Sidebar() {
   const stackRef = useRef<HTMLDivElement>(null);
   const pillRef = useRef<HTMLDivElement>(null);
   const rowRefs = useRef(new Map<string, HTMLElement>());
-  const lastPathRef = useRef<string | null>(null);
+  const placedRef = useRef(false);
 
   // Sync activeId with pathname on navigation.
   useEffect(() => {
@@ -457,19 +457,17 @@ export function Sidebar() {
       return;
     }
     const y = row.getBoundingClientRect().top - area.getBoundingClientRect().top;
-    // Snap on the first placement and whenever the route changed
-    // under this instance: during a navigation the previous page
-    // can re-render under the new pathname (its sync effect then
-    // moves activeId), and the pill gliding across the old page
-    // was the not-smooth artifact in both rail modes. In-page
-    // changes keep the glide.
-    if (lastPathRef.current !== pathname) {
+    // Snap only the very first placement: this instance is
+    // persistent (RootShell, root layout), so after mount the
+    // pill glides everywhere — in-page and across page changes
+    // alike — and never has to be re-placed from scratch.
+    if (!placedRef.current) {
       pill.style.transition = "none";
       pill.style.transform = `translateY(${y}px)`;
       pill.style.opacity = activeVisible ? "1" : "0";
       void pill.offsetWidth; // flush so the next change animates via CSS
       pill.style.transition = "";
-      lastPathRef.current = pathname;
+      placedRef.current = true;
       return;
     }
     pill.style.transform = `translateY(${y}px)`;
