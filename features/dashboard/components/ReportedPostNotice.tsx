@@ -13,7 +13,7 @@ export function ReportedPostNotice({ onUndo }: { onUndo: () => void }) {
       <Icon name="flag" size={20} className="shrink-0 text-muted" />
       <p className="flex-1 text-sm text-muted">
         <span className="font-medium text-ink">You reported this post.</span>{" "}
-        Thanks — our team will review it.
+        Our team will review it.
       </p>
       <button
         type="button"

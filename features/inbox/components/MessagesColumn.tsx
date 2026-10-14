@@ -165,8 +165,8 @@ export function MessagesColumn({
           title={confirm.kind === "delete" ? "Delete chat" : "Clear chat"}
           description={
             confirm.kind === "delete"
-              ? `Are you sure you want to delete the chat with ${confirm.thread.name}? This action cannot be undone.`
-              : `Are you sure you want to clear the chat with ${confirm.thread.name}? The conversation and its application stay here. This action cannot be undone.`
+              ? `The chat with ${confirm.thread.name} will be deleted. This cannot be undone.`
+              : `Messages in this chat will be removed. The conversation and its application stay. This cannot be undone.`
           }
           confirmLabel={confirm.kind === "delete" ? "Delete chat" : "Clear chat"}
           onConfirm={() => {

@@ -96,7 +96,7 @@ export function CommentThread({ comments, newCommentId, newCommentRef }: Comment
   if (comments.length === 0) {
     return (
       <p className="text-sm text-muted">
-        No comments yet — start the conversation.
+        No comments yet.
       </p>
     );
   }

@@ -22,9 +22,9 @@ const TABS: TabDef[] = [
 ];
 
 const EMPTY_COPY: Record<Tab, string> = {
-  all: "Nothing yet — activity from your projects lands here.",
-  unread: "All caught up. Nothing unread.",
-  read: "Nothing here yet. Open a notification and it moves to Read.",
+  all: "No notifications. Activity from your projects appears here.",
+  unread: "No unread notifications.",
+  read: "No read notifications. Notifications you open move here.",
 };
 
 function filterByTab(items: NotificationItem[], tab: Tab): NotificationItem[] {

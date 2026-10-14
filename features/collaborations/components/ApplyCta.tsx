@@ -11,7 +11,7 @@ import { ApplyMessageModal } from "./ApplyMessageModal";
 type ApplyState = "default" | "pending" | "entered" | "declined" | "closed";
 
 const HELPER_TEXT =
-  "After applying, the owner will review your application. Track the status in My Collaboration.";
+  "The owner reviews your application after you apply. Track the status in My Collaborations.";
 
 interface ApplyCtaProps {
   projectId: string;
@@ -66,7 +66,7 @@ export function ApplyCta({
     setState("pending");
     setModalOpen(false);
     toast.success("Application sent", {
-      description: `Your message is on its way to ${ownerName}.`,
+      description: `Your message is in ${ownerName}'s inbox.`,
     });
     router.push("/inbox");
   };

@@ -131,7 +131,7 @@ export function ChatPane({ conversation }: { conversation: Conversation | null }
               </div>
             ) : (
               <p className="py-10 text-center text-sm text-muted">
-                No messages yet — say hello to {conversation.name}.
+                No messages in this chat yet.
               </p>
             ))}
           {blocks.map((block, blockIndex) => {
@@ -228,8 +228,8 @@ export function ChatPane({ conversation }: { conversation: Conversation | null }
           title={confirm === "delete" ? "Delete chat" : "Clear chat"}
           description={
             confirm === "delete"
-              ? `Are you sure you want to delete the chat with ${conversation.name}? This action cannot be undone.`
-              : `Are you sure you want to clear the chat with ${conversation.name}? The conversation and its application stay here. This action cannot be undone.`
+              ? `The chat with ${conversation.name} will be deleted. This cannot be undone.`
+              : `Messages in this chat will be removed. The conversation and its application stay. This cannot be undone.`
           }
           confirmLabel={confirm === "delete" ? "Delete" : "Clear"}
           onConfirm={() => {

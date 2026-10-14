@@ -23,10 +23,9 @@ export default function RootError({
 
   return (
     <div className="flex h-dvh flex-col items-center justify-center gap-4 bg-bg px-6 text-center">
-      <p className="text-2xl font-bold text-ink">Something went wrong</p>
+      <p className="text-2xl font-bold text-ink">This page failed to load</p>
       <p className="max-w-sm text-sm text-muted">
-        We couldn&apos;t load this page. This is usually a temporary
-        glitch — give it another try.
+        Reload the page to try again.
       </p>
       <div className="flex items-center gap-3">
         <button

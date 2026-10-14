@@ -242,8 +242,8 @@ export function CollabGrid({ projects }: CollabGridProps) {
           <Icon name="search-alt" size={40} className="text-placeholder" />
           <p className="text-lg font-medium text-ink">No projects found</p>
           <p className="max-w-xs text-sm text-muted">
-            Nothing matches that search and filter set. Clear them to see
-            every project again.
+            No projects match your search and filters. Clear them to see
+            all projects.
           </p>
           <button
             type="button"

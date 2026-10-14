@@ -19,9 +19,9 @@ export function FeedColumn({ posts }: { posts: Post[] }) {
         <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-line px-6 py-16 text-center">
           <Icon name="message-rounded" size={32} className="text-muted" />
           <div className="flex flex-col gap-1">
-            <p className="text-base font-medium text-ink">Nothing here yet</p>
+            <p className="text-base font-medium text-ink">No posts yet</p>
             <p className="text-sm text-muted">
-              Updates from people in your projects will show up here.
+              Updates from people in your projects appear here.
             </p>
           </div>
         </div>

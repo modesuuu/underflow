@@ -62,7 +62,7 @@ function BandApply({ project }: { project: CollabProject }) {
     setSending(false);
     setModalOpen(false);
     toast.success("Application sent", {
-      description: `Your message is on its way to ${project.owner.name}.`,
+      description: `Your message is in ${project.owner.name}'s inbox.`,
     });
     router.push("/inbox");
   };

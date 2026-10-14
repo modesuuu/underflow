@@ -73,7 +73,7 @@ function StatusSection({
       </div>
       <div className="flex flex-col divide-y divide-placeholder rounded-2xl bg-bg px-4">
         {items.length === 0 ? (
-          <p className="py-4 text-xs text-muted">No projects here yet.</p>
+          <p className="py-4 text-xs text-muted">No projects in this section.</p>
         ) : (
           items.map((p) => <MyCollabRow key={p.id} project={p} />)
         )}
@@ -289,7 +289,7 @@ export function MyCollabBoard({ projects }: MyCollabBoardProps) {
       {attention.length === 0 ? (
         <p className="flex items-center gap-2 text-sm text-muted">
           <Icon name="check-circle" size={18} className="text-ink" />
-          You&rsquo;re all caught up — nothing needs you right now.
+          Nothing needs your attention.
         </p>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
@@ -339,8 +339,8 @@ export function MyCollabBoard({ projects }: MyCollabBoardProps) {
           </span>
           <p className="text-base font-semibold text-ink">No projects match</p>
           <p className="max-w-sm text-sm text-muted">
-            Nothing in your collaborations matches that search and filter
-            set. Try a different title, or clear them to see everything.
+            No projects match your search and filters. Clear them to see
+            all projects.
           </p>
           <button
             type="button"

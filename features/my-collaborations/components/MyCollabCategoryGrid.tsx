@@ -74,8 +74,8 @@ export function MyCollabCategoryGrid({ projects }: MyCollabCategoryGridProps) {
           </span>
           <p className="text-base font-semibold text-ink">No projects match</p>
           <p className="max-w-sm text-sm text-muted">
-            Nothing in this category matches that search and filter set. Try
-            a different title, or clear them to see everything.
+            No projects in this category match your search and filters.
+            Clear them to see all projects in this category.
           </p>
           <button
             type="button"
