@@ -16,6 +16,8 @@
   --uf-lav: #d3cfff;
   --uf-tile: #dff66a;
   --uf-tile-icon: rgba(17, 17, 17, 0.4);
+  --uf-chrome: #f1f0ee;
+  --uf-active: #ffffff;
   --uf-nav-hover: rgba(255, 255, 255, 0.6);
   --uf-shadow-rgb: 17, 17, 17;
   color-scheme: light;
@@ -58,6 +60,8 @@
   --uf-line: #2f5a33;
   --uf-tile: #2a4a2e;
   --uf-tile-icon: rgba(216, 233, 168, 0.6);
+  --uf-chrome: #191a19;
+  --uf-active: #1e5128;
   --uf-nav-hover: rgba(238, 244, 222, 0.07);
   --uf-shadow-rgb: 0, 0, 0;
   color-scheme: dark;

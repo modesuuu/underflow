@@ -513,7 +513,7 @@ export function Sidebar() {
     <aside
       style={mini ? { width: RAIL_WIDTH } : undefined}
       className={clsx(
-        "w-(--uf-sidebar-w) shrink-0 border-r-[0.5px] border-line bg-bg",
+        "w-(--uf-sidebar-w) shrink-0 border-r-[0.5px] border-line bg-chrome",
         animateWidth &&
           "transition-[width] duration-[380ms] ease-(--uf-ease-out) motion-reduce:transition-none"
       )}
@@ -531,7 +531,7 @@ export function Sidebar() {
         <div
           ref={pillRef}
           className={clsx(
-            "active-pill absolute top-0 z-0 h-9 rounded-md bg-surface",
+            "active-pill absolute top-0 z-0 h-9 rounded-md bg-active",
             mini ? "right-3 left-3" : "right-6 left-6"
           )}
           style={{ opacity: 0 }}
