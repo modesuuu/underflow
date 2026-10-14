@@ -48,7 +48,7 @@ export function MessagesColumn({
   return (
     <section
       aria-label="Conversations"
-      className="flex h-full w-[336px] shrink-0 flex-col border-r border-line bg-bg"
+      className="flex h-full w-[336px] shrink-0 flex-col border-r border-line bg-chrome"
     >
       <div className="flex shrink-0 flex-col gap-5 px-6 pt-6">
         <div className="flex items-center justify-between">
@@ -70,7 +70,7 @@ export function MessagesColumn({
             value={query}
             onChange={(event) => onQueryChange(event.target.value)}
             placeholder="Search"
-            className="h-[42px] w-full rounded-lg border border-line bg-surface pr-3 pl-9 text-sm text-ink outline-none placeholder:text-muted focus-visible:ring-2 focus-visible:ring-accent"
+            className="h-[42px] w-full rounded-lg border border-line bg-active pr-3 pl-9 text-sm text-ink outline-none placeholder:text-muted focus-visible:ring-2 focus-visible:ring-accent"
           />
         </label>
       </div>
@@ -85,7 +85,7 @@ export function MessagesColumn({
             <li key={thread.id}>
               <div
                 className={`flex items-center rounded-xl pr-1 transition-colors ${
-                  selected ? "bg-surface" : "hover:bg-surface/70"
+                  selected ? "bg-active" : "hover:bg-active/70"
                 }`}
               >
                 <button
