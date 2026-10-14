@@ -69,7 +69,7 @@ function SidebarPanelIcon({ className }: { className?: string }) {
 
 type RegisterRef<T> = (id: string, el: T | null) => void;
 
-/** When the last rail tooltip closed — neighbours reopen instantly. */
+/** When the last rail tooltip closed — a glide reuses a short delay. */
 let lastTipClosedAt = 0;
 
 interface NavRowProps {
@@ -96,48 +96,39 @@ function NavRow({ item, active, badge, mini, animate, onSelect, registerRef }: N
     null,
   );
   const [tipOpen, setTipOpen] = useState(false);
-  const [tipInstant, setTipInstant] = useState(false);
   const tipTimer = useRef<number | undefined>(undefined);
   const tipExitTimer = useRef<number | undefined>(undefined);
   const showTip = (el: HTMLElement) => {
     if (!mini) return;
     window.clearTimeout(tipTimer.current);
     window.clearTimeout(tipExitTimer.current);
-    // Recipe detail: once one tooltip has shown, gliding to a
-    // neighbour reopens instantly — no delay, no transition.
-    const instant = Date.now() - lastTipClosedAt < 400;
     const open = () => {
       const r = el.getBoundingClientRect();
-      setTipInstant(instant);
       setTipPos({ x: r.right + 12, y: r.top + r.height / 2 });
-      // Non-instant: the flip to open happens in the effect below,
-      // after the closed style has actually committed — a rAF
-      // chain here can outrun React's commit and batch the flip
-      // into the mount, which kills the transition (the pop the
-      // user kept seeing).
-      if (instant) setTipOpen(true);
     };
-    if (instant) open();
-    else tipTimer.current = window.setTimeout(open, 300);
+    // Cold hover waits out the intent delay; gliding between
+    // rows keeps only a breath of it — but the open ANIMATION
+    // plays on every row (the user glides the rail top-to-bottom
+    // and wants to see it each time; an earlier instant-neighbour
+    // shortcut suppressed exactly that).
+    const gliding = Date.now() - lastTipClosedAt < 600;
+    tipTimer.current = window.setTimeout(open, gliding ? 70 : 300);
   };
   const hideTip = () => {
     window.clearTimeout(tipTimer.current);
     setTipOpen(false);
     lastTipClosedAt = Date.now();
     window.clearTimeout(tipExitTimer.current);
-    tipExitTimer.current = window.setTimeout(
-      () => setTipPos(null),
-      tipInstant ? 30 : 155,
-    );
+    tipExitTimer.current = window.setTimeout(() => setTipPos(null), 155);
   };
   // Flip to the open style one frame AFTER the tooltip mounts in
   // its closed style — effects run post-commit, so the transition
   // always gets a real starting point.
   useEffect(() => {
-    if (!tipPos || tipInstant) return;
+    if (!tipPos) return;
     const raf = requestAnimationFrame(() => setTipOpen(true));
     return () => cancelAnimationFrame(raf);
-  }, [tipPos, tipInstant]);
+  }, [tipPos]);
 
   useEffect(
     () => () => {
@@ -201,7 +192,6 @@ function NavRow({ item, active, badge, mini, animate, onSelect, registerRef }: N
           <span
             aria-hidden="true"
             data-open={tipOpen}
-            data-instant={tipInstant || undefined}
             style={{ left: tipPos.x, top: tipPos.y }}
             className="uf-tip pointer-events-none fixed z-[100] -translate-y-1/2 rounded-lg bg-ink px-2.5 py-1.5 text-xs font-medium whitespace-nowrap text-white shadow-lg"
           >

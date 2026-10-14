@@ -249,9 +249,6 @@
   transform: translateX(0) scale(1);
   transition-duration: 180ms;
 }
-.uf-tip[data-instant="true"] {
-  transition-duration: 0ms;
-}
 @media (prefers-reduced-motion: reduce) {
   .uf-tip {
     transform: none;
