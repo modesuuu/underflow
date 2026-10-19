@@ -3,7 +3,6 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { AppShell } from "@/components/layout/AppShell";
 import { Icon } from "@/components/ui/Icon";
-import { NotificationsBell } from "@/components/layout/NotificationsBell";
 import { getMyCollabProjects } from "@/features/my-collaborations/api";
 import { MyCollabCategoryGrid } from "@/features/my-collaborations/components/MyCollabCategoryGrid";
 import { getCategory } from "@/features/my-collaborations/types";
@@ -72,7 +71,6 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
       backHref="/my-collaborations"
       breadcrumbRoot="Tools / My Collaborations"
       breadcrumbLeaf={cat.crumbLabel}
-      actions={<NotificationsBell />}
     >
       <div className="page-enter flex flex-col gap-6 px-4 py-6 sm:px-6 sm:py-8">
         <div className="flex flex-col gap-3">

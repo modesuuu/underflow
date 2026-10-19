@@ -4,8 +4,6 @@ import { notFound } from "next/navigation";
 import { AppShell } from "@/components/layout/AppShell";
 import { getCollabProject } from "@/features/collaborations/api";
 import { CollabDetailContent } from "@/features/collaborations/components/CollabDetailContent";
-import { getNotifications } from "@/features/dashboard/api";
-import { NotificationsPanel } from "@/features/dashboard/components/NotificationsPanel";
 
 interface CollabDetailPageProps {
   params: Promise<{ projectId: string }>;
@@ -34,19 +32,6 @@ function CollabDetailLoadingBody() {
       backLabel="Collaborations"
       backHref="/collaborations"
       breadcrumbRoot="Dashboard / Collaborations"
-      panel={
-        <div className="flex flex-col gap-5 p-4 sm:p-6">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div
-              key={i}
-              className="flex flex-col gap-2 rounded-lg bg-bg p-4"
-            >
-              <div className="h-3.5 w-3/4 rounded bg-placeholder" />
-              <div className="h-3 w-1/2 rounded bg-placeholder" />
-            </div>
-          ))}
-        </div>
-      }
     >
       <div className="flex flex-col gap-6 px-4 pb-12 pt-6 sm:px-6">
         {/* Header band */}
@@ -128,9 +113,6 @@ async function CollabDetailAsync({ projectId }: { projectId: string }) {
     notFound();
   }
 
-  // Right panel: reuse the dashboard notifications mock (read-only)
-  const notifications = await getNotifications();
-
   return (
     <AppShell
       variant="detail"
@@ -138,7 +120,6 @@ async function CollabDetailAsync({ projectId }: { projectId: string }) {
       backHref="/collaborations"
       breadcrumbRoot="Dashboard / Collaborations"
       breadcrumbLeaf={project.title}
-      panel={<NotificationsPanel notifications={notifications} />}
     >
       <CollabDetailContent project={project} />
     </AppShell>

@@ -3,6 +3,11 @@
 import { Fragment, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import {
+  markAllNotificationsRead,
+  markNotificationRead,
+  useNotifications,
+} from "../notifications-store";
 import clsx from "clsx";
 import { Avatar } from "@/components/ui/Avatar";
 import { Icon } from "@/components/ui/Icon";
@@ -112,18 +117,15 @@ function NotificationRow({
 }
 
 /**
- * Right panel: a segmented tab control with a sliding indicator
- * (the transitions.dev pattern), rows that quiet down once read,
- * and an expandable detail per notification. Read state is
- * panel-local for the session — TODO(backend): PATCH read flags.
+ * Notifications list (the /notifications page body): a segmented
+ * tab control with a sliding indicator (the transitions.dev
+ * pattern), rows that quiet down once read. Read state lives in
+ * the shared notifications store, so the TopBar bell badge and
+ * this list always agree.
  */
-export function NotificationsPanel({
-  notifications,
-}: {
-  notifications: NotificationItem[];
-}) {
+export function NotificationsPanel() {
   const [tab, setTab] = useState<Tab>("all");
-  const [items, setItems] = useState<NotificationItem[]>(notifications);
+  const items = useNotifications();
 
   const unreadCount = items.filter((n) => !n.read).length;
   const counts: Record<Tab, number> = {
@@ -138,9 +140,7 @@ export function NotificationsPanel({
 
   const markRead = (item: NotificationItem) => {
     if (!item.read) {
-      setItems((prev) =>
-        prev.map((n) => (n.id === item.id ? { ...n, read: true } : n)),
-      );
+      markNotificationRead(item.id);
     }
   };
 
@@ -156,11 +156,10 @@ export function NotificationsPanel({
     }
   };
 
-  const markAllRead = () =>
-    setItems((prev) => prev.map((n) => (n.read ? n : { ...n, read: true })));
+  const markAllRead = () => markAllNotificationsRead();
 
   return (
-    <div className="page-enter flex flex-col gap-6 p-6">
+    <div className="page-enter flex flex-col gap-6 py-6">
       <div className="flex flex-col gap-4">
         <div className="flex items-center justify-between">
           <h2 className="text-base font-semibold">Notifications</h2>

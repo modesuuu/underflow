@@ -1,5 +1,4 @@
 import { AppShell } from "@/components/layout/AppShell";
-import { NotificationsBell } from "@/components/layout/NotificationsBell";
 
 /**
  * Loading skeleton for /my-collaborations/[category] — shaped
@@ -14,7 +13,6 @@ export default function MyCollabCategoryLoading() {
       backHref="/my-collaborations"
       breadcrumbRoot="Tools"
       breadcrumbLeaf="Category"
-      actions={<NotificationsBell />}
     >
       <div className="flex flex-col gap-6 px-4 py-6 sm:px-6 sm:py-8">
         <div className="flex flex-col gap-3">

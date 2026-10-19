@@ -1,5 +1,4 @@
 import { AppShell } from "@/components/layout/AppShell";
-import { NotificationsBell } from "@/components/layout/NotificationsBell";
 
 /**
  * Route-level loading.tsx for /my-collaborations — skeleton
@@ -13,7 +12,6 @@ export default function MyCollaborationsLoading() {
     <AppShell
       breadcrumbRoot="Tools"
       breadcrumbLeaf="My Collaborations"
-      actions={<NotificationsBell />}
     >
       <div className="flex flex-col gap-6 px-4 py-6 sm:px-6 sm:py-8">
         <div className="h-9 w-72 rounded-lg bg-placeholder" />

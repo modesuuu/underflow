@@ -5,9 +5,7 @@ import { notFound } from "next/navigation";
 import { AppShell } from "@/components/layout/AppShell";
 import { PostButton } from "@/components/layout/PostButton";
 import { Icon } from "@/components/ui/Icon";
-import { getNotifications } from "@/features/dashboard/api";
 import { FeedColumn } from "@/features/dashboard/components/FeedColumn";
-import { NotificationsPanel } from "@/features/dashboard/components/NotificationsPanel";
 import { getPerson, getPersonPosts } from "@/features/profile/api";
 
 interface ProfilePostsPageProps {
@@ -49,19 +47,6 @@ function FeedColumnSkeleton() {
   );
 }
 
-function NotificationsSkeleton() {
-  return (
-    <div className="flex flex-col gap-5 p-4 sm:p-6">
-      {Array.from({ length: 4 }).map((_, i) => (
-        <div key={i} className="flex flex-col gap-2 rounded-lg bg-bg p-4">
-          <div className="h-3.5 w-3/4 rounded bg-placeholder" />
-          <div className="h-3 w-1/2 rounded bg-placeholder" />
-        </div>
-      ))}
-    </div>
-  );
-}
-
 async function PostsBody({ userId }: { userId: string }) {
   const person = await getPerson(userId);
   if (!person) notFound();
@@ -84,11 +69,6 @@ async function PostsBody({ userId }: { userId: string }) {
   return <FeedColumn posts={posts} />;
 }
 
-async function NotificationsPanelAsync() {
-  const notifications = await getNotifications();
-  return <NotificationsPanel notifications={notifications} />;
-}
-
 export default async function ProfilePostsPage({ params }: ProfilePostsPageProps) {
   const { userId } = await params;
   const person = await getPerson(userId);
@@ -98,11 +78,6 @@ export default async function ProfilePostsPage({ params }: ProfilePostsPageProps
     <AppShell
       navVariant="none"
       hideTopBar
-      panel={
-        <Suspense fallback={<NotificationsSkeleton />}>
-          <NotificationsPanelAsync />
-        </Suspense>
-      }
       actions={<PostButton />}
       breadcrumbRoot={person.name}
       breadcrumbLeaf="Feed"

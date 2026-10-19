@@ -2,9 +2,8 @@ import { Suspense } from "react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { AppShell } from "@/components/layout/AppShell";
-import { getDashboardPosts, getNotifications } from "@/features/dashboard/api";
+import { getDashboardPosts } from "@/features/dashboard/api";
 import { CommentSection } from "@/features/dashboard/components/CommentSection";
-import { NotificationsPanel } from "@/features/dashboard/components/NotificationsPanel";
 import { PostDetailBody } from "@/features/dashboard/components/PostDetailBody";
 
 interface DetailPageProps {
@@ -34,19 +33,6 @@ export async function generateMetadata({
  * this page's own shape. Fallbacks are the section bodies of
  * app/dashboard/[postId]/loading.tsx, minus the AppShell.
  */
-function NotificationsSkeleton() {
-  return (
-    <div className="flex flex-col gap-5 p-6">
-      {Array.from({ length: 4 }).map((_, i) => (
-        <div key={i} className="flex flex-col gap-2 rounded-lg bg-bg p-4">
-          <div className="h-3.5 w-3/4 rounded bg-placeholder" />
-          <div className="h-3 w-1/2 rounded bg-placeholder" />
-        </div>
-      ))}
-    </div>
-  );
-}
-
 function PostDetailSkeleton() {
   return (
     <div className="mx-auto flex w-full max-w-(--uf-content-w) flex-col gap-6 px-4 py-3 lg:mx-0 lg:ml-[28px] lg:px-0">
@@ -104,11 +90,6 @@ function PostDetailSkeleton() {
   );
 }
 
-async function NotificationsPanelAsync() {
-  const notifications = await getNotifications();
-  return <NotificationsPanel notifications={notifications} />;
-}
-
 async function PostDetailAsync({
   postId,
   focus,
@@ -142,11 +123,6 @@ export default async function PostDetailPage({ params, searchParams }: DetailPag
 
   return (
     <AppShell
-      panel={
-        <Suspense fallback={<NotificationsSkeleton />}>
-          <NotificationsPanelAsync />
-        </Suspense>
-      }
       variant="detail"
       backLabel="Feed"
       backHref="/"

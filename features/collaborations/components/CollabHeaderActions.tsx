@@ -2,22 +2,19 @@
 
 import { useState } from "react";
 import { Icon } from "@/components/ui/Icon";
-import { NotificationsBell } from "@/components/layout/NotificationsBell";
 import { MakeCollabModal } from "./MakeCollabModal";
 
 /**
  * Right-side header actions for /collaborations (Figma "Collaborations" frame).
- * Bell → notifications dropdown (extracted to NotificationsBell, shared with
- * /my-collaborations). "+ Create Project" → MakeCollabModal (moved here from
- * the old FAB). Settings icon omitted — no settings surface exists.
+ * "+ Create Project" → MakeCollabModal (moved here from the old FAB).
+ * The notifications bell lives in the TopBar itself. Settings icon
+ * omitted — no settings surface exists.
  */
 export function CollabHeaderActions() {
   const [modalOpen, setModalOpen] = useState(false);
 
   return (
     <>
-      <NotificationsBell />
-
       {/* + Create Project */}
       <button
         type="button"
