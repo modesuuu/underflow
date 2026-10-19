@@ -1,4 +1,5 @@
 import { AppShell } from "@/components/layout/AppShell";
+import { NotificationsPanelSkeleton } from "@/features/dashboard/components/NotificationsPanelSkeleton";
 
 /**
  * P1-B #15: detail-shaped skeleton while getCollabProject() suspends.
@@ -8,7 +9,12 @@ import { AppShell } from "@/components/layout/AppShell";
  */
 export default function CollabDetailLoading() {
   return (
-    <AppShell variant="detail" backLabel="Collaborations" backHref="/collaborations">
+    <AppShell
+      variant="detail"
+      backLabel="Collaborations"
+      backHref="/collaborations"
+      panel={<NotificationsPanelSkeleton />}
+    >
       <div className="flex flex-col gap-6 px-6 pb-12 pt-6">
         {/* Header band */}
         <div className="flex flex-col gap-4 rounded-2xl p-6">

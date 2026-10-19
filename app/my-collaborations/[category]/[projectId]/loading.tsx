@@ -1,4 +1,5 @@
 import { AppShell } from "@/components/layout/AppShell";
+import { NotificationsPanelSkeleton } from "@/features/dashboard/components/NotificationsPanelSkeleton";
 
 /**
  * Loading skeleton for /my-collaborations/[category]/[projectId] — shaped like
@@ -12,6 +13,7 @@ export default function MyCollabDetailLoading() {
       variant="detail"
       backLabel="Category"
       backHref="/my-collaborations"
+      panel={<NotificationsPanelSkeleton />}
     >
       <div className="flex flex-col gap-6 px-4 pb-12 pt-6 sm:px-6">
         {/* 1. Status row */}

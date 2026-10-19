@@ -1,4 +1,5 @@
 import { AppShell } from "@/components/layout/AppShell";
+import { NotificationsPanelSkeleton } from "@/features/dashboard/components/NotificationsPanelSkeleton";
 
 /**
  * Loading skeleton for /dashboard/[postId] — shaped like the real post detail
@@ -12,6 +13,7 @@ export default function PostDetailLoading() {
       variant="detail"
       backLabel="Feed"
       backHref="/"
+      panel={<NotificationsPanelSkeleton />}
     >
       <div className="mx-auto flex w-full max-w-(--uf-content-w) flex-col gap-6 px-4 py-3 lg:mx-0 lg:ml-[28px] lg:px-0">
         {/* Post body — flat, mirroring PostDetailBody's rhythm */}
