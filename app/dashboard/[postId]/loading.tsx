@@ -23,7 +23,7 @@ export default function PostDetailLoading() {
       backLabel="Feed"
       backHref="/"
     >
-      <div className="ml-[28px] flex w-full max-w-(--uf-content-w) flex-col gap-6 py-3">
+      <div className="mx-auto flex w-full max-w-(--uf-content-w) flex-col gap-6 px-4 py-3 lg:mx-0 lg:ml-[28px] lg:px-0">
         {/* Post body — flat, mirroring PostDetailBody's rhythm */}
         <div className="flex flex-col gap-4">
           {/* Author row */}

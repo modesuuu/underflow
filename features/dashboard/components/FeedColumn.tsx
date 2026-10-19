@@ -14,7 +14,7 @@ const STAGGER_CAP = 8;
 
 export function FeedColumn({ posts }: { posts: Post[] }) {
   return (
-    <div className="ml-[28px] flex w-full max-w-(--uf-content-w) flex-col gap-5 py-3">
+    <div className="mx-auto flex w-full max-w-(--uf-content-w) flex-col gap-5 px-4 py-3 lg:mx-0 lg:ml-[28px] lg:px-0">
       {posts.length === 0 ? (
         <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-line px-6 py-16 text-center">
           <Icon name="message-rounded" size={32} className="text-muted" />
