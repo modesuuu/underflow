@@ -9,7 +9,7 @@ import type { CircleProjectSummary } from "../types";
 /**
  * The /circle index rows. Unread totals come from the shared Circle
  * store so the numbers always match the channel badges inside each
- * workspace; project facts come from the server (api.getCircleProjects).
+ * circle room; project facts come from the server (api.getCircleProjects).
  */
 export function CircleIndexList({
   projects,

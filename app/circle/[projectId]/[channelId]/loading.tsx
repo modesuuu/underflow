@@ -1,6 +1,6 @@
 import { AppShell } from "@/components/layout/AppShell";
 
-export default function CircleWorkspaceLoading() {
+export default function CircleChannelLoading() {
   return (
     <AppShell fill breadcrumbRoot="Dashboard / Circle" backLabel="Circles" backHref="/circle" variant="detail">
       <div className="flex min-h-0 flex-1">

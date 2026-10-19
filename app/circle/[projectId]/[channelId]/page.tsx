@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { AppShell } from "@/components/layout/AppShell";
 import { getCircle, getCircleProjects } from "@/features/circle/api";
-import { CircleWorkspace } from "@/features/circle/components/CircleWorkspace";
+import { CircleShell } from "@/features/circle/components/CircleShell";
 import type { ChannelId } from "@/features/circle/types";
 
 const CHANNEL_IDS: ChannelId[] = ["announcements", "general"];
@@ -40,7 +40,7 @@ export default async function CircleChannelPage({
       backHref="/circle"
       variant="detail"
     >
-      <CircleWorkspace
+      <CircleShell
         projectId={projectId}
         channelId={channelId as ChannelId}
         title={summary.title}

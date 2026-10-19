@@ -7,7 +7,7 @@ import { channelMentions, channelUnread } from "../store";
 import type { ChannelId, CircleData } from "../types";
 
 /**
- * The workspace's channel rail (spec §3): project header + the two
+ * The room's channel rail (spec §3): project header + the two
  * channels as real links. The active channel uses the sidebar's active
  * token; unread badges are counts derived from lastRead, and a badge
  * turns badge-red when an unread message mentions the current user.

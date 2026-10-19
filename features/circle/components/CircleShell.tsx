@@ -10,12 +10,12 @@ import { MessageTimeline } from "./MessageTimeline";
 import type { ChannelId, CircleMessage } from "../types";
 
 /**
- * The Circle workspace shell (spec §3): channel rail, timeline column,
+ * The Circle shell (spec §3): channel rail, timeline column,
  * collapsible right panel. Below 1280px the panel becomes an overlay
  * from the right; below lg the channel rail becomes a switcher row.
  * Panel visibility: the store override wins, otherwise open at >=1280px.
  */
-export function CircleWorkspace({
+export function CircleShell({
   projectId,
   channelId,
   title,
