@@ -1,4 +1,4 @@
-# API Contract — Bareng (frontend ↔ backend team)
+# API Contract — Underflow (frontend ↔ backend team)
 
 **Status:** DRAFT v1 — 2026-10-07, for backend team review.
 **Scope:** frontend-owned contract. Backend implements to this; frontend codes against it. The current mock layer (`features/collaborations/api.ts`) already uses these function signatures — swapping mock → `fetch` must not change call sites.

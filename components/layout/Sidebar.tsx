@@ -583,7 +583,7 @@ export function Sidebar() {
               {/* TODO(design): swap placeholder for the real logo asset */}
               <div className="h-[31px] w-[31px] shrink-0 rounded-sm bg-placeholder" />
               <span className="text-base font-medium whitespace-nowrap">
-                Stack Underflow
+                Underflow
               </span>
             </div>
             <button

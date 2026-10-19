@@ -164,7 +164,7 @@ export const PEOPLE: PersonDetail[] = [
     id: "me",
     aliases: ["me"],
     name: CURRENT_USER.name,
-    bio: "Building Bareng, one project at a time.",
+    bio: "Building Underflow, one project at a time.",
     email: CURRENT_USER.email,
     socials: [
       { label: "Instagram", icon: "instagram" },

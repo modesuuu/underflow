@@ -6,7 +6,7 @@ import { ThemeInitScript } from "@/components/ui/ThemeInitScript";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Stack Underflow",
+  title: "Underflow",
   description:
     "Student collaboration hub: find portfolio projects, apply, and build together.",
 };

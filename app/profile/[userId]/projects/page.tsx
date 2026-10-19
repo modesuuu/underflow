@@ -17,7 +17,7 @@ export async function generateMetadata({
   const { userId } = await params;
   const person = await getPerson(userId);
   if (!person) return { title: "Projects" };
-  return { title: `${person.name}'s projects — Bareng` };
+  return { title: `${person.name}'s projects — Underflow` };
 }
 
 /** Toolbar + grid mirror of CollabGrid (the section this page suspends on). */

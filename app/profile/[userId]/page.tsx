@@ -16,7 +16,7 @@ export async function generateMetadata({
   const { userId } = await params;
   const person = await getPerson(userId);
   if (!person) return { title: "Profile" };
-  return { title: `${person.name} — Bareng`, description: person.bio };
+  return { title: `${person.name} — Underflow`, description: person.bio };
 }
 
 /**
