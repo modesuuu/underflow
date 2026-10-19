@@ -74,7 +74,7 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
       breadcrumbLeaf={cat.crumbLabel}
       actions={<NotificationsBell />}
     >
-      <div className="page-enter flex flex-col gap-6 px-6 py-8">
+      <div className="page-enter flex flex-col gap-6 px-4 py-6 sm:px-6 sm:py-8">
         <div className="flex flex-col gap-3">
           <span
             className={`flex w-fit items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${cat.pillClassName}`}

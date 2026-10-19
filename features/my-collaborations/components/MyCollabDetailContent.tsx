@@ -37,7 +37,7 @@ export function MyCollabDetailContent({ project }: MyCollabDetailContentProps) {
 
   return (
     <>
-      <div className="page-enter flex flex-col gap-6 px-6 pb-12 pt-6">
+      <div className="page-enter flex flex-col gap-6 px-4 pb-12 pt-6 sm:px-6">
         {/* 1. Plain status row above the title (frame 3 — no pill band) */}
         <div className="flex items-center gap-1.5">
           <Icon name="joystick" size={16} className="text-ink" />
@@ -75,7 +75,7 @@ export function MyCollabDetailContent({ project }: MyCollabDetailContentProps) {
         )}
 
         {/* 4. Owner card + about + work items */}
-        <div className="flex flex-col gap-4 rounded-2xl bg-bg p-6">
+        <div className="flex flex-col gap-4 rounded-2xl bg-bg p-4 sm:p-6">
           <h2 className="text-xs font-medium text-muted">Project owner</h2>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">

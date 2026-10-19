@@ -23,7 +23,7 @@ export default function MyCollabDetailLoading() {
       backLabel="Category"
       backHref="/my-collaborations"
     >
-      <div className="flex flex-col gap-6 px-6 pb-12 pt-6">
+      <div className="flex flex-col gap-6 px-4 pb-12 pt-6 sm:px-6">
         {/* 1. Status row */}
         <div className="flex items-center gap-1.5">
           <div className="size-4 rounded bg-placeholder" />

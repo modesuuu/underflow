@@ -35,7 +35,7 @@ function MyCollabDetailLoadingBody() {
   return (
     <AppShell
       panel={
-        <div className="flex flex-col gap-5 p-6">
+        <div className="flex flex-col gap-5 p-4 sm:p-6">
           {Array.from({ length: 4 }).map((_, i) => (
             <div key={i} className="flex flex-col gap-2 rounded-lg bg-bg p-4">
               <div className="h-3.5 w-3/4 rounded bg-placeholder" />
@@ -48,7 +48,7 @@ function MyCollabDetailLoadingBody() {
       backLabel="Category"
       backHref="/my-collaborations"
     >
-      <div className="flex flex-col gap-6 px-6 pb-12 pt-6">
+      <div className="flex flex-col gap-6 px-4 pb-12 pt-6 sm:px-6">
         {/* 1. Status row */}
         <div className="flex items-center gap-1.5">
           <div className="size-4 rounded bg-placeholder" />
@@ -65,7 +65,7 @@ function MyCollabDetailLoadingBody() {
         </div>
 
         {/* 3. Photo grid — 2x2 like the adaptive PhotoGrid at 4 photos */}
-        <div className="grid h-[306px] grid-cols-2 grid-rows-2 gap-5">
+        <div className="grid h-[220px] grid-cols-2 grid-rows-2 gap-3 sm:h-[306px] sm:gap-5">
           {Array.from({ length: 4 }).map((_, i) => (
             <div key={i} className="rounded-md bg-placeholder/60" />
           ))}
