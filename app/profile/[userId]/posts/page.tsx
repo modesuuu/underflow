@@ -51,7 +51,7 @@ function FeedColumnSkeleton() {
 
 function NotificationsSkeleton() {
   return (
-    <div className="flex flex-col gap-5 p-6">
+    <div className="flex flex-col gap-5 p-4 sm:p-6">
       {Array.from({ length: 4 }).map((_, i) => (
         <div key={i} className="flex flex-col gap-2 rounded-lg bg-bg p-4">
           <div className="h-3.5 w-3/4 rounded bg-placeholder" />
@@ -110,7 +110,7 @@ export default async function ProfilePostsPage({ params }: ProfilePostsPageProps
       backHref={`/profile/${person.id}`}
     >
       <h1 className="sr-only">{`${person.name}'s posts`}</h1>
-      <div className="ml-[28px] w-full max-w-(--uf-content-w) pt-3">
+      <div className="mx-auto w-full max-w-(--uf-content-w) px-4 pt-3 lg:mx-0 lg:ml-[28px] lg:px-0">
         <Link
           href={`/profile/${person.id}`}
           className="flex w-fit items-center gap-1 text-base font-medium text-ink hover:underline"

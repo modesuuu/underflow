@@ -94,7 +94,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
       backHref="/"
     >
       <h1 className="sr-only">{person.name}</h1>
-      <div className="flex h-full flex-col px-6 py-6">
+      <div className="flex h-full flex-col px-4 py-6 sm:px-6">
         <Suspense fallback={<ProfileSkeleton />}>
           <ProfileBody userId={userId} />
         </Suspense>
