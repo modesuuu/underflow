@@ -254,7 +254,7 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
       ref={overlayRef}
       onClick={requestClose}
       className={clsx(
-        "fixed inset-0 z-50 flex items-center justify-center bg-ink/60",
+        "fixed inset-0 z-50 flex items-center justify-center bg-ink/60 p-4",
         closing ? "modal-overlay-out" : "modal-overlay-in"
       )}
     >
@@ -265,7 +265,7 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
         aria-labelledby="make-collab-title"
         onClick={(e) => e.stopPropagation()}
         className={clsx(
-          "no-scrollbar max-h-[90vh] w-[596px] overflow-y-auto rounded-lg bg-bg p-6",
+          "no-scrollbar max-h-[90vh] w-full max-w-[596px] overflow-y-auto rounded-lg bg-bg p-6",
           closing ? "modal-panel-out" : "modal-panel-in"
         )}
       >

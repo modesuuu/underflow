@@ -35,7 +35,7 @@ function CollabDetailLoadingBody() {
       backHref="/collaborations"
       breadcrumbRoot="Dashboard / Collaborations"
       panel={
-        <div className="flex flex-col gap-5 p-6">
+        <div className="flex flex-col gap-5 p-4 sm:p-6">
           {Array.from({ length: 4 }).map((_, i) => (
             <div
               key={i}
@@ -48,7 +48,7 @@ function CollabDetailLoadingBody() {
         </div>
       }
     >
-      <div className="flex flex-col gap-6 px-6 pb-12 pt-6">
+      <div className="flex flex-col gap-6 px-4 pb-12 pt-6 sm:px-6">
         {/* Header band */}
         <div className="flex flex-col gap-4 rounded-2xl p-6">
           <div className="h-6 w-24 rounded-full bg-bg" />

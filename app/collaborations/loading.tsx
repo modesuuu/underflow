@@ -13,7 +13,7 @@ export default function CollaborationsLoading() {
       breadcrumbLeaf="Collaborations"
       actions={<CollabHeaderActions />}
     >
-      <div className="flex flex-col gap-6 px-6 py-8">
+      <div className="flex flex-col gap-6 px-4 py-6 sm:px-6 sm:py-8">
         <div className="flex flex-col gap-2">
           <div className="h-8 w-56 rounded-md bg-placeholder" />
           <div className="h-4 w-80 rounded-md bg-placeholder" />

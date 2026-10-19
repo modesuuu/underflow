@@ -39,9 +39,9 @@ export function CollabDetailContent({ project }: CollabDetailContentProps) {
 
   return (
     <>
-    <div className="flex flex-col gap-6 px-6 pb-12 pt-6">
+    <div className="flex flex-col gap-6 px-4 pb-12 pt-6 sm:px-6">
       {/* 1. Header band (light gray) */}
-      <div className="flex flex-col gap-4 rounded-2xl  p-6">
+      <div className="flex flex-col gap-4 rounded-2xl p-4 sm:p-6">
         {/* Status pill */}
         <div>
           <span className="inline-flex items-center gap-1 rounded-full bg-surface px-3 py-1 text-xs font-medium text-ink">
@@ -81,7 +81,7 @@ export function CollabDetailContent({ project }: CollabDetailContentProps) {
       </div>
 
       {/* 2. Owner card (light gray, large rounded) */}
-      <div className="flex flex-col gap-4 rounded-2xl bg-bg p-6">
+      <div className="flex flex-col gap-4 rounded-2xl bg-bg p-4 sm:p-6">
         {/* Project owner row */}
         <div className="flex items-center justify-between">
           <Link
