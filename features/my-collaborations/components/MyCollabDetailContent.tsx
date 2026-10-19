@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Icon } from "@/components/ui/Icon";
 import { Avatar } from "@/components/ui/Avatar";
 import { PhotoGrid, type Photo } from "@/components/ui/PhotoGrid";
@@ -173,6 +174,18 @@ export function MyCollabDetailContent({ project }: MyCollabDetailContentProps) {
           </div>
         </div>
 
+        {/* Circle entry (spec-circle-v1 §2.2): only for projects the user
+            is actually in. A pending application has no circle yet, so the
+            button is not rendered instead of shown disabled. */}
+        {project.myStatus !== "pending" && (
+          <Link
+            href={`/circle/${project.id}`}
+            className="flex w-full items-center justify-center gap-1.5 rounded-md bg-accent py-3.5 text-base font-semibold text-on-accent transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+          >
+            <Icon name="conversation" size={18} />
+            Open Circle
+          </Link>
+        )}
         {/* 7. Bottom CTA — presentational this phase (spec decision #3).
                TODO(backend): label/state derive from the user's application
                status (accepted / rejected / closed). */}
