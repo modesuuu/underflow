@@ -22,7 +22,7 @@ export const NAV_SECTIONS: NavSection[] = [
       { id: "feeds", label: "Feeds", icon: "grid-alt", href: "/" },
       { id: "tasks", label: "Tasks", icon: "collection" },
       { id: "collaborations", label: "Collaborations", icon: "group", href: "/collaborations" },
-      { id: "circle", label: "Circle", icon: "conversation" },
+      { id: "circle", label: "Circle", icon: "conversation", href: "/circle" },
     ],
   },
   {
