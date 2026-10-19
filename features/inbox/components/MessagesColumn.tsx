@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import clsx from "clsx";
 import { Avatar } from "@/components/ui/Avatar";
 import { Icon } from "@/components/ui/Icon";
 import { toast } from "sonner";
@@ -20,6 +21,7 @@ interface MessagesColumnProps {
   query: string;
   onQueryChange: (value: string) => void;
   onSelect: (id: string) => void;
+  className?: string;
 }
 
 type ConfirmState = { kind: "clear" | "delete"; thread: Conversation } | null;
@@ -38,6 +40,7 @@ export function MessagesColumn({
   query,
   onQueryChange,
   onSelect,
+  className,
 }: MessagesColumnProps) {
   const [confirm, setConfirm] = useState<ConfirmState>(null);
 
@@ -48,7 +51,10 @@ export function MessagesColumn({
   return (
     <section
       aria-label="Conversations"
-      className="flex h-full w-[336px] shrink-0 flex-col border-r border-line bg-chrome"
+      className={clsx(
+        "flex h-full w-full shrink-0 flex-col border-r border-line bg-chrome lg:w-[336px]",
+        className
+      )}
     >
       <div className="flex shrink-0 flex-col gap-5 px-6 pt-6">
         <div className="flex items-center justify-between">

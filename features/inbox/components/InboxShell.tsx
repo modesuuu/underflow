@@ -36,14 +36,21 @@ export function InboxShell() {
 
   return (
     <div className="flex h-full min-h-0 overflow-hidden">
+      {/* Below lg the inbox is single-pane: the rail and the chat
+          take turns filling the screen, switched by selectedId. */}
       <MessagesColumn
         conversations={filtered}
         selectedId={selected?.id ?? null}
         query={query}
         onQueryChange={setQuery}
         onSelect={setSelectedId}
+        className={selectedId ? "max-lg:hidden" : undefined}
       />
-      <ChatPane conversation={selected} />
+      <ChatPane
+        conversation={selected}
+        onBack={() => setSelectedId(null)}
+        className={selectedId ? undefined : "max-lg:hidden"}
+      />
     </div>
   );
 }

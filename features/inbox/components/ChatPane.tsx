@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import clsx from "clsx";
 import { Avatar } from "@/components/ui/Avatar";
 import { Icon } from "@/components/ui/Icon";
 import { toast } from "sonner";
@@ -24,7 +25,15 @@ import { ThreadOptionsMenu } from "./ThreadOptionsMenu";
  * name stay while messages scroll underneath. The composer is a
  * full-width pill with a circular lime send button.
  */
-export function ChatPane({ conversation }: { conversation: Conversation | null }) {
+export function ChatPane({
+  conversation,
+  onBack,
+  className,
+}: {
+  conversation: Conversation | null;
+  onBack?: () => void;
+  className?: string;
+}) {
   const [draft, setDraft] = useState("");
   const [confirm, setConfirm] = useState<"clear" | "delete" | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -38,7 +47,10 @@ export function ChatPane({ conversation }: { conversation: Conversation | null }
     return (
       <section
         aria-label="Conversation"
-        className="flex min-w-0 flex-1 items-center justify-center bg-surface"
+        className={clsx(
+          "flex min-w-0 flex-1 items-center justify-center bg-surface",
+          className
+        )}
       >
         <p className="text-sm text-muted">Select a conversation</p>
       </section>
@@ -87,8 +99,21 @@ export function ChatPane({ conversation }: { conversation: Conversation | null }
   return (
     <section
       aria-label={`Conversation with ${conversation.name}`}
-      className="relative flex min-w-0 flex-1 flex-col bg-surface"
+      className={clsx("relative flex min-w-0 flex-1 flex-col bg-surface", className)}
     >
+      {/* Back to the conversation list: mobile only. On desktop
+          the rail is always visible beside the pane. */}
+      {onBack && (
+        <button
+          type="button"
+          onClick={onBack}
+          aria-label="Back to conversations"
+          className="pressable absolute top-4 left-4 z-10 flex size-10 cursor-pointer items-center justify-center rounded-full bg-bg text-ink focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none lg:hidden"
+        >
+          <Icon name="chevron-left" size={22} />
+        </button>
+      )}
+
       {/* Floating identity chip — photo + name only, no bar. */}
       <div className="pointer-events-none absolute top-4 left-1/2 z-10 flex -translate-x-1/2 flex-col items-center gap-1 [filter:drop-shadow(0_18px_20px_rgba(0,0,0,0.15))]">
         <Avatar size={42} alt={conversation.name} />
@@ -102,7 +127,7 @@ export function ChatPane({ conversation }: { conversation: Conversation | null }
           Clear All / Delete Chat buttons floated here as labeled
           pills; the user found them intrusive, so they live in
           this menu now, same as on the rail rows). */}
-      <div className="absolute top-4 right-6 z-10">
+      <div className="absolute top-4 right-4 z-10 sm:right-6">
         <ThreadOptionsMenu
           thread={conversation}
           onClearRequest={() => setConfirm("clear")}
@@ -112,7 +137,7 @@ export function ChatPane({ conversation }: { conversation: Conversation | null }
 
       <div
         ref={scrollRef}
-        className="no-scrollbar flex-1 overflow-y-auto overscroll-contain px-6 pt-[104px] pb-6"
+        className="no-scrollbar flex-1 overflow-y-auto overscroll-contain px-4 pt-[104px] pb-6 sm:px-6"
       >
         <div className="flex flex-col gap-6">
           {conversation.messages.length === 0 &&
@@ -161,7 +186,7 @@ export function ChatPane({ conversation }: { conversation: Conversation | null }
                 {block.messages.map((message) => (
                   <p
                     key={message.id}
-                    className={`max-w-[310px] rounded-2xl px-3 py-3 text-base whitespace-pre-wrap ${
+                    className={`max-w-[85%] rounded-2xl px-3 py-3 text-base whitespace-pre-wrap sm:max-w-[310px] ${
                       mine
                         ? "rounded-br-[2px] bg-accent text-on-accent"
                         : "rounded-bl-[2px] bg-bg text-ink"
@@ -183,7 +208,7 @@ export function ChatPane({ conversation }: { conversation: Conversation | null }
         </div>
       </div>
 
-      <form onSubmit={handleSend} className="shrink-0 px-6 pt-2 pb-6">
+      <form onSubmit={handleSend} className="shrink-0 px-4 pt-2 pb-4 sm:px-6 sm:pb-6">
         <div className="flex items-center gap-3">
           <div className="flex min-w-0 flex-1 items-center gap-1 rounded-full bg-bg px-4 py-2 transition-shadow focus-within:ring-2 focus-within:ring-accent">
             <label className="sr-only" htmlFor={`composer-${conversation.id}`}>
