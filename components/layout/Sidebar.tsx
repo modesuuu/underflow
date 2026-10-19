@@ -16,6 +16,7 @@ import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { Badge } from "@/components/ui/Badge";
 import { Icon } from "@/components/ui/Icon";
 import { useInboxUnreadCount } from "@/features/inbox/store";
+import { setMobileNav, useMobileNavOpen } from "./mobile-nav";
 import {
   CURRENT_USER,
   DEFAULT_ACTIVE_ID,
@@ -359,7 +360,25 @@ export function Sidebar() {
   // Route-aware active state: init from URL, sync on navigation.
   const [activeId, setActiveId] = useState(() => routeToNavId(pathname));
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
-  const [mini, setMini] = useState(false);
+  const [miniPref, setMiniPref] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const query = window.matchMedia("(max-width: 1023.5px)");
+    const apply = () => setIsMobile(query.matches);
+    apply();
+    query.addEventListener("change", apply);
+    return () => query.removeEventListener("change", apply);
+  }, []);
+  // Below lg the sidebar is a drawer and always shows the full nav:
+  // the rail preference is a desktop-only treatment, labels must
+  // stay visible while wayfinding on a phone.
+  const mini = isMobile ? false : miniPref;
+  const mobileOpen = useMobileNavOpen();
+  const handleAsideClick = (event: { target: EventTarget | null }) => {
+    if (isMobile && (event.target as HTMLElement | null)?.closest("a")) {
+      setMobileNav(false);
+    }
+  };
   const [animateWidth, setAnimateWidth] = useState(false);
   const inboxUnread = useInboxUnreadCount();
 
@@ -380,7 +399,7 @@ export function Sidebar() {
   useLayoutEffect(() => {
     try {
       if (window.localStorage.getItem(RAIL_STORAGE_KEY) === "1") {
-        setMini(true);
+        setMiniPref(true);
       }
     } catch {
       // Storage unavailable (private mode) — the rail just won't persist.
@@ -395,7 +414,7 @@ export function Sidebar() {
   }, []);
 
   const toggleMini = () => {
-    setMini((value) => {
+    setMiniPref((value) => {
       const next = !value;
       try {
         window.localStorage.setItem(RAIL_STORAGE_KEY, next ? "1" : "0");
@@ -512,10 +531,15 @@ export function Sidebar() {
   return (
     <aside
       style={mini ? { width: RAIL_WIDTH } : undefined}
+      onClick={handleAsideClick}
       className={clsx(
         "w-(--uf-sidebar-w) shrink-0 border-r-[0.5px] border-line bg-chrome",
         animateWidth &&
-          "transition-[width] duration-[380ms] ease-(--uf-ease-out) motion-reduce:transition-none"
+          "lg:transition-[width] lg:duration-[380ms] lg:ease-(--uf-ease-out) motion-reduce:transition-none",
+        // Below lg the sidebar leaves the flow and becomes a drawer:
+        // fixed above the backdrop, slid by the mobile-nav store.
+        "max-lg:fixed max-lg:inset-y-0 max-lg:left-0 max-lg:z-50 max-lg:transition-transform max-lg:duration-300 max-lg:ease-(--uf-ease-out)",
+        mobileOpen ? "max-lg:translate-x-0" : "max-lg:-translate-x-full"
       )}
     >
       <div

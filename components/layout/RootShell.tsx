@@ -1,7 +1,8 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import type { ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
+import { setMobileNav, useMobileNavOpen } from "./mobile-nav";
 import { Sidebar } from "./Sidebar";
 
 /**
@@ -20,12 +21,33 @@ import { Sidebar } from "./Sidebar";
  */
 export function RootShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
+  const mobileOpen = useMobileNavOpen();
+  // The drawer never survives a navigation.
+  useEffect(() => {
+    setMobileNav(false);
+  }, [pathname]);
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setMobileNav(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [mobileOpen]);
   if (pathname?.startsWith("/profile")) {
     return <>{children}</>;
   }
   return (
     <div className="flex h-dvh w-full overflow-hidden">
       <Sidebar />
+      {mobileOpen && (
+        <button
+          type="button"
+          aria-label="Close menu"
+          onClick={() => setMobileNav(false)}
+          className="fixed inset-0 z-40 cursor-pointer bg-ink/40 lg:hidden"
+        />
+      )}
       {children}
     </div>
   );

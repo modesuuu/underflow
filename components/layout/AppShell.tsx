@@ -46,8 +46,8 @@ export function AppShell({
   if (navVariant === "none") {
     return (
       <div className="flex h-dvh w-full flex-col overflow-hidden">
-        <div className="flex min-h-0 flex-1">
-          <main className="no-scrollbar min-w-0 flex-1 overflow-y-auto bg-surface app-canvas">
+        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto xl:flex-row xl:overflow-hidden">
+          <main className="no-scrollbar w-full flex-none overflow-visible bg-surface app-canvas xl:min-w-0 xl:flex-1 xl:overflow-y-auto">
             {!hideTopBar && (
               <TopBar
                 breadcrumbRoot={breadcrumbRoot}
@@ -61,7 +61,7 @@ export function AppShell({
             {children}
           </main>
           {panel !== undefined && (
-            <aside className="no-scrollbar w-(--uf-panel-w) shrink-0 overflow-y-auto border-l border-line bg-surface">
+            <aside className="no-scrollbar w-full flex-none overflow-visible border-t border-line bg-surface xl:w-(--uf-panel-w) xl:shrink-0 xl:overflow-y-auto xl:border-t-0 xl:border-l">
               {panel}
             </aside>
           )}
@@ -71,12 +71,12 @@ export function AppShell({
   }
 
   return (
-    <div className="flex min-w-0 flex-1 overflow-hidden">
+    <div className="flex min-w-0 flex-1 flex-col overflow-y-auto xl:flex-row xl:overflow-hidden">
       <main
         className={
           fill
-            ? "no-scrollbar flex min-w-0 flex-1 flex-col overflow-hidden bg-surface app-canvas"
-            : "no-scrollbar min-w-0 flex-1 overflow-y-auto bg-surface app-canvas"
+            ? "no-scrollbar flex w-full flex-none flex-col overflow-hidden bg-surface app-canvas max-xl:h-full xl:min-w-0 xl:flex-1"
+            : "no-scrollbar w-full flex-none overflow-visible bg-surface app-canvas xl:min-w-0 xl:flex-1 xl:overflow-y-auto"
         }
       >
         {!hideTopBar && (
@@ -96,7 +96,7 @@ export function AppShell({
         )}
       </main>
       {panel !== undefined && (
-        <aside className="no-scrollbar w-(--uf-panel-w) shrink-0 overflow-y-auto border-l border-line bg-surface">
+        <aside className="no-scrollbar w-full flex-none overflow-visible border-t border-line bg-surface xl:w-(--uf-panel-w) xl:shrink-0 xl:overflow-y-auto xl:border-t-0 xl:border-l">
           {panel}
         </aside>
       )}

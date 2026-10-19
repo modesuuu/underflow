@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { Icon } from "@/components/ui/Icon";
+import { setMobileNav } from "./mobile-nav";
 
 export type TopBarVariant = "dashboard" | "detail";
 
@@ -41,8 +42,16 @@ export function TopBar({
   };
 
   return (
-    <header className="sticky top-0 z-20 flex h-[79px] items-center justify-between border-b border-line bg-chrome px-[42px]">
+    <header className="sticky top-0 z-20 flex h-[79px] items-center justify-between border-b border-line bg-chrome px-4 sm:px-6 lg:px-[42px]">
       <div className="flex items-center gap-3">
+        <button
+          type="button"
+          onClick={() => setMobileNav(true)}
+          aria-label="Open menu"
+          className="pressable flex cursor-pointer items-center rounded-md text-ink focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none lg:hidden"
+        >
+          <Icon name="menu" size={24} />
+        </button>
         {backHref && (
           <button
             type="button"
