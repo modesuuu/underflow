@@ -61,7 +61,7 @@ export function AppShell({
             {children}
           </main>
           {panel !== undefined && (
-            <aside className="no-scrollbar w-(--uf-panel-w) shrink-0 overflow-y-auto border-l border-line bg-surface">
+            <aside className="no-scrollbar hidden w-(--uf-panel-w) shrink-0 overflow-y-auto border-l border-line bg-surface xl:block">
               {panel}
             </aside>
           )}
@@ -96,7 +96,7 @@ export function AppShell({
         )}
       </main>
       {panel !== undefined && (
-        <aside className="no-scrollbar w-(--uf-panel-w) shrink-0 overflow-y-auto border-l border-line bg-surface">
+        <aside className="no-scrollbar hidden w-(--uf-panel-w) shrink-0 overflow-y-auto border-l border-line bg-surface xl:block">
           {panel}
         </aside>
       )}

@@ -7,6 +7,7 @@ import { PostButton } from "@/components/layout/PostButton";
 import { Icon } from "@/components/ui/Icon";
 import { FeedColumn } from "@/features/dashboard/components/FeedColumn";
 import { getPerson, getPersonPosts } from "@/features/profile/api";
+import { NotificationsPanel } from "@/features/dashboard/components/NotificationsPanel";
 
 interface ProfilePostsPageProps {
   params: Promise<{ userId: string }>;
@@ -83,6 +84,7 @@ export default async function ProfilePostsPage({ params }: ProfilePostsPageProps
       breadcrumbLeaf="Feed"
       backLabel={person.name}
       backHref={`/profile/${person.id}`}
+      panel={<NotificationsPanel className="px-6" />}
     >
       <h1 className="sr-only">{`${person.name}'s posts`}</h1>
       <div className="mx-auto w-full max-w-(--uf-content-w) px-4 pt-3 lg:mx-0 lg:ml-[28px] lg:px-0">

@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { AppShell } from "@/components/layout/AppShell";
 import { getMyCollabProject } from "@/features/my-collaborations/api";
 import { MyCollabDetailContent } from "@/features/my-collaborations/components/MyCollabDetailContent";
+import { NotificationsPanel } from "@/features/dashboard/components/NotificationsPanel";
 import { getCategory } from "@/features/my-collaborations/types";
 
 interface DetailPageProps {
@@ -34,6 +35,7 @@ function MyCollabDetailLoadingBody() {
       variant="detail"
       backLabel="Category"
       backHref="/my-collaborations"
+      panel={<NotificationsPanel className="px-6" />}
     >
       <div className="flex flex-col gap-6 px-4 pb-12 pt-6 sm:px-6">
         {/* 1. Status row */}
@@ -149,6 +151,7 @@ async function MyCollabDetailAsync({
       backHref={`/my-collaborations/${cat.slug}`}
       breadcrumbRoot={`Tools / My Collaborations / ${cat.crumbLabel}`}
       breadcrumbLeaf={project.title}
+      panel={<NotificationsPanel className="px-6" />}
     >
       <MyCollabDetailContent project={project} />
     </AppShell>

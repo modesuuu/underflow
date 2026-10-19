@@ -5,6 +5,7 @@ import { AppShell } from "@/components/layout/AppShell";
 import { getDashboardPosts } from "@/features/dashboard/api";
 import { CommentSection } from "@/features/dashboard/components/CommentSection";
 import { PostDetailBody } from "@/features/dashboard/components/PostDetailBody";
+import { NotificationsPanel } from "@/features/dashboard/components/NotificationsPanel";
 
 interface DetailPageProps {
   params: Promise<{ postId: string }>;
@@ -126,6 +127,7 @@ export default async function PostDetailPage({ params, searchParams }: DetailPag
       variant="detail"
       backLabel="Feed"
       backHref="/"
+      panel={<NotificationsPanel className="px-6" />}
     >
       <div className="page-enter mx-auto flex w-full max-w-(--uf-content-w) flex-col gap-6 px-4 py-3 lg:mx-0 lg:ml-[28px] lg:px-0">
         {/* P1-C #20: one real h1 per page — visually hidden so the design

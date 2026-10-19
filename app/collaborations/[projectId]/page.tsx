@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { AppShell } from "@/components/layout/AppShell";
 import { getCollabProject } from "@/features/collaborations/api";
 import { CollabDetailContent } from "@/features/collaborations/components/CollabDetailContent";
+import { NotificationsPanel } from "@/features/dashboard/components/NotificationsPanel";
 
 interface CollabDetailPageProps {
   params: Promise<{ projectId: string }>;
@@ -32,6 +33,7 @@ function CollabDetailLoadingBody() {
       backLabel="Collaborations"
       backHref="/collaborations"
       breadcrumbRoot="Dashboard / Collaborations"
+      panel={<NotificationsPanel className="px-6" />}
     >
       <div className="flex flex-col gap-6 px-4 pb-12 pt-6 sm:px-6">
         {/* Header band */}
@@ -120,6 +122,7 @@ async function CollabDetailAsync({ projectId }: { projectId: string }) {
       backHref="/collaborations"
       breadcrumbRoot="Dashboard / Collaborations"
       breadcrumbLeaf={project.title}
+      panel={<NotificationsPanel className="px-6" />}
     >
       <CollabDetailContent project={project} />
     </AppShell>

@@ -123,7 +123,7 @@ function NotificationRow({
  * the shared notifications store, so the TopBar bell badge and
  * this list always agree.
  */
-export function NotificationsPanel() {
+export function NotificationsPanel({ className }: { className?: string }) {
   const [tab, setTab] = useState<Tab>("all");
   const items = useNotifications();
 
@@ -159,7 +159,7 @@ export function NotificationsPanel() {
   const markAllRead = () => markAllNotificationsRead();
 
   return (
-    <div className="page-enter flex flex-col gap-6 py-6">
+    <div className={"page-enter flex flex-col gap-6 py-6" + (className ? " " + className : "")}>
       <div className="flex flex-col gap-4">
         <div className="flex items-center justify-between">
           <h2 className="text-base font-semibold">Notifications</h2>

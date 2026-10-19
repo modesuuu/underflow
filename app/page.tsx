@@ -3,6 +3,7 @@ import { AppShell } from "@/components/layout/AppShell";
 import { PostButton } from "@/components/layout/PostButton";
 import { getDashboardPosts } from "@/features/dashboard/api";
 import { FeedColumn } from "@/features/dashboard/components/FeedColumn";
+import { NotificationsPanel } from "@/features/dashboard/components/NotificationsPanel";
 
 /**
  * The feed page keeps its own shaped skeleton (post-card stack + notifications
@@ -46,6 +47,7 @@ export default function Home() {
   return (
     <AppShell
       actions={<PostButton />}
+      panel={<NotificationsPanel className="px-6" />}
     >
       {/* P1-C #20: one real h1 per page — visually hidden so the
           breadcrumb in the TopBar stays the visual heading. */}
