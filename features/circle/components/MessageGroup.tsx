@@ -10,12 +10,16 @@ export function MessageGroup({
   messages,
   membersById,
   messagesById,
+  meIsOwner,
+  onReply,
 }: {
   projectId: string;
   author: CircleMember | undefined;
   messages: CircleMessage[];
   membersById: Map<string, CircleMember>;
   messagesById: Map<string, CircleMessage>;
+  meIsOwner: boolean;
+  onReply: (message: CircleMessage) => void;
 }) {
   return (
     <div className="mt-4 flex flex-col">
@@ -28,6 +32,8 @@ export function MessageGroup({
           membersById={membersById}
           messagesById={messagesById}
           isContinuation={i > 0}
+          meIsOwner={meIsOwner}
+          onReply={onReply}
         />
       ))}
     </div>

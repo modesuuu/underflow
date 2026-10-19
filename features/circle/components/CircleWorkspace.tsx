@@ -7,7 +7,7 @@ import { ChannelSidebar, ChannelSwitcher } from "./ChannelSidebar";
 import { CirclePanel } from "./CirclePanel";
 import { Composer } from "./Composer";
 import { MessageTimeline } from "./MessageTimeline";
-import type { ChannelId } from "../types";
+import type { ChannelId, CircleMessage } from "../types";
 
 /**
  * The Circle workspace shell (spec §3): channel rail, timeline column,
@@ -28,6 +28,7 @@ export function CircleWorkspace({
 }) {
   const data = useCircle(projectId);
   const panel = usePanelState();
+  const [replyTo, setReplyTo] = useState<CircleMessage | null>(null);
   const [isWide, setIsWide] = useState(false);
   const [renderPanel, setRenderPanel] = useState(false);
   const [panelShown, setPanelShown] = useState(false);
@@ -61,6 +62,9 @@ export function CircleWorkspace({
 
   const me = data.members.find((m) => m.userId === "me");
   const canPost = channelId === "general" || Boolean(me?.isOwner);
+  const replyAuthor = replyTo
+    ? data.members.find((m) => m.userId === replyTo.authorId)
+    : undefined;
 
   return (
     <div className="relative flex min-h-0 flex-1">
@@ -83,8 +87,18 @@ export function CircleWorkspace({
           projectId={projectId}
           channelId={channelId}
           data={data}
+          meIsOwner={Boolean(me?.isOwner)}
+          onReply={setReplyTo}
         />
-        <Composer projectId={projectId} channelId={channelId} canPost={canPost} />
+        <Composer
+          projectId={projectId}
+          channelId={channelId}
+          canPost={canPost}
+          members={data.members}
+          replyTo={replyTo}
+          replyAuthor={replyAuthor}
+          onClearReply={() => setReplyTo(null)}
+        />
       </div>
       {renderPanel && (
         <>

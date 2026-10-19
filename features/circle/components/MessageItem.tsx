@@ -1,9 +1,17 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import { Avatar } from "@/components/ui/Avatar";
 import { Icon } from "@/components/ui/Icon";
-import { toggleReaction } from "../store";
+import {
+  deleteMessage,
+  editMessage,
+  togglePin,
+  toggleReaction,
+} from "../store";
 import type { CircleMember, CircleMessage } from "../types";
+
+export const REACTION_SET = ["👍", "❤️", "🎉", "👀"];
 
 export function formatTime(iso: string): string {
   return new Date(iso).toLocaleTimeString("en-GB", {
@@ -85,9 +93,10 @@ export function ReplyQuote({
 }
 
 /**
- * One message row. The group header (avatar, name, time) is rendered by
- * MessageGroup for the first message of a group; continuation rows keep
- * the same left gutter and reveal their time on hover (spec §5.1).
+ * One message row (spec §5). Desktop gets a hover toolbar (quick react,
+ * reply, pin, edit, delete, more); the "···" menu carries the same
+ * actions with labels and is always reachable on touch. Delete is a
+ * two-step inline confirm on the menu item itself. Edit is inline.
  */
 export function MessageItem({
   projectId,
@@ -96,6 +105,8 @@ export function MessageItem({
   membersById,
   messagesById,
   isContinuation,
+  meIsOwner,
+  onReply,
 }: {
   projectId: string;
   message: CircleMessage;
@@ -103,8 +114,50 @@ export function MessageItem({
   membersById: Map<string, CircleMember>;
   messagesById: Map<string, CircleMessage>;
   isContinuation: boolean;
+  meIsOwner: boolean;
+  onReply: (message: CircleMessage) => void;
 }) {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(message.body);
+  const editRef = useRef<HTMLTextAreaElement>(null);
+
+  const isMine = message.authorId === "me";
+  const canDelete = isMine || meIsOwner;
   const memberNames = [...membersById.values()].map((m) => m.name);
+
+  useEffect(() => {
+    if (editing) editRef.current?.focus();
+  }, [editing]);
+
+  const closeMenu = () => {
+    setMenuOpen(false);
+    setConfirmDelete(false);
+  };
+
+  const startDelete = () => {
+    if (confirmDelete) {
+      deleteMessage(projectId, message.id);
+      closeMenu();
+    } else {
+      setConfirmDelete(true);
+    }
+  };
+
+  const saveEdit = () => {
+    if (draft.trim() && draft.trim() !== message.body) {
+      editMessage(projectId, message.id, draft);
+    }
+    setEditing(false);
+  };
+
+  const toolButton =
+    "flex size-7 cursor-pointer items-center justify-center rounded-md text-muted transition-colors hover:bg-bg hover:text-ink focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none";
+
+  const menuItem =
+    "flex w-full cursor-pointer items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm text-ink transition-colors hover:bg-bg focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none";
+
   return (
     <div
       id={`circle-msg-${message.id}`}
@@ -146,9 +199,48 @@ export function MessageItem({
             }
           />
         )}
-        <MessageBody body={message.body} memberNames={memberNames} />
-        {message.editedAt && (
-          <span className="text-xs text-subtle">(edited)</span>
+        {editing ? (
+          <div className="flex flex-col gap-2 py-1">
+            <textarea
+              ref={editRef}
+              value={draft}
+              maxLength={2000}
+              rows={Math.min(5, Math.max(1, draft.split("\n").length))}
+              onChange={(e) => setDraft(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  saveEdit();
+                }
+                if (e.key === "Escape") setEditing(false);
+              }}
+              aria-label="Edit message"
+              className="w-full resize-none rounded-xl bg-bg px-3 py-2 text-sm text-ink outline-none placeholder:text-subtle focus:ring-2 focus:ring-accent"
+            />
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={saveEdit}
+                className="cursor-pointer rounded-full bg-accent px-3.5 py-1.5 text-xs font-medium text-on-accent transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+              >
+                Save
+              </button>
+              <button
+                type="button"
+                onClick={() => setEditing(false)}
+                className="cursor-pointer rounded-full bg-bg px-3.5 py-1.5 text-xs font-medium text-ink transition-colors hover:bg-line/40 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        ) : (
+          <>
+            <MessageBody body={message.body} memberNames={memberNames} />
+            {message.editedAt && (
+              <span className="text-xs text-subtle">(edited)</span>
+            )}
+          </>
         )}
         {message.attachments.length > 0 && (
           <div className="mt-1.5 flex flex-col gap-1.5">
@@ -192,6 +284,162 @@ export function MessageItem({
           </div>
         )}
       </div>
+
+      {/* Hover toolbar (desktop) + always-reachable menu trigger */}
+      {!editing && (
+        <>
+          <div className="absolute -top-3 right-4 z-10 hidden items-center gap-0.5 rounded-lg border border-line bg-surface p-0.5 opacity-0 shadow-[0_8px_20px_-8px_rgba(var(--uf-shadow-rgb),0.35)] transition-opacity group-hover:opacity-100 focus-within:opacity-100 lg:flex">
+            <button
+              type="button"
+              aria-label="React with thumbs up"
+              onClick={() => toggleReaction(projectId, message.id, "👍")}
+              className={toolButton}
+            >
+              <span aria-hidden className="text-sm">👍</span>
+            </button>
+            <button
+              type="button"
+              aria-label="Reply"
+              onClick={() => onReply(message)}
+              className={toolButton}
+            >
+              <Icon name="reply" size={15} />
+            </button>
+            <button
+              type="button"
+              aria-label={message.pinned ? "Unpin message" : "Pin message"}
+              aria-pressed={message.pinned}
+              onClick={() => togglePin(projectId, message.id)}
+              className={toolButton}
+            >
+              <Icon name="pin" size={15} solid={message.pinned} />
+            </button>
+            {isMine && (
+              <button
+                type="button"
+                aria-label="Edit message"
+                onClick={() => {
+                  setDraft(message.body);
+                  setEditing(true);
+                }}
+                className={toolButton}
+              >
+                <Icon name="edit" size={15} />
+              </button>
+            )}
+            {canDelete && (
+              <button
+                type="button"
+                aria-label="Delete message"
+                onClick={() => {
+                  setMenuOpen(true);
+                  setConfirmDelete(true);
+                }}
+                className={toolButton}
+              >
+                <Icon name="trash" size={15} />
+              </button>
+            )}
+          </div>
+          <div className="absolute top-0.5 right-4 z-10">
+            <button
+              type="button"
+              aria-label="Message actions"
+              aria-haspopup="menu"
+              aria-expanded={menuOpen}
+              onClick={() => (menuOpen ? closeMenu() : setMenuOpen(true))}
+              className="flex size-7 cursor-pointer items-center justify-center rounded-md text-subtle transition-colors hover:bg-bg hover:text-ink focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none lg:opacity-0 lg:group-hover:opacity-100"
+            >
+              <Icon name="dots-horizontal-rounded" size={17} />
+            </button>
+            {menuOpen && (
+              <>
+                <button
+                  type="button"
+                  aria-label="Close menu"
+                  onClick={closeMenu}
+                  className="fixed inset-0 z-10 cursor-default"
+                />
+                <div
+                  role="menu"
+                  className="absolute top-full right-0 z-20 mt-1 w-52 rounded-xl border border-line bg-surface p-1.5 shadow-[0_16px_40px_-12px_rgba(var(--uf-shadow-rgb),0.25)]"
+                >
+                  <div className="flex items-center gap-1 px-1.5 py-1">
+                    {REACTION_SET.map((emoji) => (
+                      <button
+                        key={emoji}
+                        type="button"
+                        aria-label={`React with ${emoji}`}
+                        onClick={() => {
+                          toggleReaction(projectId, message.id, emoji);
+                          closeMenu();
+                        }}
+                        className="flex size-8 cursor-pointer items-center justify-center rounded-lg text-base transition-colors hover:bg-bg focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+                      >
+                        <span aria-hidden>{emoji}</span>
+                      </button>
+                    ))}
+                  </div>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      onReply(message);
+                      closeMenu();
+                    }}
+                    className={menuItem}
+                  >
+                    <Icon name="reply" size={15} className="text-subtle" />
+                    Reply
+                  </button>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      togglePin(projectId, message.id);
+                      closeMenu();
+                    }}
+                    className={menuItem}
+                  >
+                    <Icon name="pin" size={15} className="text-subtle" />
+                    {message.pinned ? "Unpin message" : "Pin message"}
+                  </button>
+                  {isMine && (
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
+                        setDraft(message.body);
+                        setEditing(true);
+                        closeMenu();
+                      }}
+                      className={menuItem}
+                    >
+                      <Icon name="edit" size={15} className="text-subtle" />
+                      Edit message
+                    </button>
+                  )}
+                  {canDelete && (
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={startDelete}
+                      className={`${menuItem} ${
+                        confirmDelete
+                          ? "bg-badge/10 font-medium text-badge hover:bg-badge/15"
+                          : ""
+                      }`}
+                    >
+                      <Icon name="trash" size={15} className={confirmDelete ? "text-badge" : "text-subtle"} />
+                      {confirmDelete ? "Delete?" : "Delete message"}
+                    </button>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 }

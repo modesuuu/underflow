@@ -38,10 +38,14 @@ export function MessageTimeline({
   projectId,
   channelId,
   data,
+  meIsOwner,
+  onReply,
 }: {
   projectId: string;
   channelId: ChannelId;
   data: CircleData;
+  meIsOwner: boolean;
+  onReply: (message: CircleMessage) => void;
 }) {
   const [frozenLastRead] = useState(() => data.lastRead[channelId]);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -198,6 +202,8 @@ export function MessageTimeline({
               messages={block.messages}
               membersById={membersById}
               messagesById={messagesById}
+              meIsOwner={meIsOwner}
+              onReply={onReply}
             />
           );
         })}
