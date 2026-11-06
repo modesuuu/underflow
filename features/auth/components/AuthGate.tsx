@@ -2,7 +2,8 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { restoreSession, useIsAuthenticated } from "../store";
+import { restoreSession } from "../session";
+import { useIsAuthenticated } from "../store";
 
 /**
  * Client-side route guards. The session lives in localStorage (the real

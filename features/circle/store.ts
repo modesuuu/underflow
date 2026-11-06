@@ -2,6 +2,7 @@
 
 import { useSyncExternalStore } from "react";
 import { buildCircleData, eligibleProjects } from "./mock";
+import { getSessionUser, subscribe as subscribeSession } from "@/features/auth/session";
 import type {
   ChannelId,
   CircleAttachment,
@@ -41,6 +42,43 @@ function subscribe(listener: () => void) {
     listeners.delete(listener);
   };
 }
+
+/**
+ * The "me" member's display name follows the session user. The seed bakes
+ * the name in at first read, which can predate the login (a refresh on a
+ * Circle page restores the session after the first render), so the store
+ * re-patches the name whenever the session changes — member list, message
+ * bylines, and @mentions all read from the same members list.
+ */
+let lastMeName: string | undefined;
+
+function syncMeName(): void {
+  const name = getSessionUser()?.name ?? "Username";
+  if (name === lastMeName) return;
+  lastMeName = name;
+  if (!circles) return;
+  let changed = false;
+  const next: Record<string, CircleData> = {};
+  for (const [id, data] of Object.entries(circles)) {
+    const me = data.members.find((m) => m.userId === "me");
+    if (!me || me.name === name) {
+      next[id] = data;
+      continue;
+    }
+    changed = true;
+    next[id] = {
+      ...data,
+      members: data.members.map((m) =>
+        m.userId === "me" ? { ...m, name } : m,
+      ),
+    };
+  }
+  if (!changed) return;
+  circles = next;
+  emit();
+}
+
+subscribeSession(syncMeName);
 
 export function useCircles(): Record<string, CircleData> {
   return useSyncExternalStore(subscribe, () => seed(), () => seed());

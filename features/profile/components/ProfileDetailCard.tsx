@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { LogoutButton } from "@/features/auth/components/LogoutButton";
 import { Avatar } from "@/components/ui/Avatar";
 import { Icon } from "@/components/ui/Icon";
 import type { PersonDetail } from "../types";
@@ -118,6 +119,11 @@ export function ProfileDetailCard({ person }: { person: PersonDetail }) {
           )}
         </div>
       </div>
+      {person.id === "me" && (
+        <div className="pt-1">
+          <LogoutButton />
+        </div>
+      )}
     </section>
   );
 }

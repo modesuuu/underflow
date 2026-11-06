@@ -1,6 +1,6 @@
 import { ApiError, getApiBaseUrl, isApiConfigured } from "@/lib/api-client";
 import { MOCK_USERS } from "./mock";
-import { addRegisteredUser, getSession, listUsers, setSession } from "./store";
+import { addRegisteredUser, getSession, listUsers, setSession } from "./session";
 import type { AuthSession, AuthUser, LoginInput, RegisterInput } from "./types";
 import { firstError, validateLogin, validateRegister } from "./validation";
 

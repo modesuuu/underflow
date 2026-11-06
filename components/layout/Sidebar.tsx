@@ -13,6 +13,7 @@ import { createPortal } from "react-dom";
 import { usePathname } from "next/navigation";
 import { Avatar } from "@/components/ui/Avatar";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import { LogoMark } from "@/components/ui/LogoMark";
 import { Badge } from "@/components/ui/Badge";
 import { Icon } from "@/components/ui/Icon";
 import { useInboxUnreadCount } from "@/features/inbox/store";
@@ -581,8 +582,7 @@ export function Sidebar() {
                 mini ? "max-w-0 opacity-0" : "max-w-[200px] opacity-100"
               )}
             >
-              {/* TODO(design): swap placeholder for the real logo asset */}
-              <div className="h-[31px] w-[31px] shrink-0 rounded-sm bg-placeholder" />
+              <LogoMark className="size-[31px] shrink-0 text-ink" />
               <span className="text-base font-medium whitespace-nowrap">
                 Underflow
               </span>

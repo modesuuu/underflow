@@ -1,3 +1,5 @@
+import { getSessionUser } from "@/features/auth/session";
+
 export interface NavItem {
   id: string;
   label: string;
@@ -40,8 +42,16 @@ export const FOOTER_LINKS: NavItem[] = [
   { id: "settings", label: "Setting", icon: "cog" },
 ];
 
-// TODO(backend): replace with GET /api/me once auth lands
+// TODO(backend): replace with GET /api/me once auth lands.
+// Until then the identity is session-aware: the signed-in user's name
+// and email from the auth store, falling back to the placeholder when
+// logged out. Every consumer reads these getters at render time, so
+// login and logout update the shell without touching the call sites.
 export const CURRENT_USER = {
-  name: "Username",
-  email: "Username@gmail.com",
+  get name(): string {
+    return getSessionUser()?.name ?? "Username";
+  },
+  get email(): string {
+    return getSessionUser()?.email ?? "Username@gmail.com";
+  },
 };
