@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, type ReactNode } from "react";
 import { setMobileNav, useMobileNavOpen } from "./mobile-nav";
 import { Sidebar } from "./Sidebar";
+import { RedirectIfAuthed, RequireAuth } from "@/features/auth/components/AuthGate";
 
 /**
  * The persistent app frame, mounted once by the root layout.
@@ -34,21 +35,27 @@ export function RootShell({ children }: { children: ReactNode }) {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [mobileOpen]);
+  const isAuthRoute = pathname === "/login" || pathname === "/signup";
+  if (isAuthRoute) {
+    return <RedirectIfAuthed>{children}</RedirectIfAuthed>;
+  }
   if (pathname?.startsWith("/profile")) {
-    return <>{children}</>;
+    return <RequireAuth>{children}</RequireAuth>;
   }
   return (
-    <div className="flex h-dvh w-full overflow-hidden">
-      <Sidebar />
-      {mobileOpen && (
-        <button
-          type="button"
-          aria-label="Close menu"
-          onClick={() => setMobileNav(false)}
-          className="fixed inset-0 z-40 cursor-pointer bg-ink/40 lg:hidden"
-        />
-      )}
-      {children}
-    </div>
+    <RequireAuth>
+      <div className="flex h-dvh w-full overflow-hidden">
+        <Sidebar />
+        {mobileOpen && (
+          <button
+            type="button"
+            aria-label="Close menu"
+            onClick={() => setMobileNav(false)}
+            className="fixed inset-0 z-40 cursor-pointer bg-ink/40 lg:hidden"
+          />
+        )}
+        {children}
+      </div>
+    </RequireAuth>
   );
 }

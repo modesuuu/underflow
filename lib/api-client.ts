@@ -15,6 +15,11 @@ export function isApiConfigured(): boolean {
   return API_BASE_URL.length > 0;
 }
 
+/** Raw base URL for endpoints whose envelope differs from the contract (auth adapter). */
+export function getApiBaseUrl(): string {
+  return API_BASE_URL;
+}
+
 /**
  * Contract envelope (docs/api-contract.md §Conventions): list/summary
  * endpoints return `{ data, meta }`, never bare arrays. Typing it here

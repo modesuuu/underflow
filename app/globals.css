@@ -14,6 +14,9 @@
   --color-placeholder: var(--uf-placeholder);
   --color-line: var(--uf-line);
   --color-on-accent: var(--uf-on-accent);
+  --color-brand: var(--uf-brand);
+  --color-on-brand: var(--uf-on-brand);
+  --color-brand-star: var(--uf-brand-star);
   --color-tile: var(--uf-tile);
   --color-chrome: var(--uf-chrome);
   --color-active: var(--uf-active);
