@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useState } from "react";
+import { Fragment, useState, type CSSProperties } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -27,6 +27,10 @@ const TABS: TabDef[] = [
   { id: "read", label: "Read" },
 ];
 
+// Stagger cap, same as the feed (FeedColumn): later rows stop cascading
+// so a long list does not take forever to settle.
+const STAGGER_CAP = 8;
+
 const EMPTY_COPY: Record<Tab, string> = {
   all: "No notifications. Activity from your projects appears here.",
   unread: "No unread notifications.",
@@ -42,9 +46,11 @@ function filterByTab(items: NotificationItem[], tab: Tab): NotificationItem[] {
 
 function NotificationRow({
   item,
+  index,
   onPress,
 }: {
   item: NotificationItem;
+  index: number;
   onPress: () => void;
 }) {
   // Contract base row data: title + body. The rich actor/action/target
@@ -58,7 +64,10 @@ function NotificationRow({
   const actorId = item.actor ? resolvePersonId(item.actor.id) : null;
 
   return (
-    <div className="flex flex-col">
+    <div
+      className="card-stagger -mx-3 rounded-xl px-3 py-2.5 transition-[background-color,transform] duration-150 ease-(--uf-ease-out) hover:bg-bg active:scale-[0.99]"
+      style={{ "--stagger-i": String(Math.min(index, STAGGER_CAP)) } as CSSProperties}
+    >
       <div className="flex items-start gap-3">
         {actorId && item.actor ? (
           <Link
@@ -77,13 +86,25 @@ function NotificationRow({
           className="flex min-w-0 flex-1 cursor-pointer items-start gap-3 text-left focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
         >
           <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-            <span
-              className={clsx(
-                "text-sm",
-                item.read ? "text-muted" : "font-medium text-ink",
+            <span className="flex items-center gap-2">
+              <span
+                className={clsx(
+                  "text-sm",
+                  item.read ? "text-muted" : "font-medium text-ink",
+                )}
+              >
+                {name}
+              </span>
+              {/* Unread marker sits next to the name now, so the state reads
+                  where the eye already is. At full width the far-right dot
+                  sat ~700px from the text. The sr-only word carries the
+                  meaning. */}
+              {!item.read && (
+                <span className="flex shrink-0 items-center">
+                  <span aria-hidden="true" className="size-1.5 rounded-full bg-accent" />
+                  <span className="sr-only">Unread</span>
+                </span>
               )}
-            >
-              {name}
             </span>
             {subline && (
               <span className="text-xs leading-snug text-muted">{subline}</span>
@@ -94,14 +115,6 @@ function NotificationRow({
               </span>
             )}
           </span>
-          {/* Unread marker — a real state, so the dot earns its place;
-              the sr-only word carries the meaning. */}
-          {!item.read && (
-            <span className="mt-1.5 flex shrink-0 items-center">
-              <span aria-hidden="true" className="size-1.5 rounded-full bg-accent" />
-              <span className="sr-only">Unread</span>
-            </span>
-          )}
           {item.href && (
             <Icon
               name="chevron-right"
@@ -173,10 +186,12 @@ export function NotificationsPanel({ className }: { className?: string }) {
             </button>
           )}
         </div>
+        {/* max-w-md: the control stays a control at full width. In the
+            308px side panels the cap never binds. */}
         <div
           role="tablist"
           aria-label="Notification filter"
-          className="relative grid grid-cols-3 rounded-full bg-bg p-1"
+          className="relative grid max-w-md grid-cols-3 rounded-full bg-bg p-1"
         >
           <span
             aria-hidden="true"
@@ -207,6 +222,7 @@ export function NotificationsPanel({ className }: { className?: string }) {
           <Fragment key={item.id}>
             <NotificationRow
               item={item}
+              index={i}
               onPress={() => press(item)}
             />
             {i < visible.length - 1 && (

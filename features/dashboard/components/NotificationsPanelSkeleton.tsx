@@ -1,3 +1,5 @@
+import { Fragment } from "react";
+
 /**
  * Skeleton for the desktop notifications panel (xl and up), shaped
  * like NotificationsPanel: title row, tab pill, then four
@@ -24,18 +26,20 @@ export function NotificationsPanelSkeleton() {
 
       <div className="flex flex-col gap-4">
         {ROWS.map((row, i) => (
-          <div key={i} className="flex flex-col gap-4">
-            <div className="flex items-start gap-3">
-              <div className="size-8 shrink-0 rounded-full bg-placeholder" />
-              <div className="flex min-w-0 flex-1 flex-col gap-1.5 pt-0.5">
-                <div className={"h-3.5 rounded bg-placeholder " + row.name} />
-                <div className={"h-3 rounded bg-placeholder/70 " + row.sub} />
+          <Fragment key={i}>
+            <div className="-mx-3 rounded-xl px-3 py-2.5">
+              <div className="flex items-start gap-3">
+                <div className="size-8 shrink-0 rounded-full bg-placeholder" />
+                <div className="flex min-w-0 flex-1 flex-col gap-1.5 pt-0.5">
+                  <div className={"h-3.5 rounded bg-placeholder " + row.name} />
+                  <div className={"h-3 rounded bg-placeholder/70 " + row.sub} />
+                </div>
               </div>
             </div>
             {i < ROWS.length - 1 && (
               <div className="h-px w-full bg-placeholder" />
             )}
-          </div>
+          </Fragment>
         ))}
       </div>
     </div>
