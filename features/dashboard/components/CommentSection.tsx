@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 import { Avatar } from "@/components/ui/Avatar";
 import { Icon } from "@/components/ui/Icon";
 import { CURRENT_USER } from "@/components/layout/nav";
@@ -31,7 +32,10 @@ export function CommentSection({ initialComments, autoFocusComment = false }: Co
 
   const submit = () => {
     const text = draft.trim();
-    if (!text) return;
+    if (!text) {
+      toast("Write a comment first");
+      return;
+    }
     const id = `local-${Date.now()}`;
     // TODO(backend): POST /api/posts/:id/comments
     setComments((prev) => [
