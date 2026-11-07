@@ -12,7 +12,7 @@ export default function NotificationsPage() {
       actions={<PostButton />}
     >
       <h1 className="sr-only">Notifications</h1>
-      <div className="mx-auto w-full max-w-(--uf-content-w) px-4 lg:mx-0 lg:ml-[28px] lg:px-0">
+      <div className="w-full px-4 sm:px-6">
         <NotificationsPanel />
       </div>
     </AppShell>
