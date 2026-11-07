@@ -14,7 +14,7 @@ import { NotificationsPanel } from "@/features/dashboard/components/Notification
 
 function FeedColumnSkeleton() {
   return (
-    <div className="mx-auto flex w-full max-w-(--uf-content-w) flex-col gap-5 px-4 py-3 lg:mx-0 lg:ml-[28px] lg:px-0">
+    <div className="mx-auto flex w-full max-w-(--uf-content-w) flex-col gap-5 px-4 py-3 lg:mx-auto lg:px-0">
       {Array.from({ length: 3 }).map((_, i) => (
         <div key={i} className="px-1 py-2">
           <div className="flex items-center gap-3">
@@ -40,7 +40,7 @@ function FeedColumnSkeleton() {
 
 async function FeedColumnAsync() {
   const posts = await getDashboardPosts();
-  return <FeedColumn posts={posts} />;
+  return <FeedColumn posts={posts} centered />;
 }
 
 export default function Home() {
