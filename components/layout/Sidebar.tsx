@@ -13,6 +13,7 @@ import { createPortal } from "react-dom";
 import { usePathname } from "next/navigation";
 import { Avatar } from "@/components/ui/Avatar";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import { LogoutButton } from "@/features/auth/components/LogoutButton";
 import { LogoMark } from "@/components/ui/LogoMark";
 import { Badge } from "@/components/ui/Badge";
 import { Icon } from "@/components/ui/Icon";
@@ -659,15 +660,23 @@ export function Sidebar() {
             <ThemeToggle variant={mini ? "rail" : "full"} />
           </div>
 
-          {/* Profile card — links to the current user's own profile */}
-          <Link
-            href="/profile/me"
-            aria-label="View your profile"
+          {/* Profile card — links to the current user's own profile,
+              with the icon-only Log out button beside it (below it on
+              the collapsed rail). */}
+          <div
             className={clsx(
-              "group relative z-10 flex cursor-pointer items-center rounded-sm bg-surface p-1",
-              mini ? "justify-center" : "justify-between"
+              "flex",
+              mini ? "flex-col items-center gap-2" : "items-center gap-2",
             )}
           >
+            <Link
+              href="/profile/me"
+              aria-label="View your profile"
+              className={clsx(
+                "group relative z-10 flex cursor-pointer items-center rounded-sm bg-surface p-1",
+                mini ? "justify-center" : "min-w-0 flex-1 justify-between",
+              )}
+            >
             <div className="flex items-center gap-1">
               <Avatar size={28} rounded="sm" alt={CURRENT_USER.name} />
               <div
@@ -697,7 +706,17 @@ export function Sidebar() {
                 {CURRENT_USER.name}
               </span>
             )}
-          </Link>
+            </Link>
+            <div className="group relative shrink-0">
+              <LogoutButton variant="icon" />
+              <span
+                aria-hidden="true"
+                className="pointer-events-none absolute top-1/2 left-full z-50 ml-3 -translate-y-1/2 translate-x-[-4px] rounded-lg bg-ink px-2.5 py-1.5 text-xs font-medium whitespace-nowrap text-surface opacity-0 shadow-lg transition-all duration-150 group-hover:translate-x-0 group-hover:opacity-100 group-hover:delay-300 group-focus-visible:translate-x-0 group-focus-visible:opacity-100"
+              >
+                Log out
+              </span>
+            </div>
+          </div>
         </div>
       </div>
     </aside>

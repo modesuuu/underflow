@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { logout } from "../api";
+import { Icon } from "@/components/ui/Icon";
 import { ConfirmDialog } from "@/features/inbox/components/ConfirmDialog";
 
 /**
@@ -12,16 +13,26 @@ import { ConfirmDialog } from "@/features/inbox/components/ConfirmDialog";
  * raced with the gate and the `next` param came out
  * non-deterministic. Rendered on your own profile only.
  */
-export function LogoutButton() {
+export function LogoutButton({
+  variant = "full",
+}: {
+  variant?: "full" | "icon";
+}) {
   const [confirming, setConfirming] = useState(false);
   return (
     <>
       <button
         type="button"
         onClick={() => setConfirming(true)}
-        className="flex h-11 w-full cursor-pointer items-center justify-center rounded-lg border border-line bg-surface text-sm font-medium text-ink transition-colors hover:bg-bg"
+        aria-label="Log out"
+        title="Log out"
+        className={
+          variant === "icon"
+            ? "flex size-9 cursor-pointer items-center justify-center rounded-full text-muted transition-colors hover:bg-surface hover:text-ink"
+            : "flex h-11 w-full cursor-pointer items-center justify-center rounded-lg border border-line bg-surface text-sm font-medium text-ink transition-colors hover:bg-bg"
+        }
       >
-        Log out
+        {variant === "icon" ? <Icon name="log-out" size={20} /> : "Log out"}
       </button>
       {confirming && (
         <ConfirmDialog
