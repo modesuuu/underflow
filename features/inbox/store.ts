@@ -265,3 +265,43 @@ export function startApplicationThread(input: OutgoingApplicationInput): string 
   emit();
   return id;
 }
+
+export interface DirectThreadInput {
+  personId: string | null;
+  name: string;
+}
+
+/**
+ * "Chat with owner": open (or create) the plain 1:1 thread with a
+ * person — no application card, no message appended. The thread is
+ * moved to the top so /inbox opens it via the first-thread fallback.
+ * Matches by canonical personId first, then by name: the seed data
+ * keys the Russel thread by the collab member id "m-owner" while the
+ * resolved id is "user-russel", so the name fallback is what lands
+ * there in the mock. Returns the thread id.
+ */
+export function startDirectThread(input: DirectThreadInput): string {
+  const existing =
+    (input.personId
+      ? conversations.find((t) => t.personId === input.personId)
+      : undefined) ?? conversations.find((t) => t.name === input.name);
+  if (existing) {
+    conversations = [
+      existing,
+      ...conversations.filter((t) => t.id !== existing.id),
+    ];
+    emit();
+    return existing.id;
+  }
+  const slug = (input.personId ?? input.name)
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  const id = `t-dm-${slug}`;
+  conversations = [
+    { id, personId: input.personId, name: input.name, messages: [] },
+    ...conversations,
+  ];
+  emit();
+  return id;
+}

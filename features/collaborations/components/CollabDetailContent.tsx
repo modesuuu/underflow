@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Icon } from "@/components/ui/Icon";
 import { Avatar } from "@/components/ui/Avatar";
 import { PhotoGrid } from "@/components/ui/PhotoGrid";
@@ -10,6 +11,7 @@ import { ApplyCta } from "./ApplyCta";
 import { formatDueDate } from "../sort";
 import type { CollabProject } from "../types";
 import { resolvePersonId } from "@/features/profile/mock";
+import { startDirectThread } from "@/features/inbox/store";
 
 /**
  * Collab photos are `string[]` (URLs per the API contract). The mock uses
@@ -27,6 +29,7 @@ interface CollabDetailContentProps {
 
 export function CollabDetailContent({ project }: CollabDetailContentProps) {
   const isFull = project.slotsFilled >= project.slotsTotal;
+  const router = useRouter();
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
   // Map the collab photo strings to the shared `Photo` shape
@@ -97,9 +100,17 @@ export function CollabDetailContent({ project }: CollabDetailContentProps) {
               <span className="text-2xs text-muted">{project.owner.role}</span>
             </div>
           </Link>
-          {/* TODO(backend): open in-app chat / GET /api/chat/:ownerId */}
+          {/* Chat with owner: open (or create) the 1:1 inbox thread
+              with the owner and go straight to it. */}
           <button
             type="button"
+            onClick={() => {
+              startDirectThread({
+                personId: resolvePersonId(project.owner.id) ?? project.owner.id,
+                name: project.owner.name,
+              });
+              router.push("/inbox");
+            }}
             className="flex cursor-pointer items-center gap-1 rounded-full bg-accent px-4 py-2 text-xs font-medium text-on-accent transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
           >
             <Icon name="message-rounded" size={14} />
