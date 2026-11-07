@@ -12,6 +12,7 @@ import { formatDueDate } from "../sort";
 import type { CollabProject } from "../types";
 import { resolvePersonId } from "@/features/profile/mock";
 import { startDirectThread } from "@/features/inbox/store";
+import { useSessionUser } from "@/features/auth/store";
 
 /**
  * Collab photos are `string[]` (URLs per the API contract). The mock uses
@@ -30,6 +31,11 @@ interface CollabDetailContentProps {
 export function CollabDetailContent({ project }: CollabDetailContentProps) {
   const isFull = project.slotsFilled >= project.slotsTotal;
   const router = useRouter();
+  const sessionUser = useSessionUser();
+  const ownerPersonId =
+    resolvePersonId(project.owner.id) ?? project.owner.id;
+  const isOwnProject =
+    sessionUser !== null && sessionUser.id === ownerPersonId;
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
   // Map the collab photo strings to the shared `Photo` shape
@@ -101,21 +107,35 @@ export function CollabDetailContent({ project }: CollabDetailContentProps) {
             </div>
           </Link>
           {/* Chat with owner: open (or create) the 1:1 inbox thread
-              with the owner and go straight to it. */}
-          <button
-            type="button"
-            onClick={() => {
-              startDirectThread({
-                personId: resolvePersonId(project.owner.id) ?? project.owner.id,
-                name: project.owner.name,
-              });
-              router.push("/inbox");
-            }}
-            className="flex cursor-pointer items-center gap-1 rounded-full bg-accent px-4 py-2 text-xs font-medium text-on-accent transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
-          >
-            <Icon name="message-rounded" size={14} />
-            Chat with owner
-          </button>
+              with the owner and go straight to it. Your own project:
+              the button is greyed out and unclickable instead of
+              opening a chat with yourself. */}
+          {isOwnProject ? (
+            <button
+              type="button"
+              disabled
+              title="This is your project"
+              className="flex cursor-not-allowed items-center gap-1 rounded-full bg-placeholder px-4 py-2 text-xs font-medium text-muted"
+            >
+              <Icon name="message-rounded" size={14} />
+              This is your project
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => {
+                startDirectThread({
+                  personId: ownerPersonId,
+                  name: project.owner.name,
+                });
+                router.push("/inbox");
+              }}
+              className="flex cursor-pointer items-center gap-1 rounded-full bg-accent px-4 py-2 text-xs font-medium text-on-accent transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+            >
+              <Icon name="message-rounded" size={14} />
+              Chat with owner
+            </button>
+          )}
         </div>
 
         {/* About the project */}
@@ -212,7 +232,7 @@ export function CollabDetailContent({ project }: CollabDetailContentProps) {
         dueLabel={project.dueDate}
         slotsLabel={`${project.slotsFilled} / ${project.slotsTotal}`}
         ownerName={project.owner.name}
-        ownerPersonId={resolvePersonId(project.owner.id) ?? project.owner.id}
+        ownerPersonId={ownerPersonId}
       />
     </div>
     {lightboxIndex !== null && (
