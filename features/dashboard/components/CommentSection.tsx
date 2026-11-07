@@ -83,7 +83,8 @@ export function CommentSection({ initialComments, autoFocusComment = false }: Co
             type="button"
             aria-label="Send comment"
             onClick={submit}
-            className={`flex shrink-0 cursor-pointer items-center transition-colors hover:text-ink ${
+            disabled={!draft.trim()}
+            className={`flex shrink-0 cursor-pointer items-center transition-colors hover:text-ink disabled:cursor-not-allowed disabled:opacity-40 ${
               draft.trim() ? "text-ink" : "text-muted"
             }`}
           >
