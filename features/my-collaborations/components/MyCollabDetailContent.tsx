@@ -2,11 +2,14 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Icon } from "@/components/ui/Icon";
 import { Avatar } from "@/components/ui/Avatar";
 import { PhotoGrid, type Photo } from "@/components/ui/PhotoGrid";
 import { PhotoLightbox } from "@/components/ui/PhotoLightbox";
-import { formatDueDate } from "@/features/collaborations/sort";
+import { resolvePersonId } from "@/features/profile/mock";
+import { startDirectThread } from "@/features/inbox/store";
+import { useSessionUser } from "@/features/auth/store";
 import type { MyCollabProject } from "../types";
 
 /**
@@ -22,12 +25,19 @@ interface MyCollabDetailContentProps {
 }
 
 /**
- * Detail page body (frame 3). Close in spirit to the public
- * `CollabDetailContent` but a separate component — the public one is not
- * modified. Differences: plain status row above the title (no pill band),
- * photo grid via the shared PhotoGrid, and a disabled bottom CTA.
+ * Detail page body (frame 3). Mirrors the public `CollabDetailContent`
+ * section for section — same header band, owner card, skills, and team —
+ * but a separate component: the public one is not modified. Differences
+ * kept on purpose: no Apply CTA (Open Circle + Closed instead), and the
+ * myStatus-gated Circle entry.
  */
 export function MyCollabDetailContent({ project }: MyCollabDetailContentProps) {
+  const router = useRouter();
+  const sessionUser = useSessionUser();
+  const ownerPersonId =
+    resolvePersonId(project.owner.id) ?? project.owner.id;
+  const isOwnProject =
+    sessionUser !== null && sessionUser.id === ownerPersonId;
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
   const photos: Photo[] = project.photos.slice(0, 4).map((url, i) => ({
@@ -38,64 +48,91 @@ export function MyCollabDetailContent({ project }: MyCollabDetailContentProps) {
 
   return (
     <>
-      <div className="page-enter flex flex-col gap-6 px-4 pb-12 pt-6 sm:px-6">
-        {/* 1. Plain status row above the title (frame 3 — no pill band) */}
-        <div className="flex items-center gap-1.5">
-          <Icon name="joystick" size={16} className="text-ink" />
-          <span className="text-sm font-medium capitalize text-ink">
-            {project.status}
-          </span>
-        </div>
+      <div className="flex flex-col gap-6 px-4 pb-12 pt-6 sm:px-6">
+        {/* 1. Header band (light gray) */}
+        <div className="flex flex-col gap-4 rounded-2xl p-4 sm:p-6">
+          {/* Status pill */}
+          <div>
+            <span className="inline-flex items-center gap-1 rounded-full bg-surface px-3 py-1 text-xs font-medium text-ink">
+              <Icon name="joystick" size={14} />
+              {project.status}
+            </span>
+          </div>
 
-        {/* 2. Title + meta */}
-        <div className="flex flex-col gap-4">
+          {/* Title */}
           <h1 className="text-[40px] font-medium leading-tight text-ink">
             {project.title}
           </h1>
+
+          {/* Meta row: due bold dark + posted gray */}
           <div className="flex items-center gap-4">
             <span className="flex items-center gap-1 text-xs font-medium text-ink">
               <Icon name="calendar" size={14} />
-              Due to:{" "}
-              <span className="font-semibold">
-                {formatDueDate(project.dueDate)}
-              </span>
+              Due: {project.dueDate}
             </span>
             <span className="flex items-center gap-1 text-xs font-medium text-muted">
               <Icon name="time" size={14} />
               posted {project.postedAgo}
             </span>
           </div>
+
+          {/* Adaptive photo grid (shared PhotoGrid; click opens the
+              lightbox at that index). */}
+          {photos.length > 0 && (
+            <PhotoGrid
+              photos={photos}
+              onPhotoClick={(i) => setLightboxIndex(i)}
+            />
+          )}
         </div>
 
-        {/* 3. Photo grid (shared PhotoGrid; click opens the shared lightbox) */}
-        {photos.length > 0 && (
-          <PhotoGrid
-            photos={photos}
-            onPhotoClick={(i) => setLightboxIndex(i)}
-          />
-        )}
-
-        {/* 4. Owner card + about + work items */}
+        {/* 2. Owner card (light gray, large rounded) */}
         <div className="flex flex-col gap-4 rounded-2xl bg-bg p-4 sm:p-6">
-          <h2 className="text-xs font-medium text-muted">Project owner</h2>
+          {/* Project owner row */}
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
+            <Link
+              href={"/profile/" + (resolvePersonId(project.owner.id) ?? project.owner.id)}
+              className="group flex items-center gap-3"
+              aria-label={"View " + project.owner.name + "'s profile"}
+            >
               <Avatar size={42} src={project.owner.avatarUrl} alt={project.owner.name} />
               <div className="flex flex-col">
-                <span className="text-base font-medium text-ink">
+                <span className="text-base font-medium text-ink group-hover:underline">
                   {project.owner.name}
                 </span>
                 <span className="text-2xs text-muted">{project.owner.role}</span>
               </div>
-            </div>
-            {/* TODO(backend): open in-app chat / GET /api/chat/:ownerId */}
-            <button
-              type="button"
-              className="flex cursor-pointer items-center gap-1 rounded-full bg-accent px-4 py-2 text-xs font-medium text-on-accent transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
-            >
-              <Icon name="message-rounded" size={14} />
-              Chat with owner
-            </button>
+            </Link>
+            {/* Chat with owner: same wiring as the public detail —
+                open (or create) the 1:1 inbox thread with the owner.
+                Your own project: greyed out instead of chatting
+                with yourself. */}
+            {isOwnProject ? (
+              <button
+                type="button"
+                disabled
+                title="This is your project"
+                className="flex cursor-not-allowed items-center gap-1 rounded-full bg-placeholder px-4 py-2 text-xs font-medium text-muted"
+              >
+                <Icon name="message-rounded" size={14} />
+                This is your project
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => {
+                  startDirectThread({
+                    personId: ownerPersonId,
+                    name: project.owner.name,
+                  });
+                  router.push("/inbox");
+                }}
+                className="flex cursor-pointer items-center gap-1 rounded-full bg-accent px-4 py-2 text-xs font-medium text-on-accent transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+              >
+                <Icon name="message-rounded" size={14} />
+                Chat with owner
+              </button>
+            )}
           </div>
 
           <div className="flex flex-col gap-2">
@@ -122,9 +159,9 @@ export function MyCollabDetailContent({ project }: MyCollabDetailContentProps) {
           )}
         </div>
 
-        {/* 5. Skills (singular heading per frame) */}
+        {/* 3. Skills needed (heading on white, lime pills with icon + label) */}
         <div className="flex flex-col gap-3">
-          <h2 className="text-xl font-medium text-ink">Skill needed</h2>
+          <h2 className="text-xl font-medium text-ink">Skills needed</h2>
           <div className="flex flex-wrap gap-2">
             {project.skills.map((skill) => (
               <span
@@ -138,7 +175,7 @@ export function MyCollabDetailContent({ project }: MyCollabDetailContentProps) {
           </div>
         </div>
 
-        {/* 6. Team — filled members AND open slots (never drop open slots) */}
+        {/* 4. Team: heading + slot count top-right; filled members AND open slots */}
         <div className="flex flex-col gap-4">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-medium text-ink">Team</h2>
@@ -149,26 +186,33 @@ export function MyCollabDetailContent({ project }: MyCollabDetailContentProps) {
               <Icon name="group" size={20} className="text-ink" />
             </div>
           </div>
-          <div className="flex flex-wrap gap-4">
+          <div className="flex gap-4">
             {project.members.map((member) =>
               member.isOpenSlot ? (
+                /* Open slot: dark-gray circle with white "+" icon */
                 <div key={member.id} className="flex items-center gap-2">
                   <div className="flex size-[32px] items-center justify-center rounded-full bg-muted">
                     <Icon name="plus" size={14} className="text-surface" />
                   </div>
                   <div className="flex flex-col">
-                    <span className="text-base font-medium text-ink">Open slot</span>
-                    <span className="text-2xs text-muted">{member.role}</span>
-                  </div>
-                </div>
-              ) : (
-                <div key={member.id} className="flex items-center gap-2">
-                  <Avatar size={32} src={member.avatarUrl} alt={member.name} />
-                  <div className="flex flex-col">
                     <span className="text-base font-medium text-ink">{member.name}</span>
                     <span className="text-2xs text-muted">{member.role}</span>
                   </div>
                 </div>
+              ) : (
+                /* Filled member: avatar + name + role — links to profile */
+                <Link
+                  key={member.id}
+                  href={"/profile/" + (resolvePersonId(member.id) ?? member.id)}
+                  className="group flex items-center gap-2"
+                  aria-label={"View " + member.name + "'s profile"}
+                >
+                  <Avatar size={32} src={member.avatarUrl} alt={member.name} />
+                  <div className="flex flex-col">
+                    <span className="text-base font-medium text-ink group-hover:underline">{member.name}</span>
+                    <span className="text-2xs text-muted">{member.role}</span>
+                  </div>
+                </Link>
               )
             )}
           </div>
@@ -186,7 +230,7 @@ export function MyCollabDetailContent({ project }: MyCollabDetailContentProps) {
             Open Circle
           </Link>
         )}
-        {/* 7. Bottom CTA — presentational this phase (spec decision #3).
+        {/* 5. Bottom CTA — presentational this phase (spec decision #3).
                TODO(backend): label/state derive from the user's application
                status (accepted / rejected / closed). */}
         <button

@@ -38,31 +38,23 @@ function MyCollabDetailLoadingBody() {
       panel={<NotificationsPanel className="px-6" />}
     >
       <div className="flex flex-col gap-6 px-4 pb-12 pt-6 sm:px-6">
-        {/* 1. Status row */}
-        <div className="flex items-center gap-1.5">
-          <div className="size-4 rounded bg-placeholder" />
-          <div className="h-3.5 w-24 rounded bg-placeholder" />
-        </div>
-
-        {/* 2. Title + meta */}
-        <div className="flex flex-col gap-4">
+        {/* 1. Header band */}
+        <div className="flex flex-col gap-4 rounded-2xl p-6">
+          <div className="h-6 w-24 rounded-full bg-bg" />
           <div className="h-10 w-2/3 rounded-lg bg-placeholder" />
           <div className="flex items-center gap-4">
             <div className="h-3.5 w-28 rounded bg-placeholder" />
             <div className="h-3.5 w-24 rounded bg-placeholder" />
           </div>
+          <div className="grid h-[220px] grid-cols-2 grid-rows-2 gap-3 sm:h-[306px] sm:gap-5">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="rounded-md bg-placeholder/60" />
+            ))}
+          </div>
         </div>
 
-        {/* 3. Photo grid — 2x2 like the adaptive PhotoGrid at 4 photos */}
-        <div className="grid h-[220px] grid-cols-2 grid-rows-2 gap-3 sm:h-[306px] sm:gap-5">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="rounded-md bg-placeholder/60" />
-          ))}
-        </div>
-
-        {/* 4. Owner card + about + work items */}
+        {/* 2. Owner card + about + work items */}
         <div className="flex flex-col gap-4 rounded-2xl bg-bg p-6">
-          <div className="h-3 w-24 rounded bg-placeholder" />
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="size-[42px] shrink-0 rounded-full bg-placeholder" />
@@ -90,7 +82,7 @@ function MyCollabDetailLoadingBody() {
           </div>
         </div>
 
-        {/* 5. Skills */}
+        {/* 3. Skills */}
         <div className="flex flex-col gap-3">
           <div className="h-5 w-28 rounded bg-placeholder" />
           <div className="flex flex-wrap gap-2">
@@ -100,7 +92,7 @@ function MyCollabDetailLoadingBody() {
           </div>
         </div>
 
-        {/* 6. Team — filled members + open slot */}
+        {/* 4. Team — filled members + open slot */}
         <div className="flex flex-col gap-4">
           <div className="flex items-center justify-between">
             <div className="h-5 w-16 rounded bg-placeholder" />
@@ -122,8 +114,9 @@ function MyCollabDetailLoadingBody() {
           </div>
         </div>
 
-        {/* 7. Bottom CTA — disabled "Closed" (presentational this phase) */}
-        <div className="mx-auto h-12 w-64 rounded-full bg-placeholder" />
+        {/* 5. Open Circle + bottom CTA */}
+        <div className="h-12 w-full rounded-md bg-placeholder" />
+        <div className="h-12 w-full rounded-md bg-placeholder" />
       </div>
     </AppShell>
   );
