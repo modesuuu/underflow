@@ -37,8 +37,9 @@ export const NAV_SECTIONS: NavSection[] = [
   },
 ];
 
+// Help Center used to live here; removed 2026-11-07 (user's plan:
+// it moves to the Settings page later).
 export const FOOTER_LINKS: NavItem[] = [
-  { id: "help-center", label: "Help Center", icon: "help-circle" },
   { id: "settings", label: "Setting", icon: "cog" },
 ];
 
