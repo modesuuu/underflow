@@ -29,10 +29,17 @@ export function LogoutButton({
         className={
           variant === "icon"
             ? "flex size-9 cursor-pointer items-center justify-center rounded-full text-muted transition-colors hover:bg-surface hover:text-ink"
-            : "flex h-11 w-full cursor-pointer items-center justify-center rounded-lg border border-line bg-surface text-sm font-medium text-ink transition-colors hover:bg-bg"
+            : "flex h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-lg border border-line bg-surface text-sm font-medium text-ink transition-colors hover:bg-bg"
         }
       >
-        {variant === "icon" ? <Icon name="log-out" size={20} /> : "Log out"}
+        {variant === "icon" ? (
+          <Icon name="log-out" size={20} />
+        ) : (
+          <>
+            <Icon name="log-out" size={18} />
+            Log out
+          </>
+        )}
       </button>
       {confirming && (
         <ConfirmDialog
