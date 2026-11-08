@@ -54,7 +54,7 @@ export function Avatar({
         aria-label={alt}
         className={clsx(
           "flex shrink-0 items-center justify-center",
-          placeholderBg ? "font-semibold text-bg" : "bg-placeholder",
+          placeholderBg ? "font-semibold text-bg" : "bg-placeholder text-ink",
           shape,
           className
         )}
