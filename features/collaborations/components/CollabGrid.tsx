@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { Icon } from "@/components/ui/Icon";
-import { ProjectBand } from "./ProjectBand";
+import { CollabCard } from "./CollabCard";
 import { SearchFilterBar } from "./SearchFilterBar";
 import { parseDueDate, sortProjects } from "../sort";
 import type {
@@ -17,9 +17,9 @@ interface CollabGridProps {
 }
 
 /** Cap the stagger index so late cards don't wait a full second in. */
-const STAGGER_CAP = 11;
+const STAGGER_CAP = 8;
 
-/** Bands per page of the river; "Show more" grows it in place. */
+/** Cards per page of the river; "Show more" grows it in place. */
 const PAGE_SIZE = 12;
 
 type QuickView = "all" | "open" | "ending" | "almost-full" | "saved";
@@ -36,11 +36,11 @@ const QUICK_VIEWS: { id: QuickView; label: string }[] = [
  * Search + filter + sort + responsive card grid (Figma "Collaborations" frame).
  * Pipeline: committed search → type filter → status filter → sort.
  *
- * 2026 redesign v3: a river of self-complete bands, built for
- * a board that grows like a feed — sticky tools, quick views
- * and skill facets to cut the list, a shortlist (Saved), and
- * show-more pagination instead of one endless render. Mount
- * stagger unchanged (50ms per item, reduced-motion gated).
+ * 2026-11-09 redesign: a photo-led card grid (Contra discovery
+ * pattern), built for a board that grows like a feed — sticky
+ * tools, quick views and skill facets to cut the list, a shortlist
+ * (Saved), and show-more pagination instead of one endless render.
+ * Mount stagger unchanged (50ms per item, reduced-motion gated).
  *
  * No positional numbering: this is a filterable/sortable/searchable data
  * grid — index numbers reshuffle on every interaction and imply a ranking
@@ -130,6 +130,18 @@ export function CollabGrid({ projects }: CollabGridProps) {
     return [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 6);
   }, [projects]);
 
+  // Header stats — real numbers from the board itself, not the
+  // filtered view (the results line already shows that count).
+  const stats = useMemo(() => {
+    const open = projects.filter((p) => p.status === "open");
+    const openSeats = open.reduce(
+      (sum, p) => sum + (p.slotsTotal - p.slotsFilled),
+      0
+    );
+    const members = projects.reduce((sum, p) => sum + p.slotsFilled, 0);
+    return { open: open.length, openSeats, members };
+  }, [projects]);
+
   const toggleSaved = (id: string) =>
     setSavedIds((prev) => {
       const next = new Set(prev);
@@ -151,6 +163,28 @@ export function CollabGrid({ projects }: CollabGridProps) {
 
   return (
     <div className="flex flex-col gap-6">
+      {/* Stats — the board at a glance, in the reference's big-number row. */}
+      <div className="flex items-end gap-8 sm:gap-12">
+        <div>
+          <div className="text-[28px] font-semibold leading-none tracking-[-0.01em] text-ink">
+            {stats.open}
+          </div>
+          <div className="pt-1.5 text-[13px] text-muted">Open projects</div>
+        </div>
+        <div>
+          <div className="text-[28px] font-semibold leading-none tracking-[-0.01em] text-ink">
+            {stats.openSeats}
+          </div>
+          <div className="pt-1.5 text-[13px] text-muted">Open seats</div>
+        </div>
+        <div>
+          <div className="text-[28px] font-semibold leading-none tracking-[-0.01em] text-ink">
+            {stats.members}
+          </div>
+          <div className="pt-1.5 text-[13px] text-muted">Members</div>
+        </div>
+      </div>
+
       {/* Tools stick under the TopBar — on a long board, search
           and facets stay reachable mid-scroll. */}
       <div className="sticky top-[79px] z-10 border-b border-placeholder bg-surface pb-3">
@@ -254,9 +288,9 @@ export function CollabGrid({ projects }: CollabGridProps) {
           </button>
         </div>
       ) : (
-        /* The river: self-complete bands, one page at a time. */
+        /* The river: photo-led cards in a grid, one page at a time. */
         <>
-          <div className="flex flex-col gap-3">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
             {visibleProjects.map((project, i) => (
               <div
                 key={project.id}
@@ -265,7 +299,7 @@ export function CollabGrid({ projects }: CollabGridProps) {
                   { "--stagger-i": String(Math.min(i, STAGGER_CAP)) } as CSSProperties
                 }
               >
-                <ProjectBand
+                <CollabCard
                   project={project}
                   saved={savedIds.has(project.id)}
                   onToggleSaved={() => toggleSaved(project.id)}

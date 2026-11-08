@@ -145,7 +145,7 @@ interface SearchFilterBarProps {
 }
 
 const TRIGGER_CHROME =
-  "pressable flex h-11 cursor-pointer items-center gap-2 rounded-xl border border-line bg-surface px-3.5 transition-colors hover:border-ink/30 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none";
+  "pressable flex h-11 cursor-pointer items-center gap-2 rounded-full border border-line bg-surface px-3.5 transition-colors hover:border-ink/30 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none";
 
 /**
  * Search + sort + filter bar, 2026 redesign: search leads (the
@@ -172,7 +172,7 @@ export function SearchFilterBar({
   return (
     <div className="flex flex-wrap items-center gap-3">
       {/* Search — the primary tool on this page */}
-      <div className="flex h-11 min-w-52 flex-1 items-center gap-2 rounded-xl border border-line bg-surface px-4 transition-colors focus-within:border-ink/40 sm:max-w-md">
+      <div className="flex h-11 min-w-52 flex-1 items-center gap-2 rounded-full border border-line bg-surface px-4 transition-colors focus-within:border-ink/40 sm:max-w-md">
         <Icon name="search" size={18} className="shrink-0 text-muted" />
         <input
           type="text"
@@ -199,7 +199,7 @@ export function SearchFilterBar({
       <button
         type="button"
         onClick={onSearch}
-        className="pressable h-11 cursor-pointer rounded-xl bg-accent px-5 text-sm font-semibold text-on-accent transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+        className="pressable h-11 cursor-pointer rounded-full bg-ink px-5 text-sm font-semibold text-surface transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
       >
         Search
       </button>

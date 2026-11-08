@@ -21,14 +21,24 @@ export const metadata: Metadata = {
 function CollabGridSkeleton() {
   return (
     <>
+      {/* Stats */}
+      <div className="flex items-end gap-8 sm:gap-12">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <div key={i} className="flex flex-col gap-2">
+            <div className="h-7 w-10 rounded bg-placeholder" />
+            <div className="h-3.5 w-20 rounded bg-placeholder" />
+          </div>
+        ))}
+      </div>
+
       {/* Toolbar + facets */}
       <div className="flex flex-col gap-3">
         <div className="flex items-center gap-3">
-          <div className="h-11 flex-1 rounded-xl border border-line bg-surface sm:max-w-md" />
-          <div className="h-11 w-24 rounded-xl bg-placeholder" />
+          <div className="h-11 flex-1 rounded-full border border-line bg-surface sm:max-w-md" />
+          <div className="h-11 w-24 rounded-full bg-placeholder" />
           <div className="ms-auto flex items-center gap-2">
-            <div className="h-11 w-32 rounded-xl bg-placeholder" />
-            <div className="h-11 w-28 rounded-xl bg-placeholder" />
+            <div className="h-11 w-32 rounded-full bg-placeholder" />
+            <div className="h-11 w-28 rounded-full bg-placeholder" />
           </div>
         </div>
         <div className="flex gap-1.5">
@@ -38,16 +48,23 @@ function CollabGridSkeleton() {
         </div>
       </div>
 
-      {/* Bands */}
-      <div className="flex flex-col gap-3">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="flex gap-4 rounded-2xl bg-bg p-4">
-            <div className="hidden size-[84px] shrink-0 rounded-xl bg-placeholder/60 sm:block" />
-            <div className="flex flex-1 flex-col gap-2">
+      {/* Cards */}
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <div
+            key={i}
+            className="flex flex-col overflow-hidden rounded-2xl border border-line bg-surface"
+          >
+            <div className="aspect-[16/10] w-full bg-placeholder/60" />
+            <div className="flex flex-1 flex-col gap-2 p-4 sm:p-5">
               <div className="h-3.5 w-24 rounded bg-placeholder" />
-              <div className="h-5 w-2/5 rounded bg-placeholder" />
-              <div className="h-4 w-1/3 rounded bg-placeholder" />
-              <div className="h-3.5 w-1/2 rounded bg-placeholder" />
+              <div className="h-5 w-3/4 rounded bg-placeholder" />
+              <div className="h-4 w-full rounded bg-placeholder" />
+              <div className="h-4 w-2/3 rounded bg-placeholder" />
+              <div className="mt-auto flex items-center justify-between border-t border-line pt-3">
+                <div className="h-6 w-24 rounded-full bg-placeholder" />
+                <div className="h-9 w-20 rounded-full bg-placeholder" />
+              </div>
             </div>
           </div>
         ))}
@@ -69,15 +86,15 @@ export default function CollaborationsPage() {
       breadcrumbLeaf="Collaborations"
       actions={<CollabHeaderActions />}
     >
-      <div className="flex flex-col gap-6 px-4 py-6 sm:px-6 sm:py-8">
+      <div className="theme-warm flex min-h-full flex-col gap-6 bg-bg px-4 py-6 sm:px-6 sm:py-8">
         {/* Page header — a working header, not a billboard: the
             page's job is scanning open projects, so the title is
             plain and the toolbar below does the talking. */}
         <div className="flex flex-col gap-1.5">
-          <h1 className="text-[28px] font-semibold tracking-[-0.01em] text-ink">
+          <h1 className="text-[40px] font-semibold leading-[1.05] tracking-[-0.02em] text-ink">
             Collaborations
           </h1>
-          <p className="text-sm text-muted">
+          <p className="text-base text-muted">
             Open projects from students looking for teammates.
           </p>
         </div>
