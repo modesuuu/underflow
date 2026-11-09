@@ -3,14 +3,13 @@
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { Icon } from "@/components/ui/Icon";
 import { CollabCard } from "./CollabCard";
-import { SearchFilterBar } from "./SearchFilterBar";
 import { sortProjects } from "../sort";
-import type {
-  CollabFilterType,
-  CollabProject,
-  CollabSortKey,
-  CollabStatusFilter,
-} from "../types";
+import type { CollabProject } from "../types";
+import {
+  clearToolbar,
+  hasActiveFilters,
+  useCollabToolbar,
+} from "../toolbar-store";
 
 interface CollabGridProps {
   projects: CollabProject[];
@@ -36,13 +35,18 @@ const PAGE_SIZE = 12;
  * that doesn't exist.
  */
 export function CollabGrid({ projects }: CollabGridProps) {
-  // Draft query is typed in the input; committed only on Search click / Enter.
-  const [draftQuery, setDraftQuery] = useState("");
-  const [query, setQuery] = useState("");
-  const [sortKey, setSortKey] = useState<CollabSortKey>("recommended");
-  const [typeFilter, setTypeFilter] = useState<CollabFilterType>("all");
-  const [statusFilter, setStatusFilter] = useState<CollabStatusFilter>("all");
+  // Toolbar state lives in the shared store — the controls render
+  // in the TopBar (AppShell actions) while this grid consumes them.
+  // Draft query is typed in the input; committed only on Search
+  // click / Enter.
+  const toolbar = useCollabToolbar();
+  const { query, sortKey, typeFilter, statusFilter } = toolbar;
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+
+  // Each visit starts fresh, as when the state was local to this
+  // component — otherwise the store would keep the last search
+  // across navigations.
+  useEffect(() => () => clearToolbar(), []);
 
   const filtered = useMemo(() => {
     let result = projects;
@@ -77,54 +81,26 @@ export function CollabGrid({ projects }: CollabGridProps) {
     setVisibleCount(PAGE_SIZE);
   }, [query, typeFilter, statusFilter, sortKey]);
 
-  const clearAll = () => {
-    setDraftQuery("");
-    setQuery("");
-    setTypeFilter("all");
-    setStatusFilter("all");
-  };
+  const clearAll = clearToolbar;
 
   const visibleProjects = filtered.slice(0, visibleCount);
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Tools stick under the TopBar — on a long board, search
-          stays reachable mid-scroll. Layer order: z-[15] sits
-          between the card contents (z-10 — later in the DOM, so
-          they painted over a z-10 toolbar when scrolling) and the
-          TopBar (z-20) with its bell dropdown. The toolbar and
-          its dropdown panels stay above the cards, below the TopBar. */}
-      <div className="sticky top-[79px] z-[15] collab-ground pb-3">
-        <SearchFilterBar
-          draftQuery={draftQuery}
-          onDraftChange={setDraftQuery}
-          onSearch={() => setQuery(draftQuery)}
-          sortKey={sortKey}
-          onSortChange={setSortKey}
-          typeFilter={typeFilter}
-          onTypeChange={setTypeFilter}
-          statusFilter={statusFilter}
-          onStatusChange={setStatusFilter}
-        />
-
-        {/* Reset — the section header is gone (user order), so the
-            one-click reset lives here while anything is active. */}
-        {(query.trim() !== "" ||
-          typeFilter !== "all" ||
-          statusFilter !== "all") && (
-          <div className="flex justify-end pt-2">
-            <button
-              type="button"
-              onClick={clearAll}
-              className="cursor-pointer text-sm font-medium text-ink hover:underline focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
-            >
-              Clear search & filters
-            </button>
-          </div>
-        )}
-
-
-      </div>
+      {/* The search/sort/filter controls + New Project live in the
+          TopBar now (user order 2026-11-09); the one-click reset
+          stays here, above the river, while anything is active. */}
+      {hasActiveFilters(toolbar) && (
+        <div className="flex justify-end">
+          <button
+            type="button"
+            onClick={clearAll}
+            className="cursor-pointer text-sm font-medium text-ink hover:underline focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+          >
+            Clear search & filters
+          </button>
+        </div>
+      )}
 
       {filtered.length === 0 ? (
         /* P2 #12: proper empty view instead of a blank area */

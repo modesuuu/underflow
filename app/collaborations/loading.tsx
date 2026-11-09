@@ -1,36 +1,25 @@
 import { AppShell } from "@/components/layout/AppShell";
+import { CollabTopBarActions } from "@/features/collaborations/components/CollabTopBarActions";
 
 /**
  * Route-level loading.tsx — shown while getCollabProjects() suspends
- * in dev. Skeleton mirrors the river board: plain title block,
- * search-first toolbar and project cards.
+ * in dev. Skeleton mirrors the river board: plain title block and
+ * project cards. The search controls render live in the TopBar
+ * (AppShell actions), not as a skeleton.
  */
 export default function CollaborationsLoading() {
   return (
     <AppShell
       breadcrumbRoot="Dashboard"
       breadcrumbLeaf="Collaborations"
+      actions={<CollabTopBarActions />}
     >
       <div className="flex min-h-full flex-col gap-6 collab-ground px-4 py-6 sm:px-6 sm:py-8">
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <div className="flex flex-col gap-1.5">
-            <div className="h-10 w-72 rounded-md bg-placeholder" />
-            <div className="h-5 w-80 max-w-full rounded bg-placeholder/70" />
-          </div>
-          <div className="h-11 w-36 rounded-full bg-placeholder" />
+        <div className="flex flex-col gap-1.5">
+          <div className="h-10 w-72 rounded-md bg-placeholder" />
+          <div className="h-5 w-80 max-w-full rounded bg-placeholder/70" />
         </div>
 
-        {/* Toolbar */}
-        <div className="flex flex-col gap-3">
-          <div className="flex items-center gap-3">
-            <div className="h-11 flex-1 rounded-full border border-line bg-surface sm:max-w-md" />
-            <div className="h-11 w-24 rounded-full bg-placeholder" />
-            <div className="ms-auto flex items-center gap-2">
-              <div className="h-11 w-32 rounded-full bg-placeholder" />
-              <div className="h-11 w-28 rounded-full bg-placeholder" />
-            </div>
-          </div>
-        </div>
 
         {/* Cards */}
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">

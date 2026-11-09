@@ -43,7 +43,7 @@ export function TopBar({
   };
 
   return (
-    <header className="sticky top-0 z-20 flex h-[79px] items-center justify-between border-b border-line bg-chrome px-4 sm:px-6 lg:px-[42px]">
+    <header className="sticky top-0 z-20 flex min-h-[79px] flex-wrap items-center justify-between gap-x-6 gap-y-2 border-b border-line bg-chrome px-4 py-2 sm:px-6 lg:px-[42px] xl:flex-nowrap xl:py-0">
       <div className="flex items-center gap-3">
         <button
           type="button"
@@ -66,7 +66,7 @@ export function TopBar({
         <Breadcrumb root={breadcrumbRoot} leaf={breadcrumbLeaf} />
       </div>
 
-      <div className="flex items-center gap-6">
+      <div className="flex min-w-0 flex-1 items-center justify-end gap-6">
         <NotificationsBell />
         {actions}
       </div>

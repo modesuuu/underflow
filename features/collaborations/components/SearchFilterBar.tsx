@@ -133,6 +133,7 @@ function Dropdown({
 }
 
 interface SearchFilterBarProps {
+  className?: string;
   draftQuery: string;
   onDraftChange: (q: string) => void;
   onSearch: () => void;
@@ -154,6 +155,7 @@ const TRIGGER_CHROME =
  * commits on Enter or the Search button, as before.
  */
 export function SearchFilterBar({
+  className,
   draftQuery,
   onDraftChange,
   onSearch,
@@ -170,9 +172,9 @@ export function SearchFilterBar({
     SORT_OPTIONS.find((o) => o.value === sortKey)?.label ?? "Sort";
 
   return (
-    <div className="flex flex-wrap items-center gap-3">
+    <div className={clsx("flex flex-wrap items-center gap-3", className)}>
       {/* Search — the primary tool on this page */}
-      <div className="flex h-11 min-w-52 flex-1 items-center gap-2 rounded-full border border-line bg-surface px-4 transition-colors focus-within:border-ink/40 sm:max-w-md">
+      <div className="flex h-11 min-w-40 flex-1 items-center gap-2 rounded-full border border-line bg-surface px-4 transition-colors focus-within:border-ink/40 sm:max-w-md">
         <Icon name="search" size={18} className="shrink-0 text-muted" />
         <input
           type="text"

@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { AppShell } from "@/components/layout/AppShell";
 import { getCollabProjects } from "@/features/collaborations/api";
 import { CollabGrid } from "@/features/collaborations/components/CollabGrid";
-import { CollabHeaderActions } from "@/features/collaborations/components/CollabHeaderActions";
+import { CollabTopBarActions } from "@/features/collaborations/components/CollabTopBarActions";
 
 export const metadata: Metadata = {
   title: "Collaborations",
@@ -16,22 +16,12 @@ export const metadata: Metadata = {
  * on the data-bound section, so navigation shows this page's own shape
  * (header + its section skeleton) instead of the neutral root fallback.
  * The fallback is the section body of app/collaborations/loading.tsx
- * (toolbar + 8-card grid), minus the AppShell and header which render now.
+ * (8-card grid), minus the AppShell and header which render now.
+ * The search controls render live in the TopBar, not as a skeleton.
  */
 function CollabGridSkeleton() {
   return (
     <>
-      {/* Toolbar */}
-      <div className="flex flex-col gap-3">
-        <div className="flex items-center gap-3">
-          <div className="h-11 flex-1 rounded-full border border-line bg-surface sm:max-w-md" />
-          <div className="h-11 w-24 rounded-full bg-placeholder" />
-          <div className="ms-auto flex items-center gap-2">
-            <div className="h-11 w-32 rounded-full bg-placeholder" />
-            <div className="h-11 w-28 rounded-full bg-placeholder" />
-          </div>
-        </div>
-      </div>
 
       {/* Cards */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -73,22 +63,20 @@ export default function CollaborationsPage() {
     <AppShell
       breadcrumbRoot="Dashboard"
       breadcrumbLeaf="Collaborations"
+      actions={<CollabTopBarActions />}
     >
       <div className="flex min-h-full flex-col gap-6 collab-ground px-4 py-6 sm:px-6 sm:py-8">
-        {/* Page header — display heading row: big title + subheading
-            on the left, the New Project pill beside it. Base theme
+        {/* Page header — display heading + subheading. Base theme
             (Forest & Cream) since 2026-11-09; subheading restored
-            on the user's order the same day. */}
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <div className="flex flex-col gap-1.5">
-            <h1 className="text-[40px] font-semibold uppercase leading-[1.05] tracking-[-0.02em] text-ink">
-              Collaborations
-            </h1>
-            <p className="text-base text-muted">
-              Open projects from students looking for teammates.
-            </p>
-          </div>
-          <CollabHeaderActions />
+            on the user's order the same day. The search controls
+            + New Project live in the TopBar now (same day). */}
+        <div className="flex flex-col gap-1.5">
+          <h1 className="text-[40px] font-semibold uppercase leading-[1.05] tracking-[-0.02em] text-ink">
+            Collaborations
+          </h1>
+          <p className="text-base text-muted">
+            Open projects from students looking for teammates.
+          </p>
         </div>
 
         {/* Search + filter + card grid */}
