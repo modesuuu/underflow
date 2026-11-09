@@ -9,7 +9,11 @@ export default function NotificationsPage() {
       breadcrumbLeaf="Notifications"
       backLabel="Feed"
       backHref="/"
-      actions={<PostButton />}
+      actions={
+        <div className="hidden lg:block">
+          <PostButton />
+        </div>
+      }
     >
       <h1 className="sr-only">Notifications</h1>
       <div className="w-full px-4 sm:px-6">
