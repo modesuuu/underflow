@@ -90,10 +90,10 @@ interface SearchFilterBarProps {
  * dropdown — right-aligned in the TopBar next to New Project.
  * The dropdown holds the sort (Recommended / Due soonest /
  * Newest); the type filter it replaced is gone. Enter commits
- * the search. Fixed 448px width (w-md, capped by the container)
- * so the pill sits on the right instead of stretching; below sm
- * the sort label hides (sort icon only) so the input stays
- * usable on phones.
+ * the search. Full width capped at 448px (w-full max-w-md) so
+ * the pill sits on the right instead of stretching, and takes
+ * the whole row on phones; below sm the sort label hides (sort
+ * icon only) so the input stays usable on phones.
  */
 export function SearchFilterBar({
   draftQuery,
@@ -106,7 +106,7 @@ export function SearchFilterBar({
     SORT_OPTIONS.find((o) => o.value === sortKey)?.label ?? "Recommended";
 
   return (
-    <div className="flex h-11 w-md max-w-full min-w-60 items-center gap-2 rounded-full border border-line bg-surface pl-4 pr-1.5 transition-colors focus-within:border-ink/40">
+    <div className="flex h-11 w-full max-w-md min-w-60 items-center gap-2 rounded-full border border-line bg-surface pl-4 pr-1.5 transition-colors focus-within:border-ink/40">
       <Icon name="search" size={18} className="shrink-0 text-muted" />
       <input
         type="text"
