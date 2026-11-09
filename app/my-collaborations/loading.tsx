@@ -13,12 +13,9 @@ export default function MyCollaborationsLoading() {
       breadcrumbLeaf="My Collaborations"
     >
       <div className="flex flex-col gap-6 px-4 py-6 sm:px-6 sm:py-8">
-        {/* Header: title + New Project, stats right */}
+        {/* Header: title, stats right */}
         <div className="flex flex-wrap items-end justify-between gap-x-8 gap-y-4">
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="h-10 w-80 max-w-full rounded-lg bg-placeholder" />
-            <div className="h-9 w-32 rounded-full bg-placeholder" />
-          </div>
+          <div className="h-10 w-80 max-w-full rounded-lg bg-placeholder" />
           <div className="grid grid-cols-2 gap-x-8 gap-y-3 sm:grid-cols-4">
             {Array.from({ length: 4 }).map((_, i) => (
               <div key={i} className="flex flex-col gap-1.5">

@@ -6,18 +6,11 @@ import clsx from "clsx";
 import { Avatar } from "@/components/ui/Avatar";
 import { Icon } from "@/components/ui/Icon";
 import { formatDueDate, parseDueDate } from "@/features/collaborations/sort";
-import { MakeCollabModal } from "@/features/collaborations/components/MakeCollabModal";
-import { sortMyProjects } from "../sort";
-import type {
-  CollabFilterType,
-  CollabSortKey,
-} from "@/features/collaborations/types";
 import {
   MY_COLLAB_CATEGORIES,
   getCategory,
 } from "../types";
 import type { MyCollabCategory, MyCollabProject, MyCollabStatus } from "../types";
-import { Dropdown } from "./MyCollabSearchBar";
 
 /**
  * Dashboard order for the header stats + the status chips:
@@ -50,19 +43,6 @@ const STATUS_CHIPS: { value: MyCollabStatus | "all"; label: string }[] = [
   { value: "pending", label: "Pending" },
   { value: "complete", label: "Complete" },
   { value: "revise", label: "Revise" },
-];
-
-const SORT_OPTIONS: { value: CollabSortKey; label: string }[] = [
-  { value: "recommended", label: "Recommended" },
-  { value: "due", label: "Due soonest" },
-  { value: "newest", label: "Newest" },
-];
-
-const TYPE_OPTIONS: { value: CollabFilterType; label: string }[] = [
-  { value: "all", label: "All types" },
-  { value: "coursework", label: "Coursework" },
-  { value: "portfolio", label: "Portfolio" },
-  { value: "product", label: "Product" },
 ];
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -182,27 +162,26 @@ interface MyCollabBoardProps {
 
 /**
  * The user's project dashboard (2026 redesign, reference = the
- * CRM workspace shot): a header of big title + New Project +
- * status stats, then the project grid with status chips +
- * search + sort + type. The schedule bar and the Needs
- * Attention section were removed on the user's order
- * (2026-11-09) — the board is header + grid only. The old
- * register band and its progress track are gone — the counts
- * now live in the header stats; the status-section ledgers
- * are gone — the chips filter one grid. The category and
- * detail pages keep their rows; only this board is a
- * dashboard. Search/sort/type/status apply to the grid;
- * stats always describe the full portfolio, never the filter.
+ * CRM workspace shot): a header of big title + status stats,
+ * then the project grid with status chips + search. The schedule
+ * bar and the Needs Attention section were removed on the user's
+ * order (2026-11-09) — and the sort + type dropdowns and the
+ * New Project button followed the same day: the board is title
+ * + stats + a search-and-chip grid only, in the mock's default
+ * order. The old register band and its progress track are gone
+ * — the counts now live in the header stats; the status-section
+ * ledgers are gone — the chips filter one grid. The category
+ * and detail pages keep their rows; only this board is a
+ * dashboard. Search/status apply to the grid; stats always
+ * describe the full portfolio, never the filter. New projects
+ * are still created from the public Collaborations page.
  */
 export function MyCollabBoard({ projects }: MyCollabBoardProps) {
   const [draftQuery, setDraftQuery] = useState("");
   const [query, setQuery] = useState("");
-  const [sortKey, setSortKey] = useState<CollabSortKey>("recommended");
-  const [typeFilter, setTypeFilter] = useState<CollabFilterType>("all");
   const [statusFilter, setStatusFilter] = useState<MyCollabStatus | "all">(
     "all"
   );
-  const [modalOpen, setModalOpen] = useState(false);
 
   const filtered = useMemo(() => {
     let result = projects;
@@ -214,19 +193,15 @@ export function MyCollabBoard({ projects }: MyCollabBoardProps) {
           p.subtitle.toLowerCase().includes(q)
       );
     }
-    if (typeFilter !== "all") {
-      result = result.filter((p) => p.type === typeFilter);
-    }
     if (statusFilter !== "all") {
       result = result.filter((p) => p.myStatus === statusFilter);
     }
-    return sortMyProjects(result, sortKey);
-  }, [projects, query, typeFilter, statusFilter, sortKey]);
+    return result;
+  }, [projects, query, statusFilter]);
 
   const clearAll = () => {
     setDraftQuery("");
     setQuery("");
-    setTypeFilter("all");
     setStatusFilter("all");
   };
 
@@ -242,28 +217,13 @@ export function MyCollabBoard({ projects }: MyCollabBoardProps) {
     ])
   );
 
-  const sortLabel =
-    SORT_OPTIONS.find((o) => o.value === sortKey)?.label ?? "Sort";
-  const typeLabel =
-    TYPE_OPTIONS.find((o) => o.value === typeFilter)?.label ?? "Type";
-
   return (
     <div className="flex flex-col gap-6">
-      {/* Header — big title + New Project, status stats right. */}
+      {/* Header — big title, status stats right. */}
       <div className="flex flex-wrap items-end justify-between gap-x-8 gap-y-4">
-        <div className="flex flex-wrap items-center gap-3">
-          <h1 className="text-[40px] leading-none font-semibold tracking-tight text-ink uppercase">
-            My Collaborations
-          </h1>
-          <button
-            type="button"
-            onClick={() => setModalOpen(true)}
-            className="pressable flex cursor-pointer items-center gap-1.5 rounded-full bg-accent px-4 py-2 text-sm font-medium text-on-accent transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
-          >
-            <Icon name="plus" size={16} />
-            New Project
-          </button>
-        </div>
+        <h1 className="text-[40px] leading-none font-semibold tracking-tight text-ink uppercase">
+          My Collaborations
+        </h1>
         <div className="grid grid-cols-2 gap-x-8 gap-y-3 sm:grid-cols-4">
           {STATS_ORDER.map((slug) => {
             const cat = bySlug.get(slug);
@@ -342,80 +302,6 @@ export function MyCollabBoard({ projects }: MyCollabBoardProps) {
                 {chip.label}
               </button>
             ))}
-            <Dropdown
-              trigger={
-                <button
-                  type="button"
-                  aria-haspopup="true"
-                  className="pressable flex h-9 cursor-pointer items-center gap-1.5 rounded-full border border-line bg-surface px-3 text-[13px] font-medium text-ink focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
-                >
-                  <Icon name="sort" size={15} />
-                  <span>{sortLabel}</span>
-                  <Icon name="chevron-down" size={14} className="text-muted" />
-                </button>
-              }
-              panel={
-                <div className="flex flex-col gap-1.5">
-                  <span className="text-xs font-medium text-muted">
-                    Sort by
-                  </span>
-                  {SORT_OPTIONS.map((opt) => (
-                    <button
-                      key={opt.value}
-                      type="button"
-                      data-close-panel
-                      onClick={() => setSortKey(opt.value)}
-                      className={clsx(
-                        "pressable cursor-pointer rounded px-2 py-1 text-left text-sm transition-colors focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none",
-                        sortKey === opt.value
-                          ? "bg-accent font-medium text-on-accent"
-                          : "text-ink hover:bg-bg"
-                      )}
-                    >
-                      {opt.label}
-                    </button>
-                  ))}
-                </div>
-              }
-            />
-            <Dropdown
-              trigger={
-                <button
-                  type="button"
-                  aria-haspopup="true"
-                  className="pressable flex h-9 cursor-pointer items-center gap-1.5 rounded-full border border-line bg-surface px-3 text-[13px] font-medium text-ink focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
-                >
-                  <Icon name="filter" size={15} />
-                  <span>{typeLabel}</span>
-                  {typeFilter !== "all" && (
-                    <span className="flex size-[18px] items-center justify-center rounded-full bg-badge text-[10px] font-semibold text-surface">
-                      1
-                    </span>
-                  )}
-                </button>
-              }
-              panel={
-                <div className="flex flex-col gap-1.5">
-                  <span className="text-xs font-medium text-muted">Type</span>
-                  {TYPE_OPTIONS.map((opt) => (
-                    <button
-                      key={opt.value}
-                      type="button"
-                      data-close-panel
-                      onClick={() => setTypeFilter(opt.value)}
-                      className={clsx(
-                        "pressable cursor-pointer rounded px-2 py-1 text-left text-sm transition-colors focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none",
-                        typeFilter === opt.value
-                          ? "bg-accent font-medium text-on-accent"
-                          : "text-ink hover:bg-bg"
-                      )}
-                    >
-                      {opt.label}
-                    </button>
-                  ))}
-                </div>
-              }
-            />
           </div>
         </div>
 
@@ -447,8 +333,6 @@ export function MyCollabBoard({ projects }: MyCollabBoardProps) {
           </div>
         )}
       </section>
-
-      <MakeCollabModal open={modalOpen} onClose={() => setModalOpen(false)} />
     </div>
   );
 }
