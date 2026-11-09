@@ -124,18 +124,27 @@ export function CollabCard({ project }: { project: CollabProject }) {
           <p className="line-clamp-1 pt-0.5 text-[13px] text-muted">
             {project.owner.name} · {project.owner.role}
           </p>
-          {project.status !== "open" && (
-            <span className="mt-1.5 inline-flex items-center gap-1.5 rounded-full bg-bg px-2 py-0.5 text-[11px] font-semibold text-ink">
-              <span aria-hidden="true" className={"size-1.5 rounded-full " + STATUS_DOT[project.status]} />
-              {STATUS_LABEL[project.status]}
-            </span>
-          )}
+          {/* Always rendered: an invisible "Open" pill reserves the
+              status row's height on open cards, so every card's
+              header is the same height and the divider gap below
+              the tags stays identical across the row (it was 0px
+              on open cards and 13px on the in-progress card). */}
+          <span
+            aria-hidden={project.status === "open" ? true : undefined}
+            className={
+              "mt-1.5 inline-flex items-center gap-1.5 rounded-full bg-bg px-2 py-0.5 text-[11px] font-semibold text-ink" +
+              (project.status === "open" ? " invisible" : "")
+            }
+          >
+            <span aria-hidden="true" className={"size-1.5 rounded-full " + STATUS_DOT[project.status]} />
+            {STATUS_LABEL[project.status]}
+          </span>
         </div>
       </div>
 
       {/* Skill tags — the reference's Source tags */}
       {project.skills.length > 0 && (
-        <div className="pointer-events-none relative z-10 mt-3 flex flex-wrap gap-1.5">
+        <div className="pointer-events-none relative z-10 mt-3 mb-3 flex flex-wrap gap-1.5">
           {shownSkills.map((s) => (
             <span key={s.label} className="rounded-full bg-bg px-2.5 py-1 text-xs font-medium text-muted">
               {s.label}
