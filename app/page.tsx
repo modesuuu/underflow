@@ -53,7 +53,7 @@ export default function Home() {
             <PostButton />
           </div>
           {/* + Post Something — floating action button (phones only). */}
-          <div className="fixed right-4 bottom-4 z-30 rounded-md shadow-lg sm:hidden">
+          <div className="fixed right-4 bottom-4 z-30 rounded-full shadow-lg sm:hidden">
             <PostButton />
           </div>
         </>
