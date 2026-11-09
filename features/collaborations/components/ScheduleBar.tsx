@@ -28,7 +28,7 @@ export function ScheduleBar({ projects }: { projects: CollabProject[] }) {
   if (upcoming.length === 0) return null;
   const nearest = upcoming[0];
   return (
-    <div className="flex items-center gap-2 overflow-x-auto rounded-full bg-ink px-3 py-2 text-surface">
+    <div className="no-scrollbar flex items-center gap-2 overflow-x-auto rounded-full bg-ink px-3 py-2 text-surface">
       <span className="shrink-0 px-2 text-sm font-medium whitespace-nowrap">Your Schedule</span>
       <span className="flex shrink-0 items-center gap-1.5 rounded-full bg-surface/15 px-3 py-1.5 text-xs font-medium whitespace-nowrap">
         <Icon name="calendar" size={14} />
