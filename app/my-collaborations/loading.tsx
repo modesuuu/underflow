@@ -2,10 +2,9 @@ import { AppShell } from "@/components/layout/AppShell";
 
 /**
  * Route-level loading.tsx for /my-collaborations — skeleton
- * shaped like the board: header, the portfolio band, the
- * attention card, the search-first toolbar, two status
- * sections. Nested category/detail routes have their own
- * shaped skeletons.
+ * shaped like the board: header + the project grid (label +
+ * filter row + card grid). Nested category/detail routes have
+ * their own shaped skeletons.
  */
 export default function MyCollaborationsLoading() {
   return (
@@ -14,9 +13,6 @@ export default function MyCollaborationsLoading() {
       breadcrumbLeaf="My Collaborations"
     >
       <div className="flex flex-col gap-6 px-4 py-6 sm:px-6 sm:py-8">
-        {/* Schedule bar */}
-        <div className="h-12 w-full rounded-full border border-line bg-surface" />
-
         {/* Header: title + New Project, stats right */}
         <div className="flex flex-wrap items-end justify-between gap-x-8 gap-y-4">
           <div className="flex flex-wrap items-center gap-3">
@@ -30,16 +26,6 @@ export default function MyCollaborationsLoading() {
                 <div className="h-3 w-20 rounded bg-placeholder" />
               </div>
             ))}
-          </div>
-        </div>
-
-        {/* Attention */}
-        <div className="flex flex-col gap-3">
-          <div className="h-8 w-44 rounded-full bg-placeholder" />
-          <div className="h-[84px] rounded-2xl border border-line bg-surface" />
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="h-[76px] rounded-2xl border border-line bg-surface" />
-            <div className="h-[76px] rounded-2xl border border-line bg-surface" />
           </div>
         </div>
 

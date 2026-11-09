@@ -67,90 +67,6 @@ const TYPE_OPTIONS: { value: CollabFilterType; label: string }[] = [
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-interface AttentionItem {
-  icon: string;
-  label: string;
-  title: string;
-  sub: string;
-  href: string;
-  hot?: boolean;
-}
-
-/**
- * One attention card. The most urgent item renders as the
- * spotlight (full width, larger disc and title); the rest pair
- * up beneath it. The revise card is the accent one — the
- * dashboard's highlighted card, like the reference's orange
- * task card — it is the only item that demands action.
- */
-function AttentionCard({
-  card,
-  spotlight = false,
-}: {
-  card: AttentionItem;
-  spotlight?: boolean;
-}) {
-  return (
-    <Link
-      href={card.href}
-      className={clsx(
-        "group flex cursor-pointer items-center gap-3 rounded-2xl border transition-[border-color,box-shadow,opacity] duration-200 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none",
-        spotlight ? "p-5" : "p-4",
-        card.hot
-          ? "border-transparent bg-accent text-on-accent hover:opacity-90"
-          : "border-line bg-surface text-ink hover:border-ink/30 hover:shadow-[0_1px_2px_rgba(var(--uf-shadow-rgb),0.05),0_12px_28px_-12px_rgba(var(--uf-shadow-rgb),0.18)]"
-      )}
-    >
-      <span
-        className={clsx(
-          "flex shrink-0 items-center justify-center",
-          spotlight ? "size-11 rounded-xl" : "size-9 rounded-lg",
-          card.hot ? "bg-on-accent/15 text-on-accent" : "bg-bg text-ink"
-        )}
-      >
-        <Icon name={card.icon} size={spotlight ? 20 : 18} />
-      </span>
-      <span className="flex min-w-0 flex-1 flex-col">
-        <span
-          className={clsx(
-            "text-[11px] font-medium tracking-wide uppercase",
-            card.hot ? "text-on-accent/70" : "text-subtle"
-          )}
-        >
-          {card.label}
-        </span>
-        <span
-          className={clsx(
-            "truncate font-semibold",
-            spotlight ? "text-[15px]" : "text-sm",
-            card.hot ? "text-on-accent" : "text-ink"
-          )}
-        >
-          {card.title}
-        </span>
-        <span
-          className={clsx(
-            "truncate text-xs",
-            card.hot ? "text-on-accent/70" : "text-muted"
-          )}
-        >
-          {card.sub}
-        </span>
-      </span>
-      <Icon
-        name="chevron-right"
-        size={18}
-        className={clsx(
-          "shrink-0 transition-all duration-200 group-hover:translate-x-0.5",
-          card.hot
-            ? "text-on-accent/60 group-hover:text-on-accent"
-            : "text-placeholder group-hover:text-ink"
-        )}
-      />
-    </Link>
-  );
-}
-
 /**
  * One project card for the dashboard grid — the reference's lead
  * card, translated to our language: owner avatar + a circular
@@ -266,14 +182,15 @@ interface MyCollabBoardProps {
 
 /**
  * The user's project dashboard (2026 redesign, reference = the
- * CRM workspace shot): a schedule bar of the next deadlines, a
- * header of big title + New Project + status stats, what needs
- * the user as cards (the revise one highlighted in accent),
- * then the project grid with status chips + search + sort +
- * type. The old register band and its progress track are gone —
- * the counts now live in the header stats; the status-section
- * ledgers are gone — the chips filter one grid. The category
- * and detail pages keep their rows; only this board is a
+ * CRM workspace shot): a header of big title + New Project +
+ * status stats, then the project grid with status chips +
+ * search + sort + type. The schedule bar and the Needs
+ * Attention section were removed on the user's order
+ * (2026-11-09) — the board is header + grid only. The old
+ * register band and its progress track are gone — the counts
+ * now live in the header stats; the status-section ledgers
+ * are gone — the chips filter one grid. The category and
+ * detail pages keep their rows; only this board is a
  * dashboard. Search/sort/type/status apply to the grid;
  * stats always describe the full portfolio, never the filter.
  */
@@ -313,60 +230,11 @@ export function MyCollabBoard({ projects }: MyCollabBoardProps) {
     setStatusFilter("all");
   };
 
-  // Stats describe the FULL portfolio, never the filtered view.
-  const pendingItems = projects.filter((p) => p.myStatus === "pending");
-
-  // Schedule bar: the next deadlines, soonest first.
-  const upcoming = projects
-    .filter((p) => p.myStatus !== "complete")
-    .map((p) => ({ project: p, due: parseDueDate(p.dueDate) }))
-    .filter((x) => x.due !== Infinity)
-    .sort((a, b) => a.due - b.due)
-    .slice(0, 3);
-  const nextDeadline = upcoming[0];
-  const todayLabel = new Date().toLocaleDateString("en-US", {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-  });
-
-  // Attention: only items with something real behind them render.
-  const reviseItems = projects.filter((p) => p.myStatus === "revise");
-
-  const attention: AttentionItem[] = [];
-  if (reviseItems.length > 0) {
-    attention.push({
-      icon: "revision",
-      label: "Needs another pass",
-      title: `${reviseItems.length} project${reviseItems.length > 1 ? "s" : ""} waiting on you`,
-      sub: reviseItems[0].title,
-      href: "/my-collaborations/revise",
-      hot: true,
-    });
-  }
-  if (nextDeadline) {
-    attention.push({
-      icon: "calendar",
-      label: "Next deadline",
-      title: nextDeadline.project.title,
-      sub: `Due ${formatDueDate(nextDeadline.project.dueDate)}`,
-      href: `/my-collaborations/${nextDeadline.project.myStatus}/${nextDeadline.project.id}`,
-    });
-  }
-  if (pendingItems.length > 0) {
-    attention.push({
-      icon: "loader-circle",
-      label: "Waiting for review",
-      title: `${pendingItems.length} application${pendingItems.length > 1 ? "s" : ""} pending`,
-      sub: pendingItems[0].title,
-      href: "/my-collaborations/pending",
-    });
-  }
-
   const bySlug = new Map<MyCollabStatus, MyCollabCategory>(
     MY_COLLAB_CATEGORIES.map((c) => [c.slug, c])
   );
 
+  // Stats describe the FULL portfolio, never the filtered view.
   const statusCounts = new Map<MyCollabStatus, number>(
     STATS_ORDER.map((slug) => [
       slug,
@@ -381,46 +249,6 @@ export function MyCollabBoard({ projects }: MyCollabBoardProps) {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Schedule bar — the reference's "Your Schedule" pill:
-          today + the next deadlines, soonest first. */}
-      <div className="card-stagger no-scrollbar flex items-center gap-3 overflow-x-auto rounded-full border border-line bg-surface px-4 py-2.5">
-        <span className="shrink-0 text-sm font-semibold text-ink">
-          Your Schedule
-        </span>
-        <span className="flex shrink-0 items-center gap-1.5 text-xs font-medium text-muted">
-          <Icon name="calendar" size={14} />
-          {todayLabel}
-        </span>
-        {upcoming.length === 0 ? (
-          <span className="shrink-0 text-xs text-muted">
-            No upcoming deadlines.
-          </span>
-        ) : (
-          upcoming.map(({ project }) => (
-            <Link
-              key={project.id}
-              href={`/my-collaborations/${project.myStatus}/${project.id}`}
-              className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full bg-bg px-3 py-1.5 text-xs font-medium text-ink transition-colors hover:text-accent focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
-            >
-              <Icon name="calendar" size={13} className="text-muted" />
-              <span className="text-muted">
-                {formatDueDate(project.dueDate)}
-              </span>
-              <span className="max-w-36 truncate">{project.title}</span>
-            </Link>
-          ))
-        )}
-        {nextDeadline && (
-          <Link
-            href={`/my-collaborations/${nextDeadline.project.myStatus}/${nextDeadline.project.id}`}
-            aria-label="Open the next deadline"
-            className="ms-auto flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-full bg-accent text-on-accent transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
-          >
-            <Icon name="arrow-up-right" size={16} />
-          </Link>
-        )}
-      </div>
-
       {/* Header — big title + New Project, status stats right. */}
       <div className="flex flex-wrap items-end justify-between gap-x-8 gap-y-4">
         <div className="flex flex-wrap items-center gap-3">
@@ -460,37 +288,6 @@ export function MyCollabBoard({ projects }: MyCollabBoardProps) {
           })}
         </div>
       </div>
-
-      {/* What needs the user — the most urgent item leads as a
-          full-width spotlight; the rest pair up beneath it. */}
-      <section className="flex flex-col gap-3">
-        <span className="flex w-fit items-center gap-1.5 rounded-full border border-line bg-surface px-3 py-1.5 text-sm font-semibold text-ink">
-          Needs Attention
-          <span className="text-accent tabular-nums">{attention.length}</span>
-        </span>
-        {attention.length === 0 ? (
-          <p className="flex items-center gap-2 text-sm text-muted">
-            <Icon name="check-circle" size={18} className="text-ink" />
-            Nothing needs your attention.
-          </p>
-        ) : (
-          <div
-            className="card-stagger flex flex-col gap-3"
-            style={{ "--stagger-i": "1" } as CSSProperties}
-          >
-            <AttentionCard card={attention[0]} spotlight />
-            {attention.length > 1 && (
-              <div
-                className={`grid gap-3 ${attention.length > 2 ? "sm:grid-cols-2" : ""}`}
-              >
-                {attention.slice(1).map((card) => (
-                  <AttentionCard key={card.label} card={card} />
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-      </section>
 
       {/* My projects — one filterable card grid. */}
       <section className="flex flex-col gap-4">

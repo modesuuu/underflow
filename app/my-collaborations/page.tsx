@@ -12,16 +12,12 @@ export const metadata: Metadata = {
 
 /**
  * Fallback = the body of app/my-collaborations/loading.tsx minus its
- * AppShell (the band, the attention card, the toolbar, and the
- * sections), which renders here while getMyCollabProjects()
- * suspends.
+ * AppShell (the header and the project grid), which renders here
+ * while getMyCollabProjects() suspends.
  */
 function MyCollabBoardSkeleton() {
   return (
     <div className="flex flex-col gap-6">
-      {/* Schedule bar */}
-      <div className="h-12 w-full rounded-full border border-line bg-surface" />
-
       {/* Header: title + New Project, stats right */}
       <div className="flex flex-wrap items-end justify-between gap-x-8 gap-y-4">
         <div className="flex flex-wrap items-center gap-3">
@@ -35,16 +31,6 @@ function MyCollabBoardSkeleton() {
               <div className="h-3 w-20 rounded bg-placeholder" />
             </div>
           ))}
-        </div>
-      </div>
-
-      {/* Attention */}
-      <div className="flex flex-col gap-3">
-        <div className="h-8 w-44 rounded-full bg-placeholder" />
-        <div className="h-[84px] rounded-2xl border border-line bg-surface" />
-        <div className="grid gap-3 sm:grid-cols-2">
-          <div className="h-[76px] rounded-2xl border border-line bg-surface" />
-          <div className="h-[76px] rounded-2xl border border-line bg-surface" />
         </div>
       </div>
 
