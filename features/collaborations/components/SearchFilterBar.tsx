@@ -212,7 +212,7 @@ export function SearchFilterBar({
           trigger={
             <button type="button" aria-label="Sort" className={TRIGGER_CHROME}>
               <Icon name="sort" size={18} className="text-ink" />
-              <span className="text-sm font-medium text-ink">{sortLabel}</span>
+              <span className="hidden text-sm font-medium text-ink sm:inline">{sortLabel}</span>
               <Icon name="chevron-down" size={16} className="text-muted" />
             </button>
           }
@@ -241,7 +241,7 @@ export function SearchFilterBar({
           trigger={
             <button type="button" aria-label="Filter" className={TRIGGER_CHROME}>
               <Icon name="filter" size={18} className="text-ink" />
-              <span className="text-sm font-medium text-ink">Filters</span>
+              <span className="hidden text-sm font-medium text-ink sm:inline">Filters</span>
               {activeFilterCount > 0 && (
                 <span className="flex size-[18px] items-center justify-center rounded-full bg-badge text-[11px] font-semibold text-surface">
                   {activeFilterCount}
