@@ -108,6 +108,24 @@
   }
 }
 
+@keyframes uf-sheet-in {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes uf-sheet-out {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+
 @media (prefers-reduced-motion: no-preference) {
   /* Grid entrance: one-shot per mount, 50ms stagger via --stagger-i.
      300ms duration — with a 50ms stagger the tail item finishes inside the
@@ -138,6 +156,15 @@
   }
   .modal-panel-out {
     animation: uf-modal-out 180ms var(--uf-ease-out) forwards;
+  }
+
+  /* Mobile search sheet: slides in from the right (user order
+     2026-11-09). Exit runs faster than the 220ms entrance. */
+  .sheet-in {
+    animation: uf-sheet-in 220ms var(--uf-ease-out);
+  }
+  .sheet-out {
+    animation: uf-sheet-out 180ms var(--uf-ease-out) forwards;
   }
 
   /* Press feedback: subtle scale on :active (transition lives unlayered

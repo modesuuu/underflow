@@ -1,0 +1,304 @@
+"use client";
+
+import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import Link from "next/link";
+import { Avatar } from "@/components/ui/Avatar";
+import { Icon } from "@/components/ui/Icon";
+import { PEOPLE } from "@/features/profile/mock";
+import { COLLAB_PROJECTS } from "../mock";
+import {
+  commitSearch,
+  setDraftQuery,
+  useCollabToolbar,
+} from "../toolbar-store";
+
+/**
+ * Mobile search sheet (user order 2026-11-09, reference image-24):
+ * below `sm` the TopBar search pill is replaced by a search icon; tapping
+ * it slides this sheet in from the right. The sheet mirrors the reference:
+ * a search input up top (back + clear), a scope tab (Projects / People),
+ * and suggestions — popular searches when empty, live matches while typing.
+ * Tapping a project opens its detail; tapping a person opens their profile;
+ * Enter (or a popular term) commits the project search and closes the sheet.
+ */
+
+type SearchTab = "projects" | "people";
+
+interface MobileSearchModalProps {
+  open: boolean;
+  onClose: () => void;
+}
+
+function matchesProject(
+  p: (typeof COLLAB_PROJECTS)[number],
+  q: string
+): boolean {
+  const hay =
+    `${p.title} ${p.subtitle} ${p.description}`.toLowerCase();
+  return hay.includes(q);
+}
+
+function matchesPerson(p: (typeof PEOPLE)[number], q: string): boolean {
+  const hay = `${p.name} ${p.role ?? ""}`.toLowerCase();
+  return hay.includes(q);
+}
+
+export function MobileSearchModal({ open, onClose }: MobileSearchModalProps) {
+  const { draftQuery } = useCollabToolbar();
+  const [tab, setTab] = useState<SearchTab>("projects");
+  const [closing, setClosing] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
+
+  // Exit animation state — the sheet stays mounted until the CSS
+  // out-animation finishes (same pattern as MakeCollabModal).
+  useEffect(() => {
+    if (open) setClosing(false);
+  }, [open ]);
+
+  useEffect(() => {
+    if (!closing) return;
+    const t = setTimeout(() => setClosing(false), 200);
+    return () => clearTimeout(t);
+  }, [closing]);
+
+  // Focus the input on open (opens the keyboard on mobile) and
+  // remember the trigger so focus can return on close.
+  useEffect(() => {
+    if (!open) return;
+    previousFocusRef.current =
+      document.activeElement as HTMLElement | null;
+    const t = setTimeout(() => inputRef.current?.focus(), 60);
+    return () => clearTimeout(t);
+  }, [open ]);
+
+  // Escape closes.
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") requestClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open ]);
+
+  const requestClose = () => {
+    setClosing(true);
+    onClose();
+    previousFocusRef.current?.focus?.();
+  };
+
+  const q = draftQuery.trim().toLowerCase();
+
+  // Popular searches: the project titles — every one is a term the grid
+  // actually matches (the grid filters title/subtitle/description only),
+  // so tapping one always lands on a real result.
+  const popular = useMemo(
+    () => COLLAB_PROJECTS.map((p) => p.title),
+    []
+  );
+
+  const projectMatches = useMemo(
+    () => (q ? COLLAB_PROJECTS.filter((p) => matchesProject(p, q)) : []),
+    [q]
+  );
+  const people = useMemo(() => PEOPLE.filter((p) => p.id !== "me"), []);
+  const peopleMatches = useMemo(
+    () => (q ? people.filter((p) => matchesPerson(p, q)) : people),
+    [q, people]
+  );
+
+  if (!open && !closing) return null;
+
+  const commitAndClose = () => {
+    commitSearch();
+    requestClose();
+  };
+
+  const pickPopular = (term: string) => {
+    setDraftQuery(term);
+    commitSearch();
+    requestClose();
+  };
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-50"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Search"
+    >
+      <div
+        className={`absolute inset-0 bg-ink/40 ${
+          closing ? "modal-overlay-out" : "modal-overlay-in"
+        }`}
+        onClick={requestClose}
+        aria-hidden="true"
+      />
+      <div
+        className={`absolute inset-y-0 right-0 flex w-full flex-col bg-surface sm:max-w-md ${
+          closing ? "sheet-out" : "sheet-in"
+        }`}
+      >
+        {/* Header: back + search input + clear (reference image-24). */}
+        <div className="flex items-center gap-2 border-b border-line px-3 py-3">
+          <button
+            type="button"
+            aria-label="Back"
+            onClick={requestClose}
+            className="flex size-10 shrink-0 cursor-pointer items-center justify-center rounded-full text-ink transition-colors hover:bg-bg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          >
+            <Icon name="chevron-left" size={22} />
+          </button>
+          <div className="flex h-11 min-w-0 flex-1 items-center gap-2 rounded-full border border-line bg-bg pl-4 pr-1.5">
+            <Icon name="search" size={18} className="shrink-0 text-muted" />
+            <input
+              ref={inputRef}
+              type="text"
+              value={draftQuery}
+              onChange={(e) => setDraftQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") commitAndClose();
+              }}
+              placeholder="Search"
+              aria-label="Search projects"
+              autoComplete="off"
+              className="min-w-0 flex-1 bg-transparent text-[15px] text-ink outline-none placeholder:text-muted"
+            />
+            {draftQuery && (
+              <button
+                type="button"
+                aria-label="Clear search"
+                onClick={() => setDraftQuery("")}
+                className="flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-full text-muted transition-colors hover:bg-surface hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+              >
+                <Icon name="x" size={18} />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Scope tabs (reference: Talent / Jobs -> Projects / People). */}
+        <div
+          className="flex gap-6 border-b border-line px-5"
+          role="tablist"
+          aria-label="Search scope"
+        >
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tab === "projects"}
+            onClick={() => setTab("projects")}
+            className={`border-b-2 py-2.5 text-sm transition-colors focus-visible:outline-none ${
+              tab === "projects"
+                ? "border-ink font-semibold text-ink"
+                : "border-transparent text-muted hover:text-ink"
+            }`}
+          >
+            Projects
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tab === "people"}
+            onClick={() => setTab("people")}
+            className={`border-b-2 py-2.5 text-sm transition-colors focus-visible:outline-none ${
+              tab === "people"
+                ? "border-ink font-semibold text-ink"
+                : "border-transparent text-muted hover:text-ink"
+            }`}
+          >
+            People
+          </button>
+        </div>
+
+        {/* Suggestions / results. */}
+        <div className="min-h-0 flex-1 overflow-y-auto px-2 py-2">
+          {tab === "projects" ? (
+            q === "" ? (
+              <>
+                <p className="px-3 pt-2 pb-1 text-xs font-medium tracking-wide text-muted uppercase">
+                  Popular searches
+                </p>
+                {popular.map((term) => (
+                  <button
+                    key={term}
+                    type="button"
+                    onClick={() => pickPopular(term)}
+                    className="flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-3 text-left text-[15px] text-ink transition-colors hover:bg-bg focus-visible:bg-bg focus-visible:outline-none"
+                  >
+                    <Icon
+                      name="search"
+                      size={18}
+                      className="shrink-0 text-muted"
+                    />
+                    {term}
+                  </button>
+                ))}
+              </>
+            ) : projectMatches.length === 0 ? (
+              <p className="px-3 py-6 text-center text-sm text-muted">
+                No projects found for &ldquo;{draftQuery.trim()}&rdquo;.
+              </p>
+            ) : (
+              projectMatches.map((p) => (
+                <Link
+                  key={p.id}
+                  href={`/collaborations/${p.id}`}
+                  onClick={requestClose}
+                  className="flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors hover:bg-bg focus-visible:bg-bg focus-visible:outline-none"
+                >
+                  <Avatar alt={p.owner.name} size={40} />
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-[15px] font-medium text-ink">
+                      {p.title}
+                    </span>
+                    <span className="block truncate text-[13px] text-muted">
+                      {p.owner.name} · {p.owner.role} · {p.type}
+                    </span>
+                  </span>
+                  <Icon
+                    name="chevron-right"
+                    size={18}
+                    className="shrink-0 text-muted"
+                  />
+                </Link>
+              ))
+            )
+          ) : peopleMatches.length === 0 ? (
+            <p className="px-3 py-6 text-center text-sm text-muted">
+              No people found for &ldquo;{draftQuery.trim()}&rdquo;.
+            </p>
+          ) : (
+            peopleMatches.map((person) => (
+              <Link
+                key={person.id}
+                href={`/profile/${person.id}`}
+                onClick={requestClose}
+                className="flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors hover:bg-bg focus-visible:bg-bg focus-visible:outline-none"
+              >
+                <Avatar alt={person.name} size={40} />
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-[15px] font-medium text-ink">
+                    {person.name}
+                  </span>
+                  <span className="block truncate text-[13px] text-muted">
+                    {person.role ?? "Member"}
+                  </span>
+                </span>
+                <Icon
+                  name="chevron-right"
+                  size={18}
+                  className="shrink-0 text-muted"
+                />
+              </Link>
+            ))
+          )}
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+}
