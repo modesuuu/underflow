@@ -22,7 +22,7 @@ export function CollabHeaderActions() {
         className="pressable flex cursor-pointer items-center gap-1.5 rounded-full bg-ink px-4 py-2 text-surface transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
       >
         <Icon name="plus" size={16} />
-        <span className="text-sm font-medium">Create Project</span>
+        <span className="text-sm font-medium">New Project</span>
       </button>
 
       <MakeCollabModal open={modalOpen} onClose={() => setModalOpen(false)} />

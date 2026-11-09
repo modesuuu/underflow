@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { Icon } from "@/components/ui/Icon";
 import { CollabCard } from "./CollabCard";
+import { ScheduleBar } from "./ScheduleBar";
 import { SearchFilterBar } from "./SearchFilterBar";
 import { parseDueDate, sortProjects } from "../sort";
 import type {
@@ -36,7 +37,7 @@ const QUICK_VIEWS: { id: QuickView; label: string }[] = [
  * Search + filter + sort + responsive card grid (Figma "Collaborations" frame).
  * Pipeline: committed search → type filter → status filter → sort.
  *
- * 2026-11-09 redesign: a photo-led card grid (Contra discovery
+ * 2026-11-09 redesign: a person-led card grid (CRM reference
  * pattern), built for a board that grows like a feed — sticky
  * tools, quick views and skill facets to cut the list, a shortlist
  * (Saved), and show-more pagination instead of one endless render.
@@ -130,17 +131,6 @@ export function CollabGrid({ projects }: CollabGridProps) {
     return [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 6);
   }, [projects]);
 
-  // Header stats — real numbers from the board itself, not the
-  // filtered view (the results line already shows that count).
-  const stats = useMemo(() => {
-    const open = projects.filter((p) => p.status === "open");
-    const openSeats = open.reduce(
-      (sum, p) => sum + (p.slotsTotal - p.slotsFilled),
-      0
-    );
-    const members = projects.reduce((sum, p) => sum + p.slotsFilled, 0);
-    return { open: open.length, openSeats, members };
-  }, [projects]);
 
   const toggleSaved = (id: string) =>
     setSavedIds((prev) => {
@@ -163,31 +153,35 @@ export function CollabGrid({ projects }: CollabGridProps) {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Stats — the board at a glance, in the reference's big-number row. */}
-      <div className="flex items-end gap-8 sm:gap-12">
-        <div>
-          <div className="text-[28px] font-semibold leading-none tracking-[-0.01em] text-ink">
-            {stats.open}
-          </div>
-          <div className="pt-1.5 text-[13px] text-muted">Open projects</div>
-        </div>
-        <div>
-          <div className="text-[28px] font-semibold leading-none tracking-[-0.01em] text-ink">
-            {stats.openSeats}
-          </div>
-          <div className="pt-1.5 text-[13px] text-muted">Open seats</div>
-        </div>
-        <div>
-          <div className="text-[28px] font-semibold leading-none tracking-[-0.01em] text-ink">
-            {stats.members}
-          </div>
-          <div className="pt-1.5 text-[13px] text-muted">Members</div>
-        </div>
-      </div>
+      {/* Schedule — the reference's black pill bar, fed by real deadlines. */}
+      <ScheduleBar projects={projects} />
 
       {/* Tools stick under the TopBar — on a long board, search
           and facets stay reachable mid-scroll. */}
-      <div className="sticky top-[79px] z-10 border-b border-placeholder bg-surface pb-3">
+      {/* Section — the reference's "New Leads" header: title, live count, reset. */}
+      <div className="flex flex-wrap items-baseline justify-between gap-3">
+        <div className="flex items-baseline gap-3">
+          <h2 className="text-xl font-semibold text-ink">Open Projects</h2>
+          <span className="text-sm text-muted underline underline-offset-4">
+            {filtered.length} {filtered.length === 1 ? "project" : "projects"}
+          </span>
+        </div>
+        {(query.trim() !== "" ||
+          typeFilter !== "all" ||
+          statusFilter !== "all" ||
+          quickView !== "all" ||
+          skillFilter !== null) && (
+          <button
+            type="button"
+            onClick={clearAll}
+            className="cursor-pointer text-sm font-medium text-ink hover:underline focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+          >
+            Clear search & filters
+          </button>
+        )}
+      </div>
+
+      <div className="sticky top-[79px] z-10 bg-bg pb-3">
         <SearchFilterBar
           draftQuery={draftQuery}
           onDraftChange={setDraftQuery}
@@ -211,7 +205,7 @@ export function CollabGrid({ projects }: CollabGridProps) {
               className={
                 quickView === view.id
                   ? "cursor-pointer rounded-full bg-ink px-3 py-1.5 text-[13px] font-medium text-surface transition-colors"
-                  : "cursor-pointer rounded-full bg-bg px-3 py-1.5 text-[13px] font-medium text-muted transition-colors hover:text-ink"
+                  : "cursor-pointer rounded-full bg-surface px-3 py-1.5 text-[13px] font-medium text-muted transition-colors hover:text-ink"
               }
             >
               {view.label}
@@ -233,41 +227,14 @@ export function CollabGrid({ projects }: CollabGridProps) {
               aria-pressed={skillFilter === label}
               className={
                 skillFilter === label
-                  ? "cursor-pointer rounded-full bg-bg px-3 py-1.5 text-[13px] font-semibold text-ink ring-1 ring-ink transition-colors"
-                  : "cursor-pointer rounded-full bg-bg px-3 py-1.5 text-[13px] font-medium text-muted transition-colors hover:text-ink"
+                  ? "cursor-pointer rounded-full bg-ink px-3 py-1.5 text-[13px] font-semibold text-surface transition-colors"
+                  : "cursor-pointer rounded-full bg-surface px-3 py-1.5 text-[13px] font-medium text-muted transition-colors hover:text-ink"
               }
             >
               {label} <span className="text-subtle">{count}</span>
             </button>
           ))}
         </div>
-      </div>
-
-      {/* Results line — the count is real, and a filtered view can
-          be cleared from here (and from the empty state). */}
-      <div className="flex items-center justify-between gap-4">
-        <p className="text-sm text-muted">
-          <span className="font-medium text-ink">{filtered.length}</span>{" "}
-          {filtered.length === 1 ? "project" : "projects"}
-          {(query.trim() !== "" ||
-            typeFilter !== "all" ||
-            statusFilter !== "all" ||
-            quickView !== "all" ||
-            skillFilter !== null) && <> of {projects.length}</>}
-        </p>
-        {(query.trim() !== "" ||
-          typeFilter !== "all" ||
-          statusFilter !== "all" ||
-          quickView !== "all" ||
-          skillFilter !== null) && (
-          <button
-            type="button"
-            onClick={clearAll}
-            className="cursor-pointer text-sm font-medium text-ink hover:underline focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
-          >
-            Clear search & filters
-          </button>
-        )}
       </div>
 
       {filtered.length === 0 ? (
@@ -288,7 +255,7 @@ export function CollabGrid({ projects }: CollabGridProps) {
           </button>
         </div>
       ) : (
-        /* The river: photo-led cards in a grid, one page at a time. */
+        /* Person cards in a grid, one page at a time. */
         <>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
             {visibleProjects.map((project, i) => (

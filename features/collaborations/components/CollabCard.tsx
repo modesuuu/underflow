@@ -13,26 +13,6 @@ import { formatDueDate } from "../sort";
 import type { CollabProject, ProjectStatus } from "../types";
 import { ApplyMessageModal } from "./ApplyMessageModal";
 
-/** Cover photos, one per mock project (generated 2026-11-09, warm
-    photographic plates in the v3 language). The mock's `photos`
-    field is still token strings ("photo-1"), so the card maps by
-    project id instead — the detail page keeps its own photo
-    rendering untouched. */
-const COVERS: Record<string, string> = {
-  "collab-1": "/collab-covers/collab-1.jpg",
-  "collab-2": "/collab-covers/collab-2.jpg",
-  "collab-3": "/collab-covers/collab-3.jpg",
-  "collab-4": "/collab-covers/collab-4.jpg",
-  "collab-5": "/collab-covers/collab-5.jpg",
-  "collab-6": "/collab-covers/collab-6.jpg",
-};
-
-const TYPE_LABEL: Record<CollabProject["type"], string> = {
-  coursework: "Coursework",
-  portfolio: "Portfolio",
-  product: "Product",
-};
-
 const STATUS_LABEL: Record<ProjectStatus, string> = {
   open: "Open",
   "in-progress": "In progress",
@@ -112,11 +92,13 @@ function CardApply({ project }: { project: CollabProject }) {
 }
 
 /**
- * One photo-led card of the collaborations river (redesign 2026-11-09,
- * Contra discovery pattern): cover photo, type eyebrow, title,
- * description, skills line, member stack + seats, Apply. The whole
- * card links to the detail (stretched link); Save shortlists the
- * project into the board's Saved view; Apply runs inline.
+ * One person-led card of the collaborations board (redesign v2
+ * 2026-11-09, CRM reference): owner avatar, project title, owner
+ * role line, skill tags, seat dots, Apply. No cover photo and no
+ * description — the reference's lead cards carry people, tags and
+ * dots, not artwork. The whole card links to the detail (stretched
+ * link); Save shortlists the project into the board's Saved view;
+ * Apply runs inline.
  */
 export function CollabCard({
   project,
@@ -129,13 +111,12 @@ export function CollabCard({
 }) {
   const isFull = project.slotsFilled >= project.slotsTotal;
   const spotsLeft = project.slotsTotal - project.slotsFilled;
-  const cover = COVERS[project.id];
-  const filledMembers = project.members.filter((m) => !m.isOpenSlot);
   const shownSkills = project.skills.slice(0, 3);
   const extraSkills = project.skills.length - shownSkills.length;
+  const seatDots = Array.from({ length: project.slotsTotal }, (_, i) => i < project.slotsFilled);
 
   return (
-    <article className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-line bg-surface transition-[border-color] duration-200 hover:border-ink/30">
+    <article className="group relative flex h-full flex-col rounded-2xl border border-line bg-surface p-4 transition-[border-color] duration-200 hover:border-ink/30 sm:p-5">
       {/* Stretched link — whole card clickable, keyboard reachable */}
       <Link
         href={"/collaborations/" + project.id}
@@ -143,88 +124,77 @@ export function CollabCard({
         className="absolute inset-0 z-0 rounded-2xl focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
       />
 
-      {/* Cover photo */}
-      <div className="pointer-events-none relative z-10 overflow-hidden">
-        {cover ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={cover}
-            alt=""
-            className="aspect-[16/10] w-full object-cover transition-transform duration-300 ease-(--uf-ease-out) group-hover:scale-[1.03]"
-          />
-        ) : (
-          <span className="flex aspect-[16/10] w-full items-center justify-center bg-tile">
-            <Icon name="image" size={32} className="text-[color:var(--uf-tile-icon)]" />
-          </span>
-        )}
-        {/* Status pill — only when the project is not open; open is
-            the default and the Apply button already says so. */}
-        {project.status !== "open" && (
-          <span className="absolute top-3 right-3 flex items-center gap-1.5 rounded-full bg-surface px-2.5 py-1 text-[11px] font-semibold text-ink">
-            <span aria-hidden="true" className={"size-1.5 rounded-full " + STATUS_DOT[project.status]} />
-            {STATUS_LABEL[project.status]}
-          </span>
-        )}
+      {/* Owner + title + save */}
+      <div className="pointer-events-none relative z-10 flex items-start gap-3">
+        <Avatar size={56} src={project.owner.avatarUrl} alt={project.owner.name} />
+        <div className="min-w-0 flex-1">
+          <h3 className="line-clamp-1 text-[15px] font-semibold leading-snug text-ink">
+            {project.title}
+          </h3>
+          <p className="line-clamp-1 pt-0.5 text-[13px] text-muted">
+            {project.owner.name} · {project.owner.role}
+          </p>
+          {project.status !== "open" && (
+            <span className="mt-1.5 inline-flex items-center gap-1.5 rounded-full bg-bg px-2 py-0.5 text-[11px] font-semibold text-ink">
+              <span aria-hidden="true" className={"size-1.5 rounded-full " + STATUS_DOT[project.status]} />
+              {STATUS_LABEL[project.status]}
+            </span>
+          )}
+        </div>
+        <span className="pointer-events-auto shrink-0">
+          <button
+            type="button"
+            onClick={onToggleSaved}
+            aria-pressed={saved}
+            aria-label={saved ? "Unsave " + project.title : "Save " + project.title}
+            className="flex size-9 cursor-pointer items-center justify-center rounded-full border border-line bg-surface transition-colors hover:border-ink/30 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+          >
+            <Icon
+              name="bookmark"
+              solid={saved}
+              size={18}
+              className={saved ? "text-ink" : "text-placeholder transition-colors hover:text-subtle"}
+            />
+          </button>
+        </span>
       </div>
 
-      {/* Body */}
-      <div className="pointer-events-none relative z-10 flex min-w-0 flex-1 flex-col gap-2 p-4 sm:p-5">
-        <div className="flex items-center justify-between gap-3">
-          <span className="text-[13px] font-semibold text-accent">
-            {TYPE_LABEL[project.type]}
-          </span>
-          <span className="text-[11px] text-subtle">{project.postedAgo}</span>
+      {/* Skill tags — the reference's Source tags */}
+      {project.skills.length > 0 && (
+        <div className="pointer-events-none relative z-10 mt-3 flex flex-wrap gap-1.5">
+          {shownSkills.map((s) => (
+            <span key={s.label} className="rounded-full bg-bg px-2.5 py-1 text-xs font-medium text-muted">
+              {s.label}
+            </span>
+          ))}
+          {extraSkills > 0 && (
+            <span className="rounded-full bg-bg px-2.5 py-1 text-xs font-medium text-subtle">
+              +{extraSkills} more
+            </span>
+          )}
         </div>
-        <h3 className="line-clamp-1 text-lg font-semibold text-ink">
-          {project.title}
-        </h3>
-        <p className="line-clamp-2 text-sm leading-snug text-muted">
-          {project.description}
-        </p>
-        {project.skills.length > 0 && (
-          <p className="line-clamp-1 text-[13px] text-muted">
-            {shownSkills.map((s) => s.label).join(" · ")}
-            {extraSkills > 0 ? " · +" + extraSkills + " more" : ""}
-          </p>
-        )}
-        {/* Footer: members + seats, Save + Apply */}
-        <div className="mt-auto flex items-center justify-between gap-3 border-t border-line pt-3">
-          <span className="flex min-w-0 items-center gap-2">
-            <span className="flex -space-x-2">
-              {filledMembers.map((m) => (
-                <Avatar
-                  key={m.id}
-                  size={24}
-                  src={m.avatarUrl}
-                  alt={m.name}
-                  className="ring-2 ring-surface"
-                />
-              ))}
-            </span>
-            <span className="truncate text-xs font-medium text-ink">
-              {project.slotsFilled} member{project.slotsFilled === 1 ? "" : "s"}
-              {" · "}
-              {isFull ? "Full" : spotsLeft + " spot" + (spotsLeft === 1 ? "" : "s") + " left"}
-            </span>
-          </span>
-          <span className="pointer-events-auto flex shrink-0 items-center gap-1">
-            <button
-              type="button"
-              onClick={onToggleSaved}
-              aria-pressed={saved}
-              aria-label={saved ? "Unsave " + project.title : "Save " + project.title}
-              className="cursor-pointer p-1.5 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
-            >
-              <Icon
-                name="bookmark"
-                solid={saved}
-                size={20}
-                className={saved ? "text-ink" : "text-placeholder transition-colors hover:text-subtle"}
+      )}
+
+      {/* Footer: seat dots + seats, Apply */}
+      <div className="pointer-events-none relative z-10 mt-auto flex items-center justify-between gap-3 border-t border-line pt-3">
+        <span className="flex min-w-0 items-center gap-2">
+          <span className="flex shrink-0 items-center gap-1" aria-hidden="true">
+            {seatDots.map((filled, i) => (
+              <span
+                key={i}
+                className={filled ? "size-2 rounded-full bg-ink" : "size-2 rounded-full bg-placeholder"}
               />
-            </button>
-            <CardApply project={project} />
+            ))}
           </span>
-        </div>
+          <span className="truncate text-xs font-medium text-ink">
+            {project.slotsFilled} member{project.slotsFilled === 1 ? "" : "s"}
+            {" · "}
+            {isFull ? "Full" : spotsLeft + " spot" + (spotsLeft === 1 ? "" : "s") + " left"}
+          </span>
+        </span>
+        <span className="pointer-events-auto shrink-0">
+          <CardApply project={project} />
+        </span>
       </div>
     </article>
   );
