@@ -1,34 +1,30 @@
 import { useSyncExternalStore } from "react";
-import type {
-  CollabFilterType,
-  CollabSortKey,
-  CollabStatusFilter,
-} from "./types";
+import type { CollabFilterType } from "./types";
 
 /**
  * Session-scoped toolbar state for /collaborations — the same
- * module-store pattern as the inbox store. The search/sort/filter
- * controls live in the TopBar (AppShell `actions`, user order
- * 2026-11-09) while the grid that consumes them lives in the page
- * body, so the two share this store instead of prop-drilling
- * through the server page. State dies on refresh; CollabGrid
- * resets it on unmount so each visit starts fresh, as before.
+ * module-store pattern as the inbox store. The search pill lives
+ * in the TopBar (AppShell `actions`, user order 2026-11-09)
+ * while the grid that consumes it lives in the page body, so the
+ * two share this store instead of prop-drilling through the
+ * server page. State dies on refresh; CollabGrid resets it on
+ * unmount so each visit starts fresh, as before.
+ *
+ * 2026-11-09: the sort (Recommended) and status filter were
+ * deleted with their buttons — the store now holds only the
+ * search query and the type filter (the pill's dropdown).
  */
 
 export interface CollabToolbarState {
   draftQuery: string;
   query: string;
-  sortKey: CollabSortKey;
   typeFilter: CollabFilterType;
-  statusFilter: CollabStatusFilter;
 }
 
 const DEFAULTS: CollabToolbarState = {
   draftQuery: "",
   query: "",
-  sortKey: "recommended",
   typeFilter: "all",
-  statusFilter: "all",
 };
 
 let state: CollabToolbarState = { ...DEFAULTS };
@@ -59,28 +55,16 @@ export function setDraftQuery(draftQuery: string) {
   emit();
 }
 
-/** Commit the draft — Search click / Enter. */
+/** Commit the draft — Enter (the pill has no Search button). */
 export function commitSearch() {
   if (state.query === state.draftQuery) return;
   state = { ...state, query: state.draftQuery };
   emit();
 }
 
-export function setSortKey(sortKey: CollabSortKey) {
-  if (state.sortKey === sortKey) return;
-  state = { ...state, sortKey };
-  emit();
-}
-
 export function setTypeFilter(typeFilter: CollabFilterType) {
   if (state.typeFilter === typeFilter) return;
   state = { ...state, typeFilter };
-  emit();
-}
-
-export function setStatusFilter(statusFilter: CollabStatusFilter) {
-  if (state.statusFilter === statusFilter) return;
-  state = { ...state, statusFilter };
   emit();
 }
 
@@ -91,7 +75,5 @@ export function clearToolbar() {
 }
 
 export function hasActiveFilters(s: CollabToolbarState): boolean {
-  return (
-    s.query.trim() !== "" || s.typeFilter !== "all" || s.statusFilter !== "all"
-  );
+  return s.query.trim() !== "" || s.typeFilter !== "all";
 }

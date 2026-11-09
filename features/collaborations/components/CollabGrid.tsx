@@ -22,8 +22,8 @@ const STAGGER_CAP = 8;
 const PAGE_SIZE = 12;
 
 /**
- * Search + filter + sort + responsive card grid (Figma "Collaborations" frame).
- * Pipeline: committed search → type filter → status filter → sort.
+ * Search + type filter + responsive card grid (Figma "Collaborations" frame).
+ * Pipeline: committed search → type filter → default order.
  *
  * 2026-11-09 redesign: a person-led card grid (CRM reference
  * pattern), built for a board that grows like a feed — sticky
@@ -40,7 +40,7 @@ export function CollabGrid({ projects }: CollabGridProps) {
   // Draft query is typed in the input; committed only on Search
   // click / Enter.
   const toolbar = useCollabToolbar();
-  const { query, sortKey, typeFilter, statusFilter } = toolbar;
+  const { query, typeFilter } = toolbar;
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
   // Each visit starts fresh, as when the state was local to this
@@ -67,19 +67,14 @@ export function CollabGrid({ projects }: CollabGridProps) {
       result = result.filter((p) => p.type === typeFilter);
     }
 
-    // Status filter
-    if (statusFilter !== "all") {
-      result = result.filter((p) => p.status === statusFilter);
-    }
-
-    // Deterministic sort (no Date.parse for two-digit years)
-    return sortProjects(result, sortKey);
-  }, [projects, query, typeFilter, statusFilter, sortKey]);
+    // Default order (the sort control was deleted 2026-11-09).
+    return sortProjects(result, "recommended");
+  }, [projects, query, typeFilter]);
 
   // Any change to the result set restarts the river at one page.
   useEffect(() => {
     setVisibleCount(PAGE_SIZE);
-  }, [query, typeFilter, statusFilter, sortKey]);
+  }, [query, typeFilter]);
 
   const clearAll = clearToolbar;
 
