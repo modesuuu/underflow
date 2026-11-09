@@ -119,7 +119,7 @@ function NotificationRow({
             <Icon
               name="chevron-right"
               size={18}
-              className="mt-0.5 shrink-0 text-subtle"
+              className="shrink-0 self-center text-subtle"
             />
           )}
         </button>
