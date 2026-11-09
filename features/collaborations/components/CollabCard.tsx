@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Avatar } from "@/components/ui/Avatar";
-import { Icon } from "@/components/ui/Icon";
 import { resolvePersonId } from "@/features/profile/mock";
 import { applyToCollab } from "../api";
 import { startApplicationThread } from "@/features/inbox/store";
@@ -97,18 +96,9 @@ function CardApply({ project }: { project: CollabProject }) {
  * role line, skill tags, seat dots, Apply. No cover photo and no
  * description — the reference's lead cards carry people, tags and
  * dots, not artwork. The whole card links to the detail (stretched
- * link); Save shortlists the project into the board's Saved view;
- * Apply runs inline.
+ * link); Apply runs inline.
  */
-export function CollabCard({
-  project,
-  saved,
-  onToggleSaved,
-}: {
-  project: CollabProject;
-  saved: boolean;
-  onToggleSaved: () => void;
-}) {
+export function CollabCard({ project }: { project: CollabProject }) {
   const isFull = project.slotsFilled >= project.slotsTotal;
   const spotsLeft = project.slotsTotal - project.slotsFilled;
   const shownSkills = project.skills.slice(0, 3);
@@ -141,22 +131,6 @@ export function CollabCard({
             </span>
           )}
         </div>
-        <span className="pointer-events-auto shrink-0">
-          <button
-            type="button"
-            onClick={onToggleSaved}
-            aria-pressed={saved}
-            aria-label={saved ? "Unsave " + project.title : "Save " + project.title}
-            className="flex size-9 cursor-pointer items-center justify-center rounded-full border border-line bg-surface transition-colors hover:border-ink/30 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
-          >
-            <Icon
-              name="bookmark"
-              solid={saved}
-              size={18}
-              className={saved ? "text-ink" : "text-placeholder transition-colors hover:text-subtle"}
-            />
-          </button>
-        </span>
       </div>
 
       {/* Skill tags — the reference's Source tags */}

@@ -3,9 +3,8 @@
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { Icon } from "@/components/ui/Icon";
 import { CollabCard } from "./CollabCard";
-import { ScheduleBar } from "./ScheduleBar";
 import { SearchFilterBar } from "./SearchFilterBar";
-import { parseDueDate, sortProjects } from "../sort";
+import { sortProjects } from "../sort";
 import type {
   CollabFilterType,
   CollabProject,
@@ -23,24 +22,13 @@ const STAGGER_CAP = 8;
 /** Cards per page of the river; "Show more" grows it in place. */
 const PAGE_SIZE = 12;
 
-type QuickView = "all" | "open" | "ending" | "almost-full" | "saved";
-
-const QUICK_VIEWS: { id: QuickView; label: string }[] = [
-  { id: "all", label: "All" },
-  { id: "open", label: "Open seats" },
-  { id: "ending", label: "Ending soon" },
-  { id: "almost-full", label: "Almost full" },
-  { id: "saved", label: "Saved" },
-];
-
 /**
  * Search + filter + sort + responsive card grid (Figma "Collaborations" frame).
  * Pipeline: committed search → type filter → status filter → sort.
  *
  * 2026-11-09 redesign: a person-led card grid (CRM reference
  * pattern), built for a board that grows like a feed — sticky
- * tools, quick views and skill facets to cut the list, a shortlist
- * (Saved), and show-more pagination instead of one endless render.
+ * tools and show-more pagination instead of one endless render.
  * Mount stagger unchanged (50ms per item, reduced-motion gated).
  *
  * No positional numbering: this is a filterable/sortable/searchable data
@@ -54,9 +42,6 @@ export function CollabGrid({ projects }: CollabGridProps) {
   const [sortKey, setSortKey] = useState<CollabSortKey>("recommended");
   const [typeFilter, setTypeFilter] = useState<CollabFilterType>("all");
   const [statusFilter, setStatusFilter] = useState<CollabStatusFilter>("all");
-  const [quickView, setQuickView] = useState<QuickView>("all");
-  const [skillFilter, setSkillFilter] = useState<string | null>(null);
-  const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
   const filtered = useMemo(() => {
@@ -83,104 +68,28 @@ export function CollabGrid({ projects }: CollabGridProps) {
       result = result.filter((p) => p.status === statusFilter);
     }
 
-    // Quick view — the triage cuts for a long board
-    if (quickView === "open") {
-      result = result.filter(
-        (p) => p.status === "open" && p.slotsFilled < p.slotsTotal
-      );
-    } else if (quickView === "ending") {
-      const horizon = Date.now() + 21 * 24 * 60 * 60 * 1000;
-      result = result.filter((p) => {
-        const due = parseDueDate(p.dueDate);
-        return p.status !== "completed" && due !== Infinity && due <= horizon;
-      });
-    } else if (quickView === "almost-full") {
-      result = result.filter(
-        (p) =>
-          p.slotsFilled < p.slotsTotal &&
-          p.slotsFilled / p.slotsTotal >= 0.75
-      );
-    } else if (quickView === "saved") {
-      result = result.filter((p) => savedIds.has(p.id));
-    }
-
-    // Skill facet — the relevance cut
-    if (skillFilter) {
-      result = result.filter((p) =>
-        p.skills.some((sk) => sk.label === skillFilter)
-      );
-    }
-
     // Deterministic sort (no Date.parse for two-digit years)
     return sortProjects(result, sortKey);
-  }, [projects, query, typeFilter, statusFilter, sortKey, quickView, skillFilter, savedIds]);
+  }, [projects, query, typeFilter, statusFilter, sortKey]);
 
   // Any change to the result set restarts the river at one page.
   useEffect(() => {
     setVisibleCount(PAGE_SIZE);
-  }, [query, typeFilter, statusFilter, sortKey, quickView, skillFilter]);
-
-  // Facets from the data itself: the skills this board asks for.
-  const topSkills = useMemo(() => {
-    const counts = new Map<string, number>();
-    for (const p of projects) {
-      for (const sk of p.skills) {
-        counts.set(sk.label, (counts.get(sk.label) ?? 0) + 1);
-      }
-    }
-    return [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 6);
-  }, [projects]);
-
-
-  const toggleSaved = (id: string) =>
-    setSavedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
+  }, [query, typeFilter, statusFilter, sortKey]);
 
   const clearAll = () => {
     setDraftQuery("");
     setQuery("");
     setTypeFilter("all");
     setStatusFilter("all");
-    setQuickView("all");
-    setSkillFilter(null);
   };
 
   const visibleProjects = filtered.slice(0, visibleCount);
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Schedule — the reference's black pill bar, fed by real deadlines. */}
-      <ScheduleBar projects={projects} />
-
       {/* Tools stick under the TopBar — on a long board, search
-          and facets stay reachable mid-scroll. */}
-      {/* Section — the reference's "New Leads" header: title, live count, reset. */}
-      <div className="flex flex-wrap items-baseline justify-between gap-3">
-        <div className="flex items-baseline gap-3">
-          <h2 className="text-xl font-semibold text-ink">Open Projects</h2>
-          <span className="text-sm text-muted underline underline-offset-4">
-            {filtered.length} {filtered.length === 1 ? "project" : "projects"}
-          </span>
-        </div>
-        {(query.trim() !== "" ||
-          typeFilter !== "all" ||
-          statusFilter !== "all" ||
-          quickView !== "all" ||
-          skillFilter !== null) && (
-          <button
-            type="button"
-            onClick={clearAll}
-            className="cursor-pointer text-sm font-medium text-ink hover:underline focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
-          >
-            Clear search & filters
-          </button>
-        )}
-      </div>
-
+          stay reachable mid-scroll. */}
       <div className="sticky top-[79px] z-10 bg-bg pb-3">
         <SearchFilterBar
           draftQuery={draftQuery}
@@ -194,47 +103,23 @@ export function CollabGrid({ projects }: CollabGridProps) {
           onStatusChange={setStatusFilter}
         />
 
-        {/* Facets: quick views, then the board's most-asked skills */}
-        <div className="flex flex-wrap items-center gap-1.5 pt-3">
-          {QUICK_VIEWS.map((view) => (
+        {/* Reset — the section header is gone (user order), so the
+            one-click reset lives here while anything is active. */}
+        {(query.trim() !== "" ||
+          typeFilter !== "all" ||
+          statusFilter !== "all") && (
+          <div className="flex justify-end pt-2">
             <button
-              key={view.id}
               type="button"
-              onClick={() => setQuickView(view.id)}
-              aria-pressed={quickView === view.id}
-              className={
-                quickView === view.id
-                  ? "cursor-pointer rounded-full bg-ink px-3 py-1.5 text-[13px] font-medium text-surface transition-colors"
-                  : "cursor-pointer rounded-full bg-surface px-3 py-1.5 text-[13px] font-medium text-muted transition-colors hover:text-ink"
-              }
+              onClick={clearAll}
+              className="cursor-pointer text-sm font-medium text-ink hover:underline focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
             >
-              {view.label}
-              {view.id === "saved" && savedIds.size > 0 && (
-                <span className="text-subtle"> · {savedIds.size}</span>
-              )}
+              Clear search & filters
             </button>
-          ))}
-          {topSkills.length > 0 && (
-            <span className="mx-1.5 h-5 w-px bg-placeholder" aria-hidden="true" />
-          )}
-          {topSkills.map(([label, count]) => (
-            <button
-              key={label}
-              type="button"
-              onClick={() =>
-                setSkillFilter((cur) => (cur === label ? null : label))
-              }
-              aria-pressed={skillFilter === label}
-              className={
-                skillFilter === label
-                  ? "cursor-pointer rounded-full bg-ink px-3 py-1.5 text-[13px] font-semibold text-surface transition-colors"
-                  : "cursor-pointer rounded-full bg-surface px-3 py-1.5 text-[13px] font-medium text-muted transition-colors hover:text-ink"
-              }
-            >
-              {label} <span className="text-subtle">{count}</span>
-            </button>
-          ))}
-        </div>
+          </div>
+        )}
+
+
       </div>
 
       {filtered.length === 0 ? (
@@ -266,11 +151,7 @@ export function CollabGrid({ projects }: CollabGridProps) {
                   { "--stagger-i": String(Math.min(i, STAGGER_CAP)) } as CSSProperties
                 }
               >
-                <CollabCard
-                  project={project}
-                  saved={savedIds.has(project.id)}
-                  onToggleSaved={() => toggleSaved(project.id)}
-                />
+                <CollabCard project={project} />
               </div>
             ))}
           </div>

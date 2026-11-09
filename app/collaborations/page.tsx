@@ -21,15 +21,6 @@ export const metadata: Metadata = {
 function CollabGridSkeleton() {
   return (
     <>
-      {/* Schedule bar */}
-      <div className="h-12 w-full rounded-full bg-placeholder/70" />
-
-      {/* Section header */}
-      <div className="flex items-baseline gap-3">
-        <div className="h-6 w-36 rounded bg-placeholder" />
-        <div className="h-4 w-16 rounded bg-placeholder" />
-      </div>
-
       {/* Toolbar + facets */}
       <div className="flex flex-col gap-3">
         <div className="flex items-center gap-3">
