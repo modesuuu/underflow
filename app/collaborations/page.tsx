@@ -21,7 +21,7 @@ export const metadata: Metadata = {
 function CollabGridSkeleton() {
   return (
     <>
-      {/* Toolbar + facets */}
+      {/* Toolbar */}
       <div className="flex flex-col gap-3">
         <div className="flex items-center gap-3">
           <div className="h-11 flex-1 rounded-full border border-line bg-surface sm:max-w-md" />
@@ -30,11 +30,6 @@ function CollabGridSkeleton() {
             <div className="h-11 w-32 rounded-full bg-placeholder" />
             <div className="h-11 w-28 rounded-full bg-placeholder" />
           </div>
-        </div>
-        <div className="flex gap-1.5">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="h-8 w-20 rounded-full bg-placeholder/70" />
-          ))}
         </div>
       </div>
 
@@ -51,7 +46,6 @@ function CollabGridSkeleton() {
                 <div className="h-4 w-3/4 rounded bg-placeholder" />
                 <div className="h-3.5 w-1/2 rounded bg-placeholder" />
               </div>
-              <div className="size-9 shrink-0 rounded-full bg-placeholder" />
             </div>
             <div className="flex gap-1.5">
               <div className="h-6 w-16 rounded-full bg-placeholder/70" />
@@ -80,14 +74,20 @@ export default function CollaborationsPage() {
       breadcrumbRoot="Dashboard"
       breadcrumbLeaf="Collaborations"
     >
-      <div className="theme-warm flex min-h-full flex-col gap-6 bg-bg px-4 py-6 sm:px-6 sm:py-8">
-        {/* Page header — the reference's display heading row: big
-            title + the black New Project pill beside it. No stats,
-            no subtitle (user order 2026-11-09). */}
+      <div className="flex min-h-full flex-col gap-6 bg-bg px-4 py-6 sm:px-6 sm:py-8">
+        {/* Page header — display heading row: big title + subheading
+            on the left, the New Project pill beside it. Base theme
+            (Forest & Cream) since 2026-11-09; subheading restored
+            on the user's order the same day. */}
         <div className="flex flex-wrap items-end justify-between gap-4">
-          <h1 className="text-[40px] font-semibold uppercase leading-[1.05] tracking-[-0.02em] text-ink">
-            Collaborations
-          </h1>
+          <div className="flex flex-col gap-1.5">
+            <h1 className="text-[40px] font-semibold uppercase leading-[1.05] tracking-[-0.02em] text-ink">
+              Collaborations
+            </h1>
+            <p className="text-base text-muted">
+              Open projects from students looking for teammates.
+            </p>
+          </div>
           <CollabHeaderActions />
         </div>
 

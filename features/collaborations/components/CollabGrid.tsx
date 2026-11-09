@@ -89,8 +89,12 @@ export function CollabGrid({ projects }: CollabGridProps) {
   return (
     <div className="flex flex-col gap-6">
       {/* Tools stick under the TopBar — on a long board, search
-          stay reachable mid-scroll. */}
-      <div className="sticky top-[79px] z-10 bg-bg pb-3">
+          stays reachable mid-scroll. Layer order: z-[15] sits
+          between the card contents (z-10 — later in the DOM, so
+          they painted over a z-10 toolbar when scrolling) and the
+          TopBar (z-20) with its bell dropdown. The toolbar and
+          its dropdown panels stay above the cards, below the TopBar. */}
+      <div className="sticky top-[79px] z-[15] bg-bg pb-3">
         <SearchFilterBar
           draftQuery={draftQuery}
           onDraftChange={setDraftQuery}

@@ -133,24 +133,3 @@
   font-style: normal;
   font-display: swap;
 }
-/* Warm Minimalism — page-scoped redesign tokens (Contra, 2026-11-09).
-   Applied by wrapping a page in `.theme-warm`: every --uf-* utility
-   inside the wrapper resolves to the warm-light values, in either
-   global theme. The sidebar, TopBar and panel keep the global theme,
-   so the page reads as dark chrome + light content. */
-.theme-warm {
-  color-scheme: light;
-  --uf-bg: #e9e9e9;
-  --uf-surface: #ffffff;
-  --uf-ink: #14171f;
-  --uf-muted: #677084;
-  --uf-subtle: #9ba2b0;
-  --uf-accent: #3ab266;
-  --uf-on-accent: #ffffff;
-  --uf-badge: #f04438;
-  --uf-placeholder: #edf0f2;
-  --uf-line: #e3e3e3;
-  --uf-tile: #eaf6ed;
-  --uf-tile-icon: rgba(58, 178, 102, 0.55);
-  --uf-shadow-rgb: 34, 40, 52;
-}

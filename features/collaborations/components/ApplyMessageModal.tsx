@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { Icon } from "@/components/ui/Icon";
 
 interface ApplyMessageModalProps {
@@ -39,7 +40,11 @@ export function ApplyMessageModal({
     return () => document.removeEventListener("keydown", onKey);
   }, [onClose]);
 
-  return (
+  // Portaled out of the card: the modal renders inside the card
+  // footer's relative z-10 layer, which capped it below the
+  // TopBar (z-20), so the TopBar painted above the backdrop.
+  // In the root context its z-50 covers the TopBar, as a modal must.
+  return createPortal(
     <div
       role="dialog"
       aria-modal="true"
@@ -104,6 +109,7 @@ export function ApplyMessageModal({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
