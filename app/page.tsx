@@ -46,15 +46,28 @@ async function FeedColumnAsync() {
 export default function Home() {
   return (
     <AppShell
-      actions={<PostButton />}
+      actions={
+        <>
+          {/* + Post Something — TopBar button (desktop only). */}
+          <div className="hidden sm:block">
+            <PostButton />
+          </div>
+          {/* + Post Something — floating action button (phones only). */}
+          <div className="fixed right-4 bottom-4 z-30 rounded-md shadow-lg sm:hidden">
+            <PostButton />
+          </div>
+        </>
+      }
       panel={<NotificationsPanel className="px-6" />}
     >
       {/* P1-C #20: one real h1 per page — visually hidden so the
           breadcrumb in the TopBar stays the visual heading. */}
       <h1 className="sr-only">Feed</h1>
-      <Suspense fallback={<FeedColumnSkeleton />}>
-        <FeedColumnAsync />
-      </Suspense>
+      <div className="pb-24 sm:pb-0">
+        <Suspense fallback={<FeedColumnSkeleton />}>
+          <FeedColumnAsync />
+        </Suspense>
+      </div>
     </AppShell>
   );
 }
