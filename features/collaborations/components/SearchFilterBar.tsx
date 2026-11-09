@@ -137,7 +137,9 @@ export function SearchFilterBar({
             aria-label="Sort projects"
             className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full px-2 py-1.5 text-sm font-medium text-ink transition-colors hover:bg-bg focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
           >
-            <Icon name="sort" size={16} className="text-muted sm:hidden" />
+            <span className="flex items-center sm:hidden">
+              <Icon name="sort" size={16} className="text-muted" />
+            </span>
             <span className="hidden sm:inline">{sortLabel}</span>
             <Icon name="chevron-down" size={16} className="text-muted" />
           </button>
