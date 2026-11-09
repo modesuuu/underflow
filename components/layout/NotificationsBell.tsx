@@ -53,6 +53,17 @@ export function NotificationsBell() {
     };
   }, [bellOpen]);
 
+  // Phones (user order 2026-11-09): the bell goes straight to the
+  // notifications page — no dropdown preview on a small screen.
+  // Desktop (lg+) keeps the dropdown preview.
+  const handleBellClick = () => {
+    if (window.innerWidth < 1024) {
+      router.push("/notifications");
+      return;
+    }
+    setBellOpen((v) => !v);
+  };
+
   const press = (item: NotificationItem) => {
     if (!item.read) markNotificationRead(item.id);
     setBellOpen(false);
@@ -73,7 +84,7 @@ export function NotificationsBell() {
         }
         aria-haspopup="true"
         aria-expanded={bellOpen}
-        onClick={() => setBellOpen((v) => !v)}
+        onClick={handleBellClick}
         className="pressable relative cursor-pointer rounded-md p-1 text-ink focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
       >
         <Icon name="bell" size={20} />
