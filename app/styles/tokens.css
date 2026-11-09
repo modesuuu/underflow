@@ -133,3 +133,10 @@
   font-style: normal;
   font-display: swap;
 }
+
+/* Collaborations page ground: pure white in the light theme (user order
+   2026-11-09, light only — dark keeps the base forest --uf-bg).
+   Used by the page wrapper and the sticky toolbar so the toolbar
+   matches the ground it sticks over. */
+.collab-ground { background-color: #ffffff; }
+[data-theme="dark"] .collab-ground { background-color: var(--uf-bg); }

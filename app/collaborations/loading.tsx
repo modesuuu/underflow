@@ -11,7 +11,7 @@ export default function CollaborationsLoading() {
       breadcrumbRoot="Dashboard"
       breadcrumbLeaf="Collaborations"
     >
-      <div className="flex min-h-full flex-col gap-6 bg-bg px-4 py-6 sm:px-6 sm:py-8">
+      <div className="flex min-h-full flex-col gap-6 collab-ground px-4 py-6 sm:px-6 sm:py-8">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div className="flex flex-col gap-1.5">
             <div className="h-10 w-72 rounded-md bg-placeholder" />

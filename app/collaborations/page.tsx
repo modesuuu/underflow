@@ -74,7 +74,7 @@ export default function CollaborationsPage() {
       breadcrumbRoot="Dashboard"
       breadcrumbLeaf="Collaborations"
     >
-      <div className="flex min-h-full flex-col gap-6 bg-bg px-4 py-6 sm:px-6 sm:py-8">
+      <div className="flex min-h-full flex-col gap-6 collab-ground px-4 py-6 sm:px-6 sm:py-8">
         {/* Page header — display heading row: big title + subheading
             on the left, the New Project pill beside it. Base theme
             (Forest & Cream) since 2026-11-09; subheading restored

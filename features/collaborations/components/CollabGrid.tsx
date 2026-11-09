@@ -94,7 +94,7 @@ export function CollabGrid({ projects }: CollabGridProps) {
           they painted over a z-10 toolbar when scrolling) and the
           TopBar (z-20) with its bell dropdown. The toolbar and
           its dropdown panels stay above the cards, below the TopBar. */}
-      <div className="sticky top-[79px] z-[15] bg-bg pb-3">
+      <div className="sticky top-[79px] z-[15] collab-ground pb-3">
         <SearchFilterBar
           draftQuery={draftQuery}
           onDraftChange={setDraftQuery}
