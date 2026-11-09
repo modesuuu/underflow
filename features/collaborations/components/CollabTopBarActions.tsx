@@ -21,7 +21,7 @@ export function CollabTopBarActions() {
   const { draftQuery, sortKey } = useCollabToolbar();
 
   return (
-    <div className="flex min-w-0 flex-1 flex-wrap items-center justify-end gap-3">
+    <div className="flex min-w-60 flex-1 flex-wrap items-center justify-end gap-3">
       <SearchFilterBar
         draftQuery={draftQuery}
         onDraftChange={setDraftQuery}
