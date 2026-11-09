@@ -62,7 +62,7 @@ function PillGroup<T extends string>({
  * presentational); a click inside the panel on an element with
  * data-close-panel closes it.
  */
-function Dropdown({
+export function Dropdown({
   trigger,
   panel,
 }: {

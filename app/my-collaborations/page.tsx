@@ -19,24 +19,28 @@ export const metadata: Metadata = {
 function MyCollabBoardSkeleton() {
   return (
     <div className="flex flex-col gap-6">
-      <div className="h-9 w-72 rounded-lg bg-placeholder" />
+      {/* Schedule bar */}
+      <div className="h-12 w-full rounded-full border border-line bg-surface" />
 
-      {/* The band */}
-      <div className="flex flex-col gap-5 rounded-[24px] bg-bg p-6">
-        <div className="flex items-center gap-8">
-          <div className="h-14 w-36 rounded bg-placeholder" />
-          <div className="hidden flex-1 gap-4 sm:grid sm:grid-cols-4">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="h-11 rounded bg-placeholder" />
-            ))}
-          </div>
+      {/* Header: title + New Project, stats right */}
+      <div className="flex flex-wrap items-end justify-between gap-x-8 gap-y-4">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="h-10 w-80 max-w-full rounded-lg bg-placeholder" />
+          <div className="h-9 w-32 rounded-full bg-placeholder" />
         </div>
-        <div className="h-2 w-full rounded-full bg-placeholder" />
-        <div className="h-3 w-64 rounded bg-placeholder" />
+        <div className="grid grid-cols-2 gap-x-8 gap-y-3 sm:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="flex flex-col gap-1.5">
+              <div className="h-8 w-12 rounded bg-placeholder" />
+              <div className="h-3 w-20 rounded bg-placeholder" />
+            </div>
+          ))}
+        </div>
       </div>
 
-      {/* Attention: spotlight + pair */}
+      {/* Attention */}
       <div className="flex flex-col gap-3">
+        <div className="h-8 w-44 rounded-full bg-placeholder" />
         <div className="h-[84px] rounded-2xl border border-line bg-surface" />
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="h-[76px] rounded-2xl border border-line bg-surface" />
@@ -44,30 +48,23 @@ function MyCollabBoardSkeleton() {
         </div>
       </div>
 
-      {/* Toolbar */}
-      <div className="flex items-center gap-3">
-        <div className="h-11 flex-1 rounded-xl border border-line bg-surface sm:max-w-md" />
-        <div className="h-11 w-24 rounded-xl bg-placeholder" />
-        <div className="ms-auto flex items-center gap-2">
-          <div className="h-11 w-32 rounded-xl bg-placeholder" />
-          <div className="h-11 w-28 rounded-xl bg-placeholder" />
-        </div>
-      </div>
-
-      {/* Sections */}
-      {Array.from({ length: 2 }).map((_, s) => (
-        <div key={s} className="flex flex-col gap-3">
-          <div className="h-6 w-40 rounded-full bg-placeholder" />
-          <div className="flex flex-col divide-y divide-line/50 border-y border-line/50">
+      {/* Projects: label + filter row + card grid */}
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="h-8 w-40 rounded-full bg-placeholder" />
+          <div className="ms-auto flex flex-wrap items-center gap-2">
+            <div className="h-9 w-44 rounded-full border border-line bg-surface" />
             {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="flex flex-col gap-1.5 py-3">
-                <div className="h-4 w-1/3 rounded bg-placeholder" />
-                <div className="h-3 w-1/4 rounded bg-placeholder" />
-              </div>
+              <div key={i} className="h-9 w-24 rounded-full border border-line bg-surface" />
             ))}
           </div>
         </div>
-      ))}
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="h-[216px] rounded-2xl border border-line bg-surface" />
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
