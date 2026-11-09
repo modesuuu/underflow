@@ -74,7 +74,7 @@ function MyCollabCard({
   return (
     <Link
       href={`/my-collaborations/${project.myStatus}/${project.id}`}
-      className="card-stagger group flex cursor-pointer flex-col gap-3 rounded-[28px] border border-line bg-surface p-4 transition-[border-color,box-shadow] duration-200 hover:border-ink/30 hover:shadow-[0_1px_2px_rgba(var(--uf-shadow-rgb),0.05),0_12px_28px_-12px_rgba(var(--uf-shadow-rgb),0.18)] focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+      className="card-stagger group flex cursor-pointer flex-col gap-3 rounded-3xl border border-line bg-surface p-4 transition-[border-color,box-shadow] duration-200 hover:border-ink/30 hover:shadow-[0_1px_2px_rgba(var(--uf-shadow-rgb),0.05),0_12px_28px_-12px_rgba(var(--uf-shadow-rgb),0.18)] focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
       style={{ "--stagger-i": String(Math.min(index, 11)) } as CSSProperties}
     >
       <span className="flex items-start justify-between">

@@ -39,7 +39,7 @@ export default function MyCollaborationsLoading() {
           </div>
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
             {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="h-[216px] rounded-[28px] border border-line bg-surface" />
+              <div key={i} className="h-[216px] rounded-3xl border border-line bg-surface" />
             ))}
           </div>
         </div>
