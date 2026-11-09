@@ -14,7 +14,7 @@ export default function CollaborationsLoading() {
       breadcrumbLeaf="Collaborations"
       actions={<CollabTopBarActions />}
     >
-      <div className="flex min-h-full flex-col gap-6 collab-ground px-4 py-6 sm:px-6 sm:py-8">
+      <div className="flex min-h-full flex-col gap-6 collab-ground px-4 pt-6 pb-24 sm:px-6 sm:pt-8 sm:pb-8">
         <div className="flex flex-col gap-1.5">
           <div className="h-10 w-72 rounded-md bg-placeholder" />
           <div className="h-5 w-80 max-w-full rounded bg-placeholder/70" />

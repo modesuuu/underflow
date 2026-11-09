@@ -30,7 +30,7 @@ export function CollabTopBarActions() {
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
 
   return (
-    <div className="flex min-w-60 flex-1 flex-wrap items-center justify-end gap-3">
+    <div className="flex flex-wrap items-center justify-end gap-3 sm:min-w-60 sm:flex-1">
       {/* Search pill — desktop only (hidden below sm). */}
       <div className="hidden min-w-60 max-w-md flex-1 sm:block">
         <SearchFilterBar

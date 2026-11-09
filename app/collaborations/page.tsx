@@ -65,7 +65,7 @@ export default function CollaborationsPage() {
       breadcrumbLeaf="Collaborations"
       actions={<CollabTopBarActions />}
     >
-      <div className="flex min-h-full flex-col gap-6 collab-ground px-4 py-6 sm:px-6 sm:py-8">
+      <div className="flex min-h-full flex-col gap-6 collab-ground px-4 pt-6 pb-24 sm:px-6 sm:pt-8 sm:pb-8">
         {/* Page header — display heading + subheading. Base theme
             (Forest & Cream) since 2026-11-09; subheading restored
             on the user's order the same day. The search controls
