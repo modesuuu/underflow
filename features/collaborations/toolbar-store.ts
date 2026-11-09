@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from "react";
-import type { CollabFilterType } from "./types";
+import type { CollabSortKey } from "./types";
 
 /**
  * Session-scoped toolbar state for /collaborations — the same
@@ -11,20 +11,22 @@ import type { CollabFilterType } from "./types";
  * unmount so each visit starts fresh, as before.
  *
  * 2026-11-09: the sort (Recommended) and status filter were
- * deleted with their buttons — the store now holds only the
- * search query and the type filter (the pill's dropdown).
+ * deleted with their buttons; the type filter replaced them
+ * inside the pill. Later the same day the user swapped the
+ * pill's dropdown back to the sort — the store now holds the
+ * search query and the sort key only.
  */
 
 export interface CollabToolbarState {
   draftQuery: string;
   query: string;
-  typeFilter: CollabFilterType;
+  sortKey: CollabSortKey;
 }
 
 const DEFAULTS: CollabToolbarState = {
   draftQuery: "",
   query: "",
-  typeFilter: "all",
+  sortKey: "recommended",
 };
 
 let state: CollabToolbarState = { ...DEFAULTS };
@@ -62,9 +64,9 @@ export function commitSearch() {
   emit();
 }
 
-export function setTypeFilter(typeFilter: CollabFilterType) {
-  if (state.typeFilter === typeFilter) return;
-  state = { ...state, typeFilter };
+export function setSortKey(sortKey: CollabSortKey) {
+  if (state.sortKey === sortKey) return;
+  state = { ...state, sortKey };
   emit();
 }
 
@@ -75,5 +77,5 @@ export function clearToolbar() {
 }
 
 export function hasActiveFilters(s: CollabToolbarState): boolean {
-  return s.query.trim() !== "" || s.typeFilter !== "all";
+  return s.query.trim() !== "" || s.sortKey !== "recommended";
 }

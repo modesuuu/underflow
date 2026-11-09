@@ -3,13 +3,12 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import clsx from "clsx";
 import { Icon } from "@/components/ui/Icon";
-import type { CollabFilterType } from "../types";
+import type { CollabSortKey } from "../types";
 
-const TYPE_OPTIONS: { value: CollabFilterType; label: string }[] = [
-  { value: "all", label: "All" },
-  { value: "coursework", label: "Coursework" },
-  { value: "portfolio", label: "Portfolio" },
-  { value: "product", label: "Product" },
+const SORT_OPTIONS: { value: CollabSortKey; label: string }[] = [
+  { value: "recommended", label: "Recommended" },
+  { value: "due", label: "Due soonest" },
+  { value: "newest", label: "Newest" },
 ];
 
 /**
@@ -81,31 +80,33 @@ interface SearchFilterBarProps {
   draftQuery: string;
   onDraftChange: (q: string) => void;
   onSearch: () => void;
-  typeFilter: CollabFilterType;
-  onTypeChange: (t: CollabFilterType) => void;
+  sortKey: CollabSortKey;
+  onSortChange: (s: CollabSortKey) => void;
 }
 
 /**
- * Search + type filter, 2026-11-09 revision (user order, reference
- * image): ONE pill — search icon, "Search" input, divider, type
- * dropdown — in the TopBar. The separate Search button, the sort
- * (Recommended) and the Filters buttons are deleted; Enter commits
- * the search and the type dropdown filters the river by project
- * type. min-w-60 keeps the pill wide enough that New Project wraps
- * below it on phones instead of squeezing the input.
+ * Search + sort, 2026-11-09 revision (user order, reference
+ * image): ONE pill — search icon, "Search" input, divider, sort
+ * dropdown — right-aligned in the TopBar next to New Project.
+ * The dropdown holds the sort (Recommended / Due soonest /
+ * Newest); the type filter it replaced is gone. Enter commits
+ * the search. Fixed 448px width (w-md, capped by the container)
+ * so the pill sits on the right instead of stretching; below sm
+ * the sort label hides (sort icon only) so the input stays
+ * usable on phones.
  */
 export function SearchFilterBar({
   draftQuery,
   onDraftChange,
   onSearch,
-  typeFilter,
-  onTypeChange,
+  sortKey,
+  onSortChange,
 }: SearchFilterBarProps) {
-  const typeLabel =
-    TYPE_OPTIONS.find((o) => o.value === typeFilter)?.label ?? "All";
+  const sortLabel =
+    SORT_OPTIONS.find((o) => o.value === sortKey)?.label ?? "Recommended";
 
   return (
-    <div className="flex h-11 min-w-60 flex-1 items-center gap-2 rounded-full border border-line bg-surface pl-4 pr-1.5 transition-colors focus-within:border-ink/40 sm:max-w-md">
+    <div className="flex h-11 w-md max-w-full min-w-60 items-center gap-2 rounded-full border border-line bg-surface pl-4 pr-1.5 transition-colors focus-within:border-ink/40">
       <Icon name="search" size={18} className="shrink-0 text-muted" />
       <input
         type="text"
@@ -133,29 +134,30 @@ export function SearchFilterBar({
         trigger={
           <button
             type="button"
-            aria-label="Project type"
+            aria-label="Sort projects"
             className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full px-2 py-1.5 text-sm font-medium text-ink transition-colors hover:bg-bg focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
           >
-            <span>{typeLabel}</span>
+            <Icon name="sort" size={16} className="text-muted sm:hidden" />
+            <span className="hidden sm:inline">{sortLabel}</span>
             <Icon name="chevron-down" size={16} className="text-muted" />
           </button>
         }
         panel={
           <div className="flex flex-col" data-close-panel>
-            {TYPE_OPTIONS.map((opt) => (
+            {SORT_OPTIONS.map((opt) => (
               <button
                 key={opt.value}
                 type="button"
-                onClick={() => onTypeChange(opt.value)}
+                onClick={() => onSortChange(opt.value)}
                 className={clsx(
                   "flex cursor-pointer items-center justify-between rounded-lg px-2.5 py-2 text-left text-sm transition-colors focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none",
-                  typeFilter === opt.value
+                  sortKey === opt.value
                     ? "font-medium text-ink"
                     : "text-muted hover:bg-bg hover:text-ink",
                 )}
               >
                 {opt.label}
-                {typeFilter === opt.value && <Icon name="check" size={16} />}
+                {sortKey === opt.value && <Icon name="check" size={16} />}
               </button>
             ))}
           </div>
