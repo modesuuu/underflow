@@ -66,7 +66,7 @@ export function TopBar({
         <Breadcrumb root={breadcrumbRoot} leaf={breadcrumbLeaf} />
       </div>
 
-      <div className="flex min-w-0 flex-1 items-center justify-end gap-6">
+      <div className="flex flex-1 items-center justify-end gap-6">
         <NotificationsBell />
         {actions}
       </div>
