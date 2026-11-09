@@ -69,7 +69,7 @@ function CardApply({ project }: { project: CollabProject }) {
         className={
           isFull
             ? "rounded-full bg-placeholder px-4 py-2 text-sm font-semibold text-muted"
-            : "pressable cursor-pointer rounded-full bg-ink px-4 py-2 text-sm font-semibold text-surface transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+            : "pressable cursor-pointer rounded-full bg-accent px-4 py-2 text-sm font-semibold text-on-accent transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
         }
       >
         {isFull ? "Full" : "Apply"}

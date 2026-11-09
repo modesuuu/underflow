@@ -25,7 +25,7 @@ export function CollabHeaderActions() {
         <button
           type="button"
           onClick={() => setModalOpen(true)}
-          className="pressable flex cursor-pointer items-center gap-1.5 rounded-full bg-ink px-4 py-2 text-surface transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+          className="pressable flex cursor-pointer items-center gap-1.5 rounded-full bg-accent px-4 py-2 text-on-accent transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
         >
           <Icon name="plus" size={16} />
           <span className="text-sm font-medium">New Project</span>
@@ -37,7 +37,7 @@ export function CollabHeaderActions() {
         type="button"
         onClick={() => setModalOpen(true)}
         aria-label="New Project"
-        className="pressable fixed right-4 bottom-4 z-30 flex cursor-pointer items-center gap-1.5 rounded-full bg-ink px-4 py-2.5 text-surface shadow-lg transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none sm:hidden"
+        className="pressable fixed right-4 bottom-4 z-30 flex cursor-pointer items-center gap-1.5 rounded-full bg-accent px-4 py-2.5 text-on-accent shadow-lg transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none sm:hidden"
       >
         <Icon name="plus" size={16} />
         <span className="text-sm font-medium">New Project</span>
