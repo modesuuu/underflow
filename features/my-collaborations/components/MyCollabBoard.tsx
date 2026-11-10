@@ -94,7 +94,7 @@ function MyCollabCard({
           they cross. */}
       <span
         aria-hidden="true"
-        className="pointer-events-none absolute top-0 right-0 size-32 -translate-y-1/2 translate-x-1/2 rounded-full border border-line [clip-path:inset(50%_50%_0_0)] transition-[border-color] duration-200 group-hover:border-ink/30"
+        className="card-scoop-arc pointer-events-none absolute top-0 right-0 size-32 -translate-y-1/2 translate-x-1/2 rounded-full border border-line transition-[border-color] duration-200 group-hover:border-ink/30"
       />
       <span className="relative flex flex-1 flex-col gap-3">
       <span className="flex items-start justify-between">

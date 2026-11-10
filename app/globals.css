@@ -64,6 +64,15 @@
   mask: radial-gradient(64px at 100% 0, transparent 63px, #000 64px);
 }
 
+/* Interior-quarter clip for the scoop arc ring (plain rule:
+   the Tailwind arbitrary [clip-path:...] was mangled to
+   inset(50%), which clips the ring to zero area and hides it).
+   Keeps only the bottom-left quarter of the 128px ring, i.e.
+   the concave arc inside the card. */
+.card-scoop-arc {
+  clip-path: inset(50% 50% 0 0);
+}
+
 /* --- Motion utilities (P2). All animations gated behind
    prefers-reduced-motion: no-preference — reduced-motion users see static UI. */
 
