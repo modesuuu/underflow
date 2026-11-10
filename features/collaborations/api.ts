@@ -74,8 +74,17 @@ export function mapBackendCollab(b: BackendCollab): CollabProject {
 
 export async function getCollabProjects(): Promise<CollabProject[]> {
   if (isApiConfigured()) {
-    const res = await apiFetch<ApiEnvelope<BackendCollab[]>>("/api/collab");
-    return res.data.map(mapBackendCollab);
+    try {
+      const res = await apiFetch<ApiEnvelope<BackendCollab[]>>("/api/collab");
+      return res.data.map(mapBackendCollab);
+    } catch (err) {
+      // Backend unreachable (server down): show the mock list
+      // instead of crashing the page.
+      if (err instanceof ApiError && err.code === "network_error") {
+        return COLLAB_PROJECTS;
+      }
+      throw err;
+    }
   }
   return COLLAB_PROJECTS;
 }
@@ -92,6 +101,10 @@ export async function getCollabProject(
     } catch (err) {
       // Unknown id → 404 envelope → undefined (page renders notFound()).
       if (err instanceof ApiError && err.status === 404) return undefined;
+      // Backend unreachable (server down): fall back to the mock.
+      if (err instanceof ApiError && err.code === "network_error") {
+        return COLLAB_PROJECTS.find((p) => p.id === id);
+      }
       throw err;
     }
   }

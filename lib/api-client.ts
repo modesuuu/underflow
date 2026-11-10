@@ -78,7 +78,9 @@ export async function apiFetch<T>(
   // On the server there is no session (no window), so the header is
   // omitted — public read endpoints must not require auth.
   const token = getSession()?.token;
-  const res = await fetch(`${API_BASE_URL}${path}`, {
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE_URL}${path}`, {
     cache: "no-store",
     ...init,
     headers: {
@@ -86,7 +88,18 @@ export async function apiFetch<T>(
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...(init?.headers ?? {}),
     },
-  });
+    });
+  } catch (err) {
+    // Network failure (backend down / refused): not an HTTP error.
+    // Surface it as an ApiError so callers can fall back to mock.
+    throw new ApiError(
+      0,
+      "network_error",
+      `API request failed: network error (${path}): ${
+        err instanceof Error ? err.message : String(err)
+      }`
+    );
+  }
 
   if (!res.ok) {
     let code: string | undefined;

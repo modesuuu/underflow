@@ -78,6 +78,11 @@ export async function getDashboardPosts(): Promise<Post[]> {
     if (err instanceof Error && "status" in err && (err as { status: number }).status === 404) {
       return [];
     }
+    // Backend unreachable (server down): show the mock feed instead
+    // of crashing the page.
+    if (err instanceof Error && "code" in err && (err as { code?: string }).code === "network_error") {
+      return POSTS;
+    }
     throw err;
   }
 }
