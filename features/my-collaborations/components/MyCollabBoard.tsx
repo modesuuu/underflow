@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Icon } from "@/components/ui/Icon";
 import { clearToolbar, useMyCollabToolbar } from "../toolbar-store";
@@ -46,6 +46,7 @@ const PREVIEW_LIMIT = 4;
 
 export function MyCollabBoard({ projects }: MyCollabBoardProps) {
   const { query } = useMyCollabToolbar();
+  const [openMenu, setOpenMenu] = useState<MyCollabStatus | null>(null);
 
   // Reset the shared search on unmount so each visit starts
   // fresh (same pattern as the collaborations grid).
@@ -145,16 +146,46 @@ export function MyCollabBoard({ projects }: MyCollabBoardProps) {
                 className="flex flex-col gap-3 rounded-2xl border border-line bg-surface p-3"
               >
                 <div className="flex items-center gap-1.5 px-1 pt-1">
-
                   <Link
                     href={`/my-collaborations/${slug}`}
-                    className="text-sm font-semibold text-ink focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+                    className="kanban-tag rounded-full px-3 py-1 text-sm font-semibold focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
                   >
                     {cat.crumbLabel}
                   </Link>
-                  <span className="rounded-full bg-bg px-2 py-0.5 text-[11px] font-semibold text-muted tabular-nums">
+                  <span className="rounded-full bg-ink px-2 py-0.5 text-[11px] font-semibold text-surface tabular-nums">
                     {columnProjects.length}
                   </span>
+                  <div className="relative ms-auto">
+                    <button
+                      type="button"
+                      aria-label={`More actions for ${cat.crumbLabel}`}
+                      aria-expanded={openMenu === slug}
+                      onClick={() =>
+                        setOpenMenu(openMenu === slug ? null : slug)
+                      }
+                      className="flex size-6 cursor-pointer items-center justify-center rounded-full text-muted transition hover:bg-bg hover:text-ink focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+                    >
+                      <Icon name="dots-vertical-rounded" size={18} />
+                    </button>
+                    {openMenu === slug && (
+                      <>
+                        <div
+                          aria-hidden="true"
+                          onClick={() => setOpenMenu(null)}
+                          className="fixed inset-0 z-10 cursor-default"
+                        />
+                        <div className="absolute right-0 top-full z-20 mt-1 w-44 rounded-xl border border-line bg-surface p-1 shadow-lg">
+                          <Link
+                            href={`/my-collaborations/${slug}`}
+                            onClick={() => setOpenMenu(null)}
+                            className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-ink transition-colors hover:bg-bg focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+                          >
+                            View all projects
+                          </Link>
+                        </div>
+                      </>
+                    )}
+                  </div>
                 </div>
                   <div className="flex flex-col gap-3">
                     {columnProjects.length === 0 ? (
