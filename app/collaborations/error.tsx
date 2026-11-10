@@ -20,7 +20,7 @@ export default function CollaborationsError({
   }, [error]);
 
   return (
-    <div className="flex h-dvh flex-col items-center justify-center gap-4 bg-bg px-6 text-center">
+    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-bg px-6 text-center">
       <p className="text-2xl font-bold text-ink">This page failed to load</p>
       <p className="max-w-sm text-sm text-muted">
         Reload the page to try again.

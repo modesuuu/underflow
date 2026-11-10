@@ -1,14 +1,14 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /*
-   * TODO(contract): add `images.remotePatterns` for the upload storage/CDN
-   * host once the backend team answers open question #2 in
-   * docs/api-contract.md (image storage/CDN). Until then, upload-derived
-   * images are rendered with plain <img> — next/image is intentionally not
-   * configured, and adding remotePatterns with a guessed host is worse
-   * than documenting the blocker.
-   */
+  images: {
+    remotePatterns: [
+      // Backend media storage (profile photos, post media) — Cloudinary.
+      { protocol: "https", hostname: "res.cloudinary.com" },
+      // Google sign-in avatars.
+      { protocol: "https", hostname: "lh3.googleusercontent.com" },
+    ],
+  },
 };
 
 export default nextConfig;
