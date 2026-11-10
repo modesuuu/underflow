@@ -67,8 +67,8 @@ export function TopBar({
       </div>
 
       <div className="flex flex-1 items-center justify-end gap-3 sm:gap-6">
-        <NotificationsBell />
         {actions}
+        <NotificationsBell />
       </div>
 
     </header>

@@ -21,9 +21,9 @@ export function MyCollabTopBarActions() {
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
 
   return (
-    <div className="flex flex-wrap items-center justify-end gap-3 sm:min-w-60 sm:flex-1">
+    <div className="flex items-center justify-end gap-3">
       {/* Search pill — desktop only (hidden below sm). */}
-      <div className="hidden min-w-60 max-w-md flex-1 sm:block">
+      <div className="hidden w-72 sm:block">
         <div className="flex h-11 items-center gap-2 rounded-full border border-line bg-surface px-4 focus-within:ring-2 focus-within:ring-accent">
           <Icon name="search" size={18} className="shrink-0 text-muted" />
           <input
