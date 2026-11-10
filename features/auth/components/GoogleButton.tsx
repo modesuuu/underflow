@@ -45,8 +45,11 @@ export function GoogleButton({ next, disabled }: { next: string; disabled?: bool
     try {
       await signInWithGoogle();
       router.replace(next);
-    } catch {
-      setError("Google sign-in failed. Try again.");
+    } catch (err) {
+      // The user closed Google's chooser: reset silently, no error.
+      const cancelled =
+        err instanceof Error && "code" in err && (err as { code?: string }).code === "google_cancelled";
+      if (!cancelled) setError("Google sign-in failed. Try again.");
     } finally {
       setBusy(false);
     }

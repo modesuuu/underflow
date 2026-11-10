@@ -102,19 +102,127 @@ export async function register(input: RegisterInput): Promise<AuthSession> {
   return login({ username, password: input.password });
 }
 
+/** Minimal typing for the Google Identity Services (GIS) global. */
+declare global {
+  interface Window {
+    google?: {
+      accounts: {
+        id: {
+          initialize: (config: {
+            client_id: string;
+            callback: (response: { credential?: string }) => void;
+            auto_select?: boolean;
+          }) => void;
+          prompt: (
+            cb?: (notification: {
+              isNotDisplayed: () => boolean;
+              isSkippedMoment: () => boolean;
+            }) => void,
+          ) => void;
+        };
+      };
+    };
+  }
+}
+
+const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ?? "";
+const GIS_SCRIPT_SRC = "https://accounts.google.com/gsi/client";
+let gisLoadPromise: Promise<void> | null = null;
+
+/** Load the Google Identity Services script once (client-side only). */
+function loadGoogleIdentityScript(): Promise<void> {
+  if (typeof window === "undefined") {
+    return Promise.reject(new ApiError(500, "validation_error", "Google sign-in needs a browser."));
+  }
+  if (window.google?.accounts?.id) return Promise.resolve();
+  if (gisLoadPromise) return gisLoadPromise;
+  gisLoadPromise = new Promise<void>((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = GIS_SCRIPT_SRC;
+    script.async = true;
+    script.defer = true;
+    script.onload = () => {
+      if (window.google?.accounts?.id) resolve();
+      else reject(new ApiError(500, "validation_error", "Could not load Google sign-in."));
+    };
+    script.onerror = () =>
+      reject(new ApiError(500, "validation_error", "Could not load Google sign-in."));
+    document.head.appendChild(script);
+  });
+  return gisLoadPromise;
+}
+
 /**
- * Mock Google sign-in. There is no OAuth on the backend yet, so this signs
- * in as the Google-linked demo account (Russel) instead of pretending to
- * open a Google popup. TODO(backend): replace with the real Google OAuth
- * flow (redirect -> callback -> token exchange).
+ * Real Google sign-in (Google Identity Services, ID-token flow).
+ * Opens Google's account chooser, sends the ID token to
+ * POST /api/auth/google, and stores the returned JWT as the session
+ * (provider "google"). No mock, no demo account.
  */
 export async function signInWithGoogle(): Promise<AuthSession> {
-  await mockDelay();
-  const seed = MOCK_USERS.find((u) => u.username === "russel");
-  if (!seed) {
-    throw new ApiError(500, "validation_error", "Demo account is missing.");
+  if (GOOGLE_CLIENT_ID === "") {
+    throw new ApiError(
+      500,
+      "validation_error",
+      "Google sign-in is not configured yet (missing client ID).",
+    );
   }
-  const session = makeSession({ ...seed, provider: "google" });
+  await loadGoogleIdentityScript();
+  const google = window.google?.accounts?.id;
+  if (!google) {
+    throw new ApiError(500, "validation_error", "Could not load Google sign-in.");
+  }
+
+  // Ask Google for an ID token (One Tap / account chooser).
+  const idToken = await new Promise<string>((resolve, reject) => {
+    let settled = false;
+    const timer = setTimeout(() => {
+      if (!settled) {
+        settled = true;
+        reject(new ApiError(500, "validation_error", "Google sign-in timed out."));
+      }
+    }, 60000);
+    google.initialize({
+      client_id: GOOGLE_CLIENT_ID,
+      auto_select: false,
+      callback: (response) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        if (response.credential) resolve(response.credential);
+        else reject(new ApiError(500, "validation_error", "Google did not return a credential."));
+      },
+    });
+    google.prompt((notification) => {
+      // The user closed the chooser without picking an account.
+      if (settled) return;
+      if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+        settled = true;
+        clearTimeout(timer);
+        reject(new ApiError(0, "google_cancelled", "Google sign-in was cancelled."));
+      }
+    });
+  });
+
+  // Exchange the ID token for our JWT.
+  const res = await fetch(`${getApiBaseUrl()}/api/auth/google`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id_token: idToken }),
+  });
+  const body = await readBackendEnvelope<{
+    id: string;
+    username: string;
+    token: string;
+    email?: string | null;
+  }>(res);
+  if (!res.ok || !body.success || !body.data?.token) {
+    throw new ApiError(res.status, "invalid_credentials", body.message || "Google sign-in failed.");
+  }
+  const session: AuthSession = {
+    user: { ...toAuthUser(body.data), provider: "google" },
+    token: body.data.token,
+    expiresAt: Date.now() + TOKEN_TTL_MS,
+  };
   setSession(session);
   return session;
 }
