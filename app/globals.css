@@ -73,6 +73,25 @@
   clip-path: inset(50% 50% 0 0);
 }
 
+/* Weihu Kanban pastel card tints (plain rules: exact in the
+   served CSS, with a dark-mode override each). Cards cycle
+   through them by index inside their column. */
+.kanban-pastel-blue { background-color: #dbeafe; }
+.kanban-pastel-purple { background-color: #ede9fe; }
+.kanban-pastel-pink { background-color: #fce7f3; }
+.kanban-pastel-peach { background-color: #ffedd5; }
+.kanban-pastel-mint { background-color: #d1fae5; }
+[data-theme="dark"] .kanban-pastel-blue { background-color: #1e3a5f; }
+[data-theme="dark"] .kanban-pastel-purple { background-color: #3b2d5c; }
+[data-theme="dark"] .kanban-pastel-pink { background-color: #5c2d42; }
+[data-theme="dark"] .kanban-pastel-peach { background-color: #5c3a1e; }
+[data-theme="dark"] .kanban-pastel-mint { background-color: #1e4a3a; }
+
+/* Skill tag pill on a pastel card: translucent white in
+   light mode, translucent white on the dark tint in dark mode. */
+.kanban-tag { background-color: rgba(255, 255, 255, 0.65); color: #3f4a3a; }
+[data-theme="dark"] .kanban-tag { background-color: rgba(255, 255, 255, 0.14); color: var(--uf-ink); }
+
 /* --- Motion utilities (P2). All animations gated behind
    prefers-reduced-motion: no-preference — reduced-motion users see static UI. */
 

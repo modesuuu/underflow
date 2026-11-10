@@ -13,9 +13,8 @@ import {
 import type { MyCollabCategory, MyCollabProject, MyCollabStatus } from "../types";
 
 /**
- * Dashboard order for the header stats + the status chips:
- * the category-table order (Not Started, Pending, Complete,
- * Revise) — it also happens to read largest-first (4, 3, 3, 2).
+ * Dashboard order for the columns: the category-table order
+ * (Not Started, Pending, Complete, Revise).
  */
 const STATS_ORDER: MyCollabStatus[] = [
   "not-started",
@@ -25,44 +24,38 @@ const STATS_ORDER: MyCollabStatus[] = [
 ];
 
 /**
- * The status color code — one color per myStatus. The header
- * stats' dots and the card status pills both reuse it. Complete
- * earns the accent; revise is the one red moment; pending is
- * ink; not-started stays quiet.
+ * Weihu pastel rotation for the cards. One tint per card, cycling
+ * by index inside its column, so a column shows varied pastels
+ * the way the reference does. Plain CSS classes (globals.css) —
+ * not Tailwind arbitrary values — so the tints are exact in the
+ * served CSS and carry a dark-mode override each.
  */
-const STATUS_SEGMENT_CLASS: Record<MyCollabStatus, string> = {
-  revise: "bg-badge",
-  pending: "bg-ink",
-  "not-started": "bg-placeholder",
-  complete: "bg-accent",
-};
-
-const STATUS_CHIPS: { value: MyCollabStatus | "all"; label: string }[] = [
-  { value: "all", label: "All" },
-  { value: "not-started", label: "Not Started" },
-  { value: "pending", label: "Pending" },
-  { value: "complete", label: "Complete" },
-  { value: "revise", label: "Revise" },
-];
+const PASTEL_CLASSES = [
+  "kanban-pastel-blue",
+  "kanban-pastel-purple",
+  "kanban-pastel-pink",
+  "kanban-pastel-peach",
+  "kanban-pastel-mint",
+] as const;
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 /**
- * One project card for the dashboard grid — the reference's lead
- * card, translated to our language: owner avatar + a circular
- * arrow to the detail, title + subtitle, skill pills, and a
- * footer of seat meter + due date + status pill. The whole card
- * is the link; there is no inner button, so no stretched-link
- * layering is needed.
+ * One project card for the Kanban board — the weihu card,
+ * translated to our data: skill tags on top, title + subtitle,
+ * a dotted seat meter (the reference's Progress slot), and a
+ * footer of owner avatar + due date. The whole card is the
+ * link; there is no inner button and no status pill (the column
+ * is the status). No scoop: weihu cards are plain rounded
+ * rectangles, and the redesign follows the reference.
  */
-function MyCollabCard({
+function KanbanCard({
   project,
   index,
 }: {
   project: MyCollabProject;
   index: number;
 }) {
-  const category = getCategory(project.myStatus);
   const dueMs = parseDueDate(project.dueDate);
   const daysLeft =
     dueMs === Infinity
@@ -70,42 +63,29 @@ function MyCollabCard({
       : Math.ceil((dueMs - Date.now()) / DAY_MS);
   const urgent =
     project.myStatus !== "complete" && daysLeft !== null && daysLeft <= 7;
+  const pastel = PASTEL_CLASSES[index % PASTEL_CLASSES.length];
 
   return (
     <Link
       href={`/my-collaborations/${project.myStatus}/${project.id}`}
-      className="card-stagger group relative flex cursor-pointer flex-col rounded-liquid p-4 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+      className={clsx(
+        "card-stagger group relative flex cursor-pointer flex-col gap-3 rounded-2xl p-4 transition-shadow duration-200 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none hover:shadow-[0_1px_2px_rgba(var(--uf-shadow-rgb),0.06),0_12px_28px_-12px_rgba(var(--uf-shadow-rgb),0.20)]",
+        pastel
+      )}
       style={{ "--stagger-i": String(Math.min(index, 11)) } as CSSProperties}
     >
-      {/* Shape layer: surface + border + liquid radius, concave
-          top-right scoop (the user's shape diagram, 2026-11-10).
-          The mask cuts the scoop; the content below sits above it,
-          unmasked, so the avatar / arrow / text are never clipped. */}
-      <span
-        aria-hidden="true"
-        className="card-scoop pointer-events-none absolute inset-0 rounded-liquid border border-line bg-surface transition-[border-color,box-shadow] duration-200 group-hover:border-ink/30 group-hover:shadow-[0_1px_2px_rgba(var(--uf-shadow-rgb),0.05),0_12px_28px_-12px_rgba(var(--uf-shadow-rgb),0.18)]"
-      />
-      {/* Concave arc border: the mask cuts the shape layer's border
-          too, so the scoop edge would have no outline and the
-          corner looks broken. This ring (64px, same centre/radius
-          as the mask) draws the border along the scoop, clipped to
-          the interior quarter so only the concave arc shows. It
-          sits below the content, so the arrow button covers where
-          they cross. */}
-      <span
-        aria-hidden="true"
-        className="card-scoop-arc pointer-events-none absolute top-0 right-0 size-32 -translate-y-1/2 translate-x-1/2 rounded-full border border-line transition-[border-color] duration-200 group-hover:border-ink/30"
-      />
-      <span className="relative flex flex-1 flex-col gap-3">
-      <span className="flex items-start justify-between">
-        <Avatar
-          size={40}
-          src={project.owner.avatarUrl}
-          alt={project.owner.name}
-        />
-        <span className="flex size-9 items-center justify-center rounded-full border border-line bg-surface text-muted transition group-hover:border-ink/30 group-hover:text-ink">
-          <Icon name="arrow-up-right" size={16} />
-        </span>
+      {/* Skill tags — the reference's #website / #client row. */}
+      <span className="flex flex-wrap gap-1.5">
+        {project.skills.slice(0, 3).map((s) => (
+          <span key={s.id} className="kanban-tag rounded-full px-2.5 py-1 text-[11px] font-medium">
+            {s.label}
+          </span>
+        ))}
+        {project.skills.length > 3 && (
+          <span className="kanban-tag rounded-full px-2.5 py-1 text-[11px] font-medium">
+            +{project.skills.length - 3} more
+          </span>
+        )}
       </span>
       <span className="flex flex-col gap-0.5">
         <span className="text-[15px] leading-snug font-semibold text-ink">
@@ -115,22 +95,13 @@ function MyCollabCard({
           {project.subtitle}
         </span>
       </span>
-      <span className="flex flex-wrap gap-1.5">
-        {project.skills.slice(0, 3).map((s) => (
-          <span
-            key={s.id}
-            className="rounded-full bg-bg px-2.5 py-1 text-xs font-medium text-muted"
-          >
-            {s.label}
-          </span>
-        ))}
-        {project.skills.length > 3 && (
-          <span className="rounded-full bg-bg px-2.5 py-1 text-xs font-medium text-subtle">
-            +{project.skills.length - 3} more
-          </span>
-        )}
-      </span>
-      <span className="mt-auto flex items-center gap-3 border-t border-line pt-3">
+      {/* Seat meter — the reference's dotted Progress slot.
+          Dots, not bars: filled = ink, next open = accent,
+          open = placeholder. */}
+      <span className="flex flex-col gap-1.5">
+        <span className="text-[11px] font-medium text-muted">
+          Seats · {project.slotsFilled} of {project.slotsTotal}
+        </span>
         <span
           className="flex gap-[3px]"
           role="img"
@@ -140,7 +111,7 @@ function MyCollabCard({
             <span
               key={i}
               className={clsx(
-                "h-1.5 w-3 rounded-full",
+                "size-2 rounded-full",
                 i < project.slotsFilled
                   ? "bg-ink"
                   : i === project.slotsFilled
@@ -150,9 +121,19 @@ function MyCollabCard({
             />
           ))}
         </span>
+      </span>
+      <span className="mt-auto flex items-center gap-2 pt-1">
+        <Avatar
+          size={28}
+          src={project.owner.avatarUrl}
+          alt={project.owner.name}
+        />
+        <span className="text-[13px] font-medium text-muted">
+          {project.owner.name}
+        </span>
         <span
           className={clsx(
-            "flex items-center gap-1.5 text-xs",
+            "ms-auto flex items-center gap-1.5 text-xs",
             urgent ? "font-semibold text-badge" : "text-muted"
           )}
         >
@@ -161,17 +142,6 @@ function MyCollabCard({
           {urgent &&
             ` · ${daysLeft !== null && daysLeft <= 0 ? "due now" : `${daysLeft}d left`}`}
         </span>
-        {category && (
-          <span
-            className={clsx(
-              "ms-auto shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold",
-              category.pillClassName
-            )}
-          >
-            {category.crumbLabel}
-          </span>
-        )}
-      </span>
       </span>
     </Link>
   );
@@ -182,178 +152,187 @@ interface MyCollabBoardProps {
 }
 
 /**
- * The user's project dashboard (2026 redesign, reference = the
- * CRM workspace shot): a header of big title + status stats,
- * then the project grid with status chips + search. The schedule
- * bar and the Needs Attention section were removed on the user's
- * order (2026-11-09) — and the sort + type dropdowns and the
- * New Project button followed the same day: the board is title
- * + stats + a search-and-chip grid only, in the mock's default
- * order. The old register band and its progress track are gone
- * — the counts now live in the header stats; the status-section
- * ledgers are gone — the chips filter one grid. The category
- * and detail pages keep their rows; only this board is a
- * dashboard. Search/status apply to the grid; stats always
- * describe the full portfolio, never the filter. New projects
- * are still created from the public Collaborations page.
+ * The user's project board, redesigned 2026-11-10 as a weihu-style
+ * Kanban (user order: "redesign lagi kaya gini", "harus bener-bener
+ * mirip"). Four columns by status; the status chips are gone
+ * because the columns ARE the filter, and the header stats are
+ * gone because each column header shows its count and links to
+ * its category page. Search stays (it filters cards across all
+ * columns). New Project stays off this board by the user's
+ * 2026-11-09 removal order, so the columns carry no "+" button
+ * and no kebab — no dead controls. A column header chevron
+ * collapses that column. The scoop + arc from the 2026-11-10
+ * card-shape rounds are retired: weihu cards are plain rounded
+ * rectangles, and the redesign follows the reference.
  */
 export function MyCollabBoard({ projects }: MyCollabBoardProps) {
   const [draftQuery, setDraftQuery] = useState("");
   const [query, setQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<MyCollabStatus | "all">(
-    "all"
+  const [collapsed, setCollapsed] = useState<Set<MyCollabStatus>>(
+    () => new Set()
   );
 
   const filtered = useMemo(() => {
-    let result = projects;
     const q = query.trim().toLowerCase();
-    if (q) {
-      result = result.filter(
-        (p) =>
-          p.title.toLowerCase().includes(q) ||
-          p.subtitle.toLowerCase().includes(q)
-      );
-    }
-    if (statusFilter !== "all") {
-      result = result.filter((p) => p.myStatus === statusFilter);
-    }
-    return result;
-  }, [projects, query, statusFilter]);
+    if (!q) return projects;
+    return projects.filter(
+      (p) =>
+        p.title.toLowerCase().includes(q) ||
+        p.subtitle.toLowerCase().includes(q)
+    );
+  }, [projects, query]);
 
-  const clearAll = () => {
+  const toggleColumn = (slug: MyCollabStatus) => {
+    setCollapsed((prev) => {
+      const next = new Set(prev);
+      if (next.has(slug)) next.delete(slug);
+      else next.add(slug);
+      return next;
+    });
+  };
+
+  const clearSearch = () => {
     setDraftQuery("");
     setQuery("");
-    setStatusFilter("all");
   };
 
   const bySlug = new Map<MyCollabStatus, MyCollabCategory>(
     MY_COLLAB_CATEGORIES.map((c) => [c.slug, c])
   );
 
-  // Stats describe the FULL portfolio, never the filtered view.
-  const statusCounts = new Map<MyCollabStatus, number>(
-    STATS_ORDER.map((slug) => [
-      slug,
-      projects.filter((p) => p.myStatus === slug).length,
-    ])
-  );
+  const totalCount = projects.length;
+  const statusCount = STATS_ORDER.filter(
+    (slug) => projects.some((p) => p.myStatus === slug)
+  ).length;
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Header — big title, status stats right. */}
+      {/* Header — title + subtitle left, search right (the
+          reference's header pattern). No stats, no chips: the
+          columns carry the counts and the status filter. */}
       <div className="flex flex-wrap items-end justify-between gap-x-8 gap-y-4">
-        <h1 className="text-[40px] leading-none font-semibold tracking-tight text-ink uppercase">
-          My Collaborations
-        </h1>
-        <div className="grid grid-cols-2 gap-x-8 gap-y-3 sm:grid-cols-4">
-          {STATS_ORDER.map((slug) => {
-            const cat = bySlug.get(slug);
-            if (!cat) return null;
-            return (
-              <Link
-                key={slug}
-                href={`/my-collaborations/${slug}`}
-                className="group flex flex-col gap-0.5 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
-              >
-                <span className="text-3xl leading-none font-semibold text-ink tabular-nums transition-colors group-hover:text-accent">
-                  {statusCounts.get(slug)}
-                </span>
-                <span className="flex items-center gap-1.5 text-xs font-medium text-muted">
-                  <span
-                    className={`size-2 rounded-full ${STATUS_SEGMENT_CLASS[slug]}`}
-                  />
-                  {cat.crumbLabel}
-                </span>
-              </Link>
-            );
-          })}
+        <div className="flex flex-col gap-1">
+          <h1 className="text-[40px] leading-none font-semibold tracking-tight text-ink uppercase">
+            My Collaborations
+          </h1>
+          <p className="text-sm text-muted">
+            {totalCount} projects · {statusCount} statuses
+            {query.trim() !== "" &&
+              ` · ${filtered.length} matching "${query.trim()}"`}
+          </p>
+        </div>
+        <div className="flex h-10 items-center gap-2 rounded-full border border-line bg-surface px-3 focus-within:ring-2 focus-within:ring-accent">
+          <Icon name="search" size={16} className="shrink-0 text-muted" />
+          <input
+            type="text"
+            value={draftQuery}
+            onChange={(e) => {
+              setDraftQuery(e.target.value);
+              setQuery(e.target.value);
+            }}
+            placeholder="Search projects"
+            aria-label="Search projects"
+            className="w-36 bg-transparent text-sm font-medium text-ink outline-none placeholder:text-muted sm:w-48"
+          />
+          {draftQuery !== "" && (
+            <button
+              type="button"
+              aria-label="Clear search"
+              onClick={clearSearch}
+              className="flex size-5 shrink-0 cursor-pointer items-center justify-center rounded-full bg-bg text-muted transition-colors hover:text-ink focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+            >
+              <Icon name="x" size={12} />
+            </button>
+          )}
         </div>
       </div>
 
-      {/* My projects — one filterable card grid. */}
-      <section className="flex flex-col gap-4">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="flex items-center gap-1.5 rounded-full border border-line bg-surface px-3 py-1.5 text-sm font-semibold text-ink">
-            My Projects
-            <span className="text-accent tabular-nums">
-              {filtered.length}
-            </span>
+      {/* Kanban — one column per status. Columns stack on phones,
+          two-up on tablets, four-up on desktop. */}
+      {filtered.length === 0 ? (
+        <div className="flex flex-col items-center gap-2 rounded-2xl bg-bg px-6 py-14 text-center">
+          <span className="flex size-11 items-center justify-center rounded-full bg-surface">
+            <Icon name="search" size={20} className="text-muted" />
           </span>
-          <div className="ms-auto flex flex-wrap items-center gap-2">
-            <div className="flex h-9 items-center gap-2 rounded-full border border-line bg-surface px-3 focus-within:ring-2 focus-within:ring-accent">
-              <Icon name="search" size={16} className="shrink-0 text-muted" />
-              <input
-                type="text"
-                value={draftQuery}
-                onChange={(e) => {
-                  setDraftQuery(e.target.value);
-                  setQuery(e.target.value);
-                }}
-                placeholder="Search"
-                aria-label="Search projects"
-                className="w-28 bg-transparent text-sm font-medium text-ink outline-none placeholder:text-muted sm:w-36"
-              />
-              {draftQuery !== "" && (
-                <button
-                  type="button"
-                  aria-label="Clear search"
-                  onClick={() => {
-                    setDraftQuery("");
-                    setQuery("");
-                  }}
-                  className="flex size-5 shrink-0 cursor-pointer items-center justify-center rounded-full bg-bg text-muted transition-colors hover:text-ink focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
-                >
-                  <Icon name="x" size={12} />
-                </button>
-              )}
-            </div>
-            {STATUS_CHIPS.map((chip) => (
-              <button
-                key={chip.value}
-                type="button"
-                onClick={() => setStatusFilter(chip.value)}
-                aria-pressed={statusFilter === chip.value}
-                className={clsx(
-                  "pressable h-9 cursor-pointer rounded-full px-3 text-[13px] font-medium transition-colors focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none",
-                  statusFilter === chip.value
-                    ? "bg-ink text-surface"
-                    : "border border-line bg-surface text-ink hover:border-ink/30"
-                )}
-              >
-                {chip.label}
-              </button>
-            ))}
-          </div>
+          <p className="text-base font-semibold text-ink">
+            No projects match
+          </p>
+          <p className="max-w-sm text-sm text-muted">
+            No projects match your search. Clear it to see all
+            projects.
+          </p>
+          <button
+            type="button"
+            onClick={clearSearch}
+            className="pressable mt-2 cursor-pointer rounded-full bg-ink px-4 py-2 text-sm font-medium text-surface transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+          >
+            Clear search
+          </button>
         </div>
-
-        {filtered.length === 0 ? (
-          <div className="flex flex-col items-center gap-2 rounded-2xl bg-bg px-6 py-14 text-center">
-            <span className="flex size-11 items-center justify-center rounded-full bg-surface">
-              <Icon name="search" size={20} className="text-muted" />
-            </span>
-            <p className="text-base font-semibold text-ink">
-              No projects match
-            </p>
-            <p className="max-w-sm text-sm text-muted">
-              No projects match your search and filters. Clear them to see
-              all projects.
-            </p>
-            <button
-              type="button"
-              onClick={clearAll}
-              className="pressable mt-2 cursor-pointer rounded-full bg-ink px-4 py-2 text-sm font-medium text-surface transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
-            >
-              Clear search &amp; filters
-            </button>
-          </div>
-        ) : (
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-            {filtered.map((p, i) => (
-              <MyCollabCard key={p.id} project={p} index={i} />
-            ))}
-          </div>
-        )}
-      </section>
+      ) : (
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+          {STATS_ORDER.map((slug) => {
+            const cat = bySlug.get(slug);
+            if (!cat) return null;
+            const columnProjects = filtered.filter(
+              (p) => p.myStatus === slug
+            );
+            const isCollapsed = collapsed.has(slug);
+            return (
+              <section
+                key={slug}
+                aria-label={cat.crumbLabel}
+                className="flex flex-col gap-3 rounded-2xl border border-line bg-surface p-3"
+              >
+                <div className="flex items-center gap-1.5 px-1 pt-1">
+                  <button
+                    type="button"
+                    aria-label={
+                      isCollapsed
+                        ? `Expand ${cat.crumbLabel}`
+                        : `Collapse ${cat.crumbLabel}`
+                    }
+                    aria-expanded={!isCollapsed}
+                    onClick={() => toggleColumn(slug)}
+                    className="flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-full text-muted transition hover:bg-bg hover:text-ink focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+                  >
+                    <Icon
+                      name="chevron-down"
+                      size={16}
+                      className={clsx(
+                        "transition-transform duration-200",
+                        isCollapsed && "-rotate-90"
+                      )}
+                    />
+                  </button>
+                  <Link
+                    href={`/my-collaborations/${slug}`}
+                    className="text-sm font-semibold text-ink focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+                  >
+                    {cat.crumbLabel}
+                  </Link>
+                  <span className="rounded-full bg-bg px-2 py-0.5 text-[11px] font-semibold text-muted tabular-nums">
+                    {columnProjects.length}
+                  </span>
+                </div>
+                {!isCollapsed && (
+                  <div className="flex flex-col gap-3">
+                    {columnProjects.length === 0 ? (
+                      <p className="px-1 py-3 text-center text-[13px] text-muted">
+                        No projects match in this status.
+                      </p>
+                    ) : (
+                      columnProjects.map((p, i) => (
+                        <KanbanCard key={p.id} project={p} index={i} />
+                      ))
+                    )}
+                  </div>
+                )}
+              </section>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
