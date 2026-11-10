@@ -95,6 +95,8 @@ export interface CreatePostInput {
   title: string;
   description: string;
   media_urls: string[];
+  /** Cloudinary public_ids, parallel to media_urls (optional). */
+  media_public_ids?: string[];
 }
 
 /**
@@ -110,9 +112,27 @@ export async function createPost(input: CreatePostInput): Promise<Post> {
       description: input.description,
       portfolio_type: input.media_urls.length > 0 ? "images" : "link",
       media_urls: input.media_urls,
+      media_public_ids: input.media_public_ids ?? [],
     }),
   });
   return mapBackendPost(res.data);
+}
+
+/**
+ * POST /api/upload (auth required). Uploads ONE image file to Cloudinary
+ * and returns its URL + public_id. The apiFetch FormData branch skips the
+ * JSON Content-Type so the browser sets the multipart boundary itself.
+ */
+export async function uploadImage(file: File): Promise<{
+  url: string;
+  public_id: string;
+}> {
+  const form = new FormData();
+  form.append("file", file);
+  const res = await apiFetch<
+    ApiEnvelope<{ url: string; public_id: string }>
+  >("/api/upload", { method: "POST", body: form });
+  return res.data;
 }
 
 /** Wire shape of GET/POST /api/posts/:postId/comments (CommentModel). */

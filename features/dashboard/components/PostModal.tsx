@@ -1,33 +1,22 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import type { ChangeEvent } from "react";
 import { createPortal } from "react-dom";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Icon } from "@/components/ui/Icon";
 import { ApiError } from "@/lib/api-client";
-import { createPost } from "../api";
+import { createPost, uploadImage } from "../api";
 
-/** Hosts next/image can render (next.config.ts remotePatterns). */
-const PREVIEWABLE_HOSTS = ["res.cloudinary.com", "lh3.googleusercontent.com"];
-
-function isHttpUrl(value: string): boolean {
-  try {
-    const url = new URL(value);
-    return url.protocol === "http:" || url.protocol === "https:";
-  } catch {
-    return false;
-  }
+/** A picked image file + its local preview URL (URL.createObjectURL). */
+interface ImageDraft {
+  file: File;
+  url: string;
 }
 
-function isPreviewable(value: string): boolean {
-  try {
-    return PREVIEWABLE_HOSTS.includes(new URL(value).hostname);
-  } catch {
-    return false;
-  }
-}
+const MAX_IMAGES = 5;
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024; // 5 MB per file (matches /api/upload)
 
 /** Pull the backend's own message out of ApiError's prefixed text. */
 function friendlyMessage(err: unknown): string {
@@ -49,18 +38,29 @@ interface PostModalProps {
 
 /**
  * "Post Something" composer. Text-only by default — images are
- * optional pasted URLs (no upload endpoint yet). On success the feed
+ * optional files picked from the device and uploaded to Cloudinary
+ * (POST /api/upload) before the post is created. On success the feed
  * refreshes via router.refresh() and the new post appears at the top.
  */
 export function PostModal({ onClose }: PostModalProps) {
   const router = useRouter();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [images, setImages] = useState<string[]>([]);
-  const [urlDraft, setUrlDraft] = useState("");
-  const [urlError, setUrlError] = useState<string | null>(null);
+  const [images, setImages] = useState<ImageDraft[]>([]);
+  const [imageError, setImageError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const imageInputRef = useRef<HTMLInputElement>(null);
+
+  // Track live blob URLs in a ref so the unmount cleanup revokes exactly
+  // the ones still open (removed entries are already revoked inline).
+  const imageUrlsRef = useRef<string[]>([]);
+  useEffect(() => {
+    return () => {
+      imageUrlsRef.current.forEach((u) => URL.revokeObjectURL(u));
+      imageUrlsRef.current = [];
+    };
+  }, []);
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -73,19 +73,48 @@ export function PostModal({ onClose }: PostModalProps) {
   const canPost =
     title.trim() !== "" && description.trim() !== "" && !submitting;
 
-  function addImage() {
-    const url = urlDraft.trim();
-    if (!isHttpUrl(url)) {
-      setUrlError("Paste a valid image URL starting with http:// or https://.");
-      return;
+  function handleImageChange(event: ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(event.target.files ?? []);
+    event.target.value = ""; // allow re-selecting the same file
+    setImageError(null);
+
+    const accepted: ImageDraft[] = [];
+    let rejectedReason: string | null = null;
+    for (const file of files) {
+      if (!file.type.startsWith("image/")) {
+        rejectedReason = "Only image files are allowed.";
+        continue;
+      }
+      if (file.size > MAX_IMAGE_BYTES) {
+        rejectedReason = "Max 5 MB per image.";
+        continue;
+      }
+      if (images.length + accepted.length >= MAX_IMAGES) {
+        rejectedReason = `Max ${MAX_IMAGES} images.`;
+        break;
+      }
+      accepted.push({ file, url: URL.createObjectURL(file) });
     }
-    if (images.includes(url)) {
-      setUrlError("That image is already added.");
-      return;
+
+    if (accepted.length > 0) {
+      const next = [...images, ...accepted];
+      setImages(next);
+      imageUrlsRef.current = next.map((item) => item.url);
     }
-    setImages([...images, url]);
-    setUrlDraft("");
-    setUrlError(null);
+    if (rejectedReason) setImageError(rejectedReason);
+  }
+
+  function removeImage(index: number) {
+    setImages((prev) => {
+      const removed = prev[index];
+      const next = prev.filter((_, i) => i !== index);
+      if (removed) {
+        URL.revokeObjectURL(removed.url);
+        imageUrlsRef.current = next.map((item) => item.url);
+      }
+      return next;
+    });
+    setImageError(null);
   }
 
   async function submit() {
@@ -93,10 +122,17 @@ export function PostModal({ onClose }: PostModalProps) {
     setSubmitting(true);
     setError(null);
     try {
+      // Upload the picked files first; only when every upload
+      // succeeded is the post created with their URLs.
+      const uploaded =
+        images.length > 0
+          ? await Promise.all(images.map((item) => uploadImage(item.file)))
+          : [];
       await createPost({
         title: title.trim(),
         description: description.trim(),
-        media_urls: images,
+        media_urls: uploaded.map((item) => item.url),
+        media_public_ids: uploaded.map((item) => item.public_id),
       });
       toast.success("Post published");
       router.refresh();
@@ -167,65 +203,47 @@ export function PostModal({ onClose }: PostModalProps) {
           <span className="text-sm font-medium text-ink">
             Images <span className="font-normal text-muted">(optional)</span>
           </span>
-          <div className="flex gap-2">
-            <input
-              type="url"
-              value={urlDraft}
-              onChange={(event) => {
-                setUrlDraft(event.target.value);
-                setUrlError(null);
-              }}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") {
-                  event.preventDefault();
-                  addImage();
-                }
-              }}
-              className="min-w-0 flex-1 rounded-xl border border-line bg-surface p-3 text-base text-ink outline-none placeholder:text-muted focus-visible:ring-2 focus-visible:ring-accent"
-              placeholder="Paste an image URL"
-            />
-            <button
-              type="button"
-              onClick={addImage}
-              disabled={urlDraft.trim() === ""}
-              className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full border border-line px-4 py-2 text-sm font-medium text-ink transition-colors hover:bg-bg disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              <Icon name="plus" size={16} />
-              Add
-            </button>
-          </div>
-          {urlError && (
-            <p className="text-sm text-badge">{urlError}</p>
+          <input
+            ref={imageInputRef}
+            type="file"
+            accept="image/*"
+            multiple
+            aria-label="Choose images"
+            onChange={handleImageChange}
+            className="sr-only"
+          />
+          <button
+            type="button"
+            onClick={() => imageInputRef.current?.click()}
+            disabled={images.length >= MAX_IMAGES}
+            className="flex w-fit cursor-pointer items-center gap-1.5 rounded-full border border-line px-4 py-2 text-sm font-medium text-ink transition-colors hover:bg-bg disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            <Icon name="image-add" size={16} />
+            Add image
+          </button>
+          {imageError && (
+            <p className="text-sm text-badge">{imageError}</p>
           )}
           {images.length > 0 && (
             <ul className="flex flex-col gap-2">
-              {images.map((url) => (
+              {images.map((item, index) => (
                 <li
-                  key={url}
+                  key={item.url}
                   className="flex items-center gap-3 rounded-xl border border-line p-2"
                 >
-                  {isPreviewable(url) ? (
-                    <Image
-                      src={url}
-                      alt=""
-                      width={48}
-                      height={48}
-                      className="size-12 shrink-0 rounded-lg object-cover"
-                    />
-                  ) : (
-                    <span className="flex size-12 shrink-0 items-center justify-center rounded-lg bg-bg text-muted">
-                      <Icon name="link" size={20} />
-                    </span>
-                  )}
+                  {/* Plain <img> — blob: URLs are not supported by next/image. */}
+                  <img
+                    src={item.url}
+                    alt={`Image preview ${index + 1}`}
+                    className="size-12 shrink-0 rounded-lg object-cover"
+                  />
                   <span className="min-w-0 flex-1 truncate text-sm text-ink">
-                    {url}
+                    {item.file.name}
                   </span>
                   <button
                     type="button"
-                    onClick={() =>
-                      setImages(images.filter((item) => item !== url))
-                    }
-                    aria-label="Remove image"
+                    onClick={() => removeImage(index)}
+                    aria-label={`Remove image ${index + 1}`}
                     className="flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-full text-ink transition-colors hover:bg-bg"
                   >
                     <Icon name="x" size={16} />
