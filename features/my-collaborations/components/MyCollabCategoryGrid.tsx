@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type CSSProperties } from "react";
+import { useMemo, useState } from "react";
 import { Icon } from "@/components/ui/Icon";
 import { sortMyProjects } from "../sort";
 import type {
@@ -8,24 +8,28 @@ import type {
   CollabSortKey,
 } from "@/features/collaborations/types";
 import type { MyCollabProject } from "../types";
-import { MyCollabRow } from "./MyCollabRow";
+import { KanbanCard } from "./KanbanCard";
 import { MyCollabSearchBar } from "./MyCollabSearchBar";
-
-/** Cap the stagger index so late rows don't wait a full second in. */
-const STAGGER_CAP = 11;
 
 interface MyCollabCategoryGridProps {
   projects: MyCollabProject[];
+  /** Global pastel offset for this category (the board's column
+      startIndex), so a project keeps its board tint here. */
+  startIndex: number;
 }
 
 /**
- * Category page body: the same dense rows the board's
- * sections use, in the same family container — one language
- * across board and category. Search + sort + type-filter
- * pipeline is unchanged; a results line with a clear action
- * and a composed empty state match the board's behavior.
+ * Category page body: the same Kanban cards as the board, in a
+ * flat responsive grid — no columns (the page IS one category)
+ * and no borders (the cards are borderless pastels, like the
+ * board's). Search + sort + type-filter pipeline is unchanged;
+ * a results line with a clear action and a composed empty state
+ * match the board's behavior.
  */
-export function MyCollabCategoryGrid({ projects }: MyCollabCategoryGridProps) {
+export function MyCollabCategoryGrid({
+  projects,
+  startIndex,
+}: MyCollabCategoryGridProps) {
   const [draftQuery, setDraftQuery] = useState("");
   const [query, setQuery] = useState("");
   const [sortKey, setSortKey] = useState<CollabSortKey>("recommended");
@@ -103,19 +107,13 @@ export function MyCollabCategoryGrid({ projects }: MyCollabCategoryGridProps) {
               </button>
             )}
           </div>
-          <div className="flex flex-col divide-y divide-line/50 border-y border-line/50">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
             {filtered.map((project, i) => (
-              <div
+              <KanbanCard
                 key={project.id}
-                className="card-stagger"
-                style={
-                  {
-                    "--stagger-i": String(Math.min(i, STAGGER_CAP)),
-                  } as CSSProperties
-                }
-              >
-                <MyCollabRow project={project} />
-              </div>
+                project={project}
+                index={startIndex + i}
+              />
             ))}
           </div>
         </>

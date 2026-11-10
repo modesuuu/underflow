@@ -5,7 +5,11 @@ import { AppShell } from "@/components/layout/AppShell";
 import { Icon } from "@/components/ui/Icon";
 import { getMyCollabProjects } from "@/features/my-collaborations/api";
 import { MyCollabCategoryGrid } from "@/features/my-collaborations/components/MyCollabCategoryGrid";
-import { getCategory } from "@/features/my-collaborations/types";
+import {
+  MY_COLLAB_CATEGORIES,
+  getCategory,
+} from "@/features/my-collaborations/types";
+import type { MyCollabStatus } from "@/features/my-collaborations/types";
 
 interface CategoryPageProps {
   params: Promise<{ category: string }>;
@@ -41,23 +45,29 @@ function MyCollabCategoryGridSkeleton() {
           <div className="h-11 w-28 rounded-xl bg-placeholder" />
         </div>
       </div>
-      {/* Rows */}
-      <div className="flex flex-col divide-y divide-line/50 border-y border-line/50">
-        {Array.from({ length: 5 }).map((_, i) => (
-          <div key={i} className="flex flex-col gap-1.5 py-3">
-            <div className="h-4 w-1/3 rounded bg-placeholder" />
-            <div className="h-3 w-1/4 rounded bg-placeholder" />
-          </div>
+      {/* Cards */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="h-[168px] rounded-2xl bg-placeholder/50" />
         ))}
       </div>
     </>
   );
 }
 
-async function MyCollabCategoryGridAsync({ status }: { status: string }) {
+async function MyCollabCategoryGridAsync({ status }: { status: MyCollabStatus }) {
   const all = await getMyCollabProjects();
   const projects = all.filter((p) => p.myStatus === status);
-  return <MyCollabCategoryGrid projects={projects} />;
+  // Global pastel offset: sum of the counts of the categories
+  // before this one, so a project keeps its board tint here.
+  const order = MY_COLLAB_CATEGORIES.map((c) => c.slug);
+  const startIndex = order
+    .slice(0, order.indexOf(status))
+    .reduce(
+      (sum, slug) => sum + all.filter((p) => p.myStatus === slug).length,
+      0
+    );
+  return <MyCollabCategoryGrid projects={projects} startIndex={startIndex} />;
 }
 
 export default async function CategoryPage({ params }: CategoryPageProps) {

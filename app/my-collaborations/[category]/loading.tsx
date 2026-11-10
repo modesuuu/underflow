@@ -31,13 +31,10 @@ export default function MyCollabCategoryLoading() {
           </div>
         </div>
 
-        {/* Rows */}
-        <div className="flex flex-col divide-y divide-line/50 border-y border-line/50">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="flex flex-col gap-1.5 py-3">
-              <div className="h-4 w-1/3 rounded bg-placeholder" />
-              <div className="h-3 w-1/4 rounded bg-placeholder" />
-            </div>
+        {/* Cards */}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="h-[168px] rounded-2xl bg-placeholder/50" />
           ))}
         </div>
       </div>
