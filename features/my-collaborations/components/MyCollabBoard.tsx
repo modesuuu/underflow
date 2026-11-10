@@ -280,7 +280,7 @@ export function MyCollabBoard({ projects }: MyCollabBoardProps) {
               <section
                 key={slug}
                 aria-label={cat.crumbLabel}
-                className="flex flex-col gap-3 rounded-2xl bg-surface p-3"
+                className="flex flex-col gap-3 rounded-2xl border border-line bg-surface p-3"
               >
                 <div className="flex items-center gap-1.5 px-1 pt-1">
                   <button
