@@ -1,5 +1,4 @@
 // features/circle/mock.ts
-import { MY_COLLAB_PROJECTS } from "@/features/my-collaborations/mock";
 import type { MyCollabProject } from "@/features/my-collaborations/types";
 import { CURRENT_USER } from "@/components/layout/nav";
 import type {
@@ -12,12 +11,12 @@ import type {
 } from "./types";
 
 /**
- * Circle V1 mock (spec-circle-v1 §2, §4). Membership derives from the My
- * Collaborations dataset so the two features can never disagree about
- * who is on a team: a project has a Circle unless the user's application
- * is still `pending`. Members are the project's filled slots (owner
- * first) plus the current user. Three projects carry written content;
- * every other eligible project gets a thin seed (one system message).
+ * Circle V1 mock (spec-circle-v1 §2, §4). The project list now comes
+ * from the real My Collaborations API (see ./api.ts): a project has
+ * a Circle unless the user's application is still `pending`. Members
+ * are the project's filled slots (owner first) plus the current user.
+ * Three projects carry written content; every other eligible project
+ * gets a thin seed (one system message).
  * TODO(backend): GET /api/collaborations/:id/circle replaces all of it.
  */
 
@@ -162,10 +161,6 @@ const RICH: Record<string, RichSeed> = {
   },
 };
 
-/** Projects the current user has a Circle for (application not pending). */
-export function eligibleProjects(): MyCollabProject[] {
-  return MY_COLLAB_PROJECTS.filter((p) => p.myStatus !== "pending");
-}
 
 export function buildCircleData(project: MyCollabProject): CircleData {
   const rich = RICH[project.id];

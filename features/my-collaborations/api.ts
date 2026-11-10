@@ -1,7 +1,6 @@
 // features/my-collaborations/api.ts
 import { ApiEnvelope, apiFetch, ApiError, isApiConfigured } from "@/lib/api-client";
 import { mapBackendCollab } from "@/features/collaborations/api";
-import { MY_COLLAB_PROJECTS } from "./mock";
 import type { MyCollabProject } from "./types";
 
 /** Wire item of GET /api/my-collaborations: the collab list shape plus my_status. */
@@ -28,9 +27,6 @@ function mapBackendMyCollab(b: BackendMyCollab): MyCollabProject {
   };
 }
 
-// TODO(backend): replace with GET /api/my-collaborations (user-scoped via
-// Bearer JWT; contract envelope `{ data, meta }` — typed so the mock→fetch
-// swap cannot change call sites, audit P1-A #8).
 export async function getMyCollabProjects(): Promise<MyCollabProject[]> {
   if (isApiConfigured()) {
     const res = await apiFetch<ApiEnvelope<BackendMyCollab[]>>(
@@ -38,17 +34,13 @@ export async function getMyCollabProjects(): Promise<MyCollabProject[]> {
     );
     return res.data.map(mapBackendMyCollab);
   }
-  return MY_COLLAB_PROJECTS;
+  return [];
 }
 
-// TODO(backend): replace with GET /api/my-collaborations/:id
+// No backend detail route yet — resolve from the list.
 export async function getMyCollabProject(
   id: string
 ): Promise<MyCollabProject | undefined> {
-  if (isApiConfigured()) {
-    // No backend detail route yet — resolve from the list.
-    const projects = await getMyCollabProjects();
-    return projects.find((p) => p.id === id);
-  }
-  return MY_COLLAB_PROJECTS.find((p) => p.id === id);
+  const projects = await getMyCollabProjects();
+  return projects.find((p) => p.id === id);
 }

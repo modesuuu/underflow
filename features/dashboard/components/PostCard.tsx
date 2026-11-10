@@ -11,7 +11,6 @@ import { PhotoGrid } from "@/components/ui/PhotoGrid";
 import { LikeButton } from "./LikeButton";
 import { PostOptionsMenu } from "./PostOptionsMenu";
 import { ReportedPostNotice } from "./ReportedPostNotice";
-import { resolvePersonId } from "@/features/profile/mock";
 
 /**
  * Feed post: flat on the page surface — no card border (the
@@ -42,7 +41,7 @@ export function PostCard({ post }: { post: Post }) {
       {/* Byline — the author links to their profile */}
       <div className="flex items-center justify-between">
         <Link
-          href={`/profile/${resolvePersonId(post.author.id) ?? post.author.id}`}
+          href={`/profile/${post.author.id}`}
           className="group flex items-center gap-2.5"
           aria-label={`View ${post.author.name}'s profile`}
         >

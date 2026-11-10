@@ -5,48 +5,40 @@ import { createPortal } from "react-dom";
 import Link from "next/link";
 import { Avatar } from "@/components/ui/Avatar";
 import { Icon } from "@/components/ui/Icon";
-import { PEOPLE } from "@/features/profile/mock";
-import { COLLAB_PROJECTS } from "../mock";
+import { getCollabProjects } from "../api";
 import {
   commitSearch,
   setDraftQuery,
   useCollabToolbar,
 } from "../toolbar-store";
+import type { CollabProject } from "../types";
 
 /**
  * Mobile search sheet (user order 2026-11-09, reference image-24):
  * below `sm` the TopBar search pill is replaced by a search icon; tapping
  * it slides this sheet in from the right. The sheet mirrors the reference:
- * a search input up top (back + clear), a scope tab (Projects / People),
- * and suggestions — popular searches when empty, live matches while typing.
- * Tapping a project opens its detail; tapping a person opens their profile;
- * Enter (or a popular term) commits the project search and closes the sheet.
+ * a search input up top (back + clear) and suggestions — popular searches
+ * when empty, live matches while typing. Tapping a project opens its
+ * detail; Enter (or a popular term) commits the project search and
+ * closes the sheet. Projects come from the real API (no people search
+ * endpoint exists yet, so the sheet is projects-only).
  */
-
-type SearchTab = "projects" | "people";
 
 interface MobileSearchModalProps {
   open: boolean;
   onClose: () => void;
 }
 
-function matchesProject(
-  p: (typeof COLLAB_PROJECTS)[number],
-  q: string
-): boolean {
+function matchesProject(p: CollabProject, q: string): boolean {
   const hay =
     `${p.title} ${p.subtitle} ${p.description}`.toLowerCase();
   return hay.includes(q);
 }
 
-function matchesPerson(p: (typeof PEOPLE)[number], q: string): boolean {
-  const hay = `${p.name} ${p.role ?? ""}`.toLowerCase();
-  return hay.includes(q);
-}
-
 export function MobileSearchModal({ open, onClose }: MobileSearchModalProps) {
   const { draftQuery } = useCollabToolbar();
-  const [tab, setTab] = useState<SearchTab>("projects");
+  const [projects, setProjects] = useState<CollabProject[]>([]);
+  const [loading, setLoading] = useState(false);
   const [closing, setClosing] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
@@ -84,6 +76,26 @@ export function MobileSearchModal({ open, onClose }: MobileSearchModalProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open ]);
 
+  // Load the real project list when the sheet opens.
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    setLoading(true);
+    getCollabProjects()
+      .then((list) => {
+        if (!cancelled) setProjects(list);
+      })
+      .catch(() => {
+        if (!cancelled) setProjects([]);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [open ]);
+
   const requestClose = () => {
     setClosing(true);
     onClose();
@@ -95,19 +107,11 @@ export function MobileSearchModal({ open, onClose }: MobileSearchModalProps) {
   // Popular searches: the project titles — every one is a term the grid
   // actually matches (the grid filters title/subtitle/description only),
   // so tapping one always lands on a real result.
-  const popular = useMemo(
-    () => COLLAB_PROJECTS.map((p) => p.title),
-    []
-  );
+  const popular = useMemo(() => projects.map((p) => p.title), [projects]);
 
   const projectMatches = useMemo(
-    () => (q ? COLLAB_PROJECTS.filter((p) => matchesProject(p, q)) : []),
-    [q]
-  );
-  const people = useMemo(() => PEOPLE.filter((p) => p.id !== "me"), []);
-  const peopleMatches = useMemo(
-    () => (q ? people.filter((p) => matchesPerson(p, q)) : people),
-    [q, people]
+    () => (q ? projects.filter((p) => matchesProject(p, q)) : []),
+    [q, projects]
   );
 
   if (!open && !closing) return null;
@@ -180,44 +184,19 @@ export function MobileSearchModal({ open, onClose }: MobileSearchModalProps) {
           </div>
         </div>
 
-        {/* Scope tabs (reference: Talent / Jobs -> Projects / People). */}
-        <div
-          className="flex gap-6 border-b border-line px-5"
-          role="tablist"
-          aria-label="Search scope"
-        >
-          <button
-            type="button"
-            role="tab"
-            aria-selected={tab === "projects"}
-            onClick={() => setTab("projects")}
-            className={`border-b-2 py-2.5 text-sm transition-colors focus-visible:outline-none ${
-              tab === "projects"
-                ? "border-ink font-semibold text-ink"
-                : "border-transparent text-muted hover:text-ink"
-            }`}
-          >
-            Projects
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={tab === "people"}
-            onClick={() => setTab("people")}
-            className={`border-b-2 py-2.5 text-sm transition-colors focus-visible:outline-none ${
-              tab === "people"
-                ? "border-ink font-semibold text-ink"
-                : "border-transparent text-muted hover:text-ink"
-            }`}
-          >
-            People
-          </button>
-        </div>
 
         {/* Suggestions / results. */}
         <div className="min-h-0 flex-1 overflow-y-auto px-2 py-2">
-          {tab === "projects" ? (
-            q === "" ? (
+          {loading ? (
+            <p className="px-3 py-6 text-center text-sm text-muted">
+              Loading…
+            </p>
+          ) : q === "" ? (
+            popular.length === 0 ? (
+              <p className="px-3 py-6 text-center text-sm text-muted">
+                No projects yet.
+              </p>
+            ) : (
               <>
                 <p className="px-3 pt-2 pb-1 text-xs font-medium tracking-wide text-muted uppercase">
                   Popular searches
@@ -238,54 +217,26 @@ export function MobileSearchModal({ open, onClose }: MobileSearchModalProps) {
                   </button>
                 ))}
               </>
-            ) : projectMatches.length === 0 ? (
-              <p className="px-3 py-6 text-center text-sm text-muted">
-                No projects found for &ldquo;{draftQuery.trim()}&rdquo;.
-              </p>
-            ) : (
-              projectMatches.map((p) => (
-                <Link
-                  key={p.id}
-                  href={`/collaborations/${p.id}`}
-                  onClick={requestClose}
-                  className="flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors hover:bg-bg focus-visible:bg-bg focus-visible:outline-none"
-                >
-                  <Avatar alt={p.owner.name} size={40} />
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-[15px] font-medium text-ink">
-                      {p.title}
-                    </span>
-                    <span className="block truncate text-[13px] text-muted">
-                      {p.owner.name} · {p.owner.role} · {p.type}
-                    </span>
-                  </span>
-                  <Icon
-                    name="chevron-right"
-                    size={18}
-                    className="shrink-0 text-muted"
-                  />
-                </Link>
-              ))
             )
-          ) : peopleMatches.length === 0 ? (
+          ) : projectMatches.length === 0 ? (
             <p className="px-3 py-6 text-center text-sm text-muted">
-              No people found for &ldquo;{draftQuery.trim()}&rdquo;.
+              No projects found for &ldquo;{draftQuery.trim()}&rdquo;.
             </p>
           ) : (
-            peopleMatches.map((person) => (
+            projectMatches.map((p) => (
               <Link
-                key={person.id}
-                href={`/profile/${person.id}`}
+                key={p.id}
+                href={`/collaborations/${p.id}`}
                 onClick={requestClose}
                 className="flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors hover:bg-bg focus-visible:bg-bg focus-visible:outline-none"
               >
-                <Avatar alt={person.name} size={40} />
+                <Avatar alt={p.owner.name} size={40} />
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-[15px] font-medium text-ink">
-                    {person.name}
+                    {p.title}
                   </span>
                   <span className="block truncate text-[13px] text-muted">
-                    {person.role ?? "Member"}
+                    {p.owner.name} · {p.owner.role} · {p.type}
                   </span>
                 </span>
                 <Icon

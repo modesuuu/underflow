@@ -5,7 +5,6 @@ import { useState } from "react";
 import { Avatar } from "@/components/ui/Avatar";
 import { Icon } from "@/components/ui/Icon";
 import { formatCount } from "@/lib/format";
-import { resolvePersonId } from "@/features/profile/mock";
 import type { Post } from "../types";
 import { LikeButton } from "./LikeButton";
 import { PhotoViewer } from "./PhotoViewer";
@@ -41,7 +40,7 @@ export function PostDetailBody({ post }: { post: Post }) {
       {/* Byline — identical to the feed card's */}
       <div className="flex items-center justify-between">
         <Link
-          href={`/profile/${resolvePersonId(post.author.id) ?? post.author.id}`}
+          href={`/profile/${post.author.id}`}
           className="group flex items-center gap-2.5"
           aria-label={`View ${post.author.name}'s profile`}
         >

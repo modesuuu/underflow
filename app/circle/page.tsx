@@ -1,12 +1,10 @@
 import type { Metadata } from "next";
 import { AppShell } from "@/components/layout/AppShell";
-import { getCircleProjects } from "@/features/circle/api";
-import { CircleIndexList } from "@/features/circle/components/CircleIndexList";
+import { CircleIndexLoader } from "@/features/circle/components/CircleIndexLoader";
 
 export const metadata: Metadata = { title: "Circles — Underflow" };
 
-export default async function CircleIndexPage() {
-  const projects = await getCircleProjects();
+export default function CircleIndexPage() {
   return (
     <AppShell breadcrumbRoot="Dashboard" breadcrumbLeaf="Circle">
       <div className="mx-auto flex w-full max-w-(--uf-content-w) flex-col gap-5 px-4 py-6 lg:mx-0 lg:ml-[28px] lg:px-0">
@@ -18,7 +16,7 @@ export default async function CircleIndexPage() {
             One circle per project you are part of.
           </p>
         </div>
-        <CircleIndexList projects={projects} />
+        <CircleIndexLoader />
       </div>
     </AppShell>
   );

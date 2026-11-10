@@ -3,8 +3,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Icon } from "@/components/ui/Icon";
-import { MY_COLLAB_PROJECTS } from "../mock";
+import { getMyCollabProjects } from "../api";
 import { setQuery, useMyCollabToolbar } from "../toolbar-store";
+import type { MyCollabProject } from "../types";
 
 /**
  * Mobile search sheet for /my-collaborations (user order
@@ -27,6 +28,8 @@ export function MyCollabMobileSearchModal({
   onClose,
 }: MyCollabMobileSearchModalProps) {
   const { query } = useMyCollabToolbar();
+  const [projects, setProjects] = useState<MyCollabProject[]>([]);
+  const [loading, setLoading] = useState(false);
   const [closing, setClosing] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
@@ -64,6 +67,26 @@ export function MyCollabMobileSearchModal({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
+  // Load the real project list when the sheet opens.
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    setLoading(true);
+    getMyCollabProjects()
+      .then((list) => {
+        if (!cancelled) setProjects(list);
+      })
+      .catch(() => {
+        if (!cancelled) setProjects([]);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [open]);
+
   const requestClose = () => {
     setClosing(true);
     onClose();
@@ -74,11 +97,11 @@ export function MyCollabMobileSearchModal({
   const matches = useMemo(
     () =>
       q
-        ? MY_COLLAB_PROJECTS.filter((p) =>
+        ? projects.filter((p) =>
             `${p.title} ${p.subtitle}`.toLowerCase().includes(q)
           )
-        : MY_COLLAB_PROJECTS,
-    [q]
+        : projects,
+    [q, projects]
   );
 
   if (!open && !closing) return null;
@@ -150,7 +173,11 @@ export function MyCollabMobileSearchModal({
           <p className="px-3 pt-2 pb-1 text-xs font-medium tracking-wide text-muted uppercase">
             {q === "" ? "Your projects" : "Matches"}
           </p>
-          {matches.length === 0 ? (
+          {loading ? (
+            <p className="px-3 py-6 text-center text-sm text-muted">
+              Loading…
+            </p>
+          ) : matches.length === 0 ? (
             <p className="px-3 py-6 text-center text-sm text-muted">
               No projects found for &ldquo;{query.trim()}&rdquo;.
             </p>

@@ -1,6 +1,4 @@
 import type { AuthSession, AuthUser } from "./types";
-import type { MockUser } from "./mock";
-import { MOCK_USERS } from "./mock";
 
 /**
  * Plain session state: storage, the in-memory session, and the listener
@@ -15,7 +13,6 @@ import { MOCK_USERS } from "./mock";
  * middleware cannot guard routes — the guard is the client-side AuthGate.
  */
 const SESSION_KEY = "uf-auth-session";
-const REGISTERED_USERS_KEY = "uf-auth-users";
 
 let session: AuthSession | null = null;
 let restored = false;
@@ -69,23 +66,3 @@ export function setSession(next: AuthSession | null): void {
   emit();
 }
 
-/** All accounts the mock knows: seeds plus accounts registered in this browser. */
-export function listUsers(): MockUser[] {
-  if (typeof window === "undefined") return [...MOCK_USERS];
-  try {
-    const raw = window.localStorage.getItem(REGISTERED_USERS_KEY);
-    const registered = raw ? (JSON.parse(raw) as MockUser[]) : [];
-    return [...MOCK_USERS, ...registered];
-  } catch {
-    return [...MOCK_USERS];
-  }
-}
-
-export function addRegisteredUser(user: MockUser): void {
-  if (typeof window === "undefined") return;
-  const registered = listUsers().filter(
-    (u) => !MOCK_USERS.some((s) => s.username === u.username),
-  );
-  registered.push(user);
-  window.localStorage.setItem(REGISTERED_USERS_KEY, JSON.stringify(registered));
-}

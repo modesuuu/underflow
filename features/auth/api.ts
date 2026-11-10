@@ -1,39 +1,19 @@
-import { ApiError, getApiBaseUrl, isApiConfigured } from "@/lib/api-client";
-import { MOCK_USERS } from "./mock";
-import { addRegisteredUser, getSession, listUsers, setSession } from "./session";
+import { ApiError, getApiBaseUrl } from "@/lib/api-client";
+import { getSession, setSession } from "./session";
 import type { AuthSession, AuthUser, LoginInput, RegisterInput } from "./types";
 import { firstError, validateLogin, validateRegister } from "./validation";
 
 /**
- * Auth API. The same contract shape as the other feature modules:
- * functions return domain objects and throw ApiError with a machine `code`
- * on failure, so the mock -> fetch swap cannot change call sites.
- *
- * The mock implements the REAL backend's behaviour (reviewed 2026-11-06):
- * login is username-only, register returns no token (the client signs in
- * afterwards), the token lives 3 days. When NEXT_PUBLIC_API_URL is set,
- * the same functions call the real endpoints; the only extra piece is the
- * envelope adapter, because the backend answers `{ success, message, data }`
- * while the contract expects `{ data, meta }` / `{ error: { code, message } }`.
+ * Auth API. Backend-only: login/register call the real endpoints
+ * (POST /api/auth/login|register). The backend answers
+ * `{ success, message, data }`; the envelope adapter below normalizes
+ * it. Login is username-only, register returns no token (the client
+ * signs in afterwards), the token lives 3 days.
  */
 
 /** 3 days, in ms — mirrors the backend JWT expiry (utils/JWT.php: 259200s). */
 export const TOKEN_TTL_MS = 3 * 24 * 60 * 60 * 1000;
 
-/** Fake network round-trip so the mock behaves like a call, not a local lookup. */
-const MOCK_LATENCY_MS = 350;
-
-function mockDelay(): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, MOCK_LATENCY_MS));
-}
-
-function makeSession(user: AuthUser): AuthSession {
-  return {
-    user,
-    token: `mock-${user.id}-${Date.now()}`,
-    expiresAt: Date.now() + TOKEN_TTL_MS,
-  };
-}
 
 function toAuthUser(record: {
   id: string;
@@ -58,15 +38,7 @@ export async function login(input: LoginInput): Promise<AuthSession> {
       firstError(errors) ?? "Check the form and try again.",
     );
   }
-  if (isApiConfigured()) return loginViaBackend(input);
-  await mockDelay();
-  const user = listUsers().find((u) => u.username === input.username.trim());
-  if (!user || user.password !== input.password) {
-    throw new ApiError(401, "invalid_credentials", "Username or password is incorrect.");
-  }
-  const session = makeSession(user);
-  setSession(session);
-  return session;
+  return loginViaBackend(input);
 }
 
 export async function register(input: RegisterInput): Promise<AuthSession> {
@@ -78,28 +50,7 @@ export async function register(input: RegisterInput): Promise<AuthSession> {
       firstError(errors) ?? "Check the form and try again.",
     );
   }
-  if (isApiConfigured()) return registerViaBackend(input);
-  await mockDelay();
-  const username = input.username.trim();
-  const email = input.email.trim();
-  const users = listUsers();
-  if (users.some((u) => u.username === username)) {
-    throw new ApiError(409, "username_taken", "That username is already taken.");
-  }
-  if (users.some((u) => u.email.toLowerCase() === email.toLowerCase())) {
-    throw new ApiError(409, "email_taken", "An account with this email already exists.");
-  }
-  const user = {
-    id: crypto.randomUUID(),
-    username,
-    email,
-    name: username,
-    provider: "password" as const,
-    password: input.password,
-  };
-  addRegisteredUser(user);
-  // The backend's register returns no token, so the client signs in right after.
-  return login({ username, password: input.password });
+  return registerViaBackend(input);
 }
 
 /** Minimal typing for the Google Identity Services (GIS) global. */
@@ -242,7 +193,7 @@ export function logout(): void {
   setSession(null);
 }
 
-/* --- Real-backend path (dormant until NEXT_PUBLIC_API_URL is set) --- */
+/* --- Backend path --- */
 
 interface BackendEnvelope<T> {
   success: boolean;

@@ -1,7 +1,8 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import { buildCircleData, eligibleProjects } from "./mock";
+import { buildCircleData } from "./mock";
+import { getMyCollabProjects } from "@/features/my-collaborations/api";
 import { getSessionUser, subscribe as subscribeSession } from "@/features/auth/session";
 import type {
   ChannelId,
@@ -12,20 +13,45 @@ import type {
 
 /**
  * Session-scoped Circle state (spec-circle-v1 §4), same external-store
- * idiom as the like-store and notifications-store: seeds once from the
- * mock, every write replaces the record and emits, nothing persists
- * across a refresh. TODO(backend): the seed becomes the REST history
- * fetch and the writes become WebSocket events (spec §12).
+ * idiom as the like-store and notifications-store: loads once from the
+ * real My Collaborations API (the project list), builds the mock
+ * channel/message/member data per project, every write replaces the
+ * record and emits, nothing persists across a refresh. TODO(backend):
+ * the seed becomes the REST history fetch and the writes become
+ * WebSocket events (spec §12).
  */
 
 let circles: Record<string, CircleData> | null = null;
+let loadPromise: Promise<void> | null = null;
+
+/**
+ * Load the project list once (client-only: the endpoint needs the
+ * session Bearer token) and seed the mock circle data per project.
+ * Idempotent — concurrent callers share the one in-flight fetch.
+ */
+function ensureLoaded(): void {
+  if (typeof window === "undefined") return;
+  if (loadPromise) return;
+  loadPromise = getMyCollabProjects()
+    .then((projects) => {
+      const next: Record<string, CircleData> = {};
+      for (const project of projects.filter((p) => p.myStatus !== "pending")) {
+        next[project.id] = buildCircleData(project);
+      }
+      circles = next;
+      syncMeName();
+      emit();
+    })
+    .catch(() => {
+      circles = {};
+      emit();
+    });
+}
 
 function seed(): Record<string, CircleData> {
   if (!circles) {
     circles = {};
-    for (const project of eligibleProjects()) {
-      circles[project.id] = buildCircleData(project);
-    }
+    ensureLoaded();
   }
   return circles;
 }

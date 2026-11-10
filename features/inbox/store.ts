@@ -1,5 +1,4 @@
 import { useSyncExternalStore } from "react";
-import { CONVERSATIONS_SEED } from "./mock";
 import type { ApplicationStatus, Conversation } from "./types";
 
 /**
@@ -12,7 +11,7 @@ import type { ApplicationStatus, Conversation } from "./types";
  * Real persistence waits on the inbox API (docs/api-contract.md).
  */
 
-let conversations: Conversation[] = CONVERSATIONS_SEED;
+let conversations: Conversation[] = [];
 const listeners = new Set<() => void>();
 
 function emit() {
@@ -27,6 +26,11 @@ function subscribe(listener: () => void) {
 }
 
 function getSnapshot(): Conversation[] {
+  return conversations;
+}
+
+/** Plain (non-hook) read of the current thread list, for the api layer. */
+export function getConversationsList(): Conversation[] {
   return conversations;
 }
 
@@ -54,7 +58,7 @@ export function useInboxUnreadCount(): number {
   return useSyncExternalStore(
     subscribe,
     () => countUnread(conversations),
-    () => countUnread(CONVERSATIONS_SEED),
+    () => 0,
   );
 }
 
@@ -275,10 +279,8 @@ export interface DirectThreadInput {
  * "Chat with owner": open (or create) the plain 1:1 thread with a
  * person — no application card, no message appended. The thread is
  * moved to the top so /inbox opens it via the first-thread fallback.
- * Matches by canonical personId first, then by name: the seed data
- * keys the Russel thread by the collab member id "m-owner" while the
- * resolved id is "user-russel", so the name fallback is what lands
- * there in the mock. Returns the thread id.
+ * Matches by canonical personId first, then by name. Returns the
+ * thread id.
  */
 export function startDirectThread(input: DirectThreadInput): string {
   const existing =

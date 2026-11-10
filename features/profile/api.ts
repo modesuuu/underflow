@@ -5,13 +5,10 @@ import { getDashboardPosts } from "@/features/dashboard/api";
 import { getMyCollabProjects } from "@/features/my-collaborations/api";
 import type { CollabProject } from "@/features/collaborations/types";
 import type { Post } from "@/features/dashboard/types";
-import { PEOPLE } from "./mock";
 import type { PersonDetail, ProfileStats } from "./types";
 
-// TODO(backend): replace with GET /api/users/:id (contract envelope
-// `{ data, meta }` — typed so the mock→fetch swap cannot change call sites).
-// The mock resolves ANY known alias to the canonical person, because the
-// feature mocks still give the same human different ids per feature.
+// GET /api/users/:id (contract envelope `{ data, meta }`). The backend
+// returns aliases: [id] — a person has just their own id as alias.
 export async function getPerson(id: string): Promise<PersonDetail | undefined> {
   if (isApiConfigured()) {
     try {
@@ -26,7 +23,7 @@ export async function getPerson(id: string): Promise<PersonDetail | undefined> {
       throw err;
     }
   }
-  return PEOPLE.find((p) => p.id === id || p.aliases.includes(id));
+  return undefined;
 }
 
 /**

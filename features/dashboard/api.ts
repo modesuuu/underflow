@@ -1,6 +1,4 @@
 import { ApiEnvelope, apiFetch, isApiConfigured } from "@/lib/api-client";
-import { COLLAB_PROJECTS } from "@/features/collaborations/mock";
-import { NOTIFICATIONS, POSTS } from "./mock";
 import type { NotificationItem, Post } from "./types";
 
 /** Wire shape of GET /api/posts (PostModel::getAll). */
@@ -67,7 +65,7 @@ function mapBackendPost(b: BackendPost): Post {
 
 export async function getDashboardPosts(): Promise<Post[]> {
   if (!isApiConfigured()) {
-    return POSTS;
+    return [];
   }
   try {
     const res = await apiFetch<ApiEnvelope<BackendPost[]>>("/api/posts");
@@ -78,34 +76,17 @@ export async function getDashboardPosts(): Promise<Post[]> {
     if (err instanceof Error && "status" in err && (err as { status: number }).status === 404) {
       return [];
     }
-    // Backend unreachable (server down): show the mock feed instead
-    // of crashing the page.
+    // Backend unreachable (server down): return an empty feed
+    // instead of crashing the page.
     if (err instanceof Error && "code" in err && (err as { code?: string }).code === "network_error") {
-      return POSTS;
+      return [];
     }
     throw err;
   }
 }
 
-// Tap-to-open, but only to destinations that exist: a link whose
-// target is not in the local registries resolves to nothing, and
-// pressing that row only marks it read instead of navigating to
-// a dead page. TODO(backend): the server should validate links when
-// the API is live; keep this check as the seatbelt.
-function resolveNotificationHref(item: NotificationItem): string | undefined {
-  const collab = item.link?.match(/^\/collaborations\/([\w-]+)$/);
-  if (collab && COLLAB_PROJECTS.some((p) => p.id === collab[1])) {
-    return item.link;
-  }
-  return undefined;
-}
-
 // TODO(backend): GET /api/notifications does not exist yet (table added
-// 2026-11-10, no route). Keep the mock until the endpoint lands.
+// 2026-11-10, no route). Until the endpoint lands the list is empty.
 export async function getNotifications(): Promise<NotificationItem[]> {
-  const items = NOTIFICATIONS;
-  return items.map((item) => ({
-    ...item,
-    href: resolveNotificationHref(item),
-  }));
+  return [];
 }

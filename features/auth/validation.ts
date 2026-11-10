@@ -1,5 +1,12 @@
-import { MIN_PASSWORD_LENGTH, USERNAME_PATTERN } from "./mock";
 import type { LoginInput, RegisterInput } from "./types";
+
+/**
+ * Frontend product rules (moved from the deleted mock store — these
+ * are validation constants, not mock data). The backend enforces
+ * none of these yet; the message to the team proposes them.
+ */
+export const USERNAME_PATTERN = /^[a-z0-9._-]{3,20}$/;
+export const MIN_PASSWORD_LENGTH = 8;
 
 /**
  * Field errors keyed by field name; an empty object means valid. Pure

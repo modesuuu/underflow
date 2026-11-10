@@ -5,7 +5,6 @@ import Link from "next/link";
 import { Avatar } from "@/components/ui/Avatar";
 import type { PostComment } from "../types";
 import { LikeButton } from "./LikeButton";
-import { resolvePersonId } from "@/features/profile/mock";
 
 interface CommentItemProps {
   comment: PostComment;
@@ -21,8 +20,7 @@ interface CommentItemProps {
  * single block instead of stacked full-width rows.
  */
 function CommentItem({ comment, innerRef, isNew = false }: CommentItemProps) {
-  const profileId = resolvePersonId(comment.author.id);
-  const profileHref = profileId ? `/profile/${profileId}` : null;
+  const profileHref = `/profile/${comment.author.id}`;
   const byline = (
     <>
       <span className="text-sm font-medium group-hover:underline">

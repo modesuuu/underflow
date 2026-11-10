@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ApiError } from "@/lib/api-client";
 import { login } from "../api";
-import { DEMO_ACCOUNT } from "../mock";
 import { validateLogin, type FieldErrors } from "../validation";
 import { AuthField } from "./AuthField";
 import { AuthShell } from "./AuthShell";
@@ -21,12 +20,6 @@ export function LoginForm() {
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  const fillDemo = () => {
-    setUsername(DEMO_ACCOUNT.username);
-    setPassword(DEMO_ACCOUNT.password);
-    setErrors({});
-    setFormError(null);
-  };
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
@@ -99,13 +92,6 @@ export function LoginForm() {
           className="h-12 w-full cursor-pointer rounded-lg bg-accent text-sm font-medium text-on-accent transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {submitting ? "Logging in…" : "Log in"}
-        </button>
-        <button
-          type="button"
-          onClick={fillDemo}
-          className="cursor-pointer text-center text-sm text-muted underline underline-offset-2 transition-colors hover:text-ink"
-        >
-          Use the demo account
         </button>
       </form>
       <div className="flex items-center gap-3 text-xs text-subtle">

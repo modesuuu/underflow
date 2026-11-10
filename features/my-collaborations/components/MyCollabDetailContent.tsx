@@ -7,7 +7,6 @@ import { Icon } from "@/components/ui/Icon";
 import { Avatar } from "@/components/ui/Avatar";
 import { PhotoGrid, type Photo } from "@/components/ui/PhotoGrid";
 import { PhotoLightbox } from "@/components/ui/PhotoLightbox";
-import { resolvePersonId } from "@/features/profile/mock";
 import { startDirectThread } from "@/features/inbox/store";
 import { useSessionUser } from "@/features/auth/store";
 import type { MyCollabProject } from "../types";
@@ -34,8 +33,7 @@ interface MyCollabDetailContentProps {
 export function MyCollabDetailContent({ project }: MyCollabDetailContentProps) {
   const router = useRouter();
   const sessionUser = useSessionUser();
-  const ownerPersonId =
-    resolvePersonId(project.owner.id) ?? project.owner.id;
+  const ownerPersonId = project.owner.id;
   const isOwnProject =
     sessionUser !== null && sessionUser.id === ownerPersonId;
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
@@ -91,7 +89,7 @@ export function MyCollabDetailContent({ project }: MyCollabDetailContentProps) {
           {/* Project owner row */}
           <div className="flex items-center justify-between">
             <Link
-              href={"/profile/" + (resolvePersonId(project.owner.id) ?? project.owner.id)}
+              href={"/profile/" + (project.owner.id)}
               className="group flex items-center gap-3"
               aria-label={"View " + project.owner.name + "'s profile"}
             >
@@ -203,7 +201,7 @@ export function MyCollabDetailContent({ project }: MyCollabDetailContentProps) {
                 /* Filled member: avatar + name + role — links to profile */
                 <Link
                   key={member.id}
-                  href={"/profile/" + (resolvePersonId(member.id) ?? member.id)}
+                  href={"/profile/" + (member.id)}
                   className="group flex items-center gap-2"
                   aria-label={"View " + member.name + "'s profile"}
                 >

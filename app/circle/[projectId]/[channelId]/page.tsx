@@ -1,21 +1,17 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { AppShell } from "@/components/layout/AppShell";
-import { getCircle, getCircleProjects } from "@/features/circle/api";
-import { CircleShell } from "@/features/circle/components/CircleShell";
+import { CircleChannelLoader } from "@/features/circle/components/CircleChannelLoader";
 import type { ChannelId } from "@/features/circle/types";
 
 const CHANNEL_IDS: ChannelId[] = ["announcements", "general"];
 
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ projectId: string }>;
-}): Promise<Metadata> {
-  const { projectId } = await params;
-  const projects = await getCircleProjects();
-  const project = projects.find((p) => p.projectId === projectId);
-  return { title: project ? `${project.title} — Circle — Underflow` : "Circle — Underflow" };
+/**
+ * The project title is not known on the server (the project list
+ * needs the session token), so metadata stays generic; the loader
+ * sets the breadcrumb once the summary loads client-side.
+ */
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: "Circle — Underflow" };
 }
 
 export default async function CircleChannelPage({
@@ -25,27 +21,10 @@ export default async function CircleChannelPage({
 }) {
   const { projectId, channelId } = await params;
   if (!CHANNEL_IDS.includes(channelId as ChannelId)) notFound();
-  const circle = await getCircle(projectId);
-  if (!circle) notFound();
-  const projects = await getCircleProjects();
-  const summary = projects.find((p) => p.projectId === projectId);
-  if (!summary) notFound();
-
   return (
-    <AppShell
-      fill
-      breadcrumbRoot="Dashboard / Circle"
-      breadcrumbLeaf={summary.title}
-      backLabel="Circles"
-      backHref="/circle"
-      variant="detail"
-    >
-      <CircleShell
-        projectId={projectId}
-        channelId={channelId as ChannelId}
-        title={summary.title}
-        statusLabel={summary.statusLabel}
-      />
-    </AppShell>
+    <CircleChannelLoader
+      projectId={projectId}
+      channelId={channelId as ChannelId}
+    />
   );
 }

@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Avatar } from "@/components/ui/Avatar";
-import { resolvePersonId } from "@/features/profile/mock";
 import { applyToCollab } from "../api";
 import { startApplicationThread } from "@/features/inbox/store";
 import { formatDueDate } from "../sort";
@@ -43,7 +42,7 @@ function CardApply({ project }: { project: CollabProject }) {
     // TODO(backend): POST /api/collaborations/:id/apply
     await applyToCollab(project.id);
     startApplicationThread({
-      ownerPersonId: resolvePersonId(project.owner.id) ?? null,
+      ownerPersonId: project.owner.id,
       ownerName: project.owner.name,
       projectId: project.id,
       projectTitle: project.title,

@@ -1,6 +1,4 @@
 import { useSyncExternalStore } from "react";
-import { COLLAB_PROJECTS } from "@/features/collaborations/mock";
-import { NOTIFICATIONS } from "./mock";
 import type { NotificationItem } from "./types";
 
 /**
@@ -8,26 +6,12 @@ import type { NotificationItem } from "./types";
  * the Notifications page.
  *
  * Read state used to live inside the right-rail panel, so nothing
- * else could ever agree with it. The store seeds itself from the
- * same mock getNotifications serves and applies the same href
- * validation: a link resolves only when its target exists in the
- * local registries, so pressing a row never navigates to a dead
- * page. TODO(backend): GET /api/dashboard/notifications plus PATCH
- * read flags replace the seed and the in-memory writes.
+ * else could ever agree with it. The store starts empty (no
+ * backend endpoint yet); TODO(backend): GET /api/notifications
+ * plus PATCH read flags replace the seed and the in-memory writes.
  */
 
-function resolveHref(item: NotificationItem): string | undefined {
-  const collab = item.link?.match(/^\/collaborations\/([\w-]+)$/);
-  if (collab && COLLAB_PROJECTS.some((p) => p.id === collab[1])) {
-    return item.link;
-  }
-  return undefined;
-}
-
-let items: NotificationItem[] = NOTIFICATIONS.map((item) => ({
-  ...item,
-  href: resolveHref(item),
-}));
+let items: NotificationItem[] = [];
 
 const listeners = new Set<() => void>();
 

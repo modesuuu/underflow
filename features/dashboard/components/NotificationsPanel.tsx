@@ -11,7 +11,6 @@ import {
 import clsx from "clsx";
 import { Avatar } from "@/components/ui/Avatar";
 import { Icon } from "@/components/ui/Icon";
-import { resolvePersonId } from "@/features/profile/mock";
 import type { NotificationItem } from "../types";
 
 type Tab = "all" | "unread" | "read";
@@ -61,7 +60,7 @@ function NotificationRow({
     item.action || item.target
       ? `${item.action ?? ""} ${item.target ?? ""}`.trim()
       : item.body;
-  const actorId = item.actor ? resolvePersonId(item.actor.id) : null;
+  const actorId = item.actor ? item.actor.id : null;
 
   return (
     <div
