@@ -5,6 +5,7 @@ import { AppShell } from "@/components/layout/AppShell";
 import { getPerson, getProfileStats } from "@/features/profile/api";
 import { PerformanceSummary } from "@/features/profile/components/PerformanceSummary";
 import { ProfileDetailCard } from "@/features/profile/components/ProfileDetailCard";
+import { ProfileLoader } from "@/features/profile/components/ProfileLoader";
 
 interface ProfilePageProps {
   params: Promise<{ userId: string }>;
@@ -82,7 +83,24 @@ async function ProfileBody({ userId }: { userId: string }) {
 export default async function ProfilePage({ params }: ProfilePageProps) {
   const { userId } = await params;
   const person = await getPerson(userId);
-  if (!person) notFound();
+  if (!person && userId !== "me") notFound();
+  if (!person) {
+    return (
+      <AppShell
+        navVariant="none"
+        hideTopBar
+        breadcrumbRoot="Profile"
+        breadcrumbLeaf="Profile"
+        backLabel="Feed"
+        backHref="/"
+      >
+        <h1 className="sr-only">Profile</h1>
+        <div className="flex h-full flex-col px-4 py-6 sm:px-6">
+          <ProfileLoader userId={userId} />
+        </div>
+      </AppShell>
+    );
+  }
 
   return (
     <AppShell

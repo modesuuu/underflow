@@ -3,7 +3,15 @@
  * own <feature>/api.ts; components never call fetch directly.
  *
  * NEXT_PUBLIC_API_URL empty -> features fall back to their mock.ts data.
+ *
+ * Backend envelope note (2026-11-10, fullstack connect): the real
+ * backend answers `{ success, message, data }`, NOT the contract
+ * envelope `{ data, meta }` / `{ error: { code, message } }`.
+ * apiFetch normalizes the backend envelope into the contract shape
+ * here, so call sites keep reading `res.data` unchanged.
  */
+
+import { getSession } from "@/features/auth/session";
 
 const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL ?? "").replace(
   /\/$/,
@@ -65,12 +73,19 @@ export async function apiFetch<T>(
   init?: RequestInit
 ): Promise<T> {
   const isMultipart = init?.body instanceof FormData;
+  // The login logic stores the JWT in the session (localStorage);
+  // send it back as Bearer so protected endpoints accept the call.
+  // On the server there is no session (no window), so the header is
+  // omitted — public read endpoints must not require auth.
+  const token = getSession()?.token;
   const res = await fetch(`${API_BASE_URL}${path}`, {
     cache: "no-store",
     ...init,
-    headers: isMultipart
-      ? { ...(init?.headers ?? {}) }
-      : { "Content-Type": "application/json", ...(init?.headers ?? {}) },
+    headers: {
+      ...(isMultipart ? {} : { "Content-Type": "application/json" }),
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(init?.headers ?? {}),
+    },
   });
 
   if (!res.ok) {
@@ -79,9 +94,12 @@ export async function apiFetch<T>(
     try {
       const parsed = (await res.json()) as {
         error?: { code?: string; message?: string };
+        success?: boolean;
+        message?: string;
       };
       code = parsed.error?.code;
-      message = parsed.error?.message ?? message;
+      // Backend error shape: { success: false, message, data: null }.
+      message = parsed.error?.message ?? parsed.message ?? message;
     } catch {
       // Non-JSON error body (e.g. 502 HTML) — keep the generic message.
     }
@@ -92,5 +110,16 @@ export async function apiFetch<T>(
     );
   }
 
-  return (await res.json()) as T;
+  const parsed = (await res.json()) as unknown;
+  // Normalize the backend envelope { success, message, data } into the
+  // contract envelope { data, meta } the callers expect.
+  if (
+    parsed !== null &&
+    typeof parsed === "object" &&
+    "success" in parsed &&
+    "data" in parsed
+  ) {
+    return { data: (parsed as { data: unknown }).data } as T;
+  }
+  return parsed as T;
 }

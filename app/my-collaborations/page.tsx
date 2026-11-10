@@ -1,8 +1,6 @@
-import { Suspense } from "react";
+import { MyCollabBoardLoader } from "@/features/my-collaborations/components/MyCollabBoardLoader";
 import type { Metadata } from "next";
 import { AppShell } from "@/components/layout/AppShell";
-import { getMyCollabProjects } from "@/features/my-collaborations/api";
-import { MyCollabBoard } from "@/features/my-collaborations/components/MyCollabBoard";
 import { MyCollabTopBarActions } from "@/features/my-collaborations/components/MyCollabTopBarActions";
 
 export const metadata: Metadata = {
@@ -44,11 +42,6 @@ function MyCollabBoardSkeleton() {
   );
 }
 
-async function MyCollabBoardAsync() {
-  // TODO(backend): GET /api/my-collaborations (user-scoped via Bearer JWT)
-  const projects = await getMyCollabProjects();
-  return <MyCollabBoard projects={projects} />;
-}
 
 export default function MyCollaborationsPage() {
   return (
@@ -58,9 +51,7 @@ export default function MyCollaborationsPage() {
       actions={<MyCollabTopBarActions />}
     >
       <div className="page-enter flex flex-col gap-6 px-4 py-6 sm:px-6 sm:py-8">
-        <Suspense fallback={<MyCollabBoardSkeleton />}>
-          <MyCollabBoardAsync />
-        </Suspense>
+        <MyCollabBoardLoader fallback={<MyCollabBoardSkeleton />} />
       </div>
     </AppShell>
   );

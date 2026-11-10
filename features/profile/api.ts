@@ -19,6 +19,10 @@ export async function getPerson(id: string): Promise<PersonDetail | undefined> {
       return res.data;
     } catch (err) {
       if (err instanceof ApiError && err.status === 404) return undefined;
+      // 401/403: no token on the server (e.g. /profile/me). Treat as
+      // unresolvable here; the client loader re-fetches with the token.
+      if (err instanceof ApiError && (err.status === 401 || err.status === 403))
+        return undefined;
       throw err;
     }
   }
