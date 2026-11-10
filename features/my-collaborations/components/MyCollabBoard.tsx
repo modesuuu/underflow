@@ -103,7 +103,7 @@ function MyCollabCard({
           src={project.owner.avatarUrl}
           alt={project.owner.name}
         />
-        <span className="flex size-9 items-center justify-center rounded-full border border-line text-muted transition group-hover:border-ink/30 group-hover:text-ink">
+        <span className="flex size-9 items-center justify-center rounded-full border border-line bg-surface text-muted transition group-hover:border-ink/30 group-hover:text-ink">
           <Icon name="arrow-up-right" size={16} />
         </span>
       </span>
