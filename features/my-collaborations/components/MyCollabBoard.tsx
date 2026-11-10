@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
 import Link from "next/link";
-import clsx from "clsx";
 import { Icon } from "@/components/ui/Icon";
 import { clearToolbar, useMyCollabToolbar } from "../toolbar-store";
 import { KanbanCard } from "./KanbanCard";
@@ -47,9 +46,6 @@ const PREVIEW_LIMIT = 4;
 
 export function MyCollabBoard({ projects }: MyCollabBoardProps) {
   const { query } = useMyCollabToolbar();
-  const [collapsed, setCollapsed] = useState<Set<MyCollabStatus>>(
-    () => new Set()
-  );
 
   // Reset the shared search on unmount so each visit starts
   // fresh (same pattern as the collaborations grid).
@@ -65,14 +61,6 @@ export function MyCollabBoard({ projects }: MyCollabBoardProps) {
     );
   }, [projects, query]);
 
-  const toggleColumn = (slug: MyCollabStatus) => {
-    setCollapsed((prev) => {
-      const next = new Set(prev);
-      if (next.has(slug)) next.delete(slug);
-      else next.add(slug);
-      return next;
-    });
-  };
 
   const clearSearch = clearToolbar;
 
@@ -150,7 +138,6 @@ export function MyCollabBoard({ projects }: MyCollabBoardProps) {
       ) : (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4 xl:divide-x xl:divide-line">
           {columns.map(({ slug, cat, projects: columnProjects, startIndex }) => {
-            const isCollapsed = collapsed.has(slug);
             return (
               <section
                 key={slug}
@@ -158,26 +145,7 @@ export function MyCollabBoard({ projects }: MyCollabBoardProps) {
                 className="flex flex-col gap-3 rounded-2xl border border-line bg-surface p-3"
               >
                 <div className="flex items-center gap-1.5 px-1 pt-1">
-                  <button
-                    type="button"
-                    aria-label={
-                      isCollapsed
-                        ? `Expand ${cat.crumbLabel}`
-                        : `Collapse ${cat.crumbLabel}`
-                    }
-                    aria-expanded={!isCollapsed}
-                    onClick={() => toggleColumn(slug)}
-                    className="flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-full text-muted transition hover:bg-bg hover:text-ink focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
-                  >
-                    <Icon
-                      name="chevron-down"
-                      size={16}
-                      className={clsx(
-                        "transition-transform duration-200",
-                        isCollapsed && "-rotate-90"
-                      )}
-                    />
-                  </button>
+
                   <Link
                     href={`/my-collaborations/${slug}`}
                     className="text-sm font-semibold text-ink focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
@@ -188,7 +156,6 @@ export function MyCollabBoard({ projects }: MyCollabBoardProps) {
                     {columnProjects.length}
                   </span>
                 </div>
-                {!isCollapsed && (
                   <div className="flex flex-col gap-3">
                     {columnProjects.length === 0 ? (
                       <p className="px-1 py-3 text-center text-[13px] text-muted">
@@ -215,7 +182,6 @@ export function MyCollabBoard({ projects }: MyCollabBoardProps) {
                       </Link>
                     )}
                   </div>
-                )}
               </section>
             );
           })}
