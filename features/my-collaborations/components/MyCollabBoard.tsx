@@ -200,6 +200,23 @@ export function MyCollabBoard({ projects }: MyCollabBoardProps) {
     MY_COLLAB_CATEGORIES.map((c) => [c.slug, c])
   );
 
+  // Columns with a global pastel offset, so the 5 tints cycle across
+  // the whole board. (Per-column indexing never reaches the 5th
+  // tint — the largest column has 4 cards.)
+  let pastelOffset = 0;
+  const columns = STATS_ORDER.map((slug) => {
+    const cat = bySlug.get(slug);
+    const list = filtered.filter((p) => p.myStatus === slug);
+    const col = {
+      slug,
+      cat,
+      projects: list,
+      startIndex: pastelOffset,
+    };
+    pastelOffset += list.length;
+    return col;
+  }).filter((c) => c.cat);
+
   const totalCount = projects.length;
   const statusCount = STATS_ORDER.filter(
     (slug) => projects.some((p) => p.myStatus === slug)
@@ -271,12 +288,7 @@ export function MyCollabBoard({ projects }: MyCollabBoardProps) {
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-          {STATS_ORDER.map((slug) => {
-            const cat = bySlug.get(slug);
-            if (!cat) return null;
-            const columnProjects = filtered.filter(
-              (p) => p.myStatus === slug
-            );
+          {columns.map(({ slug, cat, projects: columnProjects, startIndex }) => {
             const isCollapsed = collapsed.has(slug);
             return (
               <section
@@ -323,7 +335,11 @@ export function MyCollabBoard({ projects }: MyCollabBoardProps) {
                       </p>
                     ) : (
                       columnProjects.map((p, i) => (
-                        <KanbanCard key={p.id} project={p} index={i} />
+                        <KanbanCard
+                          key={p.id}
+                          project={p}
+                          index={startIndex + i}
+                        />
                       ))
                     )}
                   </div>
