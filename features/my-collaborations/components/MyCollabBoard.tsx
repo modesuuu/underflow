@@ -215,7 +215,14 @@ export function MyCollabBoard({ projects }: MyCollabBoardProps) {
     };
     pastelOffset += list.length;
     return col;
-  }).filter((c) => c.cat);
+  }).filter(
+    (c): c is {
+      slug: MyCollabStatus;
+      cat: MyCollabCategory;
+      projects: MyCollabProject[];
+      startIndex: number;
+    } => c.cat !== undefined
+  );
 
   const totalCount = projects.length;
   const statusCount = STATS_ORDER.filter(
