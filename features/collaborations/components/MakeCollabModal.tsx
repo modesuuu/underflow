@@ -5,18 +5,7 @@ import clsx from "clsx";
 import { Icon } from "@/components/ui/Icon";
 import { toast } from "sonner";
 import { createCollabProject } from "../api";
-import type { SkillTag } from "../types";
-
-const SKILL_OPTIONS: SkillTag[] = [
-  { id: "s1", label: "Coding", icon: "code-alt" },
-  { id: "s2", label: "UI Design", icon: "palette" },
-  { id: "s3", label: "Backend", icon: "server" },
-  { id: "s4", label: "Testing", icon: "bug" },
-  { id: "s5", label: "DevOps", icon: "terminal" },
-  { id: "s6", label: "Mobile", icon: "mobile-alt" },
-  { id: "s7", label: "Data", icon: "bar-chart-alt-2" },
-  { id: "s8", label: "Writing", icon: "pencil" },
-];
+import { createSkill, getSkills, type Skill } from "../skills-api";
 
 interface MakeCollabModalProps {
   open: boolean;
@@ -44,6 +33,13 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [selectedSkills, setSelectedSkills] = useState<Set<string>>(new Set());
+  const [skills, setSkills] = useState<Skill[]>([]);
+  const [skillsLoading, setSkillsLoading] = useState(false);
+  const [skillsError, setSkillsError] = useState<string | null>(null);
+  const [skillDraft, setSkillDraft] = useState("");
+  const [creatingSkill, setCreatingSkill] = useState(false);
+  const [skillError, setSkillError] = useState<string | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [roleCount, setRoleCount] = useState(2);
   const [submitting, setSubmitting] = useState(false);
   const [photos, setPhotos] = useState<PhotoDraft[]>([]);
@@ -61,6 +57,28 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
   useEffect(() => {
     if (open) setClosing(false);
   }, [open]);
+
+  // Skills come from the real backend (GET /api/skills) — the old
+  // hardcoded s1–s8 options do not exist in the skills table and made
+  // POST /api/collab answer 400 'not found'.
+  const loadSkills = async () => {
+    setSkillsLoading(true);
+    setSkillsError(null);
+    try {
+      setSkills(await getSkills());
+    } catch (err) {
+      setSkillsError(
+        err instanceof Error ? err.message : "Could not load your skills."
+      );
+    } finally {
+      setSkillsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (open) loadSkills();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open ]);
 
   useEffect(() => {
     if (!closing) return;
@@ -211,6 +229,32 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
     });
   };
 
+  const addSkill = async () => {
+    const name = skillDraft.trim();
+    if (!name || creatingSkill) return;
+    setCreatingSkill(true);
+    setSkillError(null);
+    try {
+      const skill = await createSkill(name);
+      setSkills((prev) => [...prev, skill]);
+      setSelectedSkills((prev) => new Set(prev).add(skill.id));
+      setSkillDraft("");
+    } catch (err) {
+      setSkillError(
+        err instanceof Error ? err.message : "Could not add this skill."
+      );
+    } finally {
+      setCreatingSkill(false);
+    }
+  };
+
+  const handleSkillKey = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      addSkill();
+    }
+  };
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
 
@@ -224,21 +268,28 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
     }
 
     setSubmitting(true);
-    // TODO(backend): POST /api/collaborations with form data
+    setSubmitError(null);
     // TODO(backend): POST /api/upload for the selected photo Files,
     // then include returned URLs in the project payload.
     const photoFiles = photos.map((p) => p.file);
-    await createCollabProject({
-      title: title.trim(),
-      description: description.trim(),
-      // P1-A #9: the contract takes skillIds (string[]), not SkillTag[].
-      skillIds: SKILL_OPTIONS.filter((s) => selectedSkills.has(s.id)).map(
-        (s) => s.id
-      ),
-      slotsTotal: roleCount,
-      photos: photoFiles,
-      customRoles,
-    });
+    try {
+      await createCollabProject({
+        title: title.trim(),
+        description: description.trim(),
+        skillIds: [...selectedSkills],
+        slotsTotal: roleCount,
+        photos: photoFiles,
+        customRoles,
+      });
+    } catch (err) {
+      setSubmitting(false);
+      setSubmitError(
+        err instanceof Error
+          ? err.message
+          : "Could not create the project. Please try again."
+      );
+      return;
+    }
     setSubmitting(false);
     setClosing(false);
     toast.success("Collaboration posted", {
@@ -365,23 +416,43 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
               </button>
             </div>
             <div className="flex flex-wrap gap-2 mt-3">
-              {SKILL_OPTIONS.map((skill) => (
-                <button
-                  key={skill.id}
-                  type="button"
-                  onClick={() => toggleSkill(skill.id)}
-                  className={
-                    "pressable flex cursor-pointer items-center gap-1 rounded-full px-3 py-1.5 text-xs font-medium text-ink " +
-                    "focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none " +
-                    (selectedSkills.has(skill.id)
-                      ? "bg-accent"
-                      : "border border-line")
-                  }
-                >
-                  {skill.icon && <Icon name={skill.icon} size={14} />}
-                  {skill.label}
-                </button>
-              ))}
+              {skillsLoading ? (
+                <p className="text-xs text-muted">Loading your skills…</p>
+              ) : skillsError ? (
+                <span className="flex flex-col items-start gap-2">
+                  <span role="alert" className="text-xs font-medium text-badge">
+                    {skillsError}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={loadSkills}
+                    className="pressable cursor-pointer text-xs font-medium text-ink underline focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+                  >
+                    Try again
+                  </button>
+                </span>
+              ) : skills.length === 0 ? (
+                <p className="text-xs text-muted">
+                  You don&apos;t have any skills yet — add your first one below.
+                </p>
+              ) : (
+                skills.map((skill) => (
+                  <button
+                    key={skill.id}
+                    type="button"
+                    onClick={() => toggleSkill(skill.id)}
+                    className={
+                      "pressable flex cursor-pointer items-center gap-1 rounded-full px-3 py-1.5 text-xs font-medium text-ink " +
+                      "focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none " +
+                      (selectedSkills.has(skill.id)
+                        ? "bg-accent"
+                        : "border border-line")
+                    }
+                  >
+                    {skill.name}
+                  </button>
+                ))
+              )}
               {/* Custom roles render as accent-bg chips with a tag icon + remove */}
               {customRoles.map((role, i) => (
                 <span
@@ -401,6 +472,32 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
                 </span>
               ))}
             </div>
+            {/* Add a skill: creates a private skill (POST /api/skills) and selects it */}
+            <div className="flex items-center gap-2 rounded-lg bg-surface px-4 py-3">
+              <input
+                type="text"
+                value={skillDraft}
+                onChange={(e) => setSkillDraft(e.target.value)}
+                onKeyDown={handleSkillKey}
+                placeholder="Add a skill"
+                aria-label="Add a skill"
+                className="min-w-0 flex-1 bg-transparent text-base font-medium text-ink outline-none placeholder:text-muted focus-visible:ring-2 focus-visible:ring-accent"
+              />
+              <button
+                type="button"
+                onClick={addSkill}
+                disabled={!skillDraft.trim() || creatingSkill}
+                aria-label="Add skill"
+                className="pressable flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-sm bg-accent text-on-accent disabled:cursor-not-allowed disabled:opacity-40 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+              >
+                <Icon name="plus" size={14} className="text-ink" />
+              </button>
+            </div>
+            {skillError && (
+              <p role="alert" className="text-xs font-medium text-badge">
+                {skillError}
+              </p>
+            )}
           </div>
 
           {/* Team size */}
@@ -528,9 +625,14 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
           )}
 
           {/* Submit */}
+          {submitError && (
+            <p className="text-xs font-medium text-badge" role="alert">
+              {submitError}
+            </p>
+          )}
           <button
             type="submit"
-            disabled={submitting}
+            disabled={submitting || selectedSkills.size === 0}
             className="pressable flex w-full cursor-pointer items-center justify-center gap-2 rounded-md bg-accent py-3 text-base font-medium text-on-accent transition-opacity hover:opacity-85 disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
           >
             <Icon name="send" size={20} />
