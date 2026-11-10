@@ -167,6 +167,9 @@ interface MyCollabBoardProps {
  * card-shape rounds are retired: weihu cards are plain rounded
  * rectangles, and the redesign follows the reference.
  */
+/** How many cards a column previews before the View more button. */
+const PREVIEW_LIMIT = 4;
+
 export function MyCollabBoard({ projects }: MyCollabBoardProps) {
   const { query } = useMyCollabToolbar();
   const [collapsed, setCollapsed] = useState<Set<MyCollabStatus>>(
@@ -270,7 +273,7 @@ export function MyCollabBoard({ projects }: MyCollabBoardProps) {
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4 xl:divide-x xl:divide-line">
           {columns.map(({ slug, cat, projects: columnProjects, startIndex }) => {
             const isCollapsed = collapsed.has(slug);
             return (
@@ -317,13 +320,24 @@ export function MyCollabBoard({ projects }: MyCollabBoardProps) {
                         No projects match in this status.
                       </p>
                     ) : (
-                      columnProjects.map((p, i) => (
+                      columnProjects.slice(0, PREVIEW_LIMIT).map((p, i) => (
                         <KanbanCard
                           key={p.id}
                           project={p}
                           index={startIndex + i}
                         />
                       ))
+                    )}
+                    {columnProjects.length > 0 && (
+                      <Link
+                        href={`/my-collaborations/${slug}`}
+                        className="flex h-10 items-center justify-center gap-1 rounded-xl bg-bg text-sm font-medium text-muted transition-colors hover:text-ink focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+                      >
+                        {columnProjects.length > PREVIEW_LIMIT
+                          ? `View ${columnProjects.length - PREVIEW_LIMIT} more`
+                          : "View more"}
+                        <Icon name="chevron-down" size={16} />
+                      </Link>
                     )}
                   </div>
                 )}
