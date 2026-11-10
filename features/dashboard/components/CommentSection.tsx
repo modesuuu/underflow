@@ -7,17 +7,42 @@ import { Icon } from "@/components/ui/Icon";
 import { CURRENT_USER } from "@/components/layout/nav";
 import type { PostComment } from "../types";
 import { CommentThread } from "./CommentThread";
+import { getComments, postComment } from "../api";
+import { isApiConfigured } from "@/lib/api-client";
 
 interface CommentSectionProps {
+  postId: string;
   initialComments: PostComment[];
   autoFocusComment?: boolean;
 }
 
 
-export function CommentSection({ initialComments, autoFocusComment = false }: CommentSectionProps) {
+export function CommentSection({ postId, initialComments, autoFocusComment = false }: CommentSectionProps) {
   const [comments, setComments] = useState<PostComment[]>(initialComments);
   const [draft, setDraft] = useState("");
   const [lastAddedId, setLastAddedId] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState(false);
+
+  // Comments are auth-gated (GET /api/posts/:id/comments needs a token),
+  // so they load client-side here — the detail page is a server component
+  // and cannot send the Bearer token. A 401/403 (guest) just leaves the
+  // initial list; other failures show a retry.
+  useEffect(() => {
+    if (!isApiConfigured()) return;
+    let cancelled = false;
+    getComments(postId)
+      .then((list) => {
+        if (!cancelled) setComments(list);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        const status = (err as { status?: number })?.status;
+        if (status !== 401 && status !== 403) setLoadError(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [postId]);
   const newCommentRef = useRef<HTMLDivElement>(null);
   const inputBarRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -30,18 +55,19 @@ export function CommentSection({ initialComments, autoFocusComment = false }: Co
     inputRef.current?.focus({ preventScroll: true });
   }, [autoFocusComment]);
 
-  const submit = () => {
+  const submit = async () => {
     const text = draft.trim();
     if (!text) {
       toast("Write a comment first");
       return;
     }
-    const id = `local-${Date.now()}`;
-    // TODO(backend): POST /api/posts/:id/comments
+    const tempId = `local-${Date.now()}`;
+    // Optimistic row first, then the real comment from the backend
+    // replaces it; on failure the row is removed so the UI never lies.
     setComments((prev) => [
       ...prev,
       {
-        id,
+        id: tempId,
         author: { id: "me", name: CURRENT_USER.name },
         text,
         postedAgo: "Just now",
@@ -50,7 +76,18 @@ export function CommentSection({ initialComments, autoFocusComment = false }: Co
       },
     ]);
     setDraft("");
-    setLastAddedId(id);
+    setLastAddedId(tempId);
+    try {
+      const saved = await postComment(postId, text);
+      setComments((prev) =>
+        prev.map((c) => (c.id === tempId ? saved : c))
+      );
+      setLastAddedId(saved.id);
+    } catch {
+      setComments((prev) => prev.filter((c) => c.id !== tempId));
+      setLastAddedId(null);
+      toast("Couldn't post your comment. Try again.");
+    }
   };
 
 
@@ -98,6 +135,20 @@ export function CommentSection({ initialComments, autoFocusComment = false }: Co
       </div>
 
       {/* Comments */}
+      {loadError && (
+        <button
+          type="button"
+          onClick={() => {
+            setLoadError(false);
+            getComments(postId)
+              .then((list) => setComments(list))
+              .catch(() => setLoadError(true));
+          }}
+          className="cursor-pointer text-sm text-muted underline hover:text-ink"
+        >
+          Couldn't load comments. Tap to retry.
+        </button>
+      )}
       <CommentThread
         comments={comments}
         newCommentId={lastAddedId}

@@ -49,6 +49,8 @@ export interface Post {
   likes: number;
   /** Whether the current user already liked this post. */
   liked: boolean;
+  /** Total comments on the post (from the backend). */
+  commentCount: number;
   /** Comments shown on the detail page. */
   comments: PostComment[];
 }

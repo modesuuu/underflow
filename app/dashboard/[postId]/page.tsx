@@ -112,6 +112,7 @@ async function PostDetailAsync({
           card draws above its comment entry */}
       <div className="h-px w-full bg-placeholder" aria-hidden="true" />
       <CommentSection
+        postId={post.id}
         initialComments={post.comments}
         autoFocusComment={focus === "comment"}
       />

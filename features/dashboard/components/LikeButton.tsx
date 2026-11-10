@@ -1,10 +1,12 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState } from "react";
+import { toast } from "sonner";
 import clsx from "clsx";
 import { HeartIcon } from "@/components/ui/HeartIcon";
 import { formatCount } from "@/lib/format";
 import { useLikeState } from "../like-store";
+import { likePost, unlikePost } from "../api";
 
 interface LikeButtonProps {
   storeKey: string;
@@ -27,13 +29,20 @@ export function LikeButton({
   size = "md",
 }: LikeButtonProps) {
   const bumpRef = useRef<HTMLSpanElement>(null);
+  const [busy, setBusy] = useState(false);
   const [{ liked, likes }, toggle] = useLikeState(
     storeKey,
     initialLiked,
     initialLikes
   );
 
-  const handleClick = () => {
+  // Post likes (storeKey = the raw post id) persist to the backend;
+  // comment likes (storeKey = `comment:<id>`) have no backend endpoint
+  // and stay session-only.
+  const isPostLike = !storeKey.startsWith("comment:");
+
+  const handleClick = async () => {
+    if (busy) return;
     if (!liked && bumpRef.current) {
       bumpRef.current.animate(
         [
@@ -45,7 +54,20 @@ export function LikeButton({
         { duration: 380, easing: "cubic-bezier(0.23, 1, 0.32, 1)" }
       );
     }
+    // Optimistic toggle first (heart pop + count), then sync to the
+    // backend; on failure revert the toggle so the UI never lies.
     toggle();
+    if (!isPostLike) return;
+    setBusy(true);
+    try {
+      if (!liked) await likePost(storeKey);
+      else await unlikePost(storeKey);
+    } catch {
+      toggle();
+      toast("Couldn't save your like. Try again.");
+    } finally {
+      setBusy(false);
+    }
   };
 
   const sm = size === "sm";
@@ -56,6 +78,7 @@ export function LikeButton({
     <button
       type="button"
       aria-pressed={liked}
+      disabled={busy}
       onClick={handleClick}
       className={
         sm

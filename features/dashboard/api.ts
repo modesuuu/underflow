@@ -1,5 +1,10 @@
-import { ApiEnvelope, apiFetch, isApiConfigured } from "@/lib/api-client";
-import type { NotificationItem, Post } from "./types";
+import {
+  ApiEnvelope,
+  ApiError,
+  apiFetch,
+  isApiConfigured,
+} from "@/lib/api-client";
+import type { NotificationItem, Post, PostComment } from "./types";
 
 /** Wire shape of GET /api/posts (PostModel::getAll). */
 interface BackendPost {
@@ -60,6 +65,7 @@ function mapBackendPost(b: BackendPost): Post {
     likes: b.like_count ?? 0,
     liked: b.is_liked ?? false,
     comments: [],
+    commentCount: b.comment_count ?? 0,
   };
 }
 
@@ -107,6 +113,78 @@ export async function createPost(input: CreatePostInput): Promise<Post> {
     }),
   });
   return mapBackendPost(res.data);
+}
+
+/** Wire shape of GET/POST /api/posts/:postId/comments (CommentModel). */
+interface BackendComment {
+  id: string;
+  content: string;
+  created_at?: string;
+  createdAt?: string;
+  userId?: { id: string; username: string; photo_profile_url?: string };
+  user?: { id: string; username: string; photo_profile_url?: string };
+  username?: string;
+  photo_profile_url?: string;
+}
+
+function mapBackendComment(c: BackendComment): PostComment {
+  const author = c.userId ?? c.user ?? {
+    id: "",
+    username: c.username ?? "",
+    photo_profile_url: c.photo_profile_url,
+  };
+  return {
+    id: c.id,
+    author: {
+      id: author.id,
+      name: author.username,
+      avatarUrl: author.photo_profile_url || undefined,
+    },
+    text: c.content,
+    createdAt: c.created_at ?? c.createdAt,
+    postedAgo: relativeAgo(c.created_at ?? c.createdAt),
+    likes: 0,
+    liked: false,
+  };
+}
+
+/**
+ * POST /api/posts/:postId/like (auth required). A 400 means the like
+ * already exists ("Sudah like postingan ini") — treat as success so a
+ * double-tap / retry cannot surface a spurious error.
+ */
+export async function likePost(postId: string): Promise<void> {
+  try {
+    await apiFetch("/api/posts/" + postId + "/like", { method: "POST" });
+  } catch (err) {
+    if (err instanceof ApiError && err.status === 400) return;
+    throw err;
+  }
+}
+
+/** DELETE /api/posts/:postId/unlike (auth required). */
+export async function unlikePost(postId: string): Promise<void> {
+  await apiFetch("/api/posts/" + postId + "/unlike", { method: "DELETE" });
+}
+
+/** GET /api/posts/:postId/comments (auth required). Newest first. */
+export async function getComments(postId: string): Promise<PostComment[]> {
+  const res = await apiFetch<ApiEnvelope<BackendComment[]>>(
+    "/api/posts/" + postId + "/comments"
+  );
+  return res.data.map(mapBackendComment);
+}
+
+/** POST /api/posts/:postId/comments (auth required). */
+export async function postComment(
+  postId: string,
+  content: string
+): Promise<PostComment> {
+  const res = await apiFetch<ApiEnvelope<BackendComment>>(
+    "/api/posts/" + postId + "/comments",
+    { method: "POST", body: JSON.stringify({ content }) }
+  );
+  return mapBackendComment(res.data);
 }
 
 // TODO(backend): GET /api/notifications does not exist yet (table added
