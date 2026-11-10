@@ -85,6 +85,30 @@ export async function getDashboardPosts(): Promise<Post[]> {
   }
 }
 
+export interface CreatePostInput {
+  title: string;
+  description: string;
+  media_urls: string[];
+}
+
+/**
+ * POST /api/posts (auth required). media_urls is optional — an empty
+ * list posts text-only (backend relaxed 2026-11-10). portfolio_type
+ * follows the media: 'images' when photos are attached, else 'link'.
+ */
+export async function createPost(input: CreatePostInput): Promise<Post> {
+  const res = await apiFetch<ApiEnvelope<BackendPost>>("/api/posts", {
+    method: "POST",
+    body: JSON.stringify({
+      title: input.title,
+      description: input.description,
+      portfolio_type: input.media_urls.length > 0 ? "images" : "link",
+      media_urls: input.media_urls,
+    }),
+  });
+  return mapBackendPost(res.data);
+}
+
 // TODO(backend): GET /api/notifications does not exist yet (table added
 // 2026-11-10, no route). Until the endpoint lands the list is empty.
 export async function getNotifications(): Promise<NotificationItem[]> {
