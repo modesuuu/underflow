@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Avatar } from "@/components/ui/Avatar";
 import { Icon } from "@/components/ui/Icon";
 import { formatCount } from "@/lib/format";
@@ -10,6 +10,7 @@ import { LikeButton } from "./LikeButton";
 import { PhotoViewer } from "./PhotoViewer";
 import { PostOptionsMenu } from "./PostOptionsMenu";
 import { ReportedPostNotice } from "./ReportedPostNotice";
+import { recordView } from "../api";
 
 /**
  * The post itself on the detail page — deliberately the feed
@@ -24,6 +25,19 @@ import { ReportedPostNotice } from "./ReportedPostNotice";
  */
 export function PostDetailBody({ post }: { post: Post }) {
   const [reported, setReported] = useState(false);
+  const [views, setViews] = useState(post.views);
+  const recordedRef = useRef(false);
+
+  // One view per open: the eye icon only moves when the detail is
+  // actually opened. A failed record is silent — it must never break
+  // the page, and the feed count is the source of truth anyway.
+  useEffect(() => {
+    if (recordedRef.current) return;
+    recordedRef.current = true;
+    recordView(post.id)
+      .then(({ viewCount }) => setViews(viewCount))
+      .catch(() => {});
+  }, [post.id]);
 
   if (reported) {
     return <ReportedPostNotice onUndo={() => setReported(false)} />;
@@ -64,7 +78,7 @@ export function PostDetailBody({ post }: { post: Post }) {
       <div className="flex items-center gap-4">
         <span className="flex items-center gap-1.5 text-muted">
           <Icon name="show" size={20} />
-          <span className="text-xs font-medium">{formatCount(post.views)}</span>
+          <span className="text-xs font-medium">{formatCount(views)}</span>
         </span>
         <LikeButton
           storeKey={post.id}

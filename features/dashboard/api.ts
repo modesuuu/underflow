@@ -195,6 +195,18 @@ export async function getComments(postId: string): Promise<PostComment[]> {
   return res.data.map(mapBackendComment);
 }
 
+/**
+ * POST /api/posts/:postId/view (auth required) — records one view for
+ * the post and returns the new view_count. Called once per detail open.
+ */
+export async function recordView(postId: string): Promise<{ viewCount: number }> {
+  const res = await apiFetch<ApiEnvelope<{ view_count: number }>>(
+    "/api/posts/" + postId + "/view",
+    { method: "POST" }
+  );
+  return { viewCount: res.data.view_count };
+}
+
 /** POST /api/posts/:postId/comments (auth required). */
 export async function postComment(
   postId: string,
