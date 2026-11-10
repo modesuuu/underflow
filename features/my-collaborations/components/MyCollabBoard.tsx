@@ -85,6 +85,17 @@ function MyCollabCard({
         aria-hidden="true"
         className="card-scoop pointer-events-none absolute inset-0 rounded-liquid border border-line bg-surface transition-[border-color,box-shadow] duration-200 group-hover:border-ink/30 group-hover:shadow-[0_1px_2px_rgba(var(--uf-shadow-rgb),0.05),0_12px_28px_-12px_rgba(var(--uf-shadow-rgb),0.18)]"
       />
+      {/* Concave arc border: the mask cuts the shape layer's border
+          too, so the scoop edge would have no outline and the
+          corner looks broken. This ring (64px, same centre/radius
+          as the mask) draws the border along the scoop, clipped to
+          the interior quarter so only the concave arc shows. It
+          sits below the content, so the arrow button covers where
+          they cross. */}
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute top-0 right-0 size-32 -translate-y-1/2 translate-x-1/2 rounded-full border border-line [clip-path:inset(50%_50%_0_0)] transition-[border-color] duration-200 group-hover:border-ink/30"
+      />
       <span className="relative flex flex-1 flex-col gap-3">
       <span className="flex items-start justify-between">
         <Avatar
