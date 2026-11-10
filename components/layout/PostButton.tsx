@@ -22,7 +22,7 @@ export function PostButton() {
         <Icon name="plus" size={16} />
         <span className="text-sm font-medium">Post Something</span>
       </button>
-      {open && <PostModal onClose={() => setOpen(false)} />}
+      <PostModal open={open} onClose={() => setOpen(false)} />
     </>
   );
 }
