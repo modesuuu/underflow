@@ -1,11 +1,12 @@
 "use client";
 
-import { useMemo, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import Link from "next/link";
 import clsx from "clsx";
 import { Avatar } from "@/components/ui/Avatar";
 import { Icon } from "@/components/ui/Icon";
 import { formatDueDate, parseDueDate } from "@/features/collaborations/sort";
+import { clearToolbar, useMyCollabToolbar } from "../toolbar-store";
 import {
   MY_COLLAB_CATEGORIES,
   getCategory,
@@ -157,8 +158,9 @@ interface MyCollabBoardProps {
  * mirip"). Four columns by status; the status chips are gone
  * because the columns ARE the filter, and the header stats are
  * gone because each column header shows its count and links to
- * its category page. Search stays (it filters cards across all
- * columns). New Project stays off this board by the user's
+ * its category page. The search pill moved to the TopBar (user
+ * order 2026-11-10) and filters cards across all columns via
+ * the shared toolbar store. New Project stays off this board by
  * 2026-11-09 removal order, so the columns carry no "+" button
  * and no kebab — no dead controls. A column header chevron
  * collapses that column. The scoop + arc from the 2026-11-10
@@ -166,11 +168,14 @@ interface MyCollabBoardProps {
  * rectangles, and the redesign follows the reference.
  */
 export function MyCollabBoard({ projects }: MyCollabBoardProps) {
-  const [draftQuery, setDraftQuery] = useState("");
-  const [query, setQuery] = useState("");
+  const { query } = useMyCollabToolbar();
   const [collapsed, setCollapsed] = useState<Set<MyCollabStatus>>(
     () => new Set()
   );
+
+  // Reset the shared search on unmount so each visit starts
+  // fresh (same pattern as the collaborations grid).
+  useEffect(() => () => clearToolbar(), []);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -191,10 +196,7 @@ export function MyCollabBoard({ projects }: MyCollabBoardProps) {
     });
   };
 
-  const clearSearch = () => {
-    setDraftQuery("");
-    setQuery("");
-  };
+  const clearSearch = clearToolbar;
 
   const bySlug = new Map<MyCollabStatus, MyCollabCategory>(
     MY_COLLAB_CATEGORIES.map((c) => [c.slug, c])
@@ -231,44 +233,18 @@ export function MyCollabBoard({ projects }: MyCollabBoardProps) {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Header — title + subtitle left, search right (the
-          reference's header pattern). No stats, no chips: the
+      {/* Header — title + subtitle. The search pill moved to the
+          TopBar (user order 2026-11-10); no stats, no chips: the
           columns carry the counts and the status filter. */}
-      <div className="flex flex-wrap items-end justify-between gap-x-8 gap-y-4">
-        <div className="flex flex-col gap-1">
-          <h1 className="text-[40px] leading-none font-semibold tracking-tight text-ink uppercase">
-            My Collaborations
-          </h1>
-          <p className="text-sm text-muted">
-            {totalCount} projects · {statusCount} statuses
-            {query.trim() !== "" &&
-              ` · ${filtered.length} matching "${query.trim()}"`}
-          </p>
-        </div>
-        <div className="flex h-10 items-center gap-2 rounded-full border border-line bg-surface px-3 focus-within:ring-2 focus-within:ring-accent">
-          <Icon name="search" size={16} className="shrink-0 text-muted" />
-          <input
-            type="text"
-            value={draftQuery}
-            onChange={(e) => {
-              setDraftQuery(e.target.value);
-              setQuery(e.target.value);
-            }}
-            placeholder="Search projects"
-            aria-label="Search projects"
-            className="w-36 bg-transparent text-sm font-medium text-ink outline-none placeholder:text-muted sm:w-48"
-          />
-          {draftQuery !== "" && (
-            <button
-              type="button"
-              aria-label="Clear search"
-              onClick={clearSearch}
-              className="flex size-5 shrink-0 cursor-pointer items-center justify-center rounded-full bg-bg text-muted transition-colors hover:text-ink focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
-            >
-              <Icon name="x" size={12} />
-            </button>
-          )}
-        </div>
+      <div className="flex flex-col gap-1">
+        <h1 className="text-[40px] leading-none font-semibold tracking-tight text-ink uppercase">
+          My Collaborations
+        </h1>
+        <p className="text-sm text-muted">
+          {totalCount} projects · {statusCount} statuses
+          {query.trim() !== "" &&
+            ` · ${filtered.length} matching "${query.trim()}"`}
+        </p>
       </div>
 
       {/* Kanban — one column per status. Columns stack on phones,

@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { AppShell } from "@/components/layout/AppShell";
 import { getMyCollabProjects } from "@/features/my-collaborations/api";
 import { MyCollabBoard } from "@/features/my-collaborations/components/MyCollabBoard";
+import { MyCollabTopBarActions } from "@/features/my-collaborations/components/MyCollabTopBarActions";
 
 export const metadata: Metadata = {
   title: "My Collaborations",
@@ -18,13 +19,10 @@ export const metadata: Metadata = {
 function MyCollabBoardSkeleton() {
   return (
     <div className="flex flex-col gap-6">
-      {/* Header: title + subtitle left, search right */}
-      <div className="flex flex-wrap items-end justify-between gap-x-8 gap-y-4">
-        <div className="flex flex-col gap-1.5">
-          <div className="h-10 w-80 max-w-full rounded-lg bg-placeholder" />
-          <div className="h-4 w-48 rounded bg-placeholder" />
-        </div>
-        <div className="h-10 w-56 rounded-full border border-line bg-surface" />
+      {/* Header: title + subtitle (search lives in the TopBar). */}
+      <div className="flex flex-col gap-1.5">
+        <div className="h-10 w-80 max-w-full rounded-lg bg-placeholder" />
+        <div className="h-4 w-48 rounded bg-placeholder" />
       </div>
 
       {/* Kanban: four column placeholders, each with a header + 3 cards */}
@@ -57,6 +55,7 @@ export default function MyCollaborationsPage() {
     <AppShell
       breadcrumbRoot="Tools"
       breadcrumbLeaf="My Collaborations"
+      actions={<MyCollabTopBarActions />}
     >
       <div className="page-enter flex flex-col gap-6 px-4 py-6 sm:px-6 sm:py-8">
         <Suspense fallback={<MyCollabBoardSkeleton />}>
