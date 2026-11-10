@@ -52,6 +52,18 @@
   border-radius: var(--uf-radius-liquid);
 }
 
+/* Concave top-right corner for the My Collaborations board card
+   (user order 2026-11-10, shape diagram): the corner scoops
+   INWARD instead of rounding outward. border-radius cannot go
+   concave, so this is a mask — a 64px circle cut from the corner.
+   A plain rule, not a Tailwind utility, so it is always in the
+   served CSS. Applied to the card's background shape layer, never
+   to the content, so the avatar / arrow / text are never clipped. */
+.card-scoop {
+  -webkit-mask: radial-gradient(64px at 100% 0, transparent 63px, #000 64px);
+  mask: radial-gradient(64px at 100% 0, transparent 63px, #000 64px);
+}
+
 /* --- Motion utilities (P2). All animations gated behind
    prefers-reduced-motion: no-preference — reduced-motion users see static UI. */
 

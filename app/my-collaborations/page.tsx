@@ -44,7 +44,7 @@ function MyCollabBoardSkeleton() {
         </div>
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="h-[216px] rounded-liquid border border-line bg-surface" />
+            <div key={i} className="h-[216px] card-scoop rounded-liquid border border-line bg-surface" />
           ))}
         </div>
       </div>

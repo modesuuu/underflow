@@ -74,9 +74,18 @@ function MyCollabCard({
   return (
     <Link
       href={`/my-collaborations/${project.myStatus}/${project.id}`}
-      className="card-stagger group flex cursor-pointer flex-col gap-3 rounded-liquid border border-line bg-surface p-4 transition-[border-color,box-shadow] duration-200 hover:border-ink/30 hover:shadow-[0_1px_2px_rgba(var(--uf-shadow-rgb),0.05),0_12px_28px_-12px_rgba(var(--uf-shadow-rgb),0.18)] focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+      className="card-stagger group relative flex cursor-pointer flex-col rounded-liquid p-4 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
       style={{ "--stagger-i": String(Math.min(index, 11)) } as CSSProperties}
     >
+      {/* Shape layer: surface + border + liquid radius, concave
+          top-right scoop (the user's shape diagram, 2026-11-10).
+          The mask cuts the scoop; the content below sits above it,
+          unmasked, so the avatar / arrow / text are never clipped. */}
+      <span
+        aria-hidden="true"
+        className="card-scoop pointer-events-none absolute inset-0 rounded-liquid border border-line bg-surface transition-[border-color,box-shadow] duration-200 group-hover:border-ink/30 group-hover:shadow-[0_1px_2px_rgba(var(--uf-shadow-rgb),0.05),0_12px_28px_-12px_rgba(var(--uf-shadow-rgb),0.18)]"
+      />
+      <span className="relative flex flex-1 flex-col gap-3">
       <span className="flex items-start justify-between">
         <Avatar
           size={40}
@@ -151,6 +160,7 @@ function MyCollabCard({
             {category.crumbLabel}
           </span>
         )}
+      </span>
       </span>
     </Link>
   );
