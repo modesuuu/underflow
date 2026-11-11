@@ -1,6 +1,7 @@
 import type { CSSProperties } from "react";
 import { Icon } from "@/components/ui/Icon";
 import type { Post } from "../types";
+import { LikeHydrator } from "./LikeHydrator";
 import { PostCard } from "./PostCard";
 
 /**
@@ -29,6 +30,7 @@ export function FeedColumn({
           : "mx-auto flex w-full max-w-(--uf-content-w) flex-col gap-5 px-4 py-3 lg:mx-0 lg:ml-[28px] lg:px-0"
       }
     >
+      <LikeHydrator />
       {posts.length === 0 ? (
         <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-line px-6 py-16 text-center">
           <Icon name="message-rounded" size={32} className="text-muted" />

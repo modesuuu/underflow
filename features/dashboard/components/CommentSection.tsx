@@ -9,7 +9,27 @@ import { useSessionUser } from "@/features/auth/store";
 import type { PostComment } from "../types";
 import { CommentThread } from "./CommentThread";
 import { getComments, postComment } from "../api";
+import { syncLikeCount, syncLiked } from "../like-store";
 import { isApiConfigured } from "@/lib/api-client";
+
+/**
+ * Sync one authenticated comments fetch into the shared like-store.
+ * The fetch runs with the user's token, so is_liked is correct for them —
+ * unlike the LikeButton's set-if-absent seed, which keeps whatever the
+ * first render saw, and unlike the LivePoller comment-stats event, which
+ * only corrects the count and preserves `liked`. Calling this after every
+ * fetch makes the liker see FILLED + count 1 and a non-liker see count 1 +
+ * unfilled, after every load/reload/retry. A no-op when the values already
+ * match (syncLiked/syncLikeCount return early), and safe to run before the
+ * LikeButtons render (syncs are no-ops for keys not seeded yet — the seed
+ * then picks up the same fresh values).
+ */
+function syncFetchedCommentLikes(list: PostComment[]) {
+  for (const c of list) {
+    syncLiked(`comment:${c.id}`, c.liked);
+    syncLikeCount(`comment:${c.id}`, c.likes);
+  }
+}
 
 interface CommentSectionProps {
   postId: string;
@@ -36,7 +56,9 @@ export function CommentSection({ postId, initialComments, autoFocusComment = fal
     let cancelled = false;
     getComments(postId)
       .then((list) => {
-        if (!cancelled) setComments(list);
+        if (cancelled) return;
+        setComments(list);
+        syncFetchedCommentLikes(list);
       })
       .catch((err) => {
         if (cancelled) return;
@@ -145,7 +167,10 @@ export function CommentSection({ postId, initialComments, autoFocusComment = fal
           onClick={() => {
             setLoadError(false);
             getComments(postId)
-              .then((list) => setComments(list))
+              .then((list) => {
+                setComments(list);
+                syncFetchedCommentLikes(list);
+              })
               .catch(() => setLoadError(true));
           }}
           className="cursor-pointer text-sm text-muted underline hover:text-ink"

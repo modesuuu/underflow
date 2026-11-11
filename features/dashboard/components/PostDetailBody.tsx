@@ -7,6 +7,7 @@ import { Icon } from "@/components/ui/Icon";
 import { formatCount } from "@/lib/format";
 import type { Post } from "../types";
 import { LikeButton } from "./LikeButton";
+import { LikeHydrator } from "./LikeHydrator";
 import { PhotoViewer } from "./PhotoViewer";
 import { PostOptionsMenu } from "./PostOptionsMenu";
 import { ReportedPostNotice } from "./ReportedPostNotice";
@@ -51,6 +52,7 @@ export function PostDetailBody({ post }: { post: Post }) {
 
   return (
     <div className="flex flex-col gap-4">
+      <LikeHydrator />
       {/* Byline — identical to the feed card's */}
       <div className="flex items-center justify-between">
         <Link

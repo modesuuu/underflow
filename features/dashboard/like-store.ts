@@ -79,6 +79,25 @@ export function syncLikeCount(key: string, likes: number) {
 }
 
 /**
+ * Overwrite ONLY the `liked` boolean from a fresh authenticated fetch,
+ * preserving the local `likes` count — the mirror of syncLikeCount.
+ * The feed and the post detail page are server components: they fetch
+ * /api/posts WITHOUT a token, so the backend returns is_liked=false for
+ * every post and the LikeButton seeds its heart as unfilled even for
+ * posts the user already liked. This is how the client-side hydration
+ * (LikeHydrator) corrects that seed once a session exists. Never
+ * creates an entry: only keys the UI has already seeded (via
+ * useLikeState) are synced.
+ */
+export function syncLiked(key: string, liked: boolean) {
+  const current = store.get(key);
+  if (!current) return;
+  if (current.liked === liked) return;
+  store.set(key, { ...current, liked });
+  emit();
+}
+
+/**
  * Read + toggle the like state for one entity. The entry is seeded from the
  * entity's initial values the first time the key is accessed, so the mock
  * baseline (e.g. a post that ships already liked) is respected.
