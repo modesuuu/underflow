@@ -5,6 +5,7 @@ import clsx from "clsx";
 import { Icon } from "@/components/ui/Icon";
 import { toast } from "sonner";
 import { createCollabProject } from "../api";
+import type { ProjectType } from "../types";
 import { createSkill, getSkills, type Skill } from "../skills-api";
 import { ApiError } from "@/lib/api-client";
 
@@ -58,8 +59,9 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
   const [submitting, setSubmitting] = useState(false);
   const [photos, setPhotos] = useState<PhotoDraft[]>([]);
   const [photoError, setPhotoError] = useState<string | null>(null);
-  const [customRoles, setCustomRoles] = useState<string[]>([]);
   const [roleDraft, setRoleDraft] = useState("");
+  const [projectType, setProjectType] = useState<ProjectType>("coursework");
+  const [dueDate, setDueDate] = useState("");
   const [fieldErrors, setFieldErrors] = useState<{
     title?: string;
     description?: string;
@@ -201,22 +203,59 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
     setPhotoError(null);
   };
 
-  const addCustomRole = () => {
-    const value = roleDraft.trim();
-    if (!value) return;
-    const isDuplicate = customRoles.some(
-      (r) => r.toLowerCase() === value.toLowerCase()
+  /**
+   * Shared create-as-private-skill + select path (POST /api/skills) used
+   * by the template tags and "Make Custom Role" — same as "Add a skill"
+   * except a 409 duplicate selects the existing skill silently instead
+   * of erroring. Throws on any other failure.
+   */
+  const createAndSelectSkill = async (name: string) => {
+    const existing = skills.find(
+      (s) => s.name.trim().toLowerCase() === name.toLowerCase()
     );
-    if (isDuplicate) {
-      setRoleDraft("");
+    if (existing) {
+      setSelectedSkills((prev) => new Set(prev).add(existing.id));
       return;
     }
-    setCustomRoles((prev) => [...prev, value]);
-    setRoleDraft("");
+    try {
+      const skill = await createSkill(name);
+      setSkills((prev) => [...prev, skill]);
+      setSelectedSkills((prev) => new Set(prev).add(skill.id));
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 409) {
+        // Duplicate name — the skill already exists for this user. Select
+        // the existing one instead of showing an error.
+        const found = skills.find(
+          (s) => s.name.trim().toLowerCase() === name.toLowerCase()
+        );
+        if (found) {
+          setSelectedSkills((prev) => new Set(prev).add(found.id));
+        } else {
+          // List is stale — reload so the skill shows up as a chip.
+          void loadSkills();
+        }
+        return;
+      }
+      throw err;
+    }
   };
 
-  const removeCustomRole = (index: number) => {
-    setCustomRoles((prev) => prev.filter((_, i) => i !== index));
+  /** "Make Custom Role": create it as a private skill and select it. */
+  const addCustomRole = async () => {
+    const value = roleDraft.trim();
+    if (!value || creatingSkill) return;
+    setCreatingSkill(true);
+    setSkillError(null);
+    try {
+      await createAndSelectSkill(value);
+      setRoleDraft("");
+    } catch (err) {
+      setSkillError(
+        err instanceof Error ? err.message : "Could not add this skill."
+      );
+    } finally {
+      setCreatingSkill(false);
+    }
   };
 
   const handleRoleKey = (e: KeyboardEvent<HTMLInputElement>) => {
@@ -271,34 +310,11 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
   /** Template tag tap: create it as a private skill (POST /api/skills) and select it — same as "Add a skill". */
   const addTemplateRole = async (name: string) => {
     if (creatingSkill || creatingTemplate) return;
-    const existing = skills.find(
-      (s) => s.name.trim().toLowerCase() === name.toLowerCase()
-    );
-    if (existing) {
-      setSelectedSkills((prev) => new Set(prev).add(existing.id));
-      return;
-    }
     setCreatingTemplate(name);
     setSkillError(null);
     try {
-      const skill = await createSkill(name);
-      setSkills((prev) => [...prev, skill]);
-      setSelectedSkills((prev) => new Set(prev).add(skill.id));
+      await createAndSelectSkill(name);
     } catch (err) {
-      if (err instanceof ApiError && err.status === 409) {
-        // Duplicate name — the skill already exists for this user. Select
-        // the existing one instead of showing an error.
-        const found = skills.find(
-          (s) => s.name.trim().toLowerCase() === name.toLowerCase()
-        );
-        if (found) {
-          setSelectedSkills((prev) => new Set(prev).add(found.id));
-        } else {
-          // List is stale — reload so the skill shows up as a chip.
-          void loadSkills();
-        }
-        return;
-      }
       setSkillError(
         err instanceof Error ? err.message : "Could not add this skill."
       );
@@ -328,8 +344,8 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
 
     setSubmitting(true);
     setSubmitError(null);
-    // TODO(backend): POST /api/upload for the selected photo Files,
-    // then include returned URLs in the project payload.
+    // Photos are uploaded inside createCollabProject (POST /api/upload);
+    // an upload failure throws, shows inline, and keeps the draft.
     const photoFiles = photos.map((p) => p.file);
     try {
       await createCollabProject({
@@ -337,8 +353,9 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
         description: description.trim(),
         skillIds: [...selectedSkills],
         slotsTotal: roleCount,
+        type: projectType,
+        dueDate,
         photos: photoFiles,
-        customRoles,
       });
     } catch (err) {
       setSubmitting(false);
@@ -449,12 +466,41 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
             )}
           </div>
 
+          {/* Type + due date (Batch 3): type is stored-only — it is never
+              rendered anywhere in the UI. Due date is optional. */}
+          <div className="flex gap-3">
+            <div className="flex flex-1 flex-col gap-1">
+              <label htmlFor="make-collab-type-input" className="text-base font-medium">Type</label>
+              <select
+                id="make-collab-type-input"
+                value={projectType}
+                onChange={(e) => setProjectType(e.target.value as ProjectType)}
+                className="rounded-lg bg-surface px-4 py-3 text-base font-medium text-ink outline-none focus-visible:ring-2 focus-visible:ring-accent"
+              >
+                <option value="coursework">Coursework</option>
+                <option value="portfolio">Portfolio</option>
+                <option value="product">Product</option>
+              </select>
+            </div>
+            <div className="flex flex-1 flex-col gap-1">
+              <label htmlFor="make-collab-due-input" className="text-base font-medium">Due date</label>
+              <input
+                id="make-collab-due-input"
+                type="date"
+                value={dueDate}
+                min={new Date().toLocaleDateString("en-CA")}
+                onChange={(e) => setDueDate(e.target.value)}
+                className="rounded-lg bg-surface px-4 py-3 text-base font-medium text-ink outline-none focus-visible:ring-2 focus-visible:ring-accent"
+              />
+            </div>
+          </div>
+
           {/* Roles / Skills */}
           <div className="flex flex-col gap-3">
             <label className="text-base font-medium">
               What Role do you want to find?
             </label>
-            {/* Custom role: real input + add button (replaces dead "Make Custom Role") */}
+            {/* Make Custom Role: creates a private skill (POST /api/skills) and selects it — same path as the template tags / "Add a skill". */}
             <div className="flex items-center gap-2 rounded-lg bg-surface px-4 py-3 focus-within:outline-none focus-within:ring-2 focus-within:ring-accent">
               <input
                 type="text"
@@ -468,8 +514,9 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
               <button
                 type="button"
                 onClick={addCustomRole}
+                disabled={!roleDraft.trim() || creatingSkill}
                 aria-label="Add custom role"
-                className="pressable flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-sm bg-accent text-on-accent focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+                className="pressable flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-sm bg-accent text-on-accent disabled:cursor-not-allowed disabled:opacity-40 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
               >
                 <Icon name="plus" size={14} className="text-ink" />
               </button>
@@ -530,24 +577,6 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
                   ))}
                 </>
               )}
-              {/* Custom roles render as accent-bg chips with a tag icon + remove */}
-              {customRoles.map((role, i) => (
-                <span
-                  key={`role-${i}`}
-                  className="flex items-center gap-1 rounded-full bg-accent px-3 py-1.5 text-xs font-medium text-on-accent"
-                >
-                  <Icon name="purchase-tag" size={14} />
-                  {role}
-                  <button
-                    type="button"
-                    onClick={() => removeCustomRole(i)}
-                    aria-label={`Remove ${role}`}
-                    className="pressable ml-0.5 cursor-pointer focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
-                  >
-                    <Icon name="x" size={12} />
-                  </button>
-                </span>
-              ))}
             </div>
             {/* Add a skill: creates a private skill (POST /api/skills) and selects it */}
             <div className="flex items-center gap-2 rounded-lg bg-surface px-4 py-3 focus-within:outline-none focus-within:ring-2 focus-within:ring-accent">

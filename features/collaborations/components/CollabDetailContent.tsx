@@ -163,12 +163,15 @@ export function CollabDetailContent({ project }: CollabDetailContentProps) {
           {project.title}
         </h1>
 
-        {/* Meta row: due bold dark + posted gray */}
+        {/* Meta row: due bold dark + posted gray. No Due chip when the
+            collab has no due date. */}
         <div className="flex items-center gap-4">
-          <span className="flex items-center gap-1 text-xs font-medium text-ink">
-            <Icon name="calendar" size={14} />
-            Due: {project.dueDate}
-          </span>
+          {project.dueDate ? (
+            <span className="flex items-center gap-1 text-xs font-medium text-ink">
+              <Icon name="calendar" size={14} />
+              Due: {formatDueDate(project.dueDate)}
+            </span>
+          ) : null}
           <span className="flex items-center gap-1 text-xs font-medium text-muted">
             <Icon name="time" size={14} />
             posted {project.postedAgo}
@@ -404,7 +407,7 @@ export function CollabDetailContent({ project }: CollabDetailContentProps) {
         initialState={applyInitialState}
         projectTitle={project.title}
         projectMeta={project.subtitle.replace(/\.+$/, "")}
-        dueLabel={project.dueDate}
+        dueLabel={formatDueDate(project.dueDate)}
         slotsLabel={`${slotsFilled} / ${slotsTotal}`}
         ownerName={project.owner.name}
         ownerPersonId={ownerPersonId}

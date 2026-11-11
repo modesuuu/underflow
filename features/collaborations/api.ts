@@ -1,6 +1,7 @@
 // features/collaborations/api.ts
 import { ApiEnvelope, apiFetch, ApiError, isApiConfigured } from "@/lib/api-client";
 import type { CollabMember, CollabProject, ProjectType } from "./types";
+import { uploadImage } from "@/features/dashboard/api";
 
 /** Wire shape of GET /api/collab (CollabModel::getAll, enriched 2026-11-10). */
 interface BackendCollab {
@@ -9,6 +10,7 @@ interface BackendCollab {
   description?: string;
   type?: ProjectType;
   due_date?: string | null;
+  media_urls?: string[];
   status: CollabProject["status"];
   required_member: number;
   accepted_member_count: number;
@@ -68,7 +70,7 @@ export function mapBackendCollab(b: BackendCollab): CollabProject {
     })),
     description,
     workItems: [],
-    photos: [],
+    photos: [...(b.media_urls ?? [])],
     owner,
   };
 }
@@ -158,34 +160,36 @@ export interface CreateCollabInput {
   title: string;
   description: string;
   skillIds: string[]; // references SkillTag.id
-  customRoles: string[];
   slotsTotal: number;
   type: ProjectType;
-  dueDate: string; // ISO 8601
+  dueDate: string; // ISO 8601 ("" = no due date)
   photoUrls: string[];
 }
 
 /**
  * Form-level payload: raw Files instead of URLs — the api layer uploads them
- * first and swaps in the returned URLs. `type`/`dueDate` are contract-required
- * but the form does not collect them yet (later iteration); until the fields
- * land in the UI the payload omits them and the real backend 400s — expected.
+ * first (POST /api/upload, same as PostModal) and swaps in the returned
+ * URLs. `type`/`dueDate` are collected by MakeCollabModal (Batch 3);
+ * dueDate "" means no due date (sent as null).
  */
 export interface CreateCollabFormInput
-  extends Omit<CreateCollabInput, "photoUrls" | "type" | "dueDate"> {
+  extends Omit<CreateCollabInput, "photoUrls"> {
   photos: File[];
-  type?: ProjectType;
-  dueDate?: string;
 }
 
 // The backend's create expects title, description, required_member
-// and skills_needed (existing skill ids); type/due_date are sent too
-// so the endpoint can store them once it reads them. Photos cannot be
-// uploaded yet — POST /api/upload does not exist (TODO backend).
+// and skills_needed (existing skill ids); type/due_date/media_urls are
+// stored too. Photos are uploaded first (POST /api/upload, same as
+// PostModal) — an upload failure throws, the modal shows it inline and
+// keeps the draft; the collab is only created once every upload succeeds.
 export async function createCollabProject(
   data: CreateCollabFormInput
 ): Promise<{ success: boolean }> {
   if (isApiConfigured()) {
+    const uploaded =
+      data.photos.length > 0
+        ? await Promise.all(data.photos.map((file) => uploadImage(file)))
+        : [];
     await apiFetch<ApiEnvelope<unknown>>("/api/collab", {
       method: "POST",
       body: JSON.stringify({
@@ -194,8 +198,9 @@ export async function createCollabProject(
         required_member: data.slotsTotal,
         skills_needed: data.skillIds,
         type: data.type,
-        due_date: data.dueDate,
-        media_urls: [],
+        due_date: data.dueDate || null,
+        media_urls: uploaded.map((item) => item.url),
+        media_public_ids: uploaded.map((item) => item.public_id),
       }),
     });
     return { success: true };
