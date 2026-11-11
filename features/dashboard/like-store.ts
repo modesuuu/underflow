@@ -63,6 +63,22 @@ export function toggleLike(key: string) {
 }
 
 /**
+ * Overwrite ONLY the like count from a fresh server fetch, preserving
+ * the local `liked` boolean — the user's own toggle owns `liked`; the
+ * poll only corrects the count when other people like/unlike. Never
+ * creates an entry: only keys the UI has already seeded (via
+ * useLikeState) are synced, so the server `liked` value is never
+ * clobbered by a poll that ran before the post rendered.
+ */
+export function syncLikeCount(key: string, likes: number) {
+  const current = store.get(key);
+  if (!current) return;
+  if (current.likes === likes) return;
+  store.set(key, { ...current, likes });
+  emit();
+}
+
+/**
  * Read + toggle the like state for one entity. The entry is seeded from the
  * entity's initial values the first time the key is accessed, so the mock
  * baseline (e.g. a post that ships already liked) is respected.

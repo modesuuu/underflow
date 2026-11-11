@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, type ReactNode } from "react";
 import { setMobileNav, useMobileNavOpen } from "./mobile-nav";
 import { Sidebar } from "./Sidebar";
+import { LivePoller } from "@/features/dashboard/components/LivePoller";
 import { RedirectIfAuthed, RequireAuth } from "@/features/auth/components/AuthGate";
 
 /**
@@ -40,10 +41,16 @@ export function RootShell({ children }: { children: ReactNode }) {
     return <RedirectIfAuthed>{children}</RedirectIfAuthed>;
   }
   if (pathname?.startsWith("/profile")) {
-    return <RequireAuth>{children}</RequireAuth>;
+    return (
+      <RequireAuth>
+        <LivePoller />
+        {children}
+      </RequireAuth>
+    );
   }
   return (
     <RequireAuth>
+      <LivePoller />
       <div className="flex h-dvh w-full overflow-hidden">
         <Sidebar />
         {mobileOpen && (

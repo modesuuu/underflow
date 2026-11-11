@@ -4,7 +4,7 @@ import {
   apiFetch,
   isApiConfigured,
 } from "@/lib/api-client";
-import type { NotificationItem, Post, PostComment } from "./types";
+import type { Post, PostComment } from "./types";
 
 /** Wire shape of GET /api/posts (PostModel::getAll). */
 interface BackendPost {
@@ -219,8 +219,5 @@ export async function postComment(
   return mapBackendComment(res.data);
 }
 
-// TODO(backend): GET /api/notifications does not exist yet (table added
-// 2026-11-10, no route). Until the endpoint lands the list is empty.
-export async function getNotifications(): Promise<NotificationItem[]> {
-  return [];
-}
+// Notifications live in ./notifications-api.ts (getNotifications /
+// markNotificationRead / markAllNotificationsRead).

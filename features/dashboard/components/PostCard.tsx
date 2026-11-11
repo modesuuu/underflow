@@ -9,6 +9,7 @@ import { formatCount } from "@/lib/format";
 import type { Post } from "../types";
 import { PhotoGrid } from "@/components/ui/PhotoGrid";
 import { LikeButton } from "./LikeButton";
+import { useCommentCount } from "../comment-count-store";
 import { PostOptionsMenu } from "./PostOptionsMenu";
 import { ReportedPostNotice } from "./ReportedPostNotice";
 
@@ -23,6 +24,9 @@ const CARD_CHROME = "px-1 py-2";
 export function PostCard({ post }: { post: Post }) {
   const router = useRouter();
   const [reported, setReported] = useState(false);
+  // Live comment count: seeded from the server prop, then kept fresh
+  // by the LivePoller (other people's comments tick it up).
+  const liveCommentCount = useCommentCount(post.id, post.commentCount);
 
   const openDetail = () => router.push(`/dashboard/${post.id}`);
   const openDetailAtComment = () =>
@@ -81,7 +85,7 @@ export function PostCard({ post }: { post: Post }) {
         >
           <Icon name="message-rounded" size={20} />
           <span className="text-xs font-medium">
-            {post.commentCount > 0 ? formatCount(post.commentCount) : "Comment"}
+            {liveCommentCount > 0 ? formatCount(liveCommentCount) : "Comment"}
           </span>
         </button>
       </div>

@@ -57,6 +57,8 @@ export interface Post {
 
 export type NotificationAction =
   | "commented in"
+  | "commented on your post"
+  | "liked your post"
   | "mentioned you in"
   | "invited you to";
 
