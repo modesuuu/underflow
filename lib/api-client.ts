@@ -41,6 +41,17 @@ export interface ApiEnvelope<T> {
     limit?: number;
     total?: number;
   };
+  /**
+   * Backend pagination meta (GET /api/collab, audit P2-12): the backend
+   * answers `{ success, message, data, pagination }` and apiFetch copies
+   * `pagination` through here. Absent on endpoints without pagination.
+   */
+  pagination?: {
+    page: number;
+    limit: number;
+    total: number;
+    total_pages: number;
+  };
 }
 
 /**
@@ -125,14 +136,25 @@ export async function apiFetch<T>(
 
   const parsed = (await res.json()) as unknown;
   // Normalize the backend envelope { success, message, data } into the
-  // contract envelope { data, meta } the callers expect.
+  // contract envelope { data, meta } the callers expect. The backend's
+  // `pagination` key (list endpoints) is copied through untouched so
+  // paged callers can read it as `res.pagination`.
   if (
     parsed !== null &&
     typeof parsed === "object" &&
     "success" in parsed &&
     "data" in parsed
   ) {
-    return { data: (parsed as { data: unknown }).data } as T;
+    const envelope = parsed as {
+      data: unknown;
+      pagination?: ApiEnvelope<unknown>["pagination"];
+    };
+    return {
+      data: envelope.data,
+      ...(envelope.pagination !== undefined
+        ? { pagination: envelope.pagination }
+        : {}),
+    } as T;
   }
   return parsed as T;
 }

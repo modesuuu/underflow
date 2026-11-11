@@ -1,6 +1,6 @@
 // features/collaborations/api.ts
 import { ApiEnvelope, apiFetch, ApiError, isApiConfigured } from "@/lib/api-client";
-import type { CollabMember, CollabProject, ProjectType } from "./types";
+import type { CollabMember, CollabProject, CollabSortKey, ProjectType } from "./types";
 import { uploadImage } from "@/features/dashboard/api";
 
 /** Wire shape of GET /api/collab (CollabModel::getAll, enriched 2026-11-10). */
@@ -75,50 +75,134 @@ export function mapBackendCollab(b: BackendCollab): CollabProject {
   };
 }
 
-export async function getCollabProjects(): Promise<CollabProject[]> {
-  if (isApiConfigured()) {
-    try {
-      const res = await apiFetch<ApiEnvelope<BackendCollab[]>>("/api/collab");
-      return res.data.map(mapBackendCollab);
-    } catch (err) {
-      // Backend unreachable (server down): return an empty list
-      // instead of crashing the page.
-      if (err instanceof ApiError && err.code === "network_error") {
-        return [];
-      }
-      throw err;
-    }
-  }
-  return [];
+/** Cards per page of the collab river; "Show more" fetches the next page. */
+export const COLLAB_PAGE_SIZE = 12;
+
+/** Backend `pagination` meta for GET /api/collab (audit P2-12). */
+export interface CollabPagination {
+  page: number;
+  limit: number;
+  total: number;
+  total_pages: number;
 }
 
+/**
+ * One server-paged list result. `loadError` is true ONLY when the fetch
+ * failed with `network_error` (backend down) — the list page renders its
+ * distinct error state for that instead of "No projects found" (audit
+ * P2-9). Any other failure still throws to the route error boundary.
+ */
+export interface CollabListResult {
+  projects: CollabProject[];
+  pagination: CollabPagination;
+  loadError: boolean;
+}
+
+function toBackendSort(sortKey: CollabSortKey): string | undefined {
+  // "recommended" is the backend's default order (created_at DESC) —
+  // no sort param, so the backend stays the single source of that order.
+  if (sortKey === "recommended") return undefined;
+  return sortKey;
+}
+
+/**
+ * GET /api/collab?page&limit&q&sort — one server-side page (audit P2-12).
+ * Search + sort run on the backend; the caller only appends/replaces.
+ */
+export async function getCollabProjectsPage(options?: {
+  q?: string;
+  sort?: CollabSortKey;
+  page?: number;
+  limit?: number;
+}): Promise<CollabListResult> {
+  const page = options?.page ?? 1;
+  const limit = options?.limit ?? COLLAB_PAGE_SIZE;
+  const emptyPage: CollabListResult = {
+    projects: [],
+    pagination: { page, limit, total: 0, total_pages: 0 },
+    loadError: false,
+  };
+  if (!isApiConfigured()) return emptyPage;
+  const params = new URLSearchParams();
+  params.set("page", String(page));
+  params.set("limit", String(limit));
+  const q = (options?.q ?? "").trim();
+  if (q) params.set("q", q);
+  const sort = toBackendSort(options?.sort ?? "recommended");
+  if (sort) params.set("sort", sort);
+  try {
+    const res = await apiFetch<ApiEnvelope<BackendCollab[]>>(
+      `/api/collab?${params.toString()}`
+    );
+    return {
+      projects: res.data.map(mapBackendCollab),
+      pagination: res.pagination ?? {
+        page,
+        limit,
+        total: res.data.length,
+        total_pages: 1,
+      },
+      loadError: false,
+    };
+  } catch (err) {
+    // Backend unreachable (server down): signal the error state instead
+    // of an empty list — the caller must not render "No projects found".
+    if (err instanceof ApiError && err.code === "network_error") {
+      return { ...emptyPage, loadError: true };
+    }
+    throw err;
+  }
+}
+
+/**
+ * Full project list for callers that need every collab (profile stats,
+ * mobile search popular terms) — pages through the server list until
+ * total_pages. The /collaborations grid does NOT use this; it pages
+ * through getCollabProjectsPage instead.
+ */
+export async function getCollabProjects(): Promise<CollabProject[]> {
+  if (!isApiConfigured()) return [];
+  const all: CollabProject[] = [];
+  let page = 1;
+  let totalPages = 1;
+  while (page <= totalPages) {
+    const result = await getCollabProjectsPage({ page, limit: 50 });
+    if (result.loadError) return [];
+    all.push(...result.projects);
+    totalPages = result.pagination.total_pages;
+    page += 1;
+  }
+  return all;
+}
+
+/**
+ * GET /api/collab/:id. Returns null for an unknown id (the detail page
+ * renders notFound()); THROWS on network_error so the detail page can
+ * render its backend-down error state instead of a 404 (audit P2-9).
+ */
 export async function getCollabProject(
   id: string
-): Promise<CollabProject | undefined> {
-  if (isApiConfigured()) {
-    try {
-      const res = await apiFetch<ApiEnvelope<BackendCollab>>(
-        `/api/collab/${id}`
-      );
-      return mapBackendCollab(res.data);
-    } catch (err) {
-      // Unknown id → 404 envelope → undefined (page renders notFound()).
-      if (err instanceof ApiError && err.status === 404) return undefined;
-      // Backend unreachable (server down): return undefined.
-      if (err instanceof ApiError && err.code === "network_error") {
-        return undefined;
-      }
-      throw err;
-    }
+): Promise<CollabProject | null> {
+  if (!isApiConfigured()) return null;
+  try {
+    const res = await apiFetch<ApiEnvelope<BackendCollab>>(
+      `/api/collab/${id}`
+    );
+    return mapBackendCollab(res.data);
+  } catch (err) {
+    // Unknown id → 404 envelope → null (page renders notFound()).
+    if (err instanceof ApiError && err.status === 404) return null;
+    throw err;
   }
-  return undefined;
 }
 
 /**
  * Authed detail fetch (client-side only: apiFetch attaches the session
  * token there, so the payload carries my_application + fresh seats).
  * Used by the detail page to fill in the Apply CTA state after the
- * server render. Returns undefined on 404, like getCollabProject.
+ * server render. Returns undefined on 404, like getCollabProject returns
+ * null there. Network errors throw — callers already swallow them and
+ * keep the server-rendered project.
  */
 export async function getCollabProjectAuthed(
   id: string

@@ -2,8 +2,11 @@ import { Suspense } from "react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { AppShell } from "@/components/layout/AppShell";
+import { ApiError } from "@/lib/api-client";
 import { getCollabProject } from "@/features/collaborations/api";
+import type { CollabProject } from "@/features/collaborations/types";
 import { CollabDetailContent } from "@/features/collaborations/components/CollabDetailContent";
+import { CollabDetailError } from "@/features/collaborations/components/CollabDetailError";
 import { NotificationsPanel } from "@/features/dashboard/components/NotificationsPanel";
 
 interface CollabDetailPageProps {
@@ -14,7 +17,14 @@ export async function generateMetadata({
   params,
 }: CollabDetailPageProps): Promise<Metadata> {
   const { projectId } = await params;
-  const project = await getCollabProject(projectId);
+  let project: CollabProject | null = null;
+  try {
+    project = await getCollabProject(projectId);
+  } catch {
+    // Backend down: fall back to the generic title; the page body
+    // renders the backend-down error state instead of a 404.
+    project = null;
+  }
   return {
     title: project ? `${project.title}` : "Collaboration",
     description: project?.subtitle ?? "Collaboration project detail.",
@@ -109,8 +119,35 @@ function CollabDetailLoadingBody() {
 }
 
 async function CollabDetailAsync({ projectId }: { projectId: string }) {
-  // TODO(backend): GET /api/collaborations/:id
-  const project = await getCollabProject(projectId);
+  let project: CollabProject | null = null;
+  let loadError = false;
+  try {
+    project = await getCollabProject(projectId);
+  } catch (err) {
+    // Backend down (network_error) is NOT a 404 — render the error
+    // state below instead of notFound() (audit P2-9). Other failures
+    // still throw to the route error boundary.
+    if (err instanceof ApiError && err.code === "network_error") {
+      loadError = true;
+    } else {
+      throw err;
+    }
+  }
+
+  if (loadError) {
+    return (
+      <AppShell
+        variant="detail"
+        backLabel="Collaborations"
+        backHref="/collaborations"
+        breadcrumbRoot="Dashboard / Collaborations"
+        panel={<NotificationsPanel className="px-6" />}
+      >
+        <CollabDetailError />
+      </AppShell>
+    );
+  }
+
   if (!project) {
     notFound();
   }

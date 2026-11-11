@@ -59,7 +59,12 @@ export function formatDueDate(raw: string): string {
 /**
  * Parse a posted-ago label like "3d ago" or "5h ago".
  * Returns day count (fractional OK). Smaller value = more recent.
- * Returns Infinity for unparseable strings (sorts to end for "newest").
+ * Returns Infinity for unparseable strings.
+ *
+ * NOT used for sorting anymore (audit P1-1): labels coarser than a day
+ * ("just now" covers 0–59 min) all parse to Infinity, so the newest
+ * projects sorted LAST. Kept exported for display-side use only —
+ * sorting reads the `postedAt` ISO timestamp instead.
  */
 export function parsePostedAgo(raw: string): number {
   const m = raw.match(/^(\d+)\s*(\w+)\s*ago$/);
@@ -84,8 +89,15 @@ export function sortProjects(projects: CollabProject[], sortKey: "recommended" |
       (a, b) => parseDueDate(a.dueDate) - parseDueDate(b.dueDate)
     );
   }
-  // "newest": smaller postedAgo value = more recently posted
-  return [...projects].sort(
-    (a, b) => parsePostedAgo(a.postedAgo) - parsePostedAgo(b.postedAgo)
-  );
+  // "newest": sort by the `postedAt` ISO timestamp (audit P1-1), never by
+  // the `postedAgo` label — "just now" collapses 0–59 min into one bucket
+  // and used to push the newest projects to the end. Missing/invalid
+  // timestamps sort last.
+  return [...projects].sort((a, b) => {
+    const ta = a.postedAt ? new Date(a.postedAt).getTime() : NaN;
+    const tb = b.postedAt ? new Date(b.postedAt).getTime() : NaN;
+    const va = Number.isNaN(ta) ? -Infinity : ta;
+    const vb = Number.isNaN(tb) ? -Infinity : tb;
+    return vb - va;
+  });
 }

@@ -70,7 +70,7 @@ async function ProjectsBody({ userId }: { userId: string }) {
   const person = await getPerson(userId);
   if (!person) notFound();
   const projects = await getPersonProjects(person);
-  return <CollabGrid projects={projects} />;
+  return <CollabGrid clientList={projects} />;
 }
 
 export default async function ProfileProjectsPage({

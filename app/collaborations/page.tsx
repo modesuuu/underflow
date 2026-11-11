@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
 import { AppShell } from "@/components/layout/AppShell";
-import { getCollabProjects } from "@/features/collaborations/api";
+import { getCollabProjectsPage } from "@/features/collaborations/api";
 import { CollabGrid } from "@/features/collaborations/components/CollabGrid";
 import { CollabTopBarActions } from "@/features/collaborations/components/CollabTopBarActions";
 
@@ -53,9 +53,12 @@ function CollabGridSkeleton() {
 }
 
 async function CollabGridAsync() {
-  // TODO(backend): GET /api/collaborations
-  const projects = await getCollabProjects();
-  return <CollabGrid projects={projects} />;
+  // Server renders page 1 (default sort, no search); the grid fetches
+  // further pages + search/sort pages client-side (audit P2-12).
+  // A backend-down fetch does NOT throw here — it returns loadError
+  // and the grid renders its error state (audit P2-9).
+  const firstPage = await getCollabProjectsPage({ page: 1 });
+  return <CollabGrid initial={firstPage} />;
 }
 
 export default function CollaborationsPage() {
