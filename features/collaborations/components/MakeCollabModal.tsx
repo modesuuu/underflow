@@ -6,6 +6,7 @@ import { Icon } from "@/components/ui/Icon";
 import { toast } from "sonner";
 import { createCollabProject } from "../api";
 import { createSkill, getSkills, type Skill } from "../skills-api";
+import { ApiError } from "@/lib/api-client";
 
 interface MakeCollabModalProps {
   open: boolean;
@@ -15,6 +16,18 @@ interface MakeCollabModalProps {
 /** Max photo upload constraints (matches 5-slot design). */
 const MAX_PHOTOS = 5;
 const MAX_PHOTO_BYTES = 5 * 1024 * 1024; // 5 MB per file
+
+/** Template role tags from the mockup — tap one to create it as a private skill (POST /api/skills) and select it. */
+const TEMPLATE_ROLES = [
+  "Coding",
+  "UI Design",
+  "Backend",
+  "Testing",
+  "DevOps",
+  "Mobile",
+  "Data",
+  "Writing",
+];
 
 /** A selected photo with an instant blob: preview URL. */
 interface PhotoDraft {
@@ -38,6 +51,7 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
   const [skillsError, setSkillsError] = useState<string | null>(null);
   const [skillDraft, setSkillDraft] = useState("");
   const [creatingSkill, setCreatingSkill] = useState(false);
+  const [creatingTemplate, setCreatingTemplate] = useState<string | null>(null);
   const [skillError, setSkillError] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [roleCount, setRoleCount] = useState(2);
@@ -229,6 +243,12 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
     });
   };
 
+  /** Template tags not already in the user's skill list (same name, case-insensitive) — those are hidden so a tag never shows twice. */
+  const visibleTemplateRoles = TEMPLATE_ROLES.filter(
+    (name) =>
+      !skills.some((s) => s.name.trim().toLowerCase() === name.toLowerCase())
+  );
+
   const addSkill = async () => {
     const name = skillDraft.trim();
     if (!name || creatingSkill) return;
@@ -245,6 +265,45 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
       );
     } finally {
       setCreatingSkill(false);
+    }
+  };
+
+  /** Template tag tap: create it as a private skill (POST /api/skills) and select it — same as "Add a skill". */
+  const addTemplateRole = async (name: string) => {
+    if (creatingSkill || creatingTemplate) return;
+    const existing = skills.find(
+      (s) => s.name.trim().toLowerCase() === name.toLowerCase()
+    );
+    if (existing) {
+      setSelectedSkills((prev) => new Set(prev).add(existing.id));
+      return;
+    }
+    setCreatingTemplate(name);
+    setSkillError(null);
+    try {
+      const skill = await createSkill(name);
+      setSkills((prev) => [...prev, skill]);
+      setSelectedSkills((prev) => new Set(prev).add(skill.id));
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 409) {
+        // Duplicate name — the skill already exists for this user. Select
+        // the existing one instead of showing an error.
+        const found = skills.find(
+          (s) => s.name.trim().toLowerCase() === name.toLowerCase()
+        );
+        if (found) {
+          setSelectedSkills((prev) => new Set(prev).add(found.id));
+        } else {
+          // List is stale — reload so the skill shows up as a chip.
+          void loadSkills();
+        }
+        return;
+      }
+      setSkillError(
+        err instanceof Error ? err.message : "Could not add this skill."
+      );
+    } finally {
+      setCreatingTemplate(null);
     }
   };
 
@@ -396,7 +455,7 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
               What Role do you want to find?
             </label>
             {/* Custom role: real input + add button (replaces dead "Make Custom Role") */}
-            <div className="flex items-center gap-2 rounded-lg bg-surface px-4 py-3">
+            <div className="flex items-center gap-2 rounded-lg bg-surface px-4 py-3 focus-within:outline-none focus-within:ring-2 focus-within:ring-accent">
               <input
                 type="text"
                 value={roleDraft}
@@ -404,7 +463,7 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
                 onKeyDown={handleRoleKey}
                 placeholder="Make Custom Role"
                 aria-label="Custom role"
-                className="min-w-0 flex-1 bg-transparent text-base font-medium text-ink outline-none placeholder:text-muted focus-visible:ring-2 focus-visible:ring-accent"
+                className="min-w-0 flex-1 bg-transparent text-base font-medium text-ink outline-none placeholder:text-muted"
               />
               <button
                 type="button"
@@ -431,27 +490,45 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
                     Try again
                   </button>
                 </span>
-              ) : skills.length === 0 ? (
+              ) : skills.length === 0 && visibleTemplateRoles.length === 0 ? (
                 <p className="text-xs text-muted">
                   You don&apos;t have any skills yet — add your first one below.
                 </p>
               ) : (
-                skills.map((skill) => (
-                  <button
-                    key={skill.id}
-                    type="button"
-                    onClick={() => toggleSkill(skill.id)}
-                    className={
-                      "pressable flex cursor-pointer items-center gap-1 rounded-full px-3 py-1.5 text-xs font-medium text-ink " +
-                      "focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none " +
-                      (selectedSkills.has(skill.id)
-                        ? "bg-accent"
-                        : "border border-line")
-                    }
-                  >
-                    {skill.name}
-                  </button>
-                ))
+                <>
+                  {skills.map((skill) => (
+                    <button
+                      key={skill.id}
+                      type="button"
+                      onClick={() => toggleSkill(skill.id)}
+                      className={
+                        "pressable flex cursor-pointer items-center gap-1 rounded-full px-3 py-1.5 text-xs font-medium text-ink " +
+                        "focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none " +
+                        (selectedSkills.has(skill.id)
+                          ? "bg-accent"
+                          : "border border-line")
+                      }
+                    >
+                      {skill.name}
+                    </button>
+                  ))}
+                  {/* Template role tags from the mockup — tap to create the skill and select it. */}
+                  {visibleTemplateRoles.map((name) => (
+                    <button
+                      key={`template-${name}`}
+                      type="button"
+                      onClick={() => addTemplateRole(name)}
+                      disabled={creatingTemplate === name || creatingSkill}
+                      className={
+                        "pressable flex cursor-pointer items-center gap-1 rounded-full border border-line px-3 py-1.5 text-xs font-medium text-ink " +
+                        "focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none " +
+                        "disabled:cursor-not-allowed disabled:opacity-40"
+                      }
+                    >
+                      {name}
+                    </button>
+                  ))}
+                </>
               )}
               {/* Custom roles render as accent-bg chips with a tag icon + remove */}
               {customRoles.map((role, i) => (
@@ -473,7 +550,7 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
               ))}
             </div>
             {/* Add a skill: creates a private skill (POST /api/skills) and selects it */}
-            <div className="flex items-center gap-2 rounded-lg bg-surface px-4 py-3">
+            <div className="flex items-center gap-2 rounded-lg bg-surface px-4 py-3 focus-within:outline-none focus-within:ring-2 focus-within:ring-accent">
               <input
                 type="text"
                 value={skillDraft}
@@ -481,7 +558,7 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
                 onKeyDown={handleSkillKey}
                 placeholder="Add a skill"
                 aria-label="Add a skill"
-                className="min-w-0 flex-1 bg-transparent text-base font-medium text-ink outline-none placeholder:text-muted focus-visible:ring-2 focus-visible:ring-accent"
+                className="min-w-0 flex-1 bg-transparent text-base font-medium text-ink outline-none placeholder:text-muted"
               />
               <button
                 type="button"
