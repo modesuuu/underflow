@@ -71,8 +71,13 @@ export function PostDetailBody({ post }: { post: Post }) {
         <PostOptionsMenu onReport={() => setReported(true)} />
       </div>
 
-      {/* Body — Book at 15px relaxed, like the feed */}
-      <p className="text-[15px] leading-relaxed">{post.text}</p>
+      {/* Title + body — same heading as the feed card */}
+      <div className="flex flex-col gap-1">
+        {post.title ? (
+          <h2 className="text-base font-semibold leading-tight text-ink">{post.title}</h2>
+        ) : null}
+        <p className="text-[15px] leading-relaxed">{post.text}</p>
+      </div>
 
       <PhotoViewer photos={post.photos} />
 

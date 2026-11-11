@@ -56,6 +56,7 @@ function mapBackendPost(b: BackendPost): Post {
     postedAt: b.created_at,
     postedAgo: relativeAgo(b.created_at),
     text: b.description,
+    title: b.title?.trim() || undefined,
     photos: (b.media_urls ?? []).map((url, i) => ({
       id: b.id + "-photo-" + i,
       url,
