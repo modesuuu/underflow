@@ -48,7 +48,6 @@ interface PostModalProps {
  */
 export function PostModal({ open, onClose }: PostModalProps) {
   const router = useRouter();
-  const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [images, setImages] = useState<ImageDraft[]>([]);
   const [imageError, setImageError] = useState<string | null>(null);
@@ -95,8 +94,7 @@ export function PostModal({ open, onClose }: PostModalProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
-  const canPost =
-    title.trim() !== "" && description.trim() !== "" && !submitting;
+  const canPost = description.trim() !== "" && !submitting;
 
   function handleImageChange(event: ChangeEvent<HTMLInputElement>) {
     const files = Array.from(event.target.files ?? []);
@@ -142,6 +140,12 @@ export function PostModal({ open, onClose }: PostModalProps) {
     setImageError(null);
   }
 
+  // The backend still requires a non-empty title, but it is never
+  // displayed — derive it from the description (first line, 80 chars).
+  function derivePostTitle(text: string): string {
+    return text.split("\n")[0].trim().slice(0, 80);
+  }
+
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
     if (!canPost) return;
@@ -155,7 +159,7 @@ export function PostModal({ open, onClose }: PostModalProps) {
           ? await Promise.all(images.map((item) => uploadImage(item.file)))
           : [];
       await createPost({
-        title: title.trim(),
+        title: derivePostTitle(description.trim()),
         description: description.trim(),
         media_urls: uploaded.map((item) => item.url),
         media_public_ids: uploaded.map((item) => item.public_id),
@@ -213,23 +217,6 @@ export function PostModal({ open, onClose }: PostModalProps) {
         </div>
 
         <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-5">
-          {/* Title */}
-          <div className="flex flex-col gap-1">
-            <label htmlFor="post-title-input" className="text-base font-medium">
-              Title
-            </label>
-            <input
-              id="post-title-input"
-              type="text"
-              value={title}
-              onChange={(event) => setTitle(event.target.value)}
-              autoFocus
-              maxLength={120}
-              placeholder="Title"
-              className="rounded-lg bg-surface px-4 py-3 text-base font-medium text-ink outline-none placeholder:text-muted focus-visible:ring-2 focus-visible:ring-accent"
-            />
-          </div>
-
           {/* Description */}
           <div className="flex flex-col gap-1">
             <label htmlFor="post-desc-input" className="text-base font-medium">
@@ -239,6 +226,7 @@ export function PostModal({ open, onClose }: PostModalProps) {
               id="post-desc-input"
               value={description}
               onChange={(event) => setDescription(event.target.value)}
+              autoFocus
               rows={3}
               placeholder="Description"
               className="resize-none rounded-lg bg-surface px-4 py-3 text-base font-medium text-ink outline-none placeholder:text-muted focus-visible:ring-2 focus-visible:ring-accent"

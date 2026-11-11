@@ -71,13 +71,7 @@ export function PostDetailBody({ post }: { post: Post }) {
         <PostOptionsMenu onReport={() => setReported(true)} />
       </div>
 
-      {/* Title + body — same heading as the feed card */}
-      <div className="flex flex-col gap-1">
-        {post.title ? (
-          <h2 className="text-base font-semibold leading-tight text-ink">{post.title}</h2>
-        ) : null}
-        <p className="text-[15px] leading-relaxed">{post.text}</p>
-      </div>
+      <p className="text-[15px] leading-relaxed">{post.text}</p>
 
       <PhotoViewer photos={post.photos} />
 

@@ -43,8 +43,6 @@ export interface Post {
   /** Relative label shown under the author name, e.g. "2 hours ago". */
   postedAgo: string;
   text: string;
-  /** Post title (from the backend). Absent when the post has no title. */
-  title?: string;
   /** Photo attachments; layout adapts to count (1/2/3/4/4+). */
   photos: Photo[];
   views: number;

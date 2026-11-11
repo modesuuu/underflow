@@ -66,13 +66,7 @@ export function PostCard({ post }: { post: Post }) {
         <PostOptionsMenu onReport={() => setReported(true)} />
       </div>
 
-      {/* Title + body — the title is a heading above the description */}
-      <div className="flex flex-col gap-1">
-        {post.title ? (
-          <h2 className="text-base font-semibold leading-tight text-ink">{post.title}</h2>
-        ) : null}
-        <p className="text-[15px] leading-relaxed">{post.text}</p>
-      </div>
+      <p className="text-[15px] leading-relaxed">{post.text}</p>
 
       {/* Photo click -> post detail (replaces the old lightbox) */}
       <PhotoGrid photos={post.photos} onPhotoClick={openDetail} />
