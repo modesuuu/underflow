@@ -69,8 +69,8 @@ function CommentItem({ comment, innerRef, isNew = false }: CommentItemProps) {
         <p className="text-sm leading-relaxed">{comment.text}</p>
 
         {/* Like — compact variant; the shared store keeps it in
-            step with every other surface (session memory until
-            the like API exists). */}
+            step with every other surface, persisted to the
+            backend like a post like. */}
         <div className="mt-0.5 w-fit">
           <LikeButton
             size="sm"

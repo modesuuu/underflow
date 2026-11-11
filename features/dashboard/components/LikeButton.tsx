@@ -6,7 +6,7 @@ import clsx from "clsx";
 import { HeartIcon } from "@/components/ui/HeartIcon";
 import { formatCount } from "@/lib/format";
 import { useLikeState } from "../like-store";
-import { likePost, unlikePost } from "../api";
+import { likeComment, likePost, unlikeComment, unlikePost } from "../api";
 
 interface LikeButtonProps {
   storeKey: string;
@@ -36,10 +36,10 @@ export function LikeButton({
     initialLikes
   );
 
-  // Post likes (storeKey = the raw post id) persist to the backend;
-  // comment likes (storeKey = `comment:<id>`) have no backend endpoint
-  // and stay session-only.
+  // Post likes (storeKey = the raw post id) and comment likes
+  // (storeKey = `comment:<id>`) both persist to the backend now.
   const isPostLike = !storeKey.startsWith("comment:");
+  const commentId = isPostLike ? null : storeKey.slice("comment:".length);
 
   const handleClick = async () => {
     if (busy) return;
@@ -57,11 +57,15 @@ export function LikeButton({
     // Optimistic toggle first (heart pop + count), then sync to the
     // backend; on failure revert the toggle so the UI never lies.
     toggle();
-    if (!isPostLike) return;
     setBusy(true);
     try {
-      if (!liked) await likePost(storeKey);
-      else await unlikePost(storeKey);
+      if (isPostLike) {
+        if (!liked) await likePost(storeKey);
+        else await unlikePost(storeKey);
+      } else if (commentId) {
+        if (!liked) await likeComment(commentId);
+        else await unlikeComment(commentId);
+      }
     } catch {
       toggle();
       toast("Couldn't save your like. Try again.");

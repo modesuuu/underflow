@@ -3,7 +3,8 @@
 import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import { useIsAuthenticated } from "@/features/auth/store";
-import { getSession } from "@/features/auth/session";
+import { getSession, getSessionUser, setSession } from "@/features/auth/session";
+import { apiFetch, type ApiEnvelope } from "@/lib/api-client";
 import { getDashboardPosts } from "../api";
 import { syncLikeCount } from "../like-store";
 import { setCommentCount } from "../comment-count-store";
@@ -58,6 +59,37 @@ export function LivePoller() {
   pathnameRef.current = pathname;
   const isAuthedRef = useRef(isAuthed);
   isAuthedRef.current = isAuthed;
+
+  // One-time backfill: sessions saved before AuthUser gained `photo`
+  // have no avatar. When logged in and the photo is missing, fetch
+  // the profile once and store the photo in the session so the
+  // comment avatars (and anything else reading CURRENT_USER.photo)
+  // show it. Best-effort — a failure never crashes the page, and
+  // the next login retries (the guard resets on logout).
+  const photoRefreshDone = useRef(false);
+  useEffect(() => {
+    if (!isAuthed) {
+      photoRefreshDone.current = false;
+      return;
+    }
+    if (photoRefreshDone.current) return;
+    if (getSessionUser()?.photo) {
+      photoRefreshDone.current = true;
+      return;
+    }
+    photoRefreshDone.current = true;
+    (async () => {
+      try {
+        const res = await apiFetch<ApiEnvelope<{ photo_profile_url?: string | null }>>("/api/profiles/me");
+        const url = res.data?.photo_profile_url;
+        const sess = getSession();
+        if (!url || !sess) return;
+        setSession({ ...sess, user: { ...sess.user, photo: url } });
+      } catch {
+        // Best-effort: the avatar keeps its initials fallback.
+      }
+    })();
+  }, [isAuthed]);
 
   useEffect(() => {
     if (!isAuthed) return;

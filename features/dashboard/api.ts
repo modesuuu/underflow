@@ -145,6 +145,8 @@ interface BackendComment {
   user?: { id: string; username: string; photo_profile_url?: string };
   username?: string;
   photo_profile_url?: string;
+  like_count?: number;
+  is_liked?: boolean;
 }
 
 function mapBackendComment(c: BackendComment): PostComment {
@@ -163,8 +165,8 @@ function mapBackendComment(c: BackendComment): PostComment {
     text: c.content,
     createdAt: c.created_at ?? c.createdAt,
     postedAgo: relativeAgo(c.created_at ?? c.createdAt),
-    likes: 0,
-    liked: false,
+    likes: c.like_count ?? 0,
+    liked: c.is_liked ?? false,
   };
 }
 
@@ -185,6 +187,25 @@ export async function likePost(postId: string): Promise<void> {
 /** DELETE /api/posts/:postId/unlike (auth required). */
 export async function unlikePost(postId: string): Promise<void> {
   await apiFetch("/api/posts/" + postId + "/unlike", { method: "DELETE" });
+}
+
+/**
+ * POST /api/comments/:commentId/like (auth required). A 400 means the
+ * like already exists — treat as success so a double-tap / retry
+ * cannot surface a spurious error (same as likePost).
+ */
+export async function likeComment(commentId: string): Promise<void> {
+  try {
+    await apiFetch("/api/comments/" + commentId + "/like", { method: "POST" });
+  } catch (err) {
+    if (err instanceof ApiError && err.status === 400) return;
+    throw err;
+  }
+}
+
+/** DELETE /api/comments/:commentId/unlike (auth required). */
+export async function unlikeComment(commentId: string): Promise<void> {
+  await apiFetch("/api/comments/" + commentId + "/unlike", { method: "DELETE" });
 }
 
 /** GET /api/posts/:postId/comments (auth required). Newest first. */

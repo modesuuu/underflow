@@ -55,4 +55,7 @@ export const CURRENT_USER = {
   get email(): string {
     return getSessionUser()?.email ?? "Username@gmail.com";
   },
+  get photo(): string | undefined {
+    return getSessionUser()?.photo;
+  },
 };

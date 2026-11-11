@@ -19,12 +19,14 @@ function toAuthUser(record: {
   id: string;
   username: string;
   email?: string | null;
+  photo_profile_url?: string | null;
 }): AuthUser {
   return {
     id: record.id,
     username: record.username,
     email: record.email ?? "",
     name: record.username,
+    photo: record.photo_profile_url ?? undefined,
     provider: "password",
   };
 }

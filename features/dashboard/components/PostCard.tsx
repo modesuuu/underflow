@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Avatar } from "@/components/ui/Avatar";
+import { CURRENT_USER } from "@/components/layout/nav";
+import { useSessionUser } from "@/features/auth/store";
 import { Icon } from "@/components/ui/Icon";
 import { formatCount } from "@/lib/format";
 import type { Post } from "../types";
@@ -24,6 +26,10 @@ const CARD_CHROME = "px-1 py-2";
 export function PostCard({ post }: { post: Post }) {
   const router = useRouter();
   const [reported, setReported] = useState(false);
+  // Subscribe to the session so this re-renders when the photo is
+  // backfilled (CURRENT_USER is a plain getter — it only re-reads
+  // on re-render, and this hook is what triggers it).
+  useSessionUser();
   // Live comment count: seeded from the server prop, then kept fresh
   // by the LivePoller (other people's comments tick it up).
   const liveCommentCount = useCommentCount(post.id, post.commentCount);
@@ -93,7 +99,7 @@ export function PostCard({ post }: { post: Post }) {
       {/* Comment entry — divided from the post, goes to the detail */}
       <div className="h-px w-full bg-placeholder" aria-hidden="true" />
       <div className="flex items-center gap-2.5">
-        <Avatar size={28} alt="You" />
+        <Avatar size={28} src={CURRENT_USER.photo} alt={CURRENT_USER.name} />
         <button
           type="button"
           onClick={openDetailAtComment}

@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Avatar } from "@/components/ui/Avatar";
 import { Icon } from "@/components/ui/Icon";
 import { CURRENT_USER } from "@/components/layout/nav";
+import { useSessionUser } from "@/features/auth/store";
 import type { PostComment } from "../types";
 import { CommentThread } from "./CommentThread";
 import { getComments, postComment } from "../api";
@@ -20,6 +21,9 @@ interface CommentSectionProps {
 export function CommentSection({ postId, initialComments, autoFocusComment = false }: CommentSectionProps) {
   const [comments, setComments] = useState<PostComment[]>(initialComments);
   const [draft, setDraft] = useState("");
+  // Subscribe to the session so this re-renders when the photo is
+  // backfilled (see PostCard for why CURRENT_USER alone is not enough).
+  useSessionUser();
   const [lastAddedId, setLastAddedId] = useState<string | null>(null);
   const [loadError, setLoadError] = useState(false);
 
@@ -100,7 +104,7 @@ export function CommentSection({ postId, initialComments, autoFocusComment = fal
     <>
       {/* Comment input bar */}
       <div className="flex items-center gap-3">
-        <Avatar size={28} alt={CURRENT_USER.name} />
+        <Avatar size={28} src={CURRENT_USER.photo} alt={CURRENT_USER.name} />
         <div ref={inputBarRef} className="flex flex-1 items-center justify-between rounded-full bg-bg py-2 pr-2 pl-4 transition-shadow focus-within:ring-2 focus-within:ring-accent">
           <input
             id="uf-comment-input"

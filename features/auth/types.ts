@@ -13,6 +13,8 @@ export interface AuthUser {
   email: string;
   /** Display name. Today this is the username; the profile edit flow owns the real name later. */
   name: string;
+  /** Profile photo URL (Cloudinary default or Google photo). Absent for sessions saved before this field existed. */
+  photo?: string;
   /** How this session was established. */
   provider: "password" | "google";
 }
