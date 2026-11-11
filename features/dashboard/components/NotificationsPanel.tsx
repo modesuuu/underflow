@@ -52,14 +52,10 @@ function NotificationRow({
   index: number;
   onPress: () => void;
 }) {
-  // Contract base row data: title + body. The rich actor/action/target
-  // extension fields (mock today, backend-confirmed later) take over the
-  // name + subline when present; `body` is the wire fallback.
+  // The subline is just the action ("kimi liked your post") — no quoted
+  // detail. `title` (the headline) is the fallback when there is no action.
   const name = item.actor?.name ?? item.title;
-  const subline =
-    item.action && item.target
-      ? `${item.action}: "${item.target}"`
-      : item.action ?? item.target ?? item.body;
+  const subline = item.action ?? item.title;
   const actorId = item.actor ? item.actor.id : null;
 
   return (

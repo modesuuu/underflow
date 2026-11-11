@@ -108,10 +108,7 @@ export function NotificationsBell() {
             <ul className="flex flex-col divide-y divide-placeholder">
               {items.slice(0, 5).map((item) => {
                 const name = item.actor?.name ?? item.title;
-                const subline =
-                  item.action && item.target
-                    ? `${item.action}: "${item.target}"`
-                    : item.action ?? item.target ?? item.body;
+                const subline = item.action ?? item.title;
                 return (
                   <li key={item.id}>
                     <button

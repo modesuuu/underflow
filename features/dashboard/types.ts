@@ -78,8 +78,7 @@ export type NotificationAction =
 export interface NotificationItem {
   id: string;
   title: string;
-  /** e.g. "Russel commented in SME Cashier App". */
-  body?: string;
+
   /** ISO 8601 timestamp (contract wire field, audit P1-A #5). */
   createdAt: string;
   /** Contract field: true when already seen (inverse of the old `unread`). */
@@ -95,9 +94,7 @@ export interface NotificationItem {
   // Frontend extension fields (see note above):
   actor?: PostAuthor;
   action?: NotificationAction;
-  /** Quoted detail shown after the action: the comment text for
-   *  comment/comment-like notifications, the post title for post likes. */
-  target?: string;
+
   /** Absolute-ish label, e.g. "Friday 3.12 PM". */
   timeLabel?: string;
   /** Relative label, e.g. "2 hours ago" (frontend-only display field). */

@@ -12,7 +12,6 @@ export interface BackendNotification {
   id: string;
   type: "like" | "comment" | "comment_like";
   title: string;
-  body: string | null;
   is_read: boolean | number;
   created_at: string;
   actor: {
@@ -21,7 +20,6 @@ export interface BackendNotification {
     photo: string | null;
   };
   postId: string | null;
-  postDescription: string | null;
   link: string | null;
 }
 
@@ -52,7 +50,6 @@ export function mapWireNotification(b: BackendNotification): NotificationItem {
   return {
     id: b.id,
     title: b.title,
-    body: b.body ?? undefined,
     createdAt: b.created_at,
     read: b.is_read === true || b.is_read === 1,
     actor,
@@ -62,12 +59,7 @@ export function mapWireNotification(b: BackendNotification): NotificationItem {
         : b.type === "comment_like"
           ? "liked your comment"
           : "commented on your post",
-    // Quoted detail after the action: the comment text for comment
-    // notifications (comment/comment_like), the post description for post likes.
-    target:
-      b.type === "like"
-        ? (b.postDescription ?? undefined)
-        : (b.body ?? undefined),
+
     link,
     href: link,
     agoLabel: relativeAgo(b.created_at),
