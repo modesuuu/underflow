@@ -248,22 +248,6 @@ export function CollabDetailContent({ project }: CollabDetailContentProps) {
           </p>
         </div>
 
-        {/* What you'll work on */}
-        {project.workItems.length > 0 && (
-          <div className="flex flex-col gap-2">
-            <h3 className="text-base font-medium text-ink">
-              What you&apos;ll work on
-            </h3>
-            <ul className="flex flex-col gap-1.5">
-              {project.workItems.map((item, i) => (
-                <li key={i} className="flex items-start gap-2 text-sm text-ink">
-                  <span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-ink" />
-                  {item}
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
       </div>
 
       {/* 3. Skills needed (heading on white, lime pills with icon + label) */}

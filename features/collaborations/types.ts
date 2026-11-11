@@ -50,8 +50,6 @@ export interface CollabProject {
   members: CollabMember[];
   skills: SkillTag[];
   description: string;
-  /** Bullet points under "What you'll work on" */
-  workItems: string[];
   /** Photo URLs (lime placeholders in mock) */
   photos: string[];
   owner: CollabMember;
@@ -60,9 +58,3 @@ export interface CollabProject {
 export type CollabFilterType = ProjectType | "all";
 
 export type CollabSortKey = "recommended" | "due" | "newest";
-
-/**
- * Status filter — includes "completed" (audit P1-A #7): completed projects
- * were previously unfilterable because the filter union lacked the value.
- */
-export type CollabStatusFilter = "all" | "open" | "in-progress" | "completed";

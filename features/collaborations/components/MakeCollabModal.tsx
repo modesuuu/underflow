@@ -4,9 +4,9 @@ import { useEffect, useRef, useState, type ChangeEvent, type FormEvent, type Key
 import clsx from "clsx";
 import { Icon } from "@/components/ui/Icon";
 import { toast } from "sonner";
-import { createCollabProject } from "../api";
+import { backendErrorMessage, createCollabProject } from "../api";
 import type { ProjectType } from "../types";
-import { createSkill, getSkills, type Skill } from "../skills-api";
+import { createSkill, deleteSkill, getSkills, type Skill } from "../skills-api";
 import { ApiError } from "@/lib/api-client";
 
 interface MakeCollabModalProps {
@@ -54,6 +54,12 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
   const [creatingSkill, setCreatingSkill] = useState(false);
   const [creatingTemplate, setCreatingTemplate] = useState<string | null>(null);
   const [skillError, setSkillError] = useState<string | null>(null);
+  // Skill delete (audit P2-10): the skill awaiting confirm, and the id
+  // currently being deleted (its chip stays disabled while in flight).
+  const [pendingDeleteSkill, setPendingDeleteSkill] = useState<Skill | null>(
+    null
+  );
+  const [deletingSkillId, setDeletingSkillId] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [roleCount, setRoleCount] = useState(2);
   const [submitting, setSubmitting] = useState(false);
@@ -323,6 +329,39 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
     }
   };
 
+  /**
+   * Delete the skill pending confirmation (DELETE /api/skills/:id). On
+   * success the chip disappears and the skill is deselected if it was
+   * selected. On failure (409 "Skill masih digunakan..." when a live
+   * collab still references it, 403, ...) the backend's message is
+   * shown inline via skillError and the chip stays.
+   */
+  const confirmDeleteSkill = async () => {
+    const skill = pendingDeleteSkill;
+    if (!skill || deletingSkillId) return;
+    setDeletingSkillId(skill.id);
+    setSkillError(null);
+    try {
+      await deleteSkill(skill.id);
+      setSkills((prev) => prev.filter((s) => s.id !== skill.id));
+      setSelectedSkills((prev) => {
+        const next = new Set(prev);
+        next.delete(skill.id);
+        return next;
+      });
+      setPendingDeleteSkill(null);
+    } catch (err) {
+      setSkillError(
+        err instanceof Error
+          ? backendErrorMessage(err)
+          : "Could not delete this skill."
+      );
+      setPendingDeleteSkill(null);
+    } finally {
+      setDeletingSkillId(null);
+    }
+  };
+
   const handleSkillKey = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
       e.preventDefault();
@@ -544,20 +583,39 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
               ) : (
                 <>
                   {skills.map((skill) => (
-                    <button
+                    <span
                       key={skill.id}
-                      type="button"
-                      onClick={() => toggleSkill(skill.id)}
                       className={
-                        "pressable flex cursor-pointer items-center gap-1 rounded-full px-3 py-1.5 text-xs font-medium text-ink " +
-                        "focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none " +
+                        "flex items-center rounded-full text-xs font-medium text-ink " +
                         (selectedSkills.has(skill.id)
                           ? "bg-accent"
                           : "border border-line")
                       }
                     >
-                      {skill.name}
-                    </button>
+                      <button
+                        type="button"
+                        onClick={() => toggleSkill(skill.id)}
+                        disabled={deletingSkillId === skill.id}
+                        className="pressable cursor-pointer rounded-full px-3 py-1.5 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none disabled:cursor-not-allowed"
+                      >
+                        {skill.name}
+                      </button>
+                      {skill.scope === "private" && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSkillError(null);
+                            setPendingDeleteSkill(skill);
+                          }}
+                          disabled={deletingSkillId === skill.id}
+                          aria-label={`Delete skill ${skill.name}`}
+                          title={`Delete skill ${skill.name}`}
+                          className="pressable mr-1 flex size-4 shrink-0 cursor-pointer items-center justify-center rounded-full text-muted transition-colors hover:text-ink focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40"
+                        >
+                          <Icon name="x" size={10} />
+                        </button>
+                      )}
+                    </span>
                   ))}
                   {/* Template role tags from the mockup — tap to create the skill and select it. */}
                   {visibleTemplateRoles.map((name) => (
@@ -578,6 +636,38 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
                 </>
               )}
             </div>
+            {/* Delete confirm (audit P2-10): tapping the x on an own
+                skill asks here first — no window.confirm anywhere else
+                in the app, so the modal keeps its inline style. */}
+            {pendingDeleteSkill && (
+              <div
+                role="alert"
+                className="flex flex-wrap items-center gap-2 rounded-lg bg-surface px-4 py-3"
+              >
+                <p className="min-w-0 flex-1 text-xs font-medium text-ink">
+                  Delete skill &ldquo;{pendingDeleteSkill.name}&rdquo;? It
+                  will be removed from your skills.
+                </p>
+                <button
+                  type="button"
+                  onClick={confirmDeleteSkill}
+                  disabled={deletingSkillId === pendingDeleteSkill.id}
+                  className="pressable cursor-pointer rounded-full bg-ink px-3 py-1.5 text-xs font-medium text-bg focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  {deletingSkillId === pendingDeleteSkill.id
+                    ? "Deleting…"
+                    : "Delete"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPendingDeleteSkill(null)}
+                  disabled={deletingSkillId === pendingDeleteSkill.id}
+                  className="pressable cursor-pointer rounded-full border border-line px-3 py-1.5 text-xs font-medium text-ink focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  Cancel
+                </button>
+              </div>
+            )}
             {/* Add a skill: creates a private skill (POST /api/skills) and selects it */}
             <div className="flex items-center gap-2 rounded-lg bg-surface px-4 py-3 focus-within:outline-none focus-within:ring-2 focus-within:ring-accent">
               <input

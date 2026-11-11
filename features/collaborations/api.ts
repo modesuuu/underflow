@@ -69,7 +69,6 @@ export function mapBackendCollab(b: BackendCollab): CollabProject {
       label: s.skill_name,
     })),
     description,
-    workItems: [],
     photos: [...(b.media_urls ?? [])],
     owner,
   };

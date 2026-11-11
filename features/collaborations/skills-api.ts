@@ -46,3 +46,19 @@ export async function createSkill(name: string): Promise<Skill> {
   });
   return mapBackendSkill(res.data);
 }
+
+/**
+ * DELETE /api/skills/:id (auth required) — deletes one of the current
+ * user's own PRIVATE skills (audit P2-10). System skills answer 403,
+ * another user's private skill answers 403, and a skill still
+ * referenced by a live collab answers 409 with the backend's message
+ * ("Skill masih digunakan pada N kolaborasi..."); the caller surfaces
+ * it inline (see MakeCollabModal). A skill referenced only by
+ * soft-deleted collabs deletes fine (Batch 1: references count live
+ * collabs only).
+ */
+export async function deleteSkill(id: string): Promise<void> {
+  await apiFetch<ApiEnvelope<unknown>>(`/api/skills/${id}`, {
+    method: "DELETE",
+  });
+}
