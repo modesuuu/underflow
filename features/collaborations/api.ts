@@ -13,6 +13,7 @@ interface BackendCollab {
   required_member: number;
   accepted_member_count: number;
   available_slots: number;
+  my_application?: { status: "pending" | "accepted" | "declined" } | null;
   skills_needed: { id: string; skill_name: string; scope: string }[];
   owner: { id: string; username: string; photo_profile_url: string };
   created_at?: string;
@@ -58,6 +59,7 @@ export function mapBackendCollab(b: BackendCollab): CollabProject {
     postedAt: b.created_at ?? "",
     postedAgo: relativeAgo(b.created_at),
     slotsFilled: b.accepted_member_count,
+    myApplication: b.my_application?.status ?? null,
     slotsTotal: b.required_member,
     members,
     skills: (b.skills_needed ?? []).map((s) => ({
@@ -108,6 +110,43 @@ export async function getCollabProject(
     }
   }
   return undefined;
+}
+
+/**
+ * Authed detail fetch (client-side only: apiFetch attaches the session
+ * token there, so the payload carries my_application + fresh seats).
+ * Used by the detail page to fill in the Apply CTA state after the
+ * server render. Returns undefined on 404, like getCollabProject.
+ */
+export async function getCollabProjectAuthed(
+  id: string
+): Promise<CollabProject | undefined> {
+  if (!isApiConfigured()) return undefined;
+  try {
+    const res = await apiFetch<ApiEnvelope<BackendCollab>>(
+      `/api/collab/${id}`
+    );
+    return mapBackendCollab(res.data);
+  } catch (err) {
+    if (err instanceof ApiError && err.status === 404) return undefined;
+    throw err;
+  }
+}
+
+/**
+ * Pull the backend's message out of an ApiError
+ * ("API request failed: 409 Collaboration is full (/api/...)") so
+ * toasts show the reason, not the wire wrapper.
+ */
+export function backendErrorMessage(err: unknown): string {
+  if (err instanceof ApiError) {
+    const m = /^API request failed: \d+(?: \([^)]*\))? (.*) \([^)]*\)$/.exec(
+      err.message
+    );
+    if (m) return m[1];
+    return err.message;
+  }
+  return err instanceof Error ? err.message : "Something went wrong";
 }
 
 /**
@@ -164,21 +203,87 @@ export async function createCollabProject(
   return { success: true };
 }
 
+export type ApplyResult = { success: boolean; alreadyApplied?: boolean };
+
+/**
+ * POST /api/collab/:id/apply (backend Batch 2). Sends the applicant's
+ * message with the application; the owner sees it in the applications
+ * list. A 409 "Already applied" is NOT an error for the UI - the
+ * application already exists, so the caller shows Pending. Any other
+ * 409 (e.g. collab full) or error is rethrown for a toast.
+ */
 export async function applyToCollab(
-  _projectId: string
-): Promise<{ success: boolean }> {
+  projectId: string,
+  message?: string
+): Promise<ApplyResult> {
   if (isApiConfigured()) {
     try {
       await apiFetch<ApiEnvelope<unknown>>(
-        `/api/collab/${_projectId}/apply`,
-        { method: "POST" }
+        `/api/collab/${projectId}/apply`,
+        {
+          method: "POST",
+          body: JSON.stringify({ message: message ?? "" }),
+        }
       );
     } catch (err) {
-      // TODO(backend): POST /api/collab/:id/apply does not exist yet.
-      // Fall back to the session-only application thread until it lands.
-      if (err instanceof ApiError && err.status === 404) return { success: true };
+      if (
+        err instanceof ApiError &&
+        err.status === 409 &&
+        err.message.includes("Already applied")
+      ) {
+        return { success: true, alreadyApplied: true };
+      }
       throw err;
     }
   }
   return { success: true };
+}
+
+/** One row of GET /api/collab/:id/applications (owner only). */
+export interface CollabApplication {
+  id: string;
+  user_id: string;
+  username: string;
+  photo_profile_url: string;
+  message: string | null;
+  status: "pending" | "accepted" | "declined";
+  created_at: string;
+}
+
+/** GET /api/collab/:id/applications - pending first, then decided. */
+export async function getCollabApplications(
+  projectId: string
+): Promise<CollabApplication[]> {
+  const res = await apiFetch<ApiEnvelope<CollabApplication[]>>(
+    `/api/collab/${projectId}/applications`
+  );
+  return res.data;
+}
+
+/** PUT .../applications/:id/accept - returns the fresh seat counts. */
+export async function acceptCollabApplication(
+  projectId: string,
+  applicationId: string
+): Promise<{ accepted_member_count: number; available_slots: number }> {
+  const res = await apiFetch<
+    ApiEnvelope<{
+      application: CollabApplication;
+      accepted_member_count: number;
+      available_slots: number;
+    }>
+  >(`/api/collab/${projectId}/applications/${applicationId}/accept`, {
+    method: "PUT",
+  });
+  return res.data;
+}
+
+/** PUT .../applications/:id/decline. */
+export async function declineCollabApplication(
+  projectId: string,
+  applicationId: string
+): Promise<void> {
+  await apiFetch<ApiEnvelope<unknown>>(
+    `/api/collab/${projectId}/applications/${applicationId}/decline`,
+    { method: "PUT" }
+  );
 }

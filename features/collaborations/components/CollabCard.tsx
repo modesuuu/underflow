@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Avatar } from "@/components/ui/Avatar";
-import { applyToCollab } from "../api";
+import { applyToCollab, backendErrorMessage } from "../api";
+import { useSessionUser } from "@/features/auth/store";
 import { startApplicationThread } from "@/features/inbox/store";
 import { formatDueDate } from "../sort";
 import type { CollabProject, ProjectStatus } from "../types";
@@ -35,43 +36,63 @@ function CardApply({ project }: { project: CollabProject }) {
   const router = useRouter();
   const [modalOpen, setModalOpen] = useState(false);
   const [sending, setSending] = useState(false);
+  const sessionUser = useSessionUser();
+  const isOwner =
+    sessionUser !== null && sessionUser.id === project.owner.id;
   const isFull = project.slotsFilled >= project.slotsTotal;
 
   const handleSend = async (message: string) => {
     setSending(true);
-    // TODO(backend): POST /api/collaborations/:id/apply
-    await applyToCollab(project.id);
-    startApplicationThread({
-      ownerPersonId: project.owner.id,
-      ownerName: project.owner.name,
-      projectId: project.id,
-      projectTitle: project.title,
-      projectMeta: project.subtitle.replace(/\.+$/, ""),
-      dueLabel: formatDueDate(project.dueDate),
-      slotsLabel: project.slotsFilled + " / " + project.slotsTotal,
-      messageText: message.trim(),
-    });
-    setSending(false);
-    setModalOpen(false);
-    toast.success("Application sent", {
-      description: "Your message is in " + project.owner.name + "'s inbox.",
-    });
-    router.push("/inbox");
+    try {
+      const result = await applyToCollab(project.id, message);
+      setModalOpen(false);
+      if (result.alreadyApplied) {
+        // 409 Already applied: the application already exists, so
+        // no second inbox thread - just go to the existing one.
+        toast("Application already sent", {
+          description:
+            "Your application to " + project.title + " is pending review.",
+        });
+        router.push("/inbox");
+        return;
+      }
+      startApplicationThread({
+        ownerPersonId: project.owner.id,
+        ownerName: project.owner.name,
+        projectId: project.id,
+        projectTitle: project.title,
+        projectMeta: project.subtitle.replace(/\.+$/, ""),
+        dueLabel: formatDueDate(project.dueDate),
+        slotsLabel: project.slotsFilled + " / " + project.slotsTotal,
+        messageText: message.trim(),
+      });
+      toast.success("Application sent", {
+        description: "Your message is in " + project.owner.name + "'s inbox.",
+      });
+      router.push("/inbox");
+    } catch (err) {
+      toast.error("Application failed", {
+        description: backendErrorMessage(err),
+      });
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
     <>
       <button
         type="button"
-        disabled={isFull}
+        disabled={isFull || isOwner}
+        title={isOwner ? "This is your project" : undefined}
         onClick={() => setModalOpen(true)}
         className={
-          isFull
+          isFull || isOwner
             ? "rounded-full bg-placeholder px-4 py-2 text-sm font-semibold text-muted"
             : "pressable cursor-pointer rounded-full bg-accent px-4 py-2 text-sm font-semibold text-on-accent transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
         }
       >
-        {isFull ? "Full" : "Apply"}
+        {isOwner ? "This is your project" : isFull ? "Full" : "Apply"}
       </button>
       {modalOpen && (
         <ApplyMessageModal

@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Icon } from "@/components/ui/Icon";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { startApplicationThread, withdrawApplication } from "@/features/inbox/store";
-import { applyToCollab } from "../api";
+import { applyToCollab, backendErrorMessage } from "../api";
 import { ApplyMessageModal } from "./ApplyMessageModal";
 
 type ApplyState = "default" | "pending" | "entered" | "declined" | "closed";
@@ -25,6 +25,8 @@ interface ApplyCtaProps {
   ownerPersonId: string | null;
   /** True when slotsFilled >= slotsTotal: grey + disabled button, no interaction. */
   slotsFull?: boolean;
+  /** True when the session user owns this project: no Apply, grey "This is your project" instead. */
+  isOwner?: boolean;
   /** Force a terminal state from server data once the backend exists. */
   initialState?: ApplyState;
 }
@@ -38,37 +40,59 @@ export function ApplyCta({
   ownerName,
   ownerPersonId,
   slotsFull = false,
+  isOwner = false,
   initialState = "default",
 }: ApplyCtaProps) {
   const router = useRouter();
   const [state, setState] = useState<ApplyState>(initialState);
+  // The detail page fills initialState in after its authed fetch
+  // (the server render has no token); follow it when it arrives.
+  useEffect(() => {
+    setState(initialState);
+  }, [initialState]);
   const [submitting, setSubmitting] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
 
   const handleApply = async (message: string) => {
     setSubmitting(true);
-    // TODO(backend): POST /api/collaborations/:id/apply — response should set the real status
-    await applyToCollab(projectId);
-    // Applying = messaging the owner: open the Inbox thread with the
-    // applicant's message and the outgoing application card, then go
-    // straight to it so the sender sees where the message landed.
-    startApplicationThread({
-      ownerPersonId,
-      ownerName,
-      projectId,
-      projectTitle,
-      projectMeta,
-      dueLabel,
-      slotsLabel,
-      messageText: message.trim(),
-    });
-    setSubmitting(false);
-    setState("pending");
-    setModalOpen(false);
-    toast.success("Application sent", {
-      description: `Your message is in ${ownerName}'s inbox.`,
-    });
-    router.push("/inbox");
+    try {
+      const result = await applyToCollab(projectId, message);
+      if (result.alreadyApplied) {
+        // 409 Already applied: the application already exists, so
+        // show Pending instead of erroring (no second inbox thread).
+        setState("pending");
+        setModalOpen(false);
+        toast("Application already sent", {
+          description: `Your application to ${projectTitle} is pending review.`,
+        });
+        return;
+      }
+      // Applying = messaging the owner: open the Inbox thread with the
+      // applicant's message and the outgoing application card, then go
+      // straight to it so the sender sees where the message landed.
+      startApplicationThread({
+        ownerPersonId,
+        ownerName,
+        projectId,
+        projectTitle,
+        projectMeta,
+        dueLabel,
+        slotsLabel,
+        messageText: message.trim(),
+      });
+      setState("pending");
+      setModalOpen(false);
+      toast.success("Application sent", {
+        description: `Your message is in ${ownerName}'s inbox.`,
+      });
+      router.push("/inbox");
+    } catch (err) {
+      toast.error("Application failed", {
+        description: backendErrorMessage(err),
+      });
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleCancel = () => {
@@ -80,7 +104,17 @@ export function ApplyCta({
 
   return (
     <div className="flex flex-col gap-3 items-center rounded-2xl bg-bg p-6">
-      {state === "default" &&
+      {isOwner && (
+        <button
+          type="button"
+          disabled
+          title="This is your project"
+          className="w-full cursor-not-allowed rounded-full bg-placeholder py-3 text-base font-medium text-muted"
+        >
+          This is your project
+        </button>
+      )}
+      {!isOwner && state === "default" &&
         (slotsFull ? (
           <button
             type="button"

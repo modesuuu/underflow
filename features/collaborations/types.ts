@@ -41,6 +41,12 @@ export interface CollabProject {
   postedAgo: string;
   slotsFilled: number;
   slotsTotal: number;
+  /**
+   * The session user's application to this collab, when the authed
+   * detail was fetched (the server render has no token, so it stays
+   * null there and is filled in client-side). Drives the Apply CTA.
+   */
+  myApplication?: "pending" | "accepted" | "declined" | null;
   members: CollabMember[];
   skills: SkillTag[];
   description: string;
