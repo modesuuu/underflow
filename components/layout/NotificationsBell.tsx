@@ -109,9 +109,9 @@ export function NotificationsBell() {
               {items.slice(0, 5).map((item) => {
                 const name = item.actor?.name ?? item.title;
                 const subline =
-                  item.action || item.target
-                    ? `${item.action ?? ""} ${item.target ?? ""}`.trim()
-                    : item.body;
+                  item.action && item.target
+                    ? `${item.action}: "${item.target}"`
+                    : item.action ?? item.target ?? item.body;
                 return (
                   <li key={item.id}>
                     <button

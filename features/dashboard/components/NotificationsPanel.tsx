@@ -57,9 +57,9 @@ function NotificationRow({
   // name + subline when present; `body` is the wire fallback.
   const name = item.actor?.name ?? item.title;
   const subline =
-    item.action || item.target
-      ? `${item.action ?? ""} ${item.target ?? ""}`.trim()
-      : item.body;
+    item.action && item.target
+      ? `${item.action}: "${item.target}"`
+      : item.action ?? item.target ?? item.body;
   const actorId = item.actor ? item.actor.id : null;
 
   return (

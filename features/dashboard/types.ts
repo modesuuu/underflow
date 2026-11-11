@@ -95,7 +95,8 @@ export interface NotificationItem {
   // Frontend extension fields (see note above):
   actor?: PostAuthor;
   action?: NotificationAction;
-  /** Project/workspace name the action points at. */
+  /** Quoted detail shown after the action: the comment text for
+   *  comment/comment-like notifications, the post title for post likes. */
   target?: string;
   /** Absolute-ish label, e.g. "Friday 3.12 PM". */
   timeLabel?: string;

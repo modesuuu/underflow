@@ -62,7 +62,12 @@ export function mapWireNotification(b: BackendNotification): NotificationItem {
         : b.type === "comment_like"
           ? "liked your comment"
           : "commented on your post",
-    target: b.postTitle ?? undefined,
+    // Quoted detail after the action: the comment text for comment
+    // notifications (comment/comment_like), the post title for post likes.
+    target:
+      b.type === "like"
+        ? (b.postTitle ?? undefined)
+        : (b.body ?? undefined),
     link,
     href: link,
     agoLabel: relativeAgo(b.created_at),
