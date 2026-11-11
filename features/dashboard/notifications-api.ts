@@ -10,7 +10,7 @@ import type { NotificationItem, PostAuthor } from "./types";
  */
 export interface BackendNotification {
   id: string;
-  type: "like" | "comment";
+  type: "like" | "comment" | "comment_like";
   title: string;
   body: string | null;
   is_read: boolean | number;
@@ -56,7 +56,12 @@ export function mapWireNotification(b: BackendNotification): NotificationItem {
     createdAt: b.created_at,
     read: b.is_read === true || b.is_read === 1,
     actor,
-    action: b.type === "like" ? "liked your post" : "commented on your post",
+    action:
+      b.type === "like"
+        ? "liked your post"
+        : b.type === "comment_like"
+          ? "liked your comment"
+          : "commented on your post",
     target: b.postTitle ?? undefined,
     link,
     href: link,

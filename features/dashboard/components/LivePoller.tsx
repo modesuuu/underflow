@@ -28,6 +28,7 @@ import {
  *  - "notification" -> the new notification is prepended to the store
  *  - "notification-removed" -> that notification disappears
  *  - "post-stats" -> the post's like/comment counts update in place
+ *  - "comment-stats" -> a comment's like count updates in place
  * Reconnects with exponential backoff (1s, 2s, 4s, 8s, 16s, max 30s).
  *
  * FALLBACK: while the socket is not connected (failed / reconnecting),
@@ -231,6 +232,18 @@ export function LivePoller() {
             if (typeof p.commentCount === "number")
               setCommentCount(p.postId, p.commentCount);
           }
+          return;
+        }
+        if (msg.type === "comment-stats") {
+          const p = (msg.payload ?? {}) as {
+            commentId?: unknown;
+            likes?: unknown;
+          };
+          // Comment likes share the like-store under the
+          // "comment:<id>" key (see LikeButton); syncLikeCount only
+          // overwrites the count and preserves the local `liked`.
+          if (typeof p.commentId === "string" && typeof p.likes === "number")
+            syncLikeCount("comment:" + p.commentId, p.likes);
           return;
         }
       };

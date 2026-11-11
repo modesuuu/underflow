@@ -59,6 +59,7 @@ export type NotificationAction =
   | "commented in"
   | "commented on your post"
   | "liked your post"
+  | "liked your comment"
   | "mentioned you in"
   | "invited you to";
 
