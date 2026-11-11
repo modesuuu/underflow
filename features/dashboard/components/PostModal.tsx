@@ -140,12 +140,6 @@ export function PostModal({ open, onClose }: PostModalProps) {
     setImageError(null);
   }
 
-  // The backend still requires a non-empty title, but it is never
-  // displayed — derive it from the description (first line, 80 chars).
-  function derivePostTitle(text: string): string {
-    return text.split("\n")[0].trim().slice(0, 80);
-  }
-
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
     if (!canPost) return;
@@ -159,7 +153,6 @@ export function PostModal({ open, onClose }: PostModalProps) {
           ? await Promise.all(images.map((item) => uploadImage(item.file)))
           : [];
       await createPost({
-        title: derivePostTitle(description.trim()),
         description: description.trim(),
         media_urls: uploaded.map((item) => item.url),
         media_public_ids: uploaded.map((item) => item.public_id),

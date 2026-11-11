@@ -21,7 +21,7 @@ export interface BackendNotification {
     photo: string | null;
   };
   postId: string | null;
-  postTitle: string | null;
+  postDescription: string | null;
   link: string | null;
 }
 
@@ -63,10 +63,10 @@ export function mapWireNotification(b: BackendNotification): NotificationItem {
           ? "liked your comment"
           : "commented on your post",
     // Quoted detail after the action: the comment text for comment
-    // notifications (comment/comment_like), the post title for post likes.
+    // notifications (comment/comment_like), the post description for post likes.
     target:
       b.type === "like"
-        ? (b.postTitle ?? undefined)
+        ? (b.postDescription ?? undefined)
         : (b.body ?? undefined),
     link,
     href: link,

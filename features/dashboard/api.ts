@@ -10,7 +10,6 @@ import type { Post, PostComment } from "./types";
 interface BackendPost {
   id: string;
   user_id: string | { id: string; username: string; photo_profile_url?: string };
-  title: string;
   description: string;
   portfolio_type: "link" | "images";
   external_url?: string | null;
@@ -59,7 +58,7 @@ function mapBackendPost(b: BackendPost): Post {
     photos: (b.media_urls ?? []).map((url, i) => ({
       id: b.id + "-photo-" + i,
       url,
-      alt: b.title,
+      alt: "Post photo",
     })),
     views: b.view_count ?? 0,
     likes: b.like_count ?? 0,
@@ -92,7 +91,6 @@ export async function getDashboardPosts(): Promise<Post[]> {
 }
 
 export interface CreatePostInput {
-  title: string;
   description: string;
   media_urls: string[];
   /** Cloudinary public_ids, parallel to media_urls (optional). */
@@ -108,7 +106,6 @@ export async function createPost(input: CreatePostInput): Promise<Post> {
   const res = await apiFetch<ApiEnvelope<BackendPost>>("/api/posts", {
     method: "POST",
     body: JSON.stringify({
-      title: input.title,
       description: input.description,
       portfolio_type: input.media_urls.length > 0 ? "images" : "link",
       media_urls: input.media_urls,
