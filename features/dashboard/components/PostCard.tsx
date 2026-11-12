@@ -13,6 +13,7 @@ import { PhotoGrid } from "@/components/ui/PhotoGrid";
 import { LikeButton } from "./LikeButton";
 import { useCommentCount } from "../comment-count-store";
 import { PostOptionsMenu } from "./PostOptionsMenu";
+import { PostModal } from "./PostModal";
 import { ConfirmDialog } from "@/features/inbox/components/ConfirmDialog";
 import { deletePost } from "../api";
 import { toast } from "sonner";
@@ -31,6 +32,8 @@ export function PostCard({ post }: { post: Post }) {
   const [reported, setReported] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [deleted, setDeleted] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editedText, setEditedText] = useState<string | null>(null);
   // Subscribe to the session so this re-renders when the photo is
   // backfilled (CURRENT_USER is a plain getter — it only re-reads
   // on re-render, and this hook is what triggers it).
@@ -84,12 +87,15 @@ export function PostCard({ post }: { post: Post }) {
         </Link>
         <PostOptionsMenu
           {...(isOwner
-            ? { onDelete: () => setConfirmingDelete(true) }
+            ? {
+                onEdit: () => setEditOpen(true),
+                onDelete: () => setConfirmingDelete(true),
+              }
             : { onReport: () => setReported(true) })}
         />
       </div>
 
-      <p className="whitespace-pre-wrap text-[15px] leading-relaxed">{post.text}</p>
+      <p className="whitespace-pre-wrap text-[15px] leading-relaxed">{editedText ?? post.text}</p>
 
       {/* Photo click -> post detail (replaces the old lightbox) */}
       <PhotoGrid photos={post.photos} onPhotoClick={openDetail} />
@@ -143,6 +149,12 @@ export function PostCard({ post }: { post: Post }) {
           onCancel={() => setConfirmingDelete(false)}
         />
       )}
+      <PostModal
+        open={editOpen}
+        onClose={() => setEditOpen(false)}
+        editing={post}
+        onUpdated={(text) => setEditedText(text)}
+      />
     </article>
   );
 }

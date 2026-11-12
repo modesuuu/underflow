@@ -12,9 +12,11 @@ import { Icon } from "@/components/ui/Icon";
  */
 export function PostOptionsMenu({
   onReport,
+  onEdit,
   onDelete,
 }: {
   onReport?: () => void;
+  onEdit?: () => void;
   onDelete?: () => void;
 }) {
   const [open, setOpen] = useState(false);
@@ -68,6 +70,20 @@ export function PostOptionsMenu({
             >
               <Icon name="flag" size={18} />
               Report post
+            </button>
+          )}
+          {onEdit && (
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => {
+                setOpen(false);
+                onEdit();
+              }}
+              className="flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-medium text-ink transition-colors hover:bg-bg"
+            >
+              <Icon name="edit" size={18} />
+              Edit post
             </button>
           )}
           {onDelete && (

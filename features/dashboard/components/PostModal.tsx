@@ -8,7 +8,8 @@ import clsx from "clsx";
 import { toast } from "sonner";
 import { Icon } from "@/components/ui/Icon";
 import { ApiError } from "@/lib/api-client";
-import { createPost, uploadImage } from "../api";
+import { createPost, updatePost, uploadImage } from "../api";
+import type { Post } from "../types";
 
 /** A picked image file + its local preview URL (URL.createObjectURL). */
 interface ImageDraft {
@@ -36,6 +37,10 @@ function friendlyMessage(err: unknown): string {
 interface PostModalProps {
   open: boolean;
   onClose: () => void;
+  /** When set, the modal edits this post (description only). */
+  editing?: Post | null;
+  /** Edit mode only: fired with the saved description before close. */
+  onUpdated?: (description: string) => void;
 }
 
 /**
@@ -46,7 +51,7 @@ interface PostModalProps {
  * before the post is created. On success the feed refreshes via
  * router.refresh() and the new post appears at the top.
  */
-export function PostModal({ open, onClose }: PostModalProps) {
+export function PostModal({ open, onClose, editing, onUpdated }: PostModalProps) {
   const router = useRouter();
   const [description, setDescription] = useState("");
   const [images, setImages] = useState<ImageDraft[]>([]);
@@ -61,6 +66,17 @@ export function PostModal({ open, onClose }: PostModalProps) {
   useEffect(() => {
     if (open) setClosing(false);
   }, [open]);
+
+  // Edit mode: every open starts from the post's current description,
+  // so an abandoned edit never leaks into the next session.
+  useEffect(() => {
+    if (!open || !editing) return;
+    setDescription(editing.text);
+    setImages([]);
+    setImageError(null);
+    setError(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open ]);
 
   useEffect(() => {
     if (!closing) return;
@@ -146,6 +162,16 @@ export function PostModal({ open, onClose }: PostModalProps) {
     setSubmitting(true);
     setError(null);
     try {
+      if (editing) {
+        // Description only — no media fields are sent, so the post's
+        // photos stay exactly as they are.
+        await updatePost(editing.id, { description: description.trim() });
+        toast.success("Post updated");
+        onUpdated?.(description.trim());
+        setSubmitting(false);
+        requestClose();
+        return;
+      }
       // Upload the picked files first; only when every upload
       // succeeded is the post created with their URLs.
       const uploaded =
@@ -193,10 +219,12 @@ export function PostModal({ open, onClose }: PostModalProps) {
         <div className="mb-6 flex items-start justify-between">
           <div>
             <h2 id="post-something-title" className="text-2xl font-medium">
-              Post Something
+              {editing ? "Edit Post" : "Post Something"}
             </h2>
             <p className="mt-1 text-xs font-medium text-muted">
-              Share what you are working on with the community.
+              {editing
+                ? "Only the description can be changed."
+                : "Share what you are working on with the community."}
             </p>
           </div>
           <button
@@ -226,27 +254,30 @@ export function PostModal({ open, onClose }: PostModalProps) {
             />
           </div>
 
-          {/* Photo attachments */}
-          <div className="flex items-center gap-4">
-            <input
-              ref={imageInputRef}
-              type="file"
-              accept="image/*"
-              multiple
-              aria-label="Choose images"
-              onChange={handleImageChange}
-              className="sr-only"
-            />
-            <button
-              type="button"
-              onClick={() => imageInputRef.current?.click()}
-              disabled={images.length >= MAX_IMAGES}
-              className="pressable flex cursor-pointer items-center gap-1 text-base font-medium text-muted transition-colors hover:text-ink focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              <Icon name="image-add" size={20} />
-              Photo
-            </button>
-          </div>
+          {/* Photo attachments (create only — editing changes the
+              description and nothing else) */}
+          {!editing && (
+            <div className="flex items-center gap-4">
+              <input
+                ref={imageInputRef}
+                type="file"
+                accept="image/*"
+                multiple
+                aria-label="Choose images"
+                onChange={handleImageChange}
+                className="sr-only"
+              />
+              <button
+                type="button"
+                onClick={() => imageInputRef.current?.click()}
+                disabled={images.length >= MAX_IMAGES}
+                className="pressable flex cursor-pointer items-center gap-1 text-base font-medium text-muted transition-colors hover:text-ink focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                <Icon name="image-add" size={20} />
+                Photo
+              </button>
+            </div>
+          )}
           {imageError && (
             <p className="text-xs font-medium text-badge" role="alert">
               {imageError}
@@ -287,8 +318,14 @@ export function PostModal({ open, onClose }: PostModalProps) {
             disabled={!canPost}
             className="pressable flex w-full cursor-pointer items-center justify-center gap-2 rounded-md bg-accent py-3 text-base font-medium text-on-accent transition-opacity hover:opacity-85 disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
           >
-            <Icon name="send" size={20} />
-            {submitting ? "Posting…" : "Post"}
+            <Icon name={editing ? "check" : "send"} size={20} />
+            {submitting
+              ? editing
+                ? "Saving…"
+                : "Posting…"
+              : editing
+                ? "Save changes"
+                : "Post"}
           </button>
         </form>
       </div>

@@ -186,6 +186,21 @@ export async function unlikePost(postId: string): Promise<void> {
   await apiFetch("/api/posts/" + postId + "/unlike", { method: "DELETE" });
 }
 
+/**
+ * PUT /api/posts/:postId (auth required, owner only). Only the
+ * description is edited — no media fields are sent, so the backend
+ * leaves the post's photos untouched.
+ */
+export async function updatePost(
+  postId: string,
+  input: { description: string }
+): Promise<void> {
+  await apiFetch("/api/posts/" + postId, {
+    method: "PUT",
+    body: JSON.stringify({ description: input.description }),
+  });
+}
+
 /** DELETE /api/posts/:postId (auth required, owner only; soft delete). */
 export async function deletePost(postId: string): Promise<void> {
   await apiFetch("/api/posts/" + postId, { method: "DELETE" });
