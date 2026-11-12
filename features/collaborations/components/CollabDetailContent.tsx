@@ -9,6 +9,7 @@ import { PhotoGrid } from "@/components/ui/PhotoGrid";
 import { PhotoLightbox } from "@/components/ui/PhotoLightbox";
 import { ApplyCta } from "./ApplyCta";
 import { formatDueDate } from "../sort";
+import { STATUS_ICONS } from "../status";
 import type { CollabProject } from "../types";
 import {
   acceptCollabApplication,
@@ -153,7 +154,7 @@ export function CollabDetailContent({ project }: CollabDetailContentProps) {
         {/* Status pill */}
         <div>
           <span className="inline-flex items-center gap-1 rounded-full bg-surface px-3 py-1 text-xs font-medium text-ink">
-            <Icon name="joystick" size={14} />
+            <Icon name={STATUS_ICONS[project.status]} size={14} />
             {project.status}
           </span>
         </div>
