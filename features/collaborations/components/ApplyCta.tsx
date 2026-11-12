@@ -156,19 +156,19 @@ export function ApplyCta({
       )}
 
       {state === "entered" && (
-        <div className="rounded-full bg-accent py-3 text-center text-base font-medium text-on-accent">
+        <div className="flex w-full items-center justify-center rounded-full bg-accent px-6 py-3 text-center text-base font-medium text-on-accent">
           You have entered this project
         </div>
       )}
 
       {state === "declined" && (
-        <div className="rounded-full bg-placeholder py-3 text-center text-base font-medium text-muted">
+        <div className="flex w-full items-center justify-center rounded-full bg-placeholder px-6 py-3 text-center text-base font-medium text-muted">
           Your application was declined by the owner
         </div>
       )}
 
       {state === "closed" && (
-        <div className="rounded-full bg-bg py-3 text-center text-base font-medium text-muted">
+        <div className="flex w-full items-center justify-center rounded-full bg-bg px-6 py-3 text-center text-base font-medium text-muted">
           This project is closed
         </div>
       )}
