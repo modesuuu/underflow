@@ -116,20 +116,58 @@ export async function createPost(input: CreatePostInput): Promise<Post> {
 }
 
 /**
- * POST /api/upload (auth required). Uploads ONE image file to Cloudinary
- * and returns its URL + public_id. The apiFetch FormData branch skips the
- * JSON Content-Type so the browser sets the multipart boundary itself.
+ * Direct upload to Cloudinary (sejak 2026-11-12). The file no longer
+ * passes through the backend: (1) ask the backend for an upload
+ * signature (POST /api/upload/signature, auth required, rate-limited,
+ * recorded server-side), (2) upload the file straight to Cloudinary
+ * with that signature, (3) return the same { url, public_id } shape
+ * as before so callers (PostModal, collaborations) do not change.
+ * The Cloudinary api_secret never leaves the server; the signature
+ * locks the target folder and carries the uploader's tag.
  */
 export async function uploadImage(file: File): Promise<{
   url: string;
   public_id: string;
 }> {
+  const sigRes = await apiFetch<
+    ApiEnvelope<{
+      cloud_name: string;
+      api_key: string;
+      timestamp: number;
+      signature: string;
+      folder: string;
+      tags: string;
+    }>
+  >("/api/upload/signature", { method: "POST", body: JSON.stringify({}) });
+  const s = sigRes.data;
+
   const form = new FormData();
   form.append("file", file);
-  const res = await apiFetch<
-    ApiEnvelope<{ url: string; public_id: string }>
-  >("/api/upload", { method: "POST", body: form });
-  return res.data;
+  form.append("api_key", s.api_key);
+  form.append("timestamp", String(s.timestamp));
+  form.append("signature", s.signature);
+  form.append("folder", s.folder);
+  form.append("tags", s.tags);
+
+  const res = await fetch(
+    `https://api.cloudinary.com/v1_1/${s.cloud_name}/image/upload`,
+    { method: "POST", body: form },
+  );
+  const data = (await res.json().catch(() => null)) as {
+    secure_url?: string;
+    public_id?: string;
+    error?: { message?: string };
+  } | null;
+
+  if (!res.ok || !data?.secure_url || !data?.public_id) {
+    throw new Error(
+      data?.error?.message
+        ? `Gagal mengunggah gambar: ${data.error.message}`
+        : "Gagal mengunggah gambar. Coba lagi.",
+    );
+  }
+
+  return { url: data.secure_url, public_id: data.public_id };
 }
 
 /** Wire shape of GET/POST /api/posts/:postId/comments (CommentModel). */
