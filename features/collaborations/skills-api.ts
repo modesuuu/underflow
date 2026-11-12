@@ -48,6 +48,34 @@ export async function createSkill(name: string): Promise<Skill> {
 }
 
 /**
+ * Client mirror of the backend SkillGuard format rules
+ * (utils/SkillGuard.php) so an invalid name is rejected inline
+ * before the round trip, with the same message. The blocklist
+ * itself lives only on the server; its rejection comes back as
+ * the ApiError message and is shown the same way.
+ */
+export function validateSkillName(name: string): string | null {
+  const FORMAT =
+    "Nama skill tidak valid. Pakai 2-30 karakter: huruf, angka, spasi, dan simbol + # . / - saja.";
+  const LINK =
+    "Nama skill tidak boleh berisi alamat web atau nomor telepon.";
+  if (name.length < 2 || name.length > 30) return FORMAT;
+  if (!/^[\p{L}\p{N}][\p{L}\p{N} +#./-]*$/u.test(name)) return FORMAT;
+  if (!/\p{L}/u.test(name)) return FORMAT;
+  if (
+    /(www\.|https?|\.(com|net|org|info|biz|io|co|id|xyz|site|online|top|vip|pro|bet|win|click|link)\b)/i.test(
+      name,
+    )
+  )
+    return LINK;
+  const digits = (name.match(/\d/g) ?? []).length;
+  if (/\d{8,}/.test(name) || (digits >= 6 && digits / name.length > 0.5))
+    return LINK;
+  if (/(.)\1{3,}/u.test(name.toLowerCase())) return FORMAT;
+  return null;
+}
+
+/**
  * DELETE /api/skills/:id (auth required) — deletes one of the current
  * user's own PRIVATE skills (audit P2-10). System skills answer 403,
  * another user's private skill answers 403, and a skill still

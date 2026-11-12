@@ -16,6 +16,7 @@ import {
   createSkill,
   deleteSkill,
   getSkills,
+  validateSkillName,
   SYSTEM_SKILL_ICONS,
   SYSTEM_SKILL_ORDER,
   type Skill,
@@ -331,6 +332,12 @@ export function MakeCollabModal({
     if (!name || creatingSkill) return;
     setCreatingSkill(true);
     setSkillError(null);
+    const invalid = validateSkillName(name);
+    if (invalid) {
+      setSkillError(invalid);
+      setCreatingSkill(false);
+      return;
+    }
     try {
       await createAndSelectSkill(name);
       setSkillDraft("");
