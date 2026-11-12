@@ -60,7 +60,7 @@ export function KanbanCard({
     <Link
       href={`/my-collaborations/${project.myStatus}/${project.id}`}
       className={clsx(
-        "card-stagger group relative flex cursor-pointer flex-col gap-3 rounded-liquid p-4 transition-shadow duration-200 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none hover:shadow-[0_1px_2px_rgba(var(--uf-shadow-rgb),0.06),0_12px_28px_-12px_rgba(var(--uf-shadow-rgb),0.20)]",
+        "card-stagger group relative flex cursor-pointer flex-col gap-3 rounded-lg p-4 transition-shadow duration-200 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none hover:shadow-[0_1px_2px_rgba(var(--uf-shadow-rgb),0.06),0_12px_28px_-12px_rgba(var(--uf-shadow-rgb),0.20)]",
         pastel
       )}
       style={{ "--stagger-i": String(Math.min(index, 11)) } as CSSProperties}

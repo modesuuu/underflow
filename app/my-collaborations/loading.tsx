@@ -31,7 +31,7 @@ export default function MyCollaborationsLoading() {
                 <div className="h-5 w-7 rounded-full bg-placeholder" />
               </div>
               {Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="h-[168px] rounded-liquid bg-placeholder/50" />
+                <div key={i} className="h-[168px] rounded-lg bg-placeholder/50" />
               ))}
             </div>
           ))}

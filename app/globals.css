@@ -47,14 +47,6 @@
   display: none;
 }
 
-/* Liquid card radius for the My Collaborations board (user order
-   2026-11-09): 36px, the reference's soft liquid corner. A plain
-   rule, not a Tailwind utility, so it is always in the served CSS
-   — Tailwind's dev scanner once missed the arbitrary
-   rounded-[28px] utility and the cards rendered square. */
-.rounded-liquid {
-  border-radius: var(--uf-radius-liquid);
-}
 
 /* Concave top-right corner for the My Collaborations board card
    (user order 2026-11-10, shape diagram): the corner scoops
