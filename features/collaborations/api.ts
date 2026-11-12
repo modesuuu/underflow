@@ -20,6 +20,9 @@ interface BackendCollab {
   my_application?: { status: "pending" | "accepted" | "declined" } | null;
   skills_needed: { id: string; skill_name: string; scope: string }[];
   owner: { id: string; username: string; photo_profile_url: string };
+  /** Accepted members (owner included), join order. Sent by the
+   *  detail + my-collaborations payloads; absent on the public list. */
+  members?: { id: string; username: string; photo_profile_url?: string }[];
   created_at?: string;
 }
 
@@ -43,7 +46,18 @@ export function mapBackendCollab(b: BackendCollab): CollabProject {
     isOwner: true,
   };
   const openSlots = Math.max(0, b.required_member - b.accepted_member_count);
-  const members: CollabMember[] = [owner];
+  // Real accepted members from the payload: everyone but the owner,
+  // in join order. Payloads without the list fall back to owner +
+  // open slots only (the pre-members behavior).
+  const accepted: CollabMember[] = (b.members ?? [])
+    .filter((m) => m.id !== b.owner.id)
+    .map((m) => ({
+      id: m.id,
+      name: m.username,
+      role: "Member",
+      avatarUrl: m.photo_profile_url || undefined,
+    }));
+  const members: CollabMember[] = [owner, ...accepted];
   for (let i = 0; i < openSlots; i++) {
     members.push({
       id: "open-" + b.id + "-" + i,

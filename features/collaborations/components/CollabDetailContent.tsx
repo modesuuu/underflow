@@ -14,13 +14,9 @@ import { formatDueDate } from "../sort";
 import { STATUS_ICONS } from "../status";
 import type { CollabProject } from "../types";
 import {
-  acceptCollabApplication,
   backendErrorMessage,
-  declineCollabApplication,
-  getCollabApplications,
   deleteCollabProject,
   getCollabProjectAuthed,
-  type CollabApplication,
 } from "../api";
 import { toast } from "sonner";
 import { startDirectThread } from "@/features/inbox/store";
@@ -42,7 +38,6 @@ interface CollabDetailContentProps {
 
 export function CollabDetailContent({ project }: CollabDetailContentProps) {
   const [liveProject, setLiveProject] = useState<CollabProject | null>(null);
-  const [applications, setApplications] = useState<CollabApplication[] | null>(null);
 
   // Seat counts + application state come from the API, never computed
   // client-side; the authed refresh below overwrites the server values.
@@ -97,63 +92,12 @@ export function CollabDetailContent({ project }: CollabDetailContentProps) {
     };
   }, [sessionUser, project.id]);
 
-  // Owner applications (owner only): fetched when the viewer is the owner.
-  useEffect(() => {
-    if (!isOwnProject) return;
-    let cancelled = false;
-    void getCollabApplications(project.id)
-      .then((rows) => {
-        if (!cancelled) setApplications(rows);
-      })
-      .catch(() => undefined);
-    return () => {
-      cancelled = true;
-    };
-  }, [isOwnProject, project.id]);
-
   const refreshLive = async () => {
     try {
       const fresh = await getCollabProjectAuthed(project.id);
       if (fresh) setLiveProject(fresh);
     } catch {
       // Backend unreachable: keep the server-rendered project.
-    }
-  };
-
-  const refreshApplications = async () => {
-    try {
-      setApplications(await getCollabApplications(project.id));
-    } catch {
-      // Keep the previous list on failure.
-    }
-  };
-
-  const handleAccept = async (applicationId: string) => {
-    try {
-      await acceptCollabApplication(project.id, applicationId);
-      toast.success("Application accepted", {
-        description: "The applicant is now a member.",
-      });
-      await refreshApplications();
-      await refreshLive();
-    } catch (err) {
-      toast.error("Could not accept", {
-        description: backendErrorMessage(err),
-      });
-    }
-  };
-
-  const handleDecline = async (applicationId: string) => {
-    try {
-      await declineCollabApplication(project.id, applicationId);
-      toast("Application declined", {
-        description: "The applicant can apply again.",
-      });
-      await refreshApplications();
-    } catch (err) {
-      toast.error("Could not decline", {
-        description: backendErrorMessage(err),
-      });
     }
   };
 
@@ -320,7 +264,7 @@ export function CollabDetailContent({ project }: CollabDetailContentProps) {
           </div>
         </div>
         <div className="flex gap-4">
-          {project.members.map((member) =>
+          {(liveProject ?? project).members.map((member) =>
             member.isOpenSlot ? (
               /* Open slot: dark-gray circle with white "+" icon */
               <div key={member.id} className="flex items-center gap-2">
@@ -351,80 +295,6 @@ export function CollabDetailContent({ project }: CollabDetailContentProps) {
         </div>
       </div>
 
-      {/* 4b. Applications (owner only): pending first, Accept / Decline. */}
-      {isOwnProject && (
-        <div className="flex flex-col gap-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-medium text-ink">Applications</h2>
-            <span className="text-sm font-medium text-muted">
-              {applications === null
-                ? ""
-                : `${applications.filter((a) => a.status === "pending").length} pending`}
-            </span>
-          </div>
-          {applications === null ? (
-            <p className="text-sm text-muted">Loading applications…</p>
-          ) : applications.length === 0 ? (
-            <p className="text-sm text-muted">No applications yet.</p>
-          ) : (
-            <ul className="flex flex-col gap-3">
-              {applications.map((app) => (
-                <li
-                  key={app.id}
-                  className="flex items-center justify-between gap-3 rounded-2xl bg-bg p-4"
-                >
-                  <Link
-                    href={`/profile/${app.user_id}`}
-                    className="group flex min-w-0 items-center gap-3"
-                    aria-label={`View ${app.username}'s profile`}
-                  >
-                    <Avatar
-                      size={32}
-                      src={app.photo_profile_url || undefined}
-                      alt={app.username}
-                    />
-                    <div className="flex min-w-0 flex-col">
-                      <span className="truncate text-base font-medium text-ink group-hover:underline">
-                        {app.username}
-                      </span>
-                      {app.message && (
-                        <span className="line-clamp-1 text-2xs text-muted">
-                          {app.message}
-                        </span>
-                      )}
-                      <span className="text-2xs text-muted">
-                        {app.status === "pending"
-                          ? "Pending review"
-                          : app.status === "accepted"
-                            ? "Accepted"
-                            : "Declined"}
-                      </span>
-                    </div>
-                  </Link>
-                  {app.status === "pending" && (
-                    <div className="flex shrink-0 gap-2">
-                      <button
-                        type="button"
-                        onClick={() => void handleAccept(app.id)}
-                        className="cursor-pointer rounded-full bg-accent px-4 py-2 text-xs font-medium text-on-accent transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
-                      >
-                        Accept
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => void handleDecline(app.id)}
-                        className="cursor-pointer rounded-full bg-placeholder px-4 py-2 text-xs font-medium text-muted transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
-                      >
-                        Decline
-                      </button>
-                    </div>
-                  )}
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      )}
       {/* 5. Apply CTA block (at the BOTTOM) */}
       <ApplyCta
         projectId={project.id}
