@@ -1,6 +1,8 @@
 "use client";
 
-import { useState, type InputHTMLAttributes } from "react";
+import { useState, type ChangeEvent, type InputHTMLAttributes } from "react";
+import { TextInput } from "@astryxdesign/core/TextInput";
+import { IconButton } from "@astryxdesign/core/IconButton";
 import { Icon } from "@/components/ui/Icon";
 
 interface AuthFieldProps
@@ -10,50 +12,71 @@ interface AuthFieldProps
   hint?: string;
 }
 
-/** Label + input + inline error, in the app's input grammar (bg-bg well, hairline border, accent ring). The password eye is a real toggle, not decoration. */
-export function AuthField({ label, error, hint, id, type, ...rest }: AuthFieldProps) {
+/**
+ * Label + input + inline error, rebuilt on Astryx's TextInput
+ * (redesign 2026-11-13): the field, its label, focus ring and
+ * error status are all Astryx's now. The external API is the
+ * app's original one (event-based onChange) so the auth forms
+ * did not have to change; the adapter lives here. The password
+ * eye stays a real toggle: Astryx has no trailing slot inside
+ * TextInput, so the toggle rides beside the field as an Astryx
+ * ghost IconButton, aligned to the input box under the label.
+ */
+export function AuthField({ label, error, hint, id, type, onChange, value, ...rest }: AuthFieldProps) {
   const [showPassword, setShowPassword] = useState(false);
   const isPassword = type === "password";
   const inputType = isPassword && showPassword ? "text" : type;
-  const describedBy = error ? `${id}-error` : hint ? `${id}-hint` : undefined;
+
+  // Astryx reports the value directly; the forms consume a
+  // change event, so adapt at this boundary.
+  const handleChange = (value: string) => {
+    if (!onChange) return;
+    const target = { value } as EventTarget & HTMLInputElement;
+    onChange({
+      target,
+      currentTarget: target,
+    } as ChangeEvent<HTMLInputElement>);
+  };
+
+  const astryxType: "text" | "password" | "email" | "search" | "tel" | "url" =
+    inputType === "email"
+      ? "email"
+      : inputType === "search"
+        ? "search"
+        : inputType === "tel"
+          ? "tel"
+          : inputType === "url"
+            ? "url"
+            : inputType === "password"
+              ? "password"
+              : "text";
+
+  const field = (
+    <TextInput
+      id={id}
+      label={label}
+      type={astryxType}
+      description={error ? undefined : hint}
+      status={error ? { type: "error", message: error } : undefined}
+      value={typeof value === "string" ? value : ""}
+      onChange={handleChange}
+      {...(rest as Record<string, unknown>)}
+    />
+  );
+
+  if (!isPassword) return field;
+
   return (
-    <div className="flex flex-col gap-1.5">
-      <label htmlFor={id} className="text-sm font-medium text-ink">
-        {label}
-      </label>
-      <div className="relative">
-        <input
-          id={id}
-          type={inputType}
-          aria-invalid={!!error}
-          aria-describedby={describedBy}
-          {...rest}
-          className={
-            "h-12 w-full rounded-lg border border-line bg-bg px-4 text-sm text-ink placeholder:text-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent" +
-            (isPassword ? " pr-12" : "")
-          }
-        />
-        {isPassword && (
-          <button
-            type="button"
-            onClick={() => setShowPassword((v) => !v)}
-            aria-label={showPassword ? "Hide password" : "Show password"}
-            aria-pressed={showPassword}
-            className="absolute top-1/2 right-3 flex size-8 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full text-muted transition-colors hover:text-ink"
-          >
-            <Icon name={showPassword ? "hide" : "show"} size={20} />
-          </button>
-        )}
-      </div>
-      {error ? (
-        <p id={`${id}-error`} role="alert" className="text-xs text-badge">
-          {error}
-        </p>
-      ) : hint ? (
-        <p id={`${id}-hint`} className="text-xs text-muted">
-          {hint}
-        </p>
-      ) : null}
+    <div className="flex items-start gap-2">
+      <div className="min-w-0 flex-1">{field}</div>
+      <IconButton
+        label={showPassword ? "Hide password" : "Show password"}
+        variant="ghost"
+        icon={<Icon name={showPassword ? "hide" : "show"} size={20} />}
+        onClick={() => setShowPassword((v) => !v)}
+        aria-pressed={showPassword}
+        className="mt-6 shrink-0"
+      />
     </div>
   );
 }

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { Button } from "@astryxdesign/core/Button";
 import { signInWithGoogle } from "../api";
 
 /** The Google "G" mark (official four-color mark, drawn as SVG). */
@@ -55,16 +56,15 @@ export function GoogleButton({ next, disabled }: { next: string; disabled?: bool
   };
 
   return (
-    <div className="flex flex-col gap-1.5">
-      <button
-        type="button"
-        onClick={run}
-        disabled={busy || disabled}
-        className="flex h-12 w-full cursor-pointer items-center justify-center gap-2.5 rounded-lg border border-line bg-surface text-sm font-medium text-ink transition-colors hover:bg-bg disabled:cursor-not-allowed disabled:opacity-50"
-      >
-        <GoogleMark className="size-5 shrink-0" />
-        {busy ? "Signing in…" : "Continue with Google"}
-      </button>
-    </div>
+    <Button
+      label={busy ? "Signing in…" : "Continue with Google"}
+      variant="secondary"
+      size="lg"
+      width="100%"
+      icon={<GoogleMark className="size-5 shrink-0" />}
+      isLoading={busy}
+      isDisabled={busy || disabled}
+      onClick={run}
+    />
   );
 }

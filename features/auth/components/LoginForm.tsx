@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { ApiError } from "@/lib/api-client";
 import { login } from "../api";
 import { firstError, validateLogin, type FieldErrors } from "../validation";
+import { Button } from "@astryxdesign/core/Button";
 import { AuthField } from "./AuthField";
 import { AuthShell } from "./AuthShell";
 import { GoogleButton } from "./GoogleButton";
@@ -87,13 +88,15 @@ export function LoginForm() {
           onChange={(e) => setPassword(e.target.value)}
           error={errors.password}
         />
-        <button
+        <Button
           type="submit"
-          disabled={submitting}
-          className="h-12 w-full cursor-pointer rounded-lg bg-accent text-sm font-medium text-on-accent transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {submitting ? "Logging in…" : "Log in"}
-        </button>
+          label={submitting ? "Logging in…" : "Log in"}
+          variant="primary"
+          size="lg"
+          width="100%"
+          isLoading={submitting}
+          isDisabled={submitting}
+        />
       </form>
       <div className="flex items-center gap-3 text-xs text-subtle">
         <span className="h-px flex-1 bg-line" aria-hidden="true" />

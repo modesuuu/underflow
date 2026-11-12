@@ -3,6 +3,7 @@ import "boxicons/css/boxicons.min.css";
 import { RootShell } from "@/components/layout/RootShell";
 import { AppToaster } from "@/components/ui/AppToaster";
 import { ThemeInitScript } from "@/components/ui/ThemeInitScript";
+import { AstryxTheme } from "@/components/ui/AstryxTheme";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -32,8 +33,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             (see components/ui/ThemeInitScript.tsx for why it is
             not a rendered <script> element). */}
         <ThemeInitScript />
-        <RootShell>{children}</RootShell>
-        <AppToaster />
+        <AstryxTheme>
+          <RootShell>{children}</RootShell>
+          <AppToaster />
+        </AstryxTheme>
       </body>
     </html>
   );

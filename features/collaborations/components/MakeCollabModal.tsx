@@ -3,6 +3,10 @@
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent, type KeyboardEvent } from "react";
 import clsx from "clsx";
 import { Icon } from "@/components/ui/Icon";
+import { TextInput } from "@astryxdesign/core/TextInput";
+import { TextArea } from "@astryxdesign/core/TextArea";
+import { Button } from "@astryxdesign/core/Button";
+import { IconButton } from "@astryxdesign/core/IconButton";
 import { DateField } from "@/components/ui/DateField";
 import { Avatar } from "@/components/ui/Avatar";
 import { useSessionUser } from "@/features/auth/store";
@@ -505,54 +509,43 @@ export function MakeCollabModal({
         </div>
 
         <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-5">
-          {/* Title */}
-          <div className="flex flex-col gap-1">
-            <label htmlFor="make-collab-title-input" className="text-base font-medium">Title</label>
-            <input
-              id="make-collab-title-input"
-              ref={firstFieldRef}
-              type="text"
-              value={title}
-              onChange={(e) => {
-                setTitle(e.target.value);
-                if (fieldErrors.title)
-                  setFieldErrors((f) => ({ ...f, title: undefined }));
-              }}
-              placeholder="Title"
-              required
-              aria-invalid={fieldErrors.title ? true : undefined}
-              className="rounded-lg bg-surface px-4 py-3 text-base font-medium text-ink outline-none placeholder:text-muted focus-visible:ring-2 focus-visible:ring-accent"
-            />
-            {fieldErrors.title && (
-              <p role="alert" className="text-xs font-medium text-badge">
-                {fieldErrors.title}
-              </p>
-            )}
-          </div>
+          {/* Title (Astryx TextInput; its status carries the error) */}
+          <TextInput
+            id="make-collab-title-input"
+            ref={firstFieldRef}
+            label="Title"
+            value={title}
+            onChange={(value) => {
+              setTitle(value);
+              if (fieldErrors.title)
+                setFieldErrors((f) => ({ ...f, title: undefined }));
+            }}
+            placeholder="Title"
+            status={
+              fieldErrors.title
+                ? { type: "error", message: fieldErrors.title }
+                : undefined
+            }
+          />
 
-          {/* Descriptions */}
-          <div className="flex flex-col gap-1">
-            <label htmlFor="make-collab-desc-input" className="text-base font-medium">Descriptions</label>
-            <textarea
-              id="make-collab-desc-input"
-              value={description}
-              onChange={(e) => {
-                setDescription(e.target.value);
-                if (fieldErrors.description)
-                  setFieldErrors((f) => ({ ...f, description: undefined }));
-              }}
-              placeholder="Descriptions"
-              required
-              rows={3}
-              aria-invalid={fieldErrors.description ? true : undefined}
-              className="resize-none rounded-lg bg-surface px-4 py-3 text-base font-medium text-ink outline-none placeholder:text-muted focus-visible:ring-2 focus-visible:ring-accent"
-            />
-            {fieldErrors.description && (
-              <p role="alert" className="text-xs font-medium text-badge">
-                {fieldErrors.description}
-              </p>
-            )}
-          </div>
+          {/* Descriptions (Astryx TextArea) */}
+          <TextArea
+            id="make-collab-desc-input"
+            label="Descriptions"
+            value={description}
+            onChange={(value) => {
+              setDescription(value);
+              if (fieldErrors.description)
+                setFieldErrors((f) => ({ ...f, description: undefined }));
+            }}
+            placeholder="Descriptions"
+            rows={3}
+            status={
+              fieldErrors.description
+                ? { type: "error", message: fieldErrors.description }
+                : undefined
+            }
+          />
 
           {/* Due date (optional). There is deliberately no Type field:
               the project type is never shown anywhere in the app, so
@@ -576,25 +569,33 @@ export function MakeCollabModal({
                 a private skill (POST /api/skills) and is selected as a role
                 for this project. The old separate "Make Custom Role" field
                 did exactly the same thing, so it was removed. */}
-            <div className="flex items-center gap-2 rounded-lg bg-surface px-4 py-3 focus-within:outline-none focus-within:ring-2 focus-within:ring-accent">
-              <input
-                type="text"
-                value={skillDraft}
-                onChange={(e) => setSkillDraft(e.target.value)}
-                onKeyDown={handleSkillKey}
-                placeholder="Add a skill"
-                aria-label="Add a skill"
-                className="min-w-0 flex-1 bg-transparent text-base font-medium text-ink outline-none placeholder:text-muted"
-              />
-              <button
-                type="button"
-                onClick={addSkill}
-                disabled={!skillDraft.trim() || creatingSkill}
-                aria-label="Add skill"
-                className="pressable flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-sm bg-accent text-on-accent disabled:cursor-not-allowed disabled:opacity-40 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+            <div className="flex items-start gap-2">
+              <div
+                className="min-w-0 flex-1"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    addSkill();
+                  } else if (e.key === "Escape") {
+                    setSkillDraft("");
+                  }
+                }}
               >
-                <Icon name="plus" size={14} />
-              </button>
+                <TextInput
+                  label="Add a skill"
+                  isLabelHidden
+                  value={skillDraft}
+                  onChange={(value) => setSkillDraft(value)}
+                  placeholder="Add a skill"
+                />
+              </div>
+              <IconButton
+                label="Add skill"
+                variant="primary"
+                icon={<Icon name="plus" size={16} />}
+                onClick={addSkill}
+                isDisabled={!skillDraft.trim() || creatingSkill}
+              />
             </div>
             <div className="flex flex-wrap gap-2 mt-3">
               {skillsLoading ? (
@@ -835,14 +836,16 @@ export function MakeCollabModal({
               {submitError}
             </p>
           )}
-          <button
+          <Button
             type="submit"
-            disabled={submitting || selectedSkills.size === 0}
-            className="pressable flex w-full cursor-pointer items-center justify-center gap-2 rounded-md bg-accent py-3 text-base font-medium text-on-accent transition-opacity hover:opacity-85 disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
-          >
-            <Icon name={editing ? "check" : "send"} size={20} />
-            {editing ? "Save changes" : "Create Project"}
-          </button>
+            label={editing ? "Save changes" : "Create Project"}
+            variant="primary"
+            size="lg"
+            width="100%"
+            icon={<Icon name={editing ? "check" : "send"} size={20} />}
+            isLoading={submitting}
+            isDisabled={submitting || selectedSkills.size === 0}
+          />
         </form>
       </div>
     </div>

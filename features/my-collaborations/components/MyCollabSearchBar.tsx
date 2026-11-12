@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import clsx from "clsx";
+import { TextInput } from "@astryxdesign/core/TextInput";
+import { Button } from "@astryxdesign/core/Button";
 import { Icon } from "@/components/ui/Icon";
 import type { CollabSortKey } from "@/features/collaborations/types";
 
@@ -104,37 +106,33 @@ export function MyCollabSearchBar({
     <div className="flex flex-wrap items-center gap-3">
       {/* Search leads */}
       <div className="flex min-w-0 flex-1 items-center gap-2 sm:max-w-md">
-        <div className="flex h-11 flex-1 items-center gap-2 rounded-lg border border-line bg-surface px-3.5 transition-shadow focus-within:ring-2 focus-within:ring-accent">
-          <Icon name="search" size={18} className="shrink-0 text-muted" />
-          <input
-            type="text"
-            value={draftQuery}
-            onChange={(e) => onDraftChange(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") onSearch();
-            }}
-            placeholder="Search projects..."
-            aria-label="Search projects"
-            className="min-w-0 flex-1 bg-transparent text-sm font-medium text-ink outline-none placeholder:text-muted"
-          />
-          {draftQuery !== "" && (
-            <button
-              type="button"
-              aria-label="Clear search"
-              onClick={() => onDraftChange("")}
-              className="flex size-5 shrink-0 cursor-pointer items-center justify-center rounded-full bg-bg text-muted transition-colors hover:text-ink focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
-            >
-              <Icon name="x" size={12} />
-            </button>
-          )}
-        </div>
-        <button
-          type="button"
-          onClick={onSearch}
-          className="pressable h-11 shrink-0 cursor-pointer rounded-lg bg-accent px-4 text-sm font-medium text-on-accent transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+        <div
+          className="min-w-0 flex-1"
+          onKeyDown={(e) => {
+            if (e.key === "Enter") onSearch();
+          }}
         >
-          Search
-        </button>
+          <TextInput
+            type="search"
+            label="Search projects"
+            isLabelHidden
+            value={draftQuery}
+            onChange={(value) => onDraftChange(value)}
+            placeholder="Search projects..."
+            startIcon={<Icon name="search" size={18} className="text-muted" />}
+          />
+        </div>
+        {draftQuery !== "" && (
+          <button
+            type="button"
+            aria-label="Clear search"
+            onClick={() => onDraftChange("")}
+            className="flex size-5 shrink-0 cursor-pointer items-center justify-center rounded-full bg-bg text-muted transition-colors hover:text-ink focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+          >
+            <Icon name="x" size={12} />
+          </button>
+        )}
+        <Button label="Search" variant="primary" onClick={onSearch} />
       </div>
 
       {/* Labeled sort + filter */}

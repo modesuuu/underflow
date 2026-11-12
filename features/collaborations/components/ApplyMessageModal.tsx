@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import { TextArea } from "@astryxdesign/core/TextArea";
+import { Button } from "@astryxdesign/core/Button";
 import { Icon } from "@/components/ui/Icon";
 
 interface ApplyMessageModalProps {
@@ -76,37 +78,25 @@ export function ApplyMessageModal({
           </button>
         </div>
 
-        <label className="flex flex-col gap-1.5">
-          <span className="text-sm font-medium text-ink">
-            Message to {ownerName}
-          </span>
-          <textarea
-            value={message}
-            onChange={(event) => setMessage(event.target.value)}
-            rows={5}
-            autoFocus
-            className="w-full resize-none rounded-lg border border-line bg-surface p-3 text-base text-ink outline-none placeholder:text-muted focus-visible:ring-2 focus-visible:ring-accent"
-            placeholder="Introduce yourself, your experience, and how much time you can commit…"
-          />
-        </label>
+        <TextArea
+          label={"Message to " + ownerName}
+          value={message}
+          onChange={(value) => setMessage(value)}
+          rows={5}
+          hasAutoFocus
+          placeholder="Introduce yourself, your experience, and how much time you can commit…"
+        />
 
         <div className="flex justify-end gap-2">
-          <button
-            type="button"
-            onClick={onClose}
-            className="cursor-pointer rounded-full border border-line px-5 py-2.5 text-sm font-medium text-ink transition-colors hover:bg-bg"
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
+          <Button label="Cancel" variant="secondary" onClick={onClose} />
+          <Button
+            label={sending ? "Sending…" : "Send application"}
+            variant="primary"
+            icon={<Icon name="send" size={18} />}
+            isLoading={sending}
+            isDisabled={!message.trim() || sending}
             onClick={() => onSend(message)}
-            disabled={!message.trim() || sending}
-            className="flex cursor-pointer items-center gap-2 rounded-full bg-accent px-5 py-2.5 text-sm font-medium text-on-accent transition-opacity hover:opacity-85 disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            <Icon name="send" size={18} />
-            {sending ? "Sending…" : "Send application"}
-          </button>
+          />
         </div>
       </div>
     </div>,

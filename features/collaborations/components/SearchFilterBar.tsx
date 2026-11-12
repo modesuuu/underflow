@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import clsx from "clsx";
+import { TextInput } from "@astryxdesign/core/TextInput";
 import { Icon } from "@/components/ui/Icon";
 import type { CollabSortKey } from "../types";
 
@@ -106,19 +107,23 @@ export function SearchFilterBar({
     SORT_OPTIONS.find((o) => o.value === sortKey)?.label ?? "Recommended";
 
   return (
-    <div className="flex h-11 w-full max-w-md min-w-60 items-center gap-2 rounded-full border border-line bg-surface pl-4 pr-1.5 transition-colors focus-within:border-ink/40">
-      <Icon name="search" size={18} className="shrink-0 text-muted" />
-      <input
-        type="text"
-        value={draftQuery}
-        onChange={(e) => onDraftChange(e.target.value)}
+    <div className="flex w-full max-w-md min-w-60 items-center gap-2">
+      <div
+        className="min-w-0 flex-1"
         onKeyDown={(e) => {
           if (e.key === "Enter") onSearch();
         }}
-        placeholder="Search"
-        aria-label="Search projects"
-        className="min-w-0 flex-1 bg-transparent text-sm font-medium text-ink outline-none placeholder:text-muted"
-      />
+      >
+        <TextInput
+          type="search"
+          label="Search projects"
+          isLabelHidden
+          value={draftQuery}
+          onChange={(value) => onDraftChange(value)}
+          placeholder="Search"
+          startIcon={<Icon name="search" size={18} className="text-muted" />}
+        />
+      </div>
       {draftQuery && (
         <button
           type="button"
@@ -129,7 +134,6 @@ export function SearchFilterBar({
           <Icon name="x" size={16} />
         </button>
       )}
-      <span aria-hidden="true" className="h-6 w-px shrink-0 bg-line" />
       <Dropdown
         trigger={
           <button
