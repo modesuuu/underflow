@@ -4,6 +4,8 @@ import { useEffect, useRef, useState, type ChangeEvent, type FormEvent, type Key
 import clsx from "clsx";
 import { Icon } from "@/components/ui/Icon";
 import { DateField } from "@/components/ui/DateField";
+import { Avatar } from "@/components/ui/Avatar";
+import { useSessionUser } from "@/features/auth/store";
 import { toast } from "sonner";
 import {
   backendErrorMessage,
@@ -74,6 +76,8 @@ export function MakeCollabModal({
   );
   const [deletingSkillId, setDeletingSkillId] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const sessionUser = useSessionUser();
+  const ownerName = sessionUser?.username ?? "You";
   const [roleCount, setRoleCount] = useState(2);
   const [submitting, setSubmitting] = useState(false);
   const [photos, setPhotos] = useState<PhotoDraft[]>([]);
@@ -741,12 +745,10 @@ export function MakeCollabModal({
             {/* Owner slot + the open slots implied by the current count. */}
             <div className="flex flex-wrap items-center gap-4">
               <div className="flex items-center gap-2">
-                <div className="size-8 rounded-full bg-placeholder" />
+                <Avatar size={32} alt={ownerName} src={sessionUser?.photo} />
                 <div className="flex flex-col">
-                  <span className="text-base font-medium">Russel</span>
-                  <span className="text-2xs text-muted">
-                    Owner • Fullstack
-                  </span>
+                  <span className="text-base font-medium">{ownerName}</span>
+                  <span className="text-2xs text-muted">Owner</span>
                 </div>
               </div>
               {Array.from({ length: Math.max(0, roleCount - 1) }).map(

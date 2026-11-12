@@ -40,6 +40,26 @@ function CardApply({ project }: { project: CollabProject }) {
   const isOwner =
     sessionUser !== null && sessionUser.id === project.owner.id;
   const isFull = project.slotsFilled >= project.slotsTotal;
+  // The viewer's own application decides the button (mirrors the
+  // detail page's ApplyCta states): once applied, the card never
+  // offers Apply again — Pending while it waits, Joined once in,
+  // Declined when the owner passed. Withdrawn frees it up again.
+  const myApplication = project.myApplication ?? null;
+  const applied = myApplication === "pending";
+  const joined = myApplication === "accepted";
+  const declined = myApplication === "declined";
+  const blocked = isOwner || applied || joined || declined || isFull;
+  const label = isOwner
+    ? "This is your project"
+    : joined
+      ? "Joined"
+      : applied
+        ? "Pending"
+        : declined
+          ? "Declined"
+          : isFull
+            ? "Full"
+            : "Apply";
 
   const handleSend = async (message: string) => {
     setSending(true);
@@ -83,16 +103,16 @@ function CardApply({ project }: { project: CollabProject }) {
     <>
       <button
         type="button"
-        disabled={isFull || isOwner}
+        disabled={blocked}
         title={isOwner ? "This is your project" : undefined}
         onClick={() => setModalOpen(true)}
         className={
-          isFull || isOwner
+          blocked
             ? "rounded-full bg-placeholder px-4 py-2 text-sm font-semibold text-muted"
             : "pressable cursor-pointer rounded-full bg-accent px-4 py-2 text-sm font-semibold text-on-accent transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
         }
       >
-        {isOwner ? "This is your project" : isFull ? "Full" : "Apply"}
+        {label}
       </button>
       {modalOpen && (
         <ApplyMessageModal

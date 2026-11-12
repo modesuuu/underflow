@@ -17,7 +17,9 @@ interface BackendCollab {
   required_member: number;
   accepted_member_count: number;
   available_slots: number;
-  my_application?: { status: "pending" | "accepted" | "declined" } | null;
+  my_application?: {
+    status: "pending" | "accepted" | "declined" | "withdrawn";
+  } | null;
   skills_needed: { id: string; skill_name: string; scope: string }[];
   owner: { id: string; username: string; photo_profile_url: string };
   /** Accepted members (owner included), join order. Sent by the
