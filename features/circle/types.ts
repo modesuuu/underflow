@@ -70,7 +70,7 @@ export interface CircleData {
 export interface CircleProjectSummary {
   projectId: string;
   title: string;
-  /** My Collaborations status label, e.g. "Not Started". */
+  /** My Collaborations status label, e.g. "Active". */
   statusLabel: string;
   members: { userId: string; name: string }[];
 }

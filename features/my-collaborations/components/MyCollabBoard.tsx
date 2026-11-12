@@ -13,7 +13,7 @@ import type { MyCollabCategory, MyCollabProject, MyCollabStatus } from "../types
 
 /**
  * Dashboard order for the columns: the category-table order
- * (Not Started, Pending, Complete, Revise).
+ * (Active, Pending, Complete, Revise).
  */
 export const STATS_ORDER: MyCollabStatus[] = [
   "not-started",

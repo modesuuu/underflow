@@ -16,7 +16,7 @@ export interface MyCollabCategory {
   slug: MyCollabStatus;
   /** Column heading on the board, e.g. "My collaborations". */
   boardLabel: string;
-  /** Breadcrumb / category-page heading, e.g. "Not Started". */
+  /** Breadcrumb / category-page heading, e.g. "Active". */
   crumbLabel: string;
   /** Pill colour class on the board header. */
   pillClassName: string;
@@ -36,9 +36,9 @@ export const MY_COLLAB_CATEGORIES: MyCollabCategory[] = [
   {
     slug: "not-started",
     boardLabel: "My collaborations",
-    crumbLabel: "Not Started",
+    crumbLabel: "Active",
     pillClassName: "bg-bg text-ink",
-    subtitle: "Queued and ready to start.",
+    subtitle: "Your active projects.",
     icon: "group",
   },
   {
