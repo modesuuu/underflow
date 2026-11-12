@@ -382,3 +382,75 @@ html.theme-anim *::after {
     radial-gradient(820px 460px at 0% 100%, rgba(78, 159, 61, 0.07), transparent 62%);
   background-attachment: fixed;
 }
+
+/* --- Date picker (react-day-picker) themed to the app tokens.
+   The library stylesheet supplies the calendar layout; these variables
+   and overrides recolor it to Forest & Cream. --- */
+.uf-datepicker {
+  --rdp-accent-color: var(--uf-accent);
+  --rdp-accent-background-color: var(--uf-placeholder);
+  --rdp-today-color: var(--uf-accent);
+  --rdp-day-width: 40px;
+  --rdp-day-height: 40px;
+  --rdp-day_button-width: 38px;
+  --rdp-day_button-height: 38px;
+  --rdp-nav-height: 2.5rem;
+  --rdp-selected-border: 2px solid transparent;
+  --rdp-weekday-opacity: 0.55;
+  --rdp-outside-opacity: 0.35;
+  --rdp-disabled-opacity: 0.3;
+  color: var(--uf-ink);
+  font-family: inherit;
+}
+.uf-datepicker .rdp-month_caption {
+  font-size: 1rem;
+  font-weight: 600;
+}
+.uf-datepicker .rdp-weekday {
+  font-size: 0.75rem;
+  text-transform: none;
+}
+.uf-datepicker .rdp-day_button {
+  font-size: 0.875rem;
+}
+.uf-datepicker .rdp-day_button:hover:not(:disabled) {
+  background-color: var(--uf-placeholder);
+}
+.uf-datepicker .rdp-selected {
+  font-size: inherit;
+}
+.uf-datepicker .rdp-selected .rdp-day_button {
+  background-color: var(--uf-accent);
+  border-color: transparent;
+  color: var(--uf-on-accent);
+  font-weight: 600;
+}
+.uf-datepicker .rdp-selected .rdp-day_button:hover {
+  background-color: var(--uf-accent);
+}
+.uf-datepicker .rdp-button_previous,
+.uf-datepicker .rdp-button_next {
+  border-radius: 100%;
+}
+.uf-datepicker .rdp-button_previous:hover,
+.uf-datepicker .rdp-button_next:hover {
+  background-color: var(--uf-placeholder);
+}
+
+@keyframes uf-datepicker-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .uf-datepicker-pop {
+    animation: uf-datepicker-in 180ms var(--uf-ease-out);
+    transform-origin: top left;
+  }
+}

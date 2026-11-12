@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent, type KeyboardEvent } from "react";
 import clsx from "clsx";
 import { Icon } from "@/components/ui/Icon";
+import { DateField } from "@/components/ui/DateField";
 import { toast } from "sonner";
 import { backendErrorMessage, createCollabProject } from "../api";
 import { createSkill, deleteSkill, getSkills, type Skill } from "../skills-api";
@@ -490,13 +491,10 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
               default. */}
           <div className="flex flex-col gap-1">
             <label htmlFor="make-collab-due-input" className="text-base font-medium">Due date</label>
-            <input
+            <DateField
               id="make-collab-due-input"
-              type="date"
               value={dueDate}
-              min={new Date().toLocaleDateString("en-CA")}
-              onChange={(e) => setDueDate(e.target.value)}
-              className="rounded-lg bg-surface px-4 py-3 text-base font-medium text-ink outline-none focus-visible:ring-2 focus-visible:ring-accent"
+              onChange={setDueDate}
             />
           </div>
 
