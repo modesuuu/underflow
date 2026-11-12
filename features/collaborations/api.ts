@@ -1,6 +1,7 @@
 // features/collaborations/api.ts
 import { ApiEnvelope, apiFetch, ApiError, isApiConfigured } from "@/lib/api-client";
 import type { CollabMember, CollabProject, CollabSortKey, ProjectType } from "./types";
+import { SYSTEM_SKILL_ICONS } from "./skills-api";
 import { uploadImage } from "@/features/dashboard/api";
 
 /** Wire shape of GET /api/collab (CollabModel::getAll, enriched 2026-11-10). */
@@ -67,6 +68,9 @@ export function mapBackendCollab(b: BackendCollab): CollabProject {
     skills: (b.skills_needed ?? []).map((s) => ({
       id: s.id,
       label: s.skill_name,
+      // The detail pages render SkillTag.icon; only the static system
+      // skills have one (same map as the modal chips).
+      icon: s.scope === "system" ? SYSTEM_SKILL_ICONS[s.skill_name] : undefined,
     })),
     description,
     photos: [...(b.media_urls ?? [])],

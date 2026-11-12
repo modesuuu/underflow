@@ -62,3 +62,19 @@ export async function deleteSkill(id: string): Promise<void> {
     method: "DELETE",
   });
 }
+
+/** The template role tags are the backend's static system skills
+ *  (scope "system": visible to everyone, cannot be deleted). This map
+ *  only gives each of them its icon; its key order is the display
+ *  order (the mockup's original order). */
+export const SYSTEM_SKILL_ICONS: Record<string, string> = {
+  Coding: "code-alt",
+  "UI Design": "palette",
+  Backend: "server",
+  Testing: "bug",
+  DevOps: "terminal",
+  Mobile: "mobile-alt",
+  Data: "bar-chart-alt-2",
+  Writing: "pencil",
+};
+export const SYSTEM_SKILL_ORDER = Object.keys(SYSTEM_SKILL_ICONS);

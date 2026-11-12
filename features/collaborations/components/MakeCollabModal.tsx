@@ -6,7 +6,14 @@ import { Icon } from "@/components/ui/Icon";
 import { DateField } from "@/components/ui/DateField";
 import { toast } from "sonner";
 import { backendErrorMessage, createCollabProject } from "../api";
-import { createSkill, deleteSkill, getSkills, type Skill } from "../skills-api";
+import {
+  createSkill,
+  deleteSkill,
+  getSkills,
+  SYSTEM_SKILL_ICONS,
+  SYSTEM_SKILL_ORDER,
+  type Skill,
+} from "../skills-api";
 import { ApiError } from "@/lib/api-client";
 
 interface MakeCollabModalProps {
@@ -18,21 +25,7 @@ interface MakeCollabModalProps {
 const MAX_PHOTOS = 5;
 const MAX_PHOTO_BYTES = 5 * 1024 * 1024; // 5 MB per file
 
-/** The template role tags are the backend's static system skills
- *  (scope "system": visible to everyone, cannot be deleted). This map
- *  only gives each of them its icon; its key order is the display
- *  order (the mockup's original order). */
-const SYSTEM_SKILL_ICONS: Record<string, string> = {
-  Coding: "code-alt",
-  "UI Design": "palette",
-  Backend: "server",
-  Testing: "bug",
-  DevOps: "terminal",
-  Mobile: "mobile-alt",
-  Data: "bar-chart-alt-2",
-  Writing: "pencil",
-};
-const SYSTEM_SKILL_ORDER = Object.keys(SYSTEM_SKILL_ICONS);
+
 
 /** A selected photo with an instant blob: preview URL. */
 interface PhotoDraft {
