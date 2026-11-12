@@ -37,7 +37,7 @@ function StatCard({
     </>
   );
   return (
-    <div className="flex w-full flex-col gap-2.5 rounded-xl border border-line p-3">
+    <div className="flex w-full flex-col gap-2.5 rounded-lg border border-line p-3">
       <div className="flex items-center justify-between gap-2">
         {icon}
         {href ? (
