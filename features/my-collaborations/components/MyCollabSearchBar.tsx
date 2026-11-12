@@ -3,58 +3,13 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import clsx from "clsx";
 import { Icon } from "@/components/ui/Icon";
-import type {
-  CollabFilterType,
-  CollabSortKey,
-} from "@/features/collaborations/types";
-
-const TYPE_OPTIONS: { value: CollabFilterType; label: string }[] = [
-  { value: "all", label: "All" },
-  { value: "coursework", label: "Coursework" },
-  { value: "portfolio", label: "Portfolio" },
-  { value: "product", label: "Product" },
-];
+import type { CollabSortKey } from "@/features/collaborations/types";
 
 const SORT_OPTIONS: { value: CollabSortKey; label: string }[] = [
   { value: "recommended", label: "Recommended" },
   { value: "due", label: "Due soonest" },
   { value: "newest", label: "Newest" },
 ];
-
-function PillGroup<T extends string>({
-  legend,
-  options,
-  value,
-  onChange,
-}: {
-  legend: string;
-  options: { value: T; label: string }[];
-  value: T;
-  onChange: (v: T) => void;
-}) {
-  return (
-    <fieldset className="flex flex-col gap-2">
-      <legend className="text-xs font-medium text-muted">{legend}</legend>
-      <div className="flex flex-col gap-1.5">
-        {options.map((opt) => (
-          <label
-            key={opt.value}
-            className="flex cursor-pointer items-center gap-2 text-sm text-ink"
-          >
-            <input
-              type="radio"
-              name={legend.toLowerCase().replace(/\s+/g, "-")}
-              checked={value === opt.value}
-              onChange={() => onChange(opt.value)}
-              className="size-4 accent-[color:var(--uf-accent)]"
-            />
-            {opt.label}
-          </label>
-        ))}
-      </div>
-    </fieldset>
-  );
-}
 
 /**
  * Dropdown with outside-click / Escape close + aria state. The
@@ -126,13 +81,11 @@ interface MyCollabSearchBarProps {
   onSearch: () => void;
   sortKey: CollabSortKey;
   onSortChange: (s: CollabSortKey) => void;
-  typeFilter: CollabFilterType;
-  onTypeChange: (t: CollabFilterType) => void;
 }
 
 /**
- * Search + sort + type-filter bar for My Collaborations (board &
- * category). Search-first like the public board: the search group
+ * Search + sort bar for the My Collaborations category pages.
+ * Search-first like the public board: the search group
  * leads and widens, sort and filter are labeled buttons that say
  * what they hold. Status is not a filter here — it is the
  * section/category structure itself. All controls work.
@@ -143,10 +96,7 @@ export function MyCollabSearchBar({
   onSearch,
   sortKey,
   onSortChange,
-  typeFilter,
-  onTypeChange,
 }: MyCollabSearchBarProps) {
-  const activeFilterCount = typeFilter !== "all" ? 1 : 0;
   const sortLabel =
     SORT_OPTIONS.find((o) => o.value === sortKey)?.label ?? "Sort";
 
@@ -221,31 +171,6 @@ export function MyCollabSearchBar({
                 </button>
               ))}
             </div>
-          }
-        />
-        <Dropdown
-          trigger={
-            <button
-              type="button"
-              aria-haspopup="true"
-              className="pressable relative flex h-11 cursor-pointer items-center gap-2 rounded-lg bg-bg px-3.5 text-sm font-medium text-ink focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
-            >
-              <Icon name="filter" size={18} />
-              <span className="hidden sm:inline">Filters</span>
-              {activeFilterCount > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 flex size-[18px] items-center justify-center rounded-full bg-badge text-2xs font-semibold text-surface">
-                  {activeFilterCount}
-                </span>
-              )}
-            </button>
-          }
-          panel={
-            <PillGroup
-              legend="Type"
-              options={TYPE_OPTIONS}
-              value={typeFilter}
-              onChange={onTypeChange}
-            />
           }
         />
       </div>

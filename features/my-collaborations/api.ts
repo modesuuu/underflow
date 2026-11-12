@@ -16,6 +16,8 @@ interface BackendMyCollab {
   accepted_member_count: number;
   available_slots: number;
   skills_needed: { id: string; skill_name: string; scope: string }[];
+  media_urls?: string[];
+  media_public_ids?: (string | null)[];
   owner: { id: string; username: string; photo_profile_url: string };
   created_at?: string;
 }

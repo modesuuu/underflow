@@ -129,9 +129,15 @@ export function KanbanCard({
           )}
         >
           <Icon name="calendar" size={14} />
-          Due {formatDueDate(project.dueDate)}
-          {urgent &&
-            ` · ${daysLeft !== null && daysLeft <= 0 ? "due now" : `${daysLeft}d left`}`}
+          {project.dueDate ? (
+            <>
+              Due {formatDueDate(project.dueDate)}
+              {urgent &&
+                ` · ${daysLeft !== null && daysLeft <= 0 ? "due now" : `${daysLeft}d left`}`}
+            </>
+          ) : (
+            "No deadline"
+          )}
         </span>
       </span>
     </Link>

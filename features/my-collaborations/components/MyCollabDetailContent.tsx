@@ -9,6 +9,8 @@ import { PhotoGrid, type Photo } from "@/components/ui/PhotoGrid";
 import { PhotoLightbox } from "@/components/ui/PhotoLightbox";
 import { startDirectThread } from "@/features/inbox/store";
 import { STATUS_ICONS } from "@/features/collaborations/status";
+import { formatDueDate } from "@/features/collaborations/sort";
+import type { ProjectStatus } from "@/features/collaborations/types";
 import { MakeCollabModal } from "@/features/collaborations/components/MakeCollabModal";
 import { ConfirmDialog } from "@/features/inbox/components/ConfirmDialog";
 import {
@@ -18,6 +20,12 @@ import {
 import { toast } from "sonner";
 import { useSessionUser } from "@/features/auth/store";
 import type { MyCollabProject } from "../types";
+
+const STATUS_LABEL: Record<ProjectStatus, string> = {
+  open: "Open",
+  "in-progress": "In progress",
+  completed: "Completed",
+};
 
 /**
  * Same lime-placeholder rule as the public detail: mock photo tokens
@@ -35,7 +43,7 @@ interface MyCollabDetailContentProps {
  * Detail page body (frame 3). Mirrors the public `CollabDetailContent`
  * section for section — same header band, owner card, skills, and team —
  * but a separate component: the public one is not modified. Differences
- * kept on purpose: no Apply CTA (Open Circle + Closed instead), and the
+ * kept on purpose: no Apply CTA (Open Circle + a status bar instead), and the
  * myStatus-gated Circle entry.
  */
 export function MyCollabDetailContent({ project }: MyCollabDetailContentProps) {
@@ -78,7 +86,7 @@ export function MyCollabDetailContent({ project }: MyCollabDetailContentProps) {
           <div className="flex items-center justify-between gap-3">
             <span className="inline-flex items-center gap-1 rounded-full bg-surface px-3 py-1 text-xs font-medium text-ink">
               <Icon name={STATUS_ICONS[project.status]} size={14} />
-              {project.status}
+              {STATUS_LABEL[project.status]}
             </span>
             {isOwner && (
               <div className="flex shrink-0 items-center gap-2">
@@ -111,10 +119,12 @@ export function MyCollabDetailContent({ project }: MyCollabDetailContentProps) {
 
           {/* Meta row: due bold dark + posted gray */}
           <div className="flex items-center gap-4">
-            <span className="flex items-center gap-1 text-xs font-medium text-ink">
-              <Icon name="calendar" size={14} />
-              Due: {project.dueDate}
-            </span>
+            {project.dueDate ? (
+              <span className="flex items-center gap-1 text-xs font-medium text-ink">
+                <Icon name="calendar" size={14} />
+                Due: {formatDueDate(project.dueDate)}
+              </span>
+            ) : null}
             <span className="flex items-center gap-1 text-xs font-medium text-muted">
               <Icon name="time" size={14} />
               posted {project.postedAgo}
@@ -223,7 +233,7 @@ export function MyCollabDetailContent({ project }: MyCollabDetailContentProps) {
               <Icon name="group" size={20} className="text-ink" />
             </div>
           </div>
-          <div className="flex gap-4">
+          <div className="flex flex-wrap gap-4">
             {project.members.map((member) =>
               member.isOpenSlot ? (
                 /* Open slot: dark-gray circle with white "+" icon */
@@ -267,16 +277,21 @@ export function MyCollabDetailContent({ project }: MyCollabDetailContentProps) {
             Open Circle
           </Link>
         )}
-        {/* 5. Bottom CTA — presentational this phase (spec decision #3).
-               TODO(backend): label/state derive from the user's application
-               status (accepted / rejected / closed). */}
-        <button
-          type="button"
-          disabled
-          className="w-full cursor-not-allowed rounded-md bg-ink/80 py-3.5 text-base font-semibold text-surface"
-        >
-          Closed
-        </button>
+        {/* 5. Bottom bar — status-aware (audit 2026-11-12). The old
+               always-on disabled "Closed" button sat under live
+               projects too, a dead control. Now a pending application
+               shows its state, a completed project shows Closed, and
+               an active project shows nothing — Open Circle above is
+               its call to action. */}
+        {project.myStatus === "pending" ? (
+          <div className="flex w-full items-center justify-center rounded-full bg-placeholder px-6 py-3 text-sm font-semibold text-muted">
+            Pending
+          </div>
+        ) : project.status === "completed" ? (
+          <div className="flex w-full items-center justify-center rounded-md bg-ink/80 py-3.5 text-base font-semibold text-surface">
+            Closed
+          </div>
+        ) : null}
       </div>
       {lightboxIndex !== null && (
         <PhotoLightbox

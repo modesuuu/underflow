@@ -3,10 +3,7 @@
 import { useMemo, useState } from "react";
 import { Icon } from "@/components/ui/Icon";
 import { sortMyProjects } from "../sort";
-import type {
-  CollabFilterType,
-  CollabSortKey,
-} from "@/features/collaborations/types";
+import type { CollabSortKey } from "@/features/collaborations/types";
 import type { MyCollabProject } from "../types";
 import { KanbanCard } from "./KanbanCard";
 import { MyCollabSearchBar } from "./MyCollabSearchBar";
@@ -22,7 +19,7 @@ interface MyCollabCategoryGridProps {
  * Category page body: the same Kanban cards as the board, in a
  * flat responsive grid — no columns (the page IS one category)
  * and no borders (the cards are borderless pastels, like the
- * board's). Search + sort + type-filter pipeline is unchanged;
+ * board's). Search + sort pipeline is unchanged;
  * a results line with a clear action and a composed empty state
  * match the board's behavior.
  */
@@ -33,7 +30,6 @@ export function MyCollabCategoryGrid({
   const [draftQuery, setDraftQuery] = useState("");
   const [query, setQuery] = useState("");
   const [sortKey, setSortKey] = useState<CollabSortKey>("recommended");
-  const [typeFilter, setTypeFilter] = useState<CollabFilterType>("all");
 
   const filtered = useMemo(() => {
     let result = projects;
@@ -45,18 +41,14 @@ export function MyCollabCategoryGrid({
           p.subtitle.toLowerCase().includes(q)
       );
     }
-    if (typeFilter !== "all") {
-      result = result.filter((p) => p.type === typeFilter);
-    }
     return sortMyProjects(result, sortKey);
-  }, [projects, query, typeFilter, sortKey]);
+  }, [projects, query, sortKey]);
 
-  const searching = query.trim() !== "" || typeFilter !== "all";
+  const searching = query.trim() !== "";
 
   const clearAll = () => {
     setDraftQuery("");
     setQuery("");
-    setTypeFilter("all");
   };
 
   return (
@@ -67,8 +59,6 @@ export function MyCollabCategoryGrid({
         onSearch={() => setQuery(draftQuery)}
         sortKey={sortKey}
         onSortChange={setSortKey}
-        typeFilter={typeFilter}
-        onTypeChange={setTypeFilter}
       />
 
       {filtered.length === 0 ? (
@@ -78,15 +68,15 @@ export function MyCollabCategoryGrid({
           </span>
           <p className="text-base font-semibold text-ink">No projects match</p>
           <p className="max-w-sm text-sm text-muted">
-            No projects in this category match your search and filters.
-            Clear them to see all projects in this category.
+            No projects in this category match your search.
+            Clear it to see all projects in this category.
           </p>
           <button
             type="button"
             onClick={clearAll}
             className="pressable mt-2 cursor-pointer rounded-full bg-ink px-4 py-2 text-sm font-medium text-surface transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
           >
-            Clear search &amp; filters
+            Clear search
           </button>
         </div>
       ) : (
@@ -103,7 +93,7 @@ export function MyCollabCategoryGrid({
                 onClick={clearAll}
                 className="cursor-pointer text-[13px] font-medium text-ink underline decoration-placeholder underline-offset-4 transition-colors hover:decoration-ink focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
               >
-                Clear search &amp; filters
+                Clear search
               </button>
             )}
           </div>
