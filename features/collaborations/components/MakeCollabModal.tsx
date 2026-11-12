@@ -17,17 +17,21 @@ interface MakeCollabModalProps {
 const MAX_PHOTOS = 5;
 const MAX_PHOTO_BYTES = 5 * 1024 * 1024; // 5 MB per file
 
-/** Template role tags from the mockup — tap one to create it as a private skill (POST /api/skills) and select it. */
-const TEMPLATE_ROLES = [
-  "Coding",
-  "UI Design",
-  "Backend",
-  "Testing",
-  "DevOps",
-  "Mobile",
-  "Data",
-  "Writing",
-];
+/** The template role tags are the backend's static system skills
+ *  (scope "system": visible to everyone, cannot be deleted). This map
+ *  only gives each of them its icon; its key order is the display
+ *  order (the mockup's original order). */
+const SYSTEM_SKILL_ICONS: Record<string, string> = {
+  Coding: "code-alt",
+  "UI Design": "palette",
+  Backend: "server",
+  Testing: "bug",
+  DevOps: "terminal",
+  Mobile: "mobile-alt",
+  Data: "bar-chart-alt-2",
+  Writing: "pencil",
+};
+const SYSTEM_SKILL_ORDER = Object.keys(SYSTEM_SKILL_ICONS);
 
 /** A selected photo with an instant blob: preview URL. */
 interface PhotoDraft {
@@ -51,7 +55,6 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
   const [skillsError, setSkillsError] = useState<string | null>(null);
   const [skillDraft, setSkillDraft] = useState("");
   const [creatingSkill, setCreatingSkill] = useState(false);
-  const [creatingTemplate, setCreatingTemplate] = useState<string | null>(null);
   const [skillError, setSkillError] = useState<string | null>(null);
   // Skill delete (audit P2-10): the skill awaiting confirm, and the id
   // currently being deleted (its chip stays disabled while in flight).
@@ -207,10 +210,12 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
   };
 
   /**
-   * Shared create-as-private-skill + select path (POST /api/skills) used
-   * by the "Add a skill" input and the template tags. A 409 duplicate
-   * selects the existing skill silently instead of erroring. Throws on
-   * any other failure.
+   * Create-as-private-skill + select path (POST /api/skills) behind the
+   * "Add a skill" input. If the name matches a skill the user can
+   * already see (a static system skill or one of their own), that skill
+   * is selected instead of creating a duplicate; a 409 likewise selects
+   * the existing skill silently instead of erroring. Throws on any
+   * other failure.
    */
   const createAndSelectSkill = async (name: string) => {
     const existing = skills.find(
@@ -258,11 +263,31 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
     });
   };
 
-  /** Template tags not already in the user's skill list (same name, case-insensitive) — those are hidden so a tag never shows twice. */
-  const visibleTemplateRoles = TEMPLATE_ROLES.filter(
-    (name) =>
-      !skills.some((s) => s.name.trim().toLowerCase() === name.toLowerCase())
+  /** Chips to render: the static system skills first (mockup order,
+   *  each with its icon, never deletable), then the user's own private
+   *  skills. A private skill whose name matches a system skill is not
+   *  rendered: the static tag already covers that name, so a tag never
+   *  shows twice. */
+  const systemSkills = skills
+    .filter((s) => s.scope === "system")
+    .sort((a, b) => {
+      const rank = (name: string) => {
+        const i = SYSTEM_SKILL_ORDER.indexOf(name);
+        return i === -1 ? SYSTEM_SKILL_ORDER.length : i;
+      };
+      return rank(a.name) - rank(b.name);
+    });
+  const systemNames = new Set(
+    systemSkills.map((s) => s.name.trim().toLowerCase())
   );
+  const visibleSkills = [
+    ...systemSkills,
+    ...skills.filter(
+      (s) =>
+        s.scope === "private" &&
+        !systemNames.has(s.name.trim().toLowerCase())
+    ),
+  ];
 
   /** The one skill input: create the name as a private skill and select it. */
   const addSkill = async () => {
@@ -279,22 +304,6 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
       );
     } finally {
       setCreatingSkill(false);
-    }
-  };
-
-  /** Template tag tap: create it as a private skill (POST /api/skills) and select it — same as "Add a skill". */
-  const addTemplateRole = async (name: string) => {
-    if (creatingSkill || creatingTemplate) return;
-    setCreatingTemplate(name);
-    setSkillError(null);
-    try {
-      await createAndSelectSkill(name);
-    } catch (err) {
-      setSkillError(
-        err instanceof Error ? err.message : "Could not add this skill."
-      );
-    } finally {
-      setCreatingTemplate(null);
     }
   };
 
@@ -536,13 +545,13 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
                     Try again
                   </button>
                 </span>
-              ) : skills.length === 0 && visibleTemplateRoles.length === 0 ? (
+              ) : visibleSkills.length === 0 ? (
                 <p className="text-xs text-muted">
                   You don&apos;t have any skills yet — add your first one above.
                 </p>
               ) : (
                 <>
-                  {skills.map((skill) => (
+                  {visibleSkills.map((skill) => (
                     <span
                       key={skill.id}
                       className={
@@ -556,8 +565,15 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
                         type="button"
                         onClick={() => toggleSkill(skill.id)}
                         disabled={deletingSkillId === skill.id}
-                        className="pressable cursor-pointer rounded-full px-3 py-1.5 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none disabled:cursor-not-allowed"
+                        className="pressable flex cursor-pointer items-center gap-1.5 rounded-full px-3 py-1.5 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none disabled:cursor-not-allowed"
                       >
+                        {skill.scope === "system" &&
+                          SYSTEM_SKILL_ICONS[skill.name] && (
+                            <Icon
+                              name={SYSTEM_SKILL_ICONS[skill.name]}
+                              size={13}
+                            />
+                          )}
                         {skill.name}
                       </button>
                       {skill.scope === "private" && (
@@ -576,22 +592,6 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
                         </button>
                       )}
                     </span>
-                  ))}
-                  {/* Template role tags from the mockup — tap to create the skill and select it. */}
-                  {visibleTemplateRoles.map((name) => (
-                    <button
-                      key={`template-${name}`}
-                      type="button"
-                      onClick={() => addTemplateRole(name)}
-                      disabled={creatingTemplate === name || creatingSkill}
-                      className={
-                        "pressable flex cursor-pointer items-center gap-1 rounded-full border border-line px-3 py-1.5 text-xs font-medium text-ink " +
-                        "focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none " +
-                        "disabled:cursor-not-allowed disabled:opacity-40"
-                      }
-                    >
-                      {name}
-                    </button>
                   ))}
                 </>
               )}
