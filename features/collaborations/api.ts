@@ -244,7 +244,6 @@ export interface CreateCollabInput {
   description: string;
   skillIds: string[]; // references SkillTag.id
   slotsTotal: number;
-  type: ProjectType;
   dueDate: string; // ISO 8601 ("" = no due date)
   photoUrls: string[];
 }
@@ -252,8 +251,9 @@ export interface CreateCollabInput {
 /**
  * Form-level payload: raw Files instead of URLs — the api layer uploads them
  * first (POST /api/upload, same as PostModal) and swaps in the returned
- * URLs. `type`/`dueDate` are collected by MakeCollabModal (Batch 3);
- * dueDate "" means no due date (sent as null).
+ * URLs. `dueDate` is collected by MakeCollabModal ("" means no due
+ * date, sent as null). The project type is NOT collected: it is never
+ * shown anywhere in the app, so the backend stores its default.
  */
 export interface CreateCollabFormInput
   extends Omit<CreateCollabInput, "photoUrls"> {
@@ -261,7 +261,7 @@ export interface CreateCollabFormInput
 }
 
 // The backend's create expects title, description, required_member
-// and skills_needed (existing skill ids); type/due_date/media_urls are
+// and skills_needed (existing skill ids); due_date/media_urls are
 // stored too. Photos are uploaded first (POST /api/upload, same as
 // PostModal) — an upload failure throws, the modal shows it inline and
 // keeps the draft; the collab is only created once every upload succeeds.
@@ -280,7 +280,6 @@ export async function createCollabProject(
         description: data.description,
         required_member: data.slotsTotal,
         skills_needed: data.skillIds,
-        type: data.type,
         due_date: data.dueDate || null,
         media_urls: uploaded.map((item) => item.url),
         media_public_ids: uploaded.map((item) => item.public_id),

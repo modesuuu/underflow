@@ -5,7 +5,6 @@ import clsx from "clsx";
 import { Icon } from "@/components/ui/Icon";
 import { toast } from "sonner";
 import { backendErrorMessage, createCollabProject } from "../api";
-import type { ProjectType } from "../types";
 import { createSkill, deleteSkill, getSkills, type Skill } from "../skills-api";
 import { ApiError } from "@/lib/api-client";
 
@@ -65,8 +64,6 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
   const [submitting, setSubmitting] = useState(false);
   const [photos, setPhotos] = useState<PhotoDraft[]>([]);
   const [photoError, setPhotoError] = useState<string | null>(null);
-  const [roleDraft, setRoleDraft] = useState("");
-  const [projectType, setProjectType] = useState<ProjectType>("coursework");
   const [dueDate, setDueDate] = useState("");
   const [fieldErrors, setFieldErrors] = useState<{
     title?: string;
@@ -211,9 +208,9 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
 
   /**
    * Shared create-as-private-skill + select path (POST /api/skills) used
-   * by the template tags and "Make Custom Role" — same as "Add a skill"
-   * except a 409 duplicate selects the existing skill silently instead
-   * of erroring. Throws on any other failure.
+   * by the "Add a skill" input and the template tags. A 409 duplicate
+   * selects the existing skill silently instead of erroring. Throws on
+   * any other failure.
    */
   const createAndSelectSkill = async (name: string) => {
     const existing = skills.find(
@@ -246,33 +243,6 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
     }
   };
 
-  /** "Make Custom Role": create it as a private skill and select it. */
-  const addCustomRole = async () => {
-    const value = roleDraft.trim();
-    if (!value || creatingSkill) return;
-    setCreatingSkill(true);
-    setSkillError(null);
-    try {
-      await createAndSelectSkill(value);
-      setRoleDraft("");
-    } catch (err) {
-      setSkillError(
-        err instanceof Error ? err.message : "Could not add this skill."
-      );
-    } finally {
-      setCreatingSkill(false);
-    }
-  };
-
-  const handleRoleKey = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      addCustomRole();
-    } else if (e.key === "Escape") {
-      setRoleDraft("");
-    }
-  };
-
   // P2: open/close animations are CSS keyframes (globals.css .modal-*-in/out),
   // gated behind prefers-reduced-motion. GSAP was dropped for this trivial
   // opacity/scale use — CSS is simpler and cheaper. (The sidebar migrated to
@@ -294,15 +264,14 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
       !skills.some((s) => s.name.trim().toLowerCase() === name.toLowerCase())
   );
 
+  /** The one skill input: create the name as a private skill and select it. */
   const addSkill = async () => {
     const name = skillDraft.trim();
     if (!name || creatingSkill) return;
     setCreatingSkill(true);
     setSkillError(null);
     try {
-      const skill = await createSkill(name);
-      setSkills((prev) => [...prev, skill]);
-      setSelectedSkills((prev) => new Set(prev).add(skill.id));
+      await createAndSelectSkill(name);
       setSkillDraft("");
     } catch (err) {
       setSkillError(
@@ -366,6 +335,8 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
     if (e.key === "Enter") {
       e.preventDefault();
       addSkill();
+    } else if (e.key === "Escape") {
+      setSkillDraft("");
     }
   };
 
@@ -392,7 +363,6 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
         description: description.trim(),
         skillIds: [...selectedSkills],
         slotsTotal: roleCount,
-        type: projectType,
         dueDate,
         photos: photoFiles,
       });
@@ -505,33 +475,20 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
             )}
           </div>
 
-          {/* Type + due date (Batch 3): type is stored-only — it is never
-              rendered anywhere in the UI. Due date is optional. */}
-          <div className="flex gap-3">
-            <div className="flex flex-1 flex-col gap-1">
-              <label htmlFor="make-collab-type-input" className="text-base font-medium">Type</label>
-              <select
-                id="make-collab-type-input"
-                value={projectType}
-                onChange={(e) => setProjectType(e.target.value as ProjectType)}
-                className="rounded-lg bg-surface px-4 py-3 text-base font-medium text-ink outline-none focus-visible:ring-2 focus-visible:ring-accent"
-              >
-                <option value="coursework">Coursework</option>
-                <option value="portfolio">Portfolio</option>
-                <option value="product">Product</option>
-              </select>
-            </div>
-            <div className="flex flex-1 flex-col gap-1">
-              <label htmlFor="make-collab-due-input" className="text-base font-medium">Due date</label>
-              <input
-                id="make-collab-due-input"
-                type="date"
-                value={dueDate}
-                min={new Date().toLocaleDateString("en-CA")}
-                onChange={(e) => setDueDate(e.target.value)}
-                className="rounded-lg bg-surface px-4 py-3 text-base font-medium text-ink outline-none focus-visible:ring-2 focus-visible:ring-accent"
-              />
-            </div>
+          {/* Due date (optional). There is deliberately no Type field:
+              the project type is never shown anywhere in the app, so
+              asking for it here was pointless. The backend stores its
+              default. */}
+          <div className="flex flex-col gap-1">
+            <label htmlFor="make-collab-due-input" className="text-base font-medium">Due date</label>
+            <input
+              id="make-collab-due-input"
+              type="date"
+              value={dueDate}
+              min={new Date().toLocaleDateString("en-CA")}
+              onChange={(e) => setDueDate(e.target.value)}
+              className="rounded-lg bg-surface px-4 py-3 text-base font-medium text-ink outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            />
           </div>
 
           {/* Roles / Skills */}
@@ -539,22 +496,25 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
             <label className="text-base font-medium">
               What Role do you want to find?
             </label>
-            {/* Make Custom Role: creates a private skill (POST /api/skills) and selects it — same path as the template tags / "Add a skill". */}
+            {/* The one and only skill input: whatever is typed here becomes
+                a private skill (POST /api/skills) and is selected as a role
+                for this project. The old separate "Make Custom Role" field
+                did exactly the same thing, so it was removed. */}
             <div className="flex items-center gap-2 rounded-lg bg-surface px-4 py-3 focus-within:outline-none focus-within:ring-2 focus-within:ring-accent">
               <input
                 type="text"
-                value={roleDraft}
-                onChange={(e) => setRoleDraft(e.target.value)}
-                onKeyDown={handleRoleKey}
-                placeholder="Make Custom Role"
-                aria-label="Custom role"
+                value={skillDraft}
+                onChange={(e) => setSkillDraft(e.target.value)}
+                onKeyDown={handleSkillKey}
+                placeholder="Add a skill"
+                aria-label="Add a skill"
                 className="min-w-0 flex-1 bg-transparent text-base font-medium text-ink outline-none placeholder:text-muted"
               />
               <button
                 type="button"
-                onClick={addCustomRole}
-                disabled={!roleDraft.trim() || creatingSkill}
-                aria-label="Add custom role"
+                onClick={addSkill}
+                disabled={!skillDraft.trim() || creatingSkill}
+                aria-label="Add skill"
                 className="pressable flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-sm bg-accent text-on-accent disabled:cursor-not-allowed disabled:opacity-40 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
               >
                 <Icon name="plus" size={14} className="text-ink" />
@@ -578,7 +538,7 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
                 </span>
               ) : skills.length === 0 && visibleTemplateRoles.length === 0 ? (
                 <p className="text-xs text-muted">
-                  You don&apos;t have any skills yet — add your first one below.
+                  You don&apos;t have any skills yet — add your first one above.
                 </p>
               ) : (
                 <>
@@ -668,27 +628,6 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
                 </button>
               </div>
             )}
-            {/* Add a skill: creates a private skill (POST /api/skills) and selects it */}
-            <div className="flex items-center gap-2 rounded-lg bg-surface px-4 py-3 focus-within:outline-none focus-within:ring-2 focus-within:ring-accent">
-              <input
-                type="text"
-                value={skillDraft}
-                onChange={(e) => setSkillDraft(e.target.value)}
-                onKeyDown={handleSkillKey}
-                placeholder="Add a skill"
-                aria-label="Add a skill"
-                className="min-w-0 flex-1 bg-transparent text-base font-medium text-ink outline-none placeholder:text-muted"
-              />
-              <button
-                type="button"
-                onClick={addSkill}
-                disabled={!skillDraft.trim() || creatingSkill}
-                aria-label="Add skill"
-                className="pressable flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-sm bg-accent text-on-accent disabled:cursor-not-allowed disabled:opacity-40 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
-              >
-                <Icon name="plus" size={14} className="text-ink" />
-              </button>
-            </div>
             {skillError && (
               <p role="alert" className="text-xs font-medium text-badge">
                 {skillError}
