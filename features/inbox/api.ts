@@ -73,10 +73,14 @@ export async function postMessage(
 
 export async function ensureDirectConversation(
   userId: string,
+  collabId?: string,
 ): Promise<BackendConversation> {
   const res = await apiFetch<ApiEnvelope<BackendConversation>>(
     "/api/inbox/conversations",
-    { method: "POST", body: JSON.stringify({ userId }) },
+    {
+      method: "POST",
+      body: JSON.stringify(collabId ? { userId, collabId } : { userId }),
+    },
   );
   if (!res.data) throw new Error("Could not open the conversation");
   return res.data;

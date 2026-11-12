@@ -1,7 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { openThread, refreshConversations, useConversations } from "../store";
+import {
+  consumePendingOpenThreadId,
+  openThread,
+  peekPendingOpenThreadId,
+  refreshConversations,
+  useConversations,
+} from "../store";
 import { ChatPane } from "./ChatPane";
 import { MessagesColumn } from "./MessagesColumn";
 
@@ -26,7 +32,12 @@ export function InboxShell() {
     );
   }, [conversations, query]);
 
+  // A pending open (handed over by a Chat button / apply action)
+  // wins over both the current selection and the newest-thread
+  // default, so the inbox lands on the intended conversation.
+  const pendingId = peekPendingOpenThreadId();
   const selected =
+    conversations.find((thread) => thread.id === (pendingId ?? selectedId)) ??
     conversations.find((thread) => thread.id === selectedId) ??
     conversations[0] ??
     null;
@@ -36,6 +47,16 @@ export function InboxShell() {
   useEffect(() => {
     void refreshConversations();
   }, []);
+
+  // Once the pending thread is in the list, make it the sticky
+  // selection and clear the handoff.
+  useEffect(() => {
+    const pending = peekPendingOpenThreadId();
+    if (pending && conversations.some((thread) => thread.id === pending)) {
+      consumePendingOpenThreadId();
+      setSelectedId(pending);
+    }
+  }, [conversations]);
 
   // Opening a thread fetches its history and marks it read; the
   // effect re-runs when new messages land in the open thread so

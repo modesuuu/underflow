@@ -467,6 +467,26 @@ export interface OutgoingApplicationInput {
  * message): reload the list and return the thread's id so the
  * caller can navigate to the inbox.
  */
+/* --- Pending open ------------------------------------------------
+ * A Chat button or an apply elsewhere in the app hands the inbox a
+ * thread id to open. The shell peeks at it while rendering (so the
+ * open thread is never some other conversation for a frame) and
+ * consumes it once the thread is in the loaded list, making it the
+ * sticky selection. */
+let pendingOpenThreadId: string | null = null;
+
+export function requestOpenThread(id: string): void {
+  pendingOpenThreadId = id;
+}
+
+export function peekPendingOpenThreadId(): string | null {
+  return pendingOpenThreadId;
+}
+
+export function consumePendingOpenThreadId(): void {
+  pendingOpenThreadId = null;
+}
+
 export async function startApplicationThread(
   input: OutgoingApplicationInput,
 ): Promise<string | null> {
@@ -474,12 +494,17 @@ export async function startApplicationThread(
   const thread = conversations.find(
     (t) => t.application?.projectId === input.projectId,
   );
+  if (thread) requestOpenThread(thread.id);
   return thread?.id ?? null;
 }
 
 export interface DirectThreadInput {
   personId: string | null;
   name: string;
+  /** The collab page the chat was opened from: an existing
+   * application conversation for that collab is continued instead
+   * of opening a second thread with the same person. */
+  projectId?: string;
 }
 
 /**
@@ -491,7 +516,8 @@ export async function startDirectThread(
   input: DirectThreadInput,
 ): Promise<string | null> {
   if (!input.personId) return null;
-  const summary = await ensureDirectConversation(input.personId);
+  const summary = await ensureDirectConversation(input.personId, input.projectId);
   await refreshConversations();
+  requestOpenThread(summary.id);
   return summary.id;
 }

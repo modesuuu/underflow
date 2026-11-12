@@ -170,6 +170,7 @@ export function MyCollabDetailContent({ project }: MyCollabDetailContentProps) {
                     await startDirectThread({
                       personId: ownerPersonId,
                       name: project.owner.name,
+                      projectId: project.id,
                     });
                     router.push("/inbox");
                   } catch (err) {
