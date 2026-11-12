@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  allowedDevOrigins: ["100.121.159.106", "10.61.4.201"],
   images: {
     remotePatterns: [
       // Backend media storage (profile photos, post media) — Cloudinary.

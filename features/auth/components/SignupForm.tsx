@@ -3,9 +3,10 @@
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { toast } from "sonner";
 import { ApiError } from "@/lib/api-client";
 import { register } from "../api";
-import { validateRegister, type FieldErrors } from "../validation";
+import { firstError, validateRegister, type FieldErrors } from "../validation";
 import { AuthField } from "./AuthField";
 import { AuthShell } from "./AuthShell";
 import { GoogleButton } from "./GoogleButton";
@@ -18,7 +19,6 @@ export function SignupForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errors, setErrors] = useState<FieldErrors>({});
-  const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   const submit = async (event: FormEvent) => {
@@ -26,20 +26,28 @@ export function SignupForm() {
     if (submitting) return;
     const fieldErrors = validateRegister({ username, email, password });
     setErrors(fieldErrors);
-    if (Object.keys(fieldErrors).length > 0) return;
+    if (Object.keys(fieldErrors).length > 0) {
+      toast.error(firstError(fieldErrors) ?? "Check the form and try again.");
+      return;
+    }
     setSubmitting(true);
-    setFormError(null);
     try {
       await register({ username, email, password });
       router.replace(next);
     } catch (err) {
       if (err instanceof ApiError && err.code === "username_taken") {
+        // Taken username/email: inline on the field AND a toast,
+        // so the reason is impossible to miss.
         setErrors((prev) => ({ ...prev, username: err.message }));
+        toast.error(err.message);
       } else if (err instanceof ApiError && err.code === "email_taken") {
         setErrors((prev) => ({ ...prev, email: err.message }));
+        toast.error(err.message);
       } else {
-        setFormError(
-          err instanceof ApiError ? err.message : "Something went wrong. Try again.",
+        toast.error(
+          err instanceof ApiError
+            ? err.message
+            : "Can't reach the server. Check your connection and try again.",
         );
       }
     } finally {
@@ -95,14 +103,6 @@ export function SignupForm() {
           onChange={(e) => setPassword(e.target.value)}
           error={errors.password}
         />
-        {formError && (
-          <p
-            role="alert"
-            className="rounded-lg border border-badge/30 bg-badge/10 px-3 py-2 text-sm text-badge"
-          >
-            {formError}
-          </p>
-        )}
         <button
           type="submit"
           disabled={submitting}

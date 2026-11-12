@@ -3,9 +3,10 @@
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { toast } from "sonner";
 import { ApiError } from "@/lib/api-client";
 import { login } from "../api";
-import { validateLogin, type FieldErrors } from "../validation";
+import { firstError, validateLogin, type FieldErrors } from "../validation";
 import { AuthField } from "./AuthField";
 import { AuthShell } from "./AuthShell";
 import { GoogleButton } from "./GoogleButton";
@@ -17,7 +18,6 @@ export function LoginForm() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [errors, setErrors] = useState<FieldErrors>({});
-  const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
 
@@ -26,15 +26,24 @@ export function LoginForm() {
     if (submitting) return;
     const fieldErrors = validateLogin({ username, password });
     setErrors(fieldErrors);
-    if (Object.keys(fieldErrors).length > 0) return;
+    if (Object.keys(fieldErrors).length > 0) {
+      // Inline errors pinpoint the field; the toast is the clear
+      // notification the user asked for (first problem, spelled out).
+      toast.error(firstError(fieldErrors) ?? "Check the form and try again.");
+      return;
+    }
     setSubmitting(true);
-    setFormError(null);
     try {
       await login({ username, password });
       router.replace(next);
     } catch (err) {
-      setFormError(
-        err instanceof ApiError ? err.message : "Something went wrong. Try again.",
+      // Credential failures arrive pre-genericized from the api
+      // layer ("Username/password salah"); anything else that is
+      // not an ApiError is a network failure.
+      toast.error(
+        err instanceof ApiError
+          ? err.message
+          : "Can't reach the server. Check your connection and try again.",
       );
     } finally {
       setSubmitting(false);
@@ -78,14 +87,6 @@ export function LoginForm() {
           onChange={(e) => setPassword(e.target.value)}
           error={errors.password}
         />
-        {formError && (
-          <p
-            role="alert"
-            className="rounded-lg border border-badge/30 bg-badge/10 px-3 py-2 text-sm text-badge"
-          >
-            {formError}
-          </p>
-        )}
         <button
           type="submit"
           disabled={submitting}

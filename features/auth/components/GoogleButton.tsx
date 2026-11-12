@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { signInWithGoogle } from "../api";
 
 /** The Google "G" mark (official four-color mark, drawn as SVG). */
@@ -36,12 +37,10 @@ function GoogleMark({ className }: { className?: string }) {
 export function GoogleButton({ next, disabled }: { next: string; disabled?: boolean }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   const run = async () => {
     if (busy || disabled) return;
     setBusy(true);
-    setError(null);
     try {
       await signInWithGoogle();
       router.replace(next);
@@ -49,7 +48,7 @@ export function GoogleButton({ next, disabled }: { next: string; disabled?: bool
       // The user closed Google's chooser: reset silently, no error.
       const cancelled =
         err instanceof Error && "code" in err && (err as { code?: string }).code === "google_cancelled";
-      if (!cancelled) setError("Google sign-in failed. Try again.");
+      if (!cancelled) toast.error("Google sign-in failed. Try again.");
     } finally {
       setBusy(false);
     }
@@ -66,11 +65,6 @@ export function GoogleButton({ next, disabled }: { next: string; disabled?: bool
         <GoogleMark className="size-5 shrink-0" />
         {busy ? "Signing in…" : "Continue with Google"}
       </button>
-      {error && (
-        <p role="alert" className="text-xs text-badge">
-          {error}
-        </p>
-      )}
     </div>
   );
 }

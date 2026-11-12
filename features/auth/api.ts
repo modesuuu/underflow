@@ -224,11 +224,10 @@ async function loginViaBackend(input: LoginInput): Promise<AuthSession> {
     email?: string | null;
   }>(res);
   if (!res.ok || !body.success || !body.data?.token) {
-    throw new ApiError(
-      res.status,
-      "invalid_credentials",
-      body.message || "Username or password is incorrect.",
-    );
+    // Deliberately generic (user rule 2026-11-12): the backend
+    // distinguishes "user not found" (404) from "wrong password"
+    // (400), but the UI never reveals which one failed.
+    throw new ApiError(res.status, "invalid_credentials", "Username/password salah");
   }
   const session: AuthSession = {
     user: toAuthUser(body.data),
@@ -251,8 +250,21 @@ async function registerViaBackend(input: RegisterInput): Promise<AuthSession> {
   });
   const body = await readBackendEnvelope<{ id: string; username: string }>(res);
   if (!res.ok || !body.success) {
-    const code = res.status === 409 ? "username_taken" : "validation_error";
-    throw new ApiError(res.status, code, body.message || "Could not create the account.");
+    // The backend answers 400 for every register failure, so the
+    // duplicates are recognized by message and mapped to the field
+    // they belong to (the form renders them inline + as a toast).
+    const message = body.message || "";
+    if (message.includes("Username tersebut telah terdaftar")) {
+      throw new ApiError(res.status, "username_taken", "That username is already taken.");
+    }
+    if (message.includes("Email tersebut telah terdaftar")) {
+      throw new ApiError(res.status, "email_taken", "That email is already registered.");
+    }
+    throw new ApiError(
+      res.status,
+      "validation_error",
+      message || "Could not create the account.",
+    );
   }
   return loginViaBackend({ username: input.username, password: input.password });
 }
