@@ -24,7 +24,7 @@ interface BackendCollab {
   owner: { id: string; username: string; photo_profile_url: string };
   /** Accepted members (owner included), join order. Sent by the
    *  detail + my-collaborations payloads; absent on the public list. */
-  members?: { id: string; username: string; photo_profile_url?: string }[];
+  members?: { id: string; username: string; photo_profile_url?: string; work_status?: string }[];
   created_at?: string;
 }
 
@@ -39,6 +39,16 @@ function relativeAgo(iso: string | undefined): string {
   return "just now";
 }
 
+/** user_collaboration.status values the UI understands; anything
+ *  else (e.g. a 'pending' application row) maps to undefined. */
+function workStatusOf(
+  raw: string | undefined
+): "not-started" | "complete" | "revise" | undefined {
+  return raw === "not-started" || raw === "complete" || raw === "revise"
+    ? raw
+    : undefined;
+}
+
 export function mapBackendCollab(b: BackendCollab): CollabProject {
   const owner: CollabMember = {
     id: b.owner.id,
@@ -46,6 +56,9 @@ export function mapBackendCollab(b: BackendCollab): CollabProject {
     role: "Owner",
     avatarUrl: b.owner.photo_profile_url || undefined,
     isOwner: true,
+    workStatus: workStatusOf(
+      (b.members ?? []).find((m) => m.id === b.owner.id)?.work_status
+    ),
   };
   const openSlots = Math.max(0, b.required_member - b.accepted_member_count);
   // Real accepted members from the payload: everyone but the owner,
@@ -58,6 +71,7 @@ export function mapBackendCollab(b: BackendCollab): CollabProject {
       name: m.username,
       role: "Member",
       avatarUrl: m.photo_profile_url || undefined,
+      workStatus: workStatusOf(m.work_status),
     }));
   const members: CollabMember[] = [owner, ...accepted];
   for (let i = 0; i < openSlots; i++) {
@@ -367,6 +381,42 @@ export async function deleteCollabProject(id: string): Promise<void> {
   await apiFetch<ApiEnvelope<unknown>>(`/api/collab/${id}`, {
     method: "DELETE",
   });
+}
+
+/**
+ * POST /api/collab/:id/complete (owner only): project status ->
+ * completed and every member's work status -> complete.
+ */
+export async function completeCollabProject(id: string): Promise<void> {
+  await apiFetch<ApiEnvelope<unknown>>(`/api/collab/${id}/complete`, {
+    method: "POST",
+  });
+}
+
+/**
+ * POST /api/collab/:id/reopen (owner only): undo completeProject;
+ * members who were complete go back to not-started (revise stays).
+ */
+export async function reopenCollabProject(id: string): Promise<void> {
+  await apiFetch<ApiEnvelope<unknown>>(`/api/collab/${id}/reopen`, {
+    method: "POST",
+  });
+}
+
+/**
+ * PUT /api/collab/:id/members/:userId/status (owner only): set one
+ * member's work status. Marking a member unfinished reopens a
+ * completed project (backend rule).
+ */
+export async function setMemberWorkStatus(
+  id: string,
+  userId: string,
+  status: "not-started" | "complete" | "revise"
+): Promise<void> {
+  await apiFetch<ApiEnvelope<unknown>>(
+    `/api/collab/${id}/members/${userId}/status`,
+    { method: "PUT", body: JSON.stringify({ status }) }
+  );
 }
 
 export type ApplyResult = { success: boolean; alreadyApplied?: boolean };

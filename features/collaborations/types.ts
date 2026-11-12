@@ -12,6 +12,9 @@ export interface CollabMember {
   isOwner?: boolean;
   /** True for unfilled slots rendered as "Waiting...." */
   isOpenSlot?: boolean;
+  /** Work progress the owner set for this member (sent by the
+   *  my-collaborations payload); drives the board columns. */
+  workStatus?: "not-started" | "complete" | "revise";
 }
 
 export interface SkillTag {

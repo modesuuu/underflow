@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Icon } from "@/components/ui/Icon";
@@ -10,12 +10,18 @@ import { PhotoLightbox } from "@/components/ui/PhotoLightbox";
 import { startDirectThread } from "@/features/inbox/store";
 import { STATUS_ICONS } from "@/features/collaborations/status";
 import { formatDueDate } from "@/features/collaborations/sort";
-import type { ProjectStatus } from "@/features/collaborations/types";
+import type {
+  CollabMember,
+  ProjectStatus,
+} from "@/features/collaborations/types";
 import { MakeCollabModal } from "@/features/collaborations/components/MakeCollabModal";
 import { ConfirmDialog } from "@/features/inbox/components/ConfirmDialog";
 import {
   backendErrorMessage,
+  completeCollabProject,
   deleteCollabProject,
+  reopenCollabProject,
+  setMemberWorkStatus,
 } from "@/features/collaborations/api";
 import { toast } from "sonner";
 import { useSessionUser } from "@/features/auth/store";
@@ -26,6 +32,30 @@ const STATUS_LABEL: Record<ProjectStatus, string> = {
   "in-progress": "In progress",
   completed: "Completed",
 };
+
+const WORK_STATUS_LABEL = {
+  "not-started": "Active",
+  complete: "Complete",
+  revise: "Revise",
+} as const;
+
+const WORK_STATUS_CHIP: Record<
+  "not-started" | "complete" | "revise",
+  string
+> = {
+  "not-started": "bg-placeholder text-muted",
+  complete: "bg-accent text-on-accent",
+  revise: "bg-badge text-surface",
+};
+
+const WORK_STATUS_OPTIONS: {
+  value: "not-started" | "complete" | "revise";
+  label: string;
+}[] = [
+  { value: "not-started", label: "Active" },
+  { value: "complete", label: "Complete" },
+  { value: "revise", label: "Revise" },
+];
 
 /**
  * Same lime-placeholder rule as the public detail: mock photo tokens
@@ -46,10 +76,22 @@ interface MyCollabDetailContentProps {
  * kept on purpose: no Apply CTA (Open Circle + a status bar instead), and the
  * myStatus-gated Circle entry.
  */
-export function MyCollabDetailContent({ project }: MyCollabDetailContentProps) {
+export function MyCollabDetailContent({
+  project: initialProject,
+}: MyCollabDetailContentProps) {
   const router = useRouter();
   const sessionUser = useSessionUser();
+  // Local copy: the owner's progress controls update it in place
+  // (the board refetches on its own mount, so no cross-page
+  // invalidation is needed). Resynced when the loader hands over
+  // a fresh project (e.g. after the edit modal's refresh).
+  const [project, setProject] = useState(initialProject);
+  useEffect(() => {
+    setProject(initialProject);
+  }, [initialProject]);
   const [editOpen, setEditOpen] = useState(false);
+  const [progressBusy, setProgressBusy] = useState(false);
+  const [memberMenuId, setMemberMenuId] = useState<string | null>(null);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const isOwner = sessionUser !== null && sessionUser.id === project.owner.id;
 
@@ -66,6 +108,89 @@ export function MyCollabDetailContent({ project }: MyCollabDetailContentProps) {
       );
     }
   };
+  const handleCompleteProject = async () => {
+    setProgressBusy(true);
+    try {
+      await completeCollabProject(project.id);
+      setProject((p) => ({
+        ...p,
+        status: "completed",
+        myStatus: p.myStatus === "pending" ? p.myStatus : "complete",
+        members: p.members.map((m) =>
+          m.isOpenSlot ? m : { ...m, workStatus: "complete" as const }
+        ),
+      }));
+      toast.success("Project marked complete");
+    } catch (err) {
+      toast.error("Couldn't complete this project", {
+        description: backendErrorMessage(err),
+      });
+    } finally {
+      setProgressBusy(false);
+    }
+  };
+
+  const handleReopenProject = async () => {
+    setProgressBusy(true);
+    try {
+      await reopenCollabProject(project.id);
+      setProject((p) => ({
+        ...p,
+        status: "in-progress",
+        myStatus: p.myStatus === "complete" ? "not-started" : p.myStatus,
+        members: p.members.map((m) =>
+          m.workStatus === "complete"
+            ? { ...m, workStatus: "not-started" as const }
+            : m
+        ),
+      }));
+      toast.success("Project reopened");
+    } catch (err) {
+      toast.error("Couldn't reopen this project", {
+        description: backendErrorMessage(err),
+      });
+    } finally {
+      setProgressBusy(false);
+    }
+  };
+
+  const handleSetMemberStatus = async (
+    member: CollabMember,
+    status: "not-started" | "complete" | "revise"
+  ) => {
+    setMemberMenuId(null);
+    try {
+      await setMemberWorkStatus(project.id, member.id, status);
+      setProject((p) => ({
+        ...p,
+        // Same coherence rule as the backend: an unfinished
+        // member reopens a completed project.
+        status:
+          status !== "complete" && p.status === "completed"
+            ? "in-progress"
+            : p.status,
+        myStatus:
+          sessionUser !== null && sessionUser.id === member.id
+            ? status
+            : p.myStatus,
+        members: p.members.map((m) =>
+          m.id === member.id ? { ...m, workStatus: status } : m
+        ),
+      }));
+      toast.success(
+        status === "complete"
+          ? `${member.name} marked complete`
+          : status === "revise"
+            ? `Revision requested for ${member.name}`
+            : `${member.name} back to Active`
+      );
+    } catch (err) {
+      toast.error("Couldn't update the member status", {
+        description: backendErrorMessage(err),
+      });
+    }
+  };
+
   const ownerPersonId = project.owner.id;
   const isOwnProject =
     sessionUser !== null && sessionUser.id === ownerPersonId;
@@ -89,7 +214,28 @@ export function MyCollabDetailContent({ project }: MyCollabDetailContentProps) {
               {STATUS_LABEL[project.status]}
             </span>
             {isOwner && (
-              <div className="flex shrink-0 items-center gap-2">
+              <div className="flex shrink-0 flex-wrap items-center gap-2">
+                {project.status === "completed" ? (
+                  <button
+                    type="button"
+                    disabled={progressBusy}
+                    onClick={() => void handleReopenProject()}
+                    className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full border border-line bg-surface px-3 py-1.5 text-xs font-medium text-ink transition-colors hover:bg-bg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    <Icon name="refresh" size={14} />
+                    Reopen project
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    disabled={progressBusy}
+                    onClick={() => void handleCompleteProject()}
+                    className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full bg-accent px-3 py-1.5 text-xs font-semibold text-on-accent transition-opacity hover:opacity-85 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    <Icon name="check" size={14} />
+                    Complete project
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => setEditOpen(true)}
@@ -247,19 +393,80 @@ export function MyCollabDetailContent({ project }: MyCollabDetailContentProps) {
                   </div>
                 </div>
               ) : (
-                /* Filled member: avatar + name + role — links to profile */
-                <Link
+                /* Filled member: avatar + name + role — links to profile.
+                   The work-status chip is the owner's progress signal;
+                   the owner also gets the menu that changes it. */
+                <div
                   key={member.id}
-                  href={"/profile/" + (member.id)}
-                  className="group flex items-center gap-2"
-                  aria-label={"View " + member.name + "'s profile"}
+                  className="relative flex items-center gap-1"
                 >
-                  <Avatar size={32} src={member.avatarUrl} alt={member.name} />
-                  <div className="flex flex-col">
-                    <span className="text-base font-medium text-ink group-hover:underline">{member.name}</span>
-                    <span className="text-2xs text-muted">{member.role}</span>
-                  </div>
-                </Link>
+                  <Link
+                    href={"/profile/" + (member.id)}
+                    className="group flex items-center gap-2"
+                    aria-label={"View " + member.name + "'s profile"}
+                  >
+                    <Avatar size={32} src={member.avatarUrl} alt={member.name} />
+                    <div className="flex flex-col">
+                      <span className="text-base font-medium text-ink group-hover:underline">{member.name}</span>
+                      <span className="text-2xs text-muted">{member.role}</span>
+                      {member.workStatus && (
+                        <span
+                          className={
+                            "mt-1 inline-flex w-fit rounded-full px-2 py-0.5 text-2xs font-semibold " +
+                            WORK_STATUS_CHIP[member.workStatus]
+                          }
+                        >
+                          {WORK_STATUS_LABEL[member.workStatus]}
+                        </span>
+                      )}
+                    </div>
+                  </Link>
+                  {isOwner && (
+                    <>
+                      <button
+                        type="button"
+                        aria-label={"Set status for " + member.name}
+                        aria-haspopup="true"
+                        onClick={() =>
+                          setMemberMenuId((cur) =>
+                            cur === member.id ? null : member.id
+                          )
+                        }
+                        className="flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-full text-muted transition-colors hover:bg-bg hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                      >
+                        <Icon name="dots-vertical-rounded" size={16} />
+                      </button>
+                      {memberMenuId === member.id && (
+                        <>
+                          <button
+                            type="button"
+                            aria-hidden="true"
+                            tabIndex={-1}
+                            onClick={() => setMemberMenuId(null)}
+                            className="fixed inset-0 z-10 cursor-default"
+                          />
+                          <div className="absolute left-0 top-full z-20 mt-1 w-44 rounded-lg border border-line bg-surface p-1 shadow-lg">
+                            {WORK_STATUS_OPTIONS.map((opt) => (
+                              <button
+                                key={opt.value}
+                                type="button"
+                                onClick={() =>
+                                  void handleSetMemberStatus(member, opt.value)
+                                }
+                                className="flex w-full cursor-pointer items-center justify-between rounded-md px-2.5 py-2 text-left text-sm text-ink transition-colors hover:bg-bg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                              >
+                                {opt.label}
+                                {member.workStatus === opt.value && (
+                                  <Icon name="check" size={14} className="text-accent" />
+                                )}
+                              </button>
+                            ))}
+                          </div>
+                        </>
+                      )}
+                    </>
+                  )}
+                </div>
               )
             )}
           </div>
@@ -286,6 +493,10 @@ export function MyCollabDetailContent({ project }: MyCollabDetailContentProps) {
         {project.myStatus === "pending" ? (
           <div className="flex w-full items-center justify-center rounded-full bg-placeholder px-6 py-3 text-sm font-semibold text-muted">
             Pending
+          </div>
+        ) : project.myStatus === "revise" && !isOwner ? (
+          <div className="flex w-full items-center justify-center rounded-full bg-placeholder px-6 py-3 text-sm font-semibold text-muted">
+            Revision requested by the owner
           </div>
         ) : project.status === "completed" ? (
           <div className="flex w-full items-center justify-center rounded-md bg-ink/80 py-3.5 text-base font-semibold text-surface">
