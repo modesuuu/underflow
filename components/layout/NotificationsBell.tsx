@@ -11,6 +11,7 @@ import {
   useUnreadNotificationCount,
 } from "@/features/dashboard/notifications-store";
 import type { NotificationItem } from "@/features/dashboard/types";
+import { openApplicationThreadByProject } from "@/features/inbox/store";
 
 /**
  * TopBar bell + notifications dropdown, present on every page.
@@ -67,7 +68,10 @@ export function NotificationsBell() {
   const press = (item: NotificationItem) => {
     if (!item.read) markNotificationRead(item.id);
     setBellOpen(false);
-    if (item.href) {
+    if (item.openCollabId) {
+      void openApplicationThreadByProject(item.openCollabId);
+      router.push("/inbox");
+    } else if (item.href) {
       router.push(item.href);
     }
   };

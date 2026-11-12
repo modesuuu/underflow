@@ -58,6 +58,7 @@ export interface Post {
 export type NotificationAction =
   | "commented in"
   | "commented on your post"
+  | "applied to your project"
   | "liked your post"
   | "liked your comment"
   | "mentioned you in"
@@ -99,4 +100,7 @@ export interface NotificationItem {
   timeLabel?: string;
   /** Relative label, e.g. "2 hours ago" (frontend-only display field). */
   agoLabel?: string;
+  /** Application notifications only: the collab that was applied
+   *  to. Pressing the row opens that application's inbox thread. */
+  openCollabId?: string;
 }

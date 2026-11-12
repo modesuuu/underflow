@@ -12,6 +12,7 @@ import clsx from "clsx";
 import { Avatar } from "@/components/ui/Avatar";
 import { Icon } from "@/components/ui/Icon";
 import type { NotificationItem } from "../types";
+import { openApplicationThreadByProject } from "@/features/inbox/store";
 
 type Tab = "all" | "unread" | "read";
 
@@ -159,7 +160,12 @@ export function NotificationsPanel({ className }: { className?: string }) {
   // without a destination only marks itself read.
   const press = (item: NotificationItem) => {
     markRead(item);
-    if (item.href) {
+    if (item.openCollabId) {
+      // Application notification: land on the application's
+      // inbox thread, not just the inbox page.
+      void openApplicationThreadByProject(item.openCollabId);
+      router.push("/inbox");
+    } else if (item.href) {
       router.push(item.href);
     }
   };

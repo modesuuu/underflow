@@ -498,6 +498,21 @@ export async function startApplicationThread(
   return thread?.id ?? null;
 }
 
+/**
+ * Open the application thread for a collab (used when an
+ * application notification is pressed): refresh the list, find
+ * the thread by its project, and hand its id to the shell.
+ */
+export async function openApplicationThreadByProject(
+  projectId: string,
+): Promise<void> {
+  await refreshConversations();
+  const thread = conversations.find(
+    (t) => t.application?.projectId === projectId,
+  );
+  if (thread) requestOpenThread(thread.id);
+}
+
 export interface DirectThreadInput {
   personId: string | null;
   name: string;
