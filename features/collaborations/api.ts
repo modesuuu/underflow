@@ -12,6 +12,7 @@ interface BackendCollab {
   type?: ProjectType;
   due_date?: string | null;
   media_urls?: string[];
+  media_public_ids?: (string | null)[];
   status: CollabProject["status"];
   required_member: number;
   accepted_member_count: number;
@@ -74,6 +75,9 @@ export function mapBackendCollab(b: BackendCollab): CollabProject {
     })),
     description,
     photos: [...(b.media_urls ?? [])],
+    photoPublicIds: (b.media_urls ?? []).map(
+      (_, i) => b.media_public_ids?.[i] ?? null
+    ),
     owner,
   };
 }
@@ -287,6 +291,51 @@ export async function createCollabProject(
         due_date: data.dueDate || null,
         media_urls: uploaded.map((item) => item.url),
         media_public_ids: uploaded.map((item) => item.public_id),
+      }),
+    });
+    return { success: true };
+  }
+  return { success: true };
+}
+
+/**
+ * PUT /api/collab/:id (owner only — the backend answers 403 otherwise).
+ * Same form payload as create, plus the photos the project already
+ * has: their URLs + public ids go back paired with any new uploads,
+ * because the backend replaces the media set wholesale (DELETE +
+ * INSERT) whenever a paired set arrives; an empty pair clears all
+ * photos. dueDate "" is sent as null, which the backend reads as
+ * "clear the date".
+ */
+export interface UpdateCollabFormInput extends CreateCollabFormInput {
+  existingPhotos: { url: string; publicId: string | null }[];
+}
+
+export async function updateCollabProject(
+  id: string,
+  data: UpdateCollabFormInput
+): Promise<{ success: boolean }> {
+  if (isApiConfigured()) {
+    const uploaded =
+      data.photos.length > 0
+        ? await Promise.all(data.photos.map((file) => uploadImage(file)))
+        : [];
+    await apiFetch<ApiEnvelope<unknown>>(`/api/collab/${id}`, {
+      method: "PUT",
+      body: JSON.stringify({
+        title: data.title,
+        description: data.description,
+        required_member: data.slotsTotal,
+        skills_needed: data.skillIds,
+        due_date: data.dueDate || null,
+        media_urls: [
+          ...data.existingPhotos.map((p) => p.url),
+          ...uploaded.map((item) => item.url),
+        ],
+        media_public_ids: [
+          ...data.existingPhotos.map((p) => p.publicId),
+          ...uploaded.map((item) => item.public_id),
+        ],
       }),
     });
     return { success: true };

@@ -5,7 +5,11 @@ import clsx from "clsx";
 import { Icon } from "@/components/ui/Icon";
 import { DateField } from "@/components/ui/DateField";
 import { toast } from "sonner";
-import { backendErrorMessage, createCollabProject } from "../api";
+import {
+  backendErrorMessage,
+  createCollabProject,
+  updateCollabProject,
+} from "../api";
 import {
   createSkill,
   deleteSkill,
@@ -14,11 +18,16 @@ import {
   SYSTEM_SKILL_ORDER,
   type Skill,
 } from "../skills-api";
+import type { CollabProject } from "../types";
 import { ApiError } from "@/lib/api-client";
 
 interface MakeCollabModalProps {
   open: boolean;
   onClose: () => void;
+  /** When set, the modal edits this project instead of creating one. */
+  editing?: CollabProject | null;
+  /** Edit mode only: fired after a successful save, before onClose. */
+  onUpdated?: () => void;
 }
 
 /** Max photo upload constraints (matches 5-slot design). */
@@ -27,13 +36,21 @@ const MAX_PHOTO_BYTES = 5 * 1024 * 1024; // 5 MB per file
 
 
 
-/** A selected photo with an instant blob: preview URL. */
+/** A selected photo with a preview URL. New picks carry their File;
+ *  photos the project already has (edit mode) carry only the remote
+ *  URL + its Cloudinary public id. */
 interface PhotoDraft {
-  file: File;
+  file?: File;
   url: string;
+  publicId?: string | null;
 }
 
-export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
+export function MakeCollabModal({
+  open,
+  onClose,
+  editing,
+  onUpdated,
+}: MakeCollabModalProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
@@ -93,6 +110,27 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
 
   useEffect(() => {
     if (open) loadSkills();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open ]);
+
+  // Edit mode: every open starts from the project's current values,
+  // so an abandoned edit never leaks into the next session. (Create
+  // mode keeps its draft between opens, as before.)
+  useEffect(() => {
+    if (!open || !editing) return;
+    setTitle(editing.title);
+    setDescription(editing.description);
+    setSelectedSkills(new Set(editing.skills.map((s) => s.id)));
+    setRoleCount(editing.slotsTotal);
+    setDueDate(editing.dueDate);
+    setPhotos(
+      editing.photos.map((url, i) => ({
+        url,
+        publicId: editing.photoPublicIds[i] ?? null,
+      }))
+    );
+    setSubmitError(null);
+    setFieldErrors({});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open ]);
 
@@ -357,32 +395,57 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
 
     setSubmitting(true);
     setSubmitError(null);
-    // Photos are uploaded inside createCollabProject (POST /api/upload);
+    // Photos are uploaded inside the api functions (POST /api/upload);
     // an upload failure throws, shows inline, and keeps the draft.
-    const photoFiles = photos.map((p) => p.file);
+    const newFiles = photos
+      .filter((p) => p.file)
+      .map((p) => p.file as File);
     try {
-      await createCollabProject({
-        title: title.trim(),
-        description: description.trim(),
-        skillIds: [...selectedSkills],
-        slotsTotal: roleCount,
-        dueDate,
-        photos: photoFiles,
-      });
+      if (editing) {
+        await updateCollabProject(editing.id, {
+          title: title.trim(),
+          description: description.trim(),
+          skillIds: [...selectedSkills],
+          slotsTotal: roleCount,
+          dueDate,
+          photos: newFiles,
+          existingPhotos: photos
+            .filter((p) => !p.file)
+            .map((p) => ({ url: p.url, publicId: p.publicId ?? null })),
+        });
+      } else {
+        await createCollabProject({
+          title: title.trim(),
+          description: description.trim(),
+          skillIds: [...selectedSkills],
+          slotsTotal: roleCount,
+          dueDate,
+          photos: newFiles,
+        });
+      }
     } catch (err) {
       setSubmitting(false);
       setSubmitError(
         err instanceof Error
           ? err.message
-          : "Could not create the project. Please try again."
+          : editing
+            ? "Could not save the changes. Please try again."
+            : "Could not create the project. Please try again."
       );
       return;
     }
     setSubmitting(false);
     setClosing(false);
-    toast.success("Collaboration posted", {
-      description: `"${title.trim()}" is now on the board.`,
-    });
+    if (editing) {
+      toast.success("Project updated", {
+        description: `"${title.trim()}" has been saved.`,
+      });
+      onUpdated?.();
+    } else {
+      toast.success("Collaboration posted", {
+        description: `"${title.trim()}" is now on the board.`,
+      });
+    }
     onClose();
   };
 
@@ -412,10 +475,12 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
         <div className="mb-6 flex items-start justify-between">
           <div>
             <h2 id="make-collab-title" className="text-2xl font-medium">
-              Create Project
+              {editing ? "Edit Project" : "Create Project"}
             </h2>
             <p className="mt-1 text-xs font-medium text-muted">
-              Find your team, build your portfolio, ship real projects.
+              {editing
+                ? "Update your project details below."
+                : "Find your team, build your portfolio, ship real projects."}
             </p>
           </div>
           <button
@@ -766,8 +831,8 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
             disabled={submitting || selectedSkills.size === 0}
             className="pressable flex w-full cursor-pointer items-center justify-center gap-2 rounded-md bg-accent py-3 text-base font-medium text-on-accent transition-opacity hover:opacity-85 disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
           >
-            <Icon name="send" size={20} />
-            Create Project
+            <Icon name={editing ? "check" : "send"} size={20} />
+            {editing ? "Save changes" : "Create Project"}
           </button>
         </form>
       </div>

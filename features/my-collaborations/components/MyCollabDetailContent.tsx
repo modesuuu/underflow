@@ -9,6 +9,7 @@ import { PhotoGrid, type Photo } from "@/components/ui/PhotoGrid";
 import { PhotoLightbox } from "@/components/ui/PhotoLightbox";
 import { startDirectThread } from "@/features/inbox/store";
 import { STATUS_ICONS } from "@/features/collaborations/status";
+import { MakeCollabModal } from "@/features/collaborations/components/MakeCollabModal";
 import { useSessionUser } from "@/features/auth/store";
 import type { MyCollabProject } from "../types";
 
@@ -34,6 +35,8 @@ interface MyCollabDetailContentProps {
 export function MyCollabDetailContent({ project }: MyCollabDetailContentProps) {
   const router = useRouter();
   const sessionUser = useSessionUser();
+  const [editOpen, setEditOpen] = useState(false);
+  const isOwner = sessionUser !== null && sessionUser.id === project.owner.id;
   const ownerPersonId = project.owner.id;
   const isOwnProject =
     sessionUser !== null && sessionUser.id === ownerPersonId;
@@ -50,12 +53,22 @@ export function MyCollabDetailContent({ project }: MyCollabDetailContentProps) {
       <div className="flex flex-col gap-6 px-4 pb-12 pt-6 sm:px-6">
         {/* 1. Header band (light gray) */}
         <div className="flex flex-col gap-4 rounded-2xl p-4 sm:p-6">
-          {/* Status pill */}
-          <div>
+          {/* Status pill (+ Edit for the owner) */}
+          <div className="flex items-center justify-between gap-3">
             <span className="inline-flex items-center gap-1 rounded-full bg-surface px-3 py-1 text-xs font-medium text-ink">
               <Icon name={STATUS_ICONS[project.status]} size={14} />
               {project.status}
             </span>
+            {isOwner && (
+              <button
+                type="button"
+                onClick={() => setEditOpen(true)}
+                className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full border border-line bg-surface px-3 py-1.5 text-xs font-medium text-ink transition-colors hover:bg-bg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+              >
+                <Icon name="edit" size={14} />
+                Edit
+              </button>
+            )}
           </div>
 
           {/* Title */}
@@ -232,6 +245,12 @@ export function MyCollabDetailContent({ project }: MyCollabDetailContentProps) {
           onClose={() => setLightboxIndex(null)}
         />
       )}
+      <MakeCollabModal
+        open={editOpen}
+        onClose={() => setEditOpen(false)}
+        editing={project}
+        onUpdated={() => router.refresh()}
+      />
     </>
   );
 }

@@ -52,6 +52,10 @@ export interface CollabProject {
   description: string;
   /** Photo URLs (lime placeholders in mock) */
   photos: string[];
+  /** Cloudinary public ids aligned by index with photos (null where
+   *  the backend has none); the edit form sends them back paired with
+   *  the URLs, as the update endpoint requires. */
+  photoPublicIds: (string | null)[];
   owner: CollabMember;
 }
 
