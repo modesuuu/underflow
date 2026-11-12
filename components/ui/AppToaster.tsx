@@ -7,14 +7,14 @@ import { Toaster } from "sonner";
  * layout so toasts survive client-side navigation — e.g. an
  * application sent from a collab detail confirms as the Inbox
  * lands. Styled to the app's tokens: surface card, line border,
- * 16px radius, soft deep shadow; brand discs as state icons
+ * 12px radius, soft deep shadow; brand discs as state icons
  * (lime = success, red = error, ink = info). Action buttons
  * (Undo) are styled in globals.css.
  */
 export function AppToaster() {
   return (
     <Toaster
-      position="bottom-right"
+      position="top-center"
       offset={24}
       gap={8}
       toastOptions={{
@@ -23,7 +23,7 @@ export function AppToaster() {
           background: "var(--color-surface)",
           border: "1px solid var(--color-line)",
           color: "var(--color-ink)",
-          borderRadius: "16px",
+          borderRadius: "12px",
           boxShadow: "0 16px 40px rgba(var(--uf-shadow-rgb), 0.14)",
           padding: "14px 16px",
         },
