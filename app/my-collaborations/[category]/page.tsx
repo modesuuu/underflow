@@ -1,15 +1,9 @@
-import { Suspense } from "react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { AppShell } from "@/components/layout/AppShell";
 import { Icon } from "@/components/ui/Icon";
-import { getMyCollabProjects } from "@/features/my-collaborations/api";
-import { MyCollabCategoryGrid } from "@/features/my-collaborations/components/MyCollabCategoryGrid";
-import {
-  MY_COLLAB_CATEGORIES,
-  getCategory,
-} from "@/features/my-collaborations/types";
-import type { MyCollabStatus } from "@/features/my-collaborations/types";
+import { MyCollabCategoryLoader } from "@/features/my-collaborations/components/MyCollabCategoryLoader";
+import { getCategory } from "@/features/my-collaborations/types";
 
 interface CategoryPageProps {
   params: Promise<{ category: string }>;
@@ -30,7 +24,7 @@ export function generateMetadata({
 /**
  * Fallback = the body of app/my-collaborations/[category]/loading.tsx minus
  * its AppShell and header (search-first toolbar + row list), which renders
- * here while getMyCollabProjects() suspends. The category labels come from
+ * here while the client loader fetches. The category labels come from
  * the sync meta-map, so the shell + header render immediately.
  */
 function MyCollabCategoryGridSkeleton() {
@@ -53,21 +47,6 @@ function MyCollabCategoryGridSkeleton() {
       </div>
     </>
   );
-}
-
-async function MyCollabCategoryGridAsync({ status }: { status: MyCollabStatus }) {
-  const all = await getMyCollabProjects();
-  const projects = all.filter((p) => p.myStatus === status);
-  // Global pastel offset: sum of the counts of the categories
-  // before this one, so a project keeps its board tint here.
-  const order = MY_COLLAB_CATEGORIES.map((c) => c.slug);
-  const startIndex = order
-    .slice(0, order.indexOf(status))
-    .reduce(
-      (sum, slug) => sum + all.filter((p) => p.myStatus === slug).length,
-      0
-    );
-  return <MyCollabCategoryGrid projects={projects} startIndex={startIndex} />;
 }
 
 export default async function CategoryPage({ params }: CategoryPageProps) {
@@ -95,9 +74,10 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
           </h1>
           <p className="text-sm text-muted">{cat.subtitle}</p>
         </div>
-        <Suspense fallback={<MyCollabCategoryGridSkeleton />}>
-          <MyCollabCategoryGridAsync status={cat.slug} />
-        </Suspense>
+        <MyCollabCategoryLoader
+          status={cat.slug}
+          fallback={<MyCollabCategoryGridSkeleton />}
+        />
       </div>
     </AppShell>
   );

@@ -12,11 +12,13 @@ import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { getMyCollabProjects } from "../api";
 import { MyCollabBoard } from "./MyCollabBoard";
+import { MyCollabLoadError } from "./MyCollabLoadError";
 import type { MyCollabProject } from "../types";
 
 export function MyCollabBoardLoader({ fallback }: { fallback: ReactNode }) {
   const [projects, setProjects] = useState<MyCollabProject[] | null>(null);
   const [failed, setFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     let alive = true;
@@ -30,17 +32,16 @@ export function MyCollabBoardLoader({ fallback }: { fallback: ReactNode }) {
     return () => {
       alive = false;
     };
-  }, []);
+  }, [attempt]);
 
   if (failed) {
     return (
-      <div className="flex flex-col gap-2 rounded-lg border border-line bg-surface p-6">
-        <p className="text-base font-semibold">Something went wrong</p>
-        <p className="text-sm text-muted">
-          We couldn&apos;t load your collaborations. This is usually a
-          temporary glitch — give it another try.
-        </p>
-      </div>
+      <MyCollabLoadError
+        onRetry={() => {
+          setFailed(false);
+          setAttempt((a) => a + 1);
+        }}
+      />
     );
   }
   if (projects === null) return <>{fallback}</>;

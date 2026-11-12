@@ -1,9 +1,7 @@
-import { Suspense } from "react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { AppShell } from "@/components/layout/AppShell";
-import { getMyCollabProject } from "@/features/my-collaborations/api";
-import { MyCollabDetailContent } from "@/features/my-collaborations/components/MyCollabDetailContent";
+import { MyCollabDetailLoader } from "@/features/my-collaborations/components/MyCollabDetailLoader";
 import { NotificationsPanel } from "@/features/dashboard/components/NotificationsPanel";
 import { getCategory } from "@/features/my-collaborations/types";
 
@@ -14,19 +12,25 @@ interface DetailPageProps {
 export async function generateMetadata({
   params,
 }: DetailPageProps): Promise<Metadata> {
-  const { projectId } = await params;
-  const project = await getMyCollabProject(projectId);
+  // The project title cannot be in the metadata: the project
+  // is user-scoped and loads client-side (see the loader), so
+  // the server never sees it. The category label is the most
+  // specific honest title available here.
+  const { category } = await params;
+  const cat = getCategory(category);
   return {
-    title: project ? project.title : "My Collaborations",
-    description: project?.subtitle ?? "My collaboration project detail.",
+    title: cat
+      ? `My Collaborations — ${cat.crumbLabel}`
+      : "My Collaborations",
+    description: "My collaboration project detail.",
   };
 }
 
 /**
  * Exception case: breadcrumbLeaf is the project TITLE (a data-bound value),
- * so the AppShell cannot render synchronously. The page wraps the whole
- * detail in a <Suspense> whose fallback is the entire current
- * app/my-collaborations/[category]/[projectId]/loading.tsx body (which
+ * so the AppShell cannot render until the project loads client-side.
+ * The loader's fallback is this entire body (the current
+ * app/my-collaborations/[category]/[projectId]/loading.tsx body, which
  * already includes its own AppShell).
  */
 function MyCollabDetailLoadingBody() {
@@ -122,41 +126,22 @@ function MyCollabDetailLoadingBody() {
   );
 }
 
-async function MyCollabDetailAsync({
-  category,
-  projectId,
-}: {
-  category: string;
-  projectId: string;
-}) {
-  // Category must be a known slug AND match the project's own myStatus —
-  // otherwise the URL is stale/wrong → 404.
-  const cat = getCategory(category);
-  if (!cat) notFound();
-
-  const project = await getMyCollabProject(projectId);
-  if (!project || project.myStatus !== cat.slug) notFound();
-
-  return (
-    <AppShell
-      variant="detail"
-      backLabel={cat.crumbLabel}
-      backHref={`/my-collaborations/${cat.slug}`}
-      breadcrumbRoot={`Tools / My Collaborations / ${cat.crumbLabel}`}
-      breadcrumbLeaf={project.title}
-      panel={<NotificationsPanel className="px-6" />}
-    >
-      <MyCollabDetailContent project={project} />
-    </AppShell>
-  );
-}
-
 export default async function DetailPage({ params }: DetailPageProps) {
   const { category, projectId } = await params;
 
+  // An unknown category slug is a 404 right here (sync check).
+  // The project itself loads in the client loader: it is
+  // user-scoped and the server has no session token for it.
+  // The loader 404s when the project is not in the user's list
+  // or its myStatus does not match this category.
+  const cat = getCategory(category);
+  if (!cat) notFound();
+
   return (
-    <Suspense fallback={<MyCollabDetailLoadingBody />}>
-      <MyCollabDetailAsync category={category} projectId={projectId} />
-    </Suspense>
+    <MyCollabDetailLoader
+      category={cat}
+      projectId={projectId}
+      fallback={<MyCollabDetailLoadingBody />}
+    />
   );
 }
