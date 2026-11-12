@@ -343,6 +343,16 @@ export async function updateCollabProject(
   return { success: true };
 }
 
+/**
+ * DELETE /api/collab/:id (owner only, soft delete). The backend
+ * refuses with 409 once another member has joined the project.
+ */
+export async function deleteCollabProject(id: string): Promise<void> {
+  await apiFetch<ApiEnvelope<unknown>>(`/api/collab/${id}`, {
+    method: "DELETE",
+  });
+}
+
 export type ApplyResult = { success: boolean; alreadyApplied?: boolean };
 
 /**

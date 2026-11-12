@@ -9,6 +9,7 @@ import { PhotoGrid } from "@/components/ui/PhotoGrid";
 import { PhotoLightbox } from "@/components/ui/PhotoLightbox";
 import { ApplyCta } from "./ApplyCta";
 import { MakeCollabModal } from "./MakeCollabModal";
+import { ConfirmDialog } from "@/features/inbox/components/ConfirmDialog";
 import { formatDueDate } from "../sort";
 import { STATUS_ICONS } from "../status";
 import type { CollabProject } from "../types";
@@ -17,6 +18,7 @@ import {
   backendErrorMessage,
   declineCollabApplication,
   getCollabApplications,
+  deleteCollabProject,
   getCollabProjectAuthed,
   type CollabApplication,
 } from "../api";
@@ -59,6 +61,21 @@ export function CollabDetailContent({ project }: CollabDetailContentProps) {
           : "default";
   const router = useRouter();
   const [editOpen, setEditOpen] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+
+  const handleDeleteProject = async () => {
+    try {
+      await deleteCollabProject(project.id);
+      toast.success("Project deleted");
+      router.push("/collaborations");
+    } catch (err) {
+      toast.error(
+        err instanceof Error
+          ? backendErrorMessage(err)
+          : "Couldn't delete this project. Try again."
+      );
+    }
+  };
   const sessionUser = useSessionUser();
   const ownerPersonId = project.owner.id;
   const isOwnProject =
@@ -160,14 +177,26 @@ export function CollabDetailContent({ project }: CollabDetailContentProps) {
             {project.status}
           </span>
           {isOwnProject && (
-            <button
-              type="button"
-              onClick={() => setEditOpen(true)}
-              className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full border border-line bg-surface px-3 py-1.5 text-xs font-medium text-ink transition-colors hover:bg-bg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-            >
-              <Icon name="edit" size={14} />
-              Edit
-            </button>
+            <div className="flex shrink-0 items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setEditOpen(true)}
+                className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full border border-line bg-surface px-3 py-1.5 text-xs font-medium text-ink transition-colors hover:bg-bg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+              >
+                <Icon name="edit" size={14} />
+                Edit
+              </button>
+              {project.slotsFilled <= 1 && (
+                <button
+                  type="button"
+                  onClick={() => setConfirmingDelete(true)}
+                  className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full border border-line bg-surface px-3 py-1.5 text-xs font-medium text-badge transition-colors hover:bg-bg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                >
+                  <Icon name="trash" size={14} />
+                  Delete
+                </button>
+              )}
+            </div>
           )}
         </div>
 
@@ -423,6 +452,18 @@ export function CollabDetailContent({ project }: CollabDetailContentProps) {
       editing={project}
       onUpdated={() => router.refresh()}
     />
+    {confirmingDelete && (
+      <ConfirmDialog
+        title="Delete this project?"
+        description="This project will be removed for everyone. This can't be undone."
+        confirmLabel="Delete"
+        onConfirm={() => {
+          setConfirmingDelete(false);
+          void handleDeleteProject();
+        }}
+        onCancel={() => setConfirmingDelete(false)}
+      />
+    )}
     </>
   );
 }
