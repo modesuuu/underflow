@@ -24,6 +24,7 @@
   --uf-bg: #e9eeda;
   --uf-surface: #fbfcf4;
   --uf-ink: #191a19;
+  --uf-ink-30: rgba(25, 26, 25, 0.3);
   --uf-muted: #55624e;
   --uf-subtle: #7e8b6f;
   --uf-accent: #35702b;
@@ -77,6 +78,7 @@
   --uf-bg: #1e5128;
   --uf-surface: #191a19;
   --uf-ink: #eff4de;
+  --uf-ink-30: rgba(239, 244, 222, 0.3);
   --uf-muted: #a9bfa0;
   --uf-subtle: #7e9474;
   --uf-accent: #d8e9a8;
@@ -157,7 +159,7 @@
   .collab-card-live:hover {
     transform: translateY(-3px);
     box-shadow: 0 12px 32px rgba(var(--uf-shadow-rgb), 0.12);
-    border-color: color-mix(in srgb, var(--uf-ink) 30%, transparent);
+    border-color: var(--uf-ink-30);
   }
 }
 @media (prefers-reduced-motion: reduce) {
