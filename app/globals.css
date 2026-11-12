@@ -18,15 +18,36 @@
   --color-on-brand: var(--uf-on-brand);
   --color-brand-star: var(--uf-brand-star);
   --color-tile: var(--uf-tile);
+  --color-info: var(--uf-info);
+  --color-success: var(--uf-success);
+  --color-warning: var(--uf-warning);
   --color-chrome: var(--uf-chrome);
   --color-active: var(--uf-active);
 
-  --font-sans: "PP Neue Montreal", ui-sans-serif, system-ui, -apple-system,
-    sans-serif;
+  /* Astryx typeface: Figtree first (loaded in app/layout.tsx),
+     then Astryx's own fallback stack. */
+  --font-sans: "Figtree", -apple-system, BlinkMacSystemFont, "Segoe UI",
+    Roboto, Helvetica, Arial, ui-sans-serif, system-ui, sans-serif;
 
-  /* Figma type scale 10px slot (12/14/16/20 = Tailwind xs/sm/base/xl) */
+  /* Astryx type scale: body is 14px, secondary 13px (a half step
+     kept so sm/base hierarchy survives), then Astryx's own steps
+     17 / 20 / 24 / 29 / 35 for titles. 2xs stays 10px (Astryx xs). */
   --text-2xs: 10px;
   --text-2xs--line-height: 14px;
+  --text-sm: 13px;
+  --text-sm--line-height: 18px;
+  --text-base: 14px;
+  --text-base--line-height: 20px;
+  --text-lg: 17px;
+  --text-lg--line-height: 24px;
+  --text-xl: 20px;
+  --text-xl--line-height: 28px;
+  --text-2xl: 24px;
+  --text-2xl--line-height: 32px;
+  --text-3xl: 29px;
+  --text-3xl--line-height: 36px;
+  --text-4xl: 35px;
+  --text-4xl--line-height: 40px;
 
   --radius-sm: var(--uf-radius-sm);
   --radius-md: var(--uf-radius-md);
@@ -36,6 +57,8 @@
      utility can never drift off-token again. 3xl stays 24px for
      the profile hero cards (user spec). */
   --radius-2xl: var(--uf-radius-lg);
+  /* Profile hero cards take Astryx's page radius (28px). */
+  --radius-3xl: var(--uf-radius-xl);
   --radius-pill: var(--uf-radius-pill);
 }
 
@@ -72,20 +95,25 @@
 /* Weihu Kanban pastel card tints (plain rules: exact in the
    served CSS, with a dark-mode override each). Cards cycle
    through them by index inside their column. */
-.kanban-pastel-blue { background-color: #dbeafe; }
-.kanban-pastel-purple { background-color: #ede9fe; }
-.kanban-pastel-pink { background-color: #fce7f3; }
-.kanban-pastel-peach { background-color: #ffedd5; }
-.kanban-pastel-mint { background-color: #d1fae5; }
-[data-theme="dark"] .kanban-pastel-blue { background-color: #1e3a5f; }
-[data-theme="dark"] .kanban-pastel-purple { background-color: #3b2d5c; }
-[data-theme="dark"] .kanban-pastel-pink { background-color: #5c2d42; }
-[data-theme="dark"] .kanban-pastel-peach { background-color: #5c3a1e; }
-[data-theme="dark"] .kanban-pastel-mint { background-color: #1e4a3a; }
+/* Kanban card tints, Astryx edition: the class names stay (the
+   component cycles them by index), the values become Astryx
+   Neutral's muted washes: info-muted, a neutral gray wash,
+   error-muted, a warning tint, success-muted. Dark values are the
+   same washes composited over the dark canvas. */
+.kanban-pastel-blue { background-color: #b9d7ff; }
+.kanban-pastel-purple { background-color: #e4e4e4; }
+.kanban-pastel-pink { background-color: #ffc4be; }
+.kanban-pastel-peach { background-color: #fdeec0; }
+.kanban-pastel-mint { background-color: #bce0bb; }
+[data-theme="dark"] .kanban-pastel-blue { background-color: #33475e; }
+[data-theme="dark"] .kanban-pastel-purple { background-color: #333333; }
+[data-theme="dark"] .kanban-pastel-pink { background-color: #573b38; }
+[data-theme="dark"] .kanban-pastel-peach { background-color: #57491f; }
+[data-theme="dark"] .kanban-pastel-mint { background-color: #33502f; }
 
 /* Skill tag pill on a pastel card: translucent white in
    light mode, translucent white on the dark tint in dark mode. */
-.kanban-tag { background-color: rgba(255, 255, 255, 0.65); color: #3f4a3a; }
+.kanban-tag { background-color: rgba(255, 255, 255, 0.65); color: #1b1b1b; }
 [data-theme="dark"] .kanban-tag { background-color: rgba(255, 255, 255, 0.14); color: var(--uf-ink); }
 
 /* --- Motion utilities (P2). All animations gated behind
@@ -321,7 +349,7 @@
   }
 }
 
-/* Brand selection — lime in both themes, always dark text. */
+/* Text selection follows the accent token in both themes. */
 ::selection {
   background: var(--uf-accent);
   color: var(--uf-on-accent);
@@ -369,19 +397,13 @@ html.theme-anim *::after {
   background: transparent;
 }
 
-/* Dark-only atmosphere: two faint forest glows fixed to the
-   app canvas — cream top-right, leaf bottom-left. Depth behind
-   the content, never decoration on top of it. */
-[data-theme="dark"] .app-canvas {
-  background-image:
-    radial-gradient(900px 480px at 100% 0%, rgba(216, 233, 168, 0.05), transparent 62%),
-    radial-gradient(820px 460px at 0% 100%, rgba(78, 159, 61, 0.07), transparent 62%);
-  background-attachment: fixed;
-}
+/* Astryx surfaces are flat: the old dark-theme forest glows on
+   the app canvas are retired with the old system. Depth now comes
+   from the surface steps alone (#1b1b1b frame, #262626 canvas). */
 
 /* --- Date picker (react-day-picker) themed to the app tokens.
    The library stylesheet supplies the calendar layout; these variables
-   and overrides recolor it to Forest & Cream. --- */
+   and overrides recolor it to the app tokens. --- */
 .uf-datepicker {
   --rdp-accent-color: var(--uf-accent);
   --rdp-accent-background-color: var(--uf-placeholder);

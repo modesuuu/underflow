@@ -22,7 +22,7 @@ interface AppShellProps {
   /**
    * App-like page (e.g. Inbox): main becomes a non-scrolling flex
    * column and the children fill exactly the space below the TopBar.
-   * Without it, a child that is h-full adds the TopBar's 79px on top
+   * Without it, a child that is h-full adds the TopBar's 64px on top
    * of main's height, so main scrolls and the panes slide under the
    * sticky bar.
    */

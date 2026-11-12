@@ -1,58 +1,71 @@
 
+/* ASTRYX REDESIGN (branch redesign/astryx, 2026-11-13): the whole
+   token layer is re-based on Astryx, Meta's open source design
+   system (github.com/meta/astryx, MIT), using its built-in Neutral
+   theme values verbatim where the roles line up (source:
+   @astryxdesign/theme-neutral 0.7.14). The app keeps its --uf-*
+   token names so every component keeps working; only the values,
+   the typeface, the type scale and the radius scale change.
 
-/* Light theme — "Forest & Cream" in daylight (paired with the
-   dark theme the user picked): the same palette, roles mirrored.
-   Cream is the light ground family: surface is a cream-white,
-   bg (chrome, wells, inputs, containers) is a pale sage tint
-   of the forest, and the palette's green-black (#191a19, the
-   dark theme's ground) becomes the ink. The mid steps are sage
-   tints of the palette's leaf. The main color is a deepened
-   leaf, #35702b. The palette's raw #4e9f3d sits at the
-   luminance crossover (about 0.27) where neither dark nor
-   light text separates cleanly — dark text on it read as
-   mud — so the value is pushed decisively dark and the
-   text on it is the family cream #eff4de (about 5.3:1).
-   The dark block pins its own dark on-accent value. The dark theme keeps its cream-lime:
-   each main color is tuned to its own ground. The acid lime
-   #dff66a is retired from the light theme entirely (the
-   photo tiles move to a pale leaf tint with it). Signal
-   colors (badge, heart)
-   keep their light-tuned values on purpose: white text on the
-   dark theme's softer red loses contrast on a light ground. */
+   Astryx Neutral is a white-dominant monochrome system: white
+   surfaces on a light gray body (#f1f1f1), pure black text, and a
+   near-black interactive accent (#1b1b1b) that inverts to #f1f1f1
+   in dark mode. Color appears only as semantics: info blue
+   #0074e2, success green #198100, error red #c9303a, warning
+   yellow #ffce2f. Underflow's identity survives in exactly two
+   places: the logo mark itself, and the brand star, which takes
+   Astryx's one joyful color (warning yellow).
+
+   Role mapping (Astryx token -> --uf token):
+   background-body / background-muted -> --uf-bg (wells, inputs,
+   board containers); background-surface / background-card ->
+   --uf-surface; text-primary -> --uf-ink; text-secondary ->
+   --uf-muted; accent -> --uf-accent; error -> --uf-badge and
+   --uf-heart; border (#00000014, composited) -> --uf-line. */
 :root {
   /* Colors */
-  --uf-bg: #e9eeda;
-  --uf-surface: #fbfcf4;
-  --uf-ink: #191a19;
-  --uf-ink-30: rgba(25, 26, 25, 0.3);
-  --uf-muted: #55624e;
-  --uf-subtle: #7e8b6f;
-  --uf-accent: #35702b;
-  --uf-badge: #ff383c;
-  --uf-heart: #ff2d55;
-  --uf-placeholder: #d9e2c4;
-  --uf-line: #66755c;
-  --uf-on-accent: #eff4de;
+  --uf-bg: #f1f1f1;
+  --uf-surface: #ffffff;
+  --uf-ink: #000000;
+  --uf-ink-30: rgba(0, 0, 0, 0.3);
+  --uf-muted: #474747;
+  --uf-subtle: #6a6a6a;
+  --uf-accent: #1b1b1b;
+  --uf-badge: #c9303a;
+  --uf-heart: #c9303a;
+  --uf-placeholder: #eaeaea;
+  --uf-line: #e3e3e3;
+  --uf-on-accent: #ffffff;
 
-  /* Fixed dark brand surface for the auth panel: forest in both themes,
-     so the panel stays dark in light mode too. The star keeps the
-     verified app-icon lime. */
-  --uf-brand: #1e5128;
-  --uf-on-brand: #eff4de;
-  --uf-brand-star: #dff66a;
+  /* Astryx semantic colors, exposed for components that need a
+     real signal color instead of the monochrome accent. */
+  --uf-info: #0074e2;
+  --uf-success: #198100;
+  --uf-warning: #ffce2f;
 
-  --uf-tile: #cfe3b8;
-  --uf-tile-icon: rgba(25, 26, 25, 0.4);
-  --uf-chrome: #e9eeda;
-  --uf-active: #ffffff;
-  --uf-nav-hover: rgba(255, 255, 255, 0.6);
-  --uf-shadow-rgb: 25, 26, 25;
+  /* Fixed dark brand surface for the auth panel: Astryx's inverted
+     surface (#1b1b1b) in both themes, so the panel stays dark in
+     light mode too. The star takes the warning yellow. */
+  --uf-brand: #1b1b1b;
+  --uf-on-brand: #ffffff;
+  --uf-brand-star: #ffce2f;
+
+  --uf-tile: #f1f1f1;
+  --uf-tile-icon: rgba(0, 0, 0, 0.4);
+  --uf-chrome: #ffffff;
+  --uf-active: #f1f1f1;
+  --uf-nav-hover: rgba(0, 0, 0, 0.05);
+  --uf-shadow-rgb: 0, 0, 0;
+  /* Astryx shadow-low (light): two soft layers, no ring. */
+  --uf-shadow-card: 0 2px 4px rgba(0, 0, 0, 0.05), 0 4px 8px rgba(0, 0, 0, 0.1);
   color-scheme: light;
 
-  --uf-radius-sm: 4px;
-  --uf-radius-md: 6px;
+  /* Astryx radius scale: inner 6, element 10, container 12,
+     page 28, full pill. */
+  --uf-radius-sm: 6px;
+  --uf-radius-md: 10px;
   --uf-radius-lg: 12px;
-  --uf-radius-xl: 20px;
+  --uf-radius-xl: 28px;
   --uf-radius-pill: 100px;
 
   --uf-sidebar-w: 246px;
@@ -60,105 +73,68 @@
   --uf-panel-w: 308px;
 
   /* Single easing token (audit P1-E #29): one custom ease-out for every
-     entrance/exit in the UI — no banned ease-in on exits. */
+     entrance/exit in the UI. No banned ease-in on exits. */
   --uf-ease-out: cubic-bezier(0.23, 1, 0.32, 1);
 }
 
-/* Dark theme — "Forest & Cream" (v4 palette, v5 placement):
-   the ColorHunt palette the user picked (191a19 / 1e5128 /
-   4e9f3d / d8e9a8), placed by proportion, not by palette
-   order. The near-black is the GROUND (surface: app canvas,
-   modals, popovers — the quiet 60%); the deep forest is the
-   COMPONENT color (bg: chrome, rails, wells, inputs, board
-   containers — the present 30%); the cream-lime is rationed
-   to accents (the 10%). v4 had ground and component swapped
-   and the canvas shouted. Supporting text is pale sage;
-   lines and tracks are moss steps from the palette's leaf. */
+/* Dark theme: Astryx Neutral dark values. The frame (chrome, body)
+   is #1b1b1b, the raised canvas (surface) is #262626, and cards
+   sink back to #1b1b1b, which is Astryx's own dark card value.
+   The accent inverts to #f1f1f1 with near-black text on it. */
 [data-theme="dark"] {
-  --uf-bg: #1e5128;
-  --uf-surface: #191a19;
-  --uf-ink: #eff4de;
-  --uf-ink-30: rgba(239, 244, 222, 0.3);
-  --uf-muted: #a9bfa0;
-  --uf-subtle: #7e9474;
-  --uf-accent: #d8e9a8;
-  --uf-badge: #ff5a5f;
-  --uf-heart: #ff5c7a;
-  --uf-placeholder: #25402a;
-  --uf-line: #2f5a33;
-  --uf-on-accent: #191a19;
-  --uf-tile: #2a4a2e;
-  --uf-tile-icon: rgba(216, 233, 168, 0.6);
-  --uf-chrome: #191a19;
-  --uf-active: #1e5128;
-  --uf-nav-hover: rgba(238, 244, 222, 0.07);
+  --uf-bg: #1b1b1b;
+  --uf-surface: #262626;
+  --uf-ink: #ffffff;
+  --uf-ink-30: rgba(255, 255, 255, 0.3);
+  --uf-muted: #9e9e9e;
+  --uf-subtle: #767676;
+  --uf-accent: #f1f1f1;
+  --uf-badge: #ff705d;
+  --uf-heart: #ff705d;
+  --uf-placeholder: #2e2e2e;
+  --uf-line: #3d3d3d;
+  --uf-on-accent: #111111;
+  --uf-info: #6d9cfe;
+  --uf-success: #64af4c;
+  --uf-warning: #ffce2f;
+  --uf-tile: #1b1b1b;
+  --uf-tile-icon: rgba(255, 255, 255, 0.55);
+  --uf-chrome: #1b1b1b;
+  --uf-active: #333333;
+  --uf-nav-hover: rgba(255, 255, 255, 0.06);
   --uf-shadow-rgb: 0, 0, 0;
+  /* Astryx shadow-low (dark): deeper layers, still no ring. */
+  --uf-shadow-card: 0 2px 4px rgba(0, 0, 0, 0.25), 0 4px 8px rgba(0, 0, 0, 0.4);
   color-scheme: dark;
 }
 
-@font-face {
-  font-family: "PP Neue Montreal";
-  src: url("/font/ppneuemontreal-book.otf") format("opentype");
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
+/* The typeface is Figtree (Astryx's Neutral theme font), loaded via
+   Google Fonts <link> tags in app/layout.tsx and named first in the
+   --font-sans stack in globals.css. The old PP Neue Montreal
+   @font-face blocks are gone with the old system. */
 
-@font-face {
-  font-family: "PP Neue Montreal";
-  src: url("/font/ppneuemontreal-italic.otf") format("opentype");
-  font-weight: 400;
-  font-style: italic;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "PP Neue Montreal";
-  src: url("/font/ppneuemontreal-medium.otf") format("opentype");
-  font-weight: 500;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "PP Neue Montreal";
-  src: url("/font/ppneuemontreal-semibolditalic.otf") format("opentype");
-  font-weight: 600;
-  font-style: italic;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "PP Neue Montreal";
-  src: url("/font/ppneuemontreal-bold.otf") format("opentype");
-  font-weight: 700;
-  font-style: normal;
-  font-display: swap;
-}
-
-/* Collaborations page ground: pure white in the light theme (user order
-   2026-11-09, light only — dark keeps the base forest --uf-bg).
+/* Collaborations page ground: pure white in the light theme.
    Used by the page wrapper and the sticky toolbar so the toolbar
-   matches the ground it sticks over. */
+   matches the ground it sticks over. Dark uses the raised canvas. */
 .collab-ground { background-color: #ffffff; }
 [data-theme="dark"] .collab-ground { background-color: var(--uf-surface); }
 
-/* Collab board cards (redesign 2026-11-12): the surface color
-   in light; in dark the page ground is the black surface and
-   the card itself carries the brand green. */
+/* Collab board cards: white surface in light; in dark the Astryx
+   card value (#1b1b1b, the --uf-bg token here) on the #262626
+   ground, matching Astryx's dark card-on-surface relationship. */
 .collab-card { background-color: var(--uf-surface); }
-[data-theme="dark"] .collab-card { background-color: var(--uf-brand); }
+[data-theme="dark"] .collab-card { background-color: var(--uf-bg); }
 
 /* Hover motion for the live card only (loading skeletons share
-   .collab-card for color but stay still): a 3px lift, a soft
-   shadow fading in, and the border strengthening to ink at
+   .collab-card for color but stay still): a 3px lift, the Astryx
+   low shadow fading in, and the border strengthening to ink at
    30%. 200ms ease-out so the card decelerates into place;
    hover-capable pointers only, and off for reduced motion. */
 .collab-card-live { transition: transform 200ms ease-out, box-shadow 200ms ease-out, border-color 200ms ease-out; }
 @media (hover: hover) {
   .collab-card-live:hover {
     transform: translateY(-3px);
-    box-shadow: 0 12px 32px rgba(var(--uf-shadow-rgb), 0.12);
+    box-shadow: var(--uf-shadow-card);
     border-color: var(--uf-ink-30);
   }
 }
