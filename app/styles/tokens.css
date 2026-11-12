@@ -113,10 +113,12 @@
    --font-sans stack in globals.css. The old PP Neue Montreal
    @font-face blocks are gone with the old system. */
 
-/* Collaborations page ground: pure white in the light theme.
+/* Collaborations page ground: Astryx's body gray (#f1f1f1, the
+   --uf-bg token) in the light theme, so the white Astryx Cards
+   read as cards against it (white on white erased their edges).
    Used by the page wrapper and the sticky toolbar so the toolbar
    matches the ground it sticks over. Dark uses the raised canvas. */
-.collab-ground { background-color: #ffffff; }
+.collab-ground { background-color: var(--uf-bg); }
 [data-theme="dark"] .collab-ground { background-color: var(--uf-surface); }
 
 /* Collab board cards: white surface in light; in dark the Astryx

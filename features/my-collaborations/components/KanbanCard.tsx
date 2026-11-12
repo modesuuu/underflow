@@ -102,8 +102,8 @@ export function KanbanCard({
                   i < project.slotsFilled
                     ? "bg-ink"
                     : i === project.slotsFilled
-                      ? "bg-accent"
-                      : "bg-placeholder"
+                      ? "bg-ink/40"
+                      : "bg-ink/15"
                 )}
               />
             ))}
