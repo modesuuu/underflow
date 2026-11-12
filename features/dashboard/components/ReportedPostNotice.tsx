@@ -9,7 +9,7 @@ import { Icon } from "@/components/ui/Icon";
  */
 export function ReportedPostNotice({ onUndo }: { onUndo: () => void }) {
   return (
-    <div className="flex items-center gap-3 rounded-xl border border-line px-4 py-3">
+    <div className="flex items-center gap-3 rounded-lg border border-line px-4 py-3">
       <Icon name="flag" size={20} className="shrink-0 text-muted" />
       <p className="flex-1 text-sm text-muted">
         <span className="font-medium text-ink">You reported this post.</span>{" "}

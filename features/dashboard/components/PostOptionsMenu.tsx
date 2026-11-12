@@ -56,7 +56,7 @@ export function PostOptionsMenu({
         <div
           role="menu"
           aria-label="Post options"
-          className="absolute top-full right-0 z-30 mt-1 min-w-44 rounded-xl border border-line bg-surface p-1 shadow-lg"
+          className="absolute top-full right-0 z-30 mt-1 min-w-44 rounded-lg border border-line bg-surface p-1 shadow-lg"
         >
           {onReport && (
             <button

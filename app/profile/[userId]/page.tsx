@@ -50,14 +50,14 @@ function ProfileSkeleton() {
         <div className="mt-5 flex flex-col gap-3">
           <div className="flex gap-4">
             {Array.from({ length: 2 }).map((_, i) => (
-              <div key={i} className="flex-1 rounded-xl border border-line p-3">
+              <div key={i} className="flex-1 rounded-lg border border-line p-3">
                 <div className="size-6 rounded bg-placeholder" />
                 <div className="mt-3 h-6 w-10 rounded bg-placeholder" />
                 <div className="mt-0.5 h-4 w-24 rounded bg-placeholder" />
               </div>
             ))}
           </div>
-          <div className="rounded-xl border border-line p-3">
+          <div className="rounded-lg border border-line p-3">
             <div className="size-6 rounded bg-placeholder" />
             <div className="mt-3 h-6 w-10 rounded bg-placeholder" />
             <div className="mt-0.5 h-4 w-24 rounded bg-placeholder" />

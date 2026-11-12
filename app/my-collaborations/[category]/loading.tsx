@@ -23,18 +23,18 @@ export default function MyCollabCategoryLoading() {
 
         {/* Toolbar: search-first */}
         <div className="flex items-center gap-3">
-          <div className="h-11 flex-1 rounded-xl border border-line bg-surface sm:max-w-md" />
-          <div className="h-11 w-24 rounded-xl bg-placeholder" />
+          <div className="h-11 flex-1 rounded-lg border border-line bg-surface sm:max-w-md" />
+          <div className="h-11 w-24 rounded-lg bg-placeholder" />
           <div className="ms-auto flex items-center gap-2">
-            <div className="h-11 w-32 rounded-xl bg-placeholder" />
-            <div className="h-11 w-28 rounded-xl bg-placeholder" />
+            <div className="h-11 w-32 rounded-lg bg-placeholder" />
+            <div className="h-11 w-28 rounded-lg bg-placeholder" />
           </div>
         </div>
 
         {/* Cards */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="h-[168px] rounded-2xl bg-placeholder/50" />
+            <div key={i} className="h-[168px] rounded-liquid bg-placeholder/50" />
           ))}
         </div>
       </div>

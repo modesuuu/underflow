@@ -187,7 +187,7 @@ export function MyCollabMobileSearchModal({
                 key={p.id}
                 type="button"
                 onClick={() => pickProject(p.title)}
-                className="flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-3 text-left transition-colors hover:bg-bg focus-visible:bg-bg focus-visible:outline-none"
+                className="flex w-full cursor-pointer items-center gap-3 rounded-lg px-3 py-3 text-left transition-colors hover:bg-bg focus-visible:bg-bg focus-visible:outline-none"
               >
                 <Icon
                   name="search"

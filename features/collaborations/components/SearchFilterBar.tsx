@@ -67,7 +67,7 @@ function Dropdown({
               setOpen(false);
             }
           }}
-          className="absolute top-full right-0 z-50 mt-2 min-w-[180px] rounded-xl border border-line bg-surface p-2 shadow-[0_16px_40px_-12px_rgba(var(--uf-shadow-rgb),0.25)]"
+          className="absolute top-full right-0 z-50 mt-2 min-w-[180px] rounded-lg border border-line bg-surface p-2 shadow-[0_16px_40px_-12px_rgba(var(--uf-shadow-rgb),0.25)]"
         >
           {panel}
         </div>

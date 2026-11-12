@@ -32,7 +32,7 @@ export function FeedColumn({
     >
       <LikeHydrator />
       {posts.length === 0 ? (
-        <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-line px-6 py-16 text-center">
+        <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-line px-6 py-16 text-center">
           <Icon name="message-rounded" size={32} className="text-muted" />
           <div className="flex flex-col gap-1">
             <p className="text-base font-medium text-ink">No posts yet</p>

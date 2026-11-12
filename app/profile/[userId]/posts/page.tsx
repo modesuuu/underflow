@@ -26,7 +26,7 @@ function FeedColumnSkeleton() {
   return (
     <div className="mx-auto flex w-full max-w-(--uf-content-w) flex-col gap-3 px-4 py-3 lg:mx-0 lg:ml-[28px] lg:px-0">
       {Array.from({ length: 3 }).map((_, i) => (
-        <div key={i} className="rounded-xl border border-line bg-surface p-5">
+        <div key={i} className="rounded-lg border border-line bg-surface p-5">
           <div className="flex items-center gap-3">
             <div className="size-8 rounded-full bg-placeholder" />
             <div className="flex flex-col gap-1.5">
@@ -55,7 +55,7 @@ async function PostsBody({ userId }: { userId: string }) {
   if (posts.length === 0) {
     return (
       <div className="mx-auto w-full max-w-(--uf-content-w) px-4 py-3 lg:mx-0 lg:ml-[28px] lg:px-0">
-        <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-line bg-surface px-6 py-16 text-center">
+        <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-line bg-surface px-6 py-16 text-center">
           <Icon name="image-add" size={32} className="text-muted" />
           <div className="flex flex-col gap-1">
             <p className="text-base font-medium text-ink">No posts yet</p>

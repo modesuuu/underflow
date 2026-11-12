@@ -32,6 +32,10 @@
   --radius-md: var(--uf-radius-md);
   --radius-lg: var(--uf-radius-lg);
   --radius-xl: var(--uf-radius-xl);
+  /* Surfaces are lg (12px) by system: 2xl aliases to it so the
+     utility can never drift off-token again. 3xl stays 24px for
+     the profile hero cards (user spec). */
+  --radius-2xl: var(--uf-radius-lg);
   --radius-pill: var(--uf-radius-pill);
 }
 

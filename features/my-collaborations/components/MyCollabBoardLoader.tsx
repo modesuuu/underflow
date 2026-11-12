@@ -34,7 +34,7 @@ export function MyCollabBoardLoader({ fallback }: { fallback: ReactNode }) {
 
   if (failed) {
     return (
-      <div className="flex flex-col gap-2 rounded-2xl border border-line bg-surface p-6">
+      <div className="flex flex-col gap-2 rounded-lg border border-line bg-surface p-6">
         <p className="text-base font-semibold">Something went wrong</p>
         <p className="text-sm text-muted">
           We couldn&apos;t load your collaborations. This is usually a

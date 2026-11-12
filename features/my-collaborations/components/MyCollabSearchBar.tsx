@@ -154,7 +154,7 @@ export function MyCollabSearchBar({
     <div className="flex flex-wrap items-center gap-3">
       {/* Search leads */}
       <div className="flex min-w-0 flex-1 items-center gap-2 sm:max-w-md">
-        <div className="flex h-11 flex-1 items-center gap-2 rounded-xl border border-line bg-surface px-3.5 transition-shadow focus-within:ring-2 focus-within:ring-accent">
+        <div className="flex h-11 flex-1 items-center gap-2 rounded-lg border border-line bg-surface px-3.5 transition-shadow focus-within:ring-2 focus-within:ring-accent">
           <Icon name="search" size={18} className="shrink-0 text-muted" />
           <input
             type="text"
@@ -181,7 +181,7 @@ export function MyCollabSearchBar({
         <button
           type="button"
           onClick={onSearch}
-          className="pressable h-11 shrink-0 cursor-pointer rounded-xl bg-accent px-4 text-sm font-medium text-on-accent transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+          className="pressable h-11 shrink-0 cursor-pointer rounded-lg bg-accent px-4 text-sm font-medium text-on-accent transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
         >
           Search
         </button>
@@ -194,7 +194,7 @@ export function MyCollabSearchBar({
             <button
               type="button"
               aria-haspopup="true"
-              className="pressable flex h-11 cursor-pointer items-center gap-2 rounded-xl bg-bg px-3.5 text-sm font-medium text-ink focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+              className="pressable flex h-11 cursor-pointer items-center gap-2 rounded-lg bg-bg px-3.5 text-sm font-medium text-ink focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
             >
               <Icon name="sort" size={18} />
               <span className="hidden sm:inline">{sortLabel}</span>
@@ -228,7 +228,7 @@ export function MyCollabSearchBar({
             <button
               type="button"
               aria-haspopup="true"
-              className="pressable relative flex h-11 cursor-pointer items-center gap-2 rounded-xl bg-bg px-3.5 text-sm font-medium text-ink focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+              className="pressable relative flex h-11 cursor-pointer items-center gap-2 rounded-lg bg-bg px-3.5 text-sm font-medium text-ink focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
             >
               <Icon name="filter" size={18} />
               <span className="hidden sm:inline">Filters</span>

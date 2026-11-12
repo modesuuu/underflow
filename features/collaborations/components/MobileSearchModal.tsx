@@ -206,7 +206,7 @@ export function MobileSearchModal({ open, onClose }: MobileSearchModalProps) {
                     key={term}
                     type="button"
                     onClick={() => pickPopular(term)}
-                    className="flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-3 text-left text-[15px] text-ink transition-colors hover:bg-bg focus-visible:bg-bg focus-visible:outline-none"
+                    className="flex w-full cursor-pointer items-center gap-3 rounded-lg px-3 py-3 text-left text-[15px] text-ink transition-colors hover:bg-bg focus-visible:bg-bg focus-visible:outline-none"
                   >
                     <Icon
                       name="search"
@@ -228,7 +228,7 @@ export function MobileSearchModal({ open, onClose }: MobileSearchModalProps) {
                 key={p.id}
                 href={`/collaborations/${p.id}`}
                 onClick={requestClose}
-                className="flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors hover:bg-bg focus-visible:bg-bg focus-visible:outline-none"
+                className="flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors hover:bg-bg focus-visible:bg-bg focus-visible:outline-none"
               >
                 <Avatar alt={p.owner.name} size={40} />
                 <span className="min-w-0 flex-1">

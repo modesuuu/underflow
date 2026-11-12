@@ -117,7 +117,7 @@ export function MyCollabBoard({ projects }: MyCollabBoardProps) {
       {/* Kanban — one column per status. Columns stack on phones,
           two-up on tablets, four-up on desktop. */}
       {filtered.length === 0 ? (
-        <div className="flex flex-col items-center gap-2 rounded-2xl bg-bg px-6 py-14 text-center">
+        <div className="flex flex-col items-center gap-2 rounded-lg bg-bg px-6 py-14 text-center">
           <span className="flex size-11 items-center justify-center rounded-full bg-surface">
             <Icon name="search" size={20} className="text-muted" />
           </span>
@@ -143,7 +143,7 @@ export function MyCollabBoard({ projects }: MyCollabBoardProps) {
               <section
                 key={slug}
                 aria-label={cat.crumbLabel}
-                className="flex flex-col gap-3 rounded-2xl border border-line bg-surface p-3"
+                className="flex flex-col gap-3 rounded-lg border border-line bg-surface p-3"
               >
                 <div className="flex items-center gap-1.5 px-1 pt-1">
                   <Link
@@ -174,7 +174,7 @@ export function MyCollabBoard({ projects }: MyCollabBoardProps) {
                           onClick={() => setOpenMenu(null)}
                           className="fixed inset-0 z-10 cursor-default"
                         />
-                        <div className="absolute right-0 top-full z-20 mt-1 w-44 rounded-xl border border-line bg-surface p-1 shadow-lg">
+                        <div className="absolute right-0 top-full z-20 mt-1 w-44 rounded-lg border border-line bg-surface p-1 shadow-lg">
                           <Link
                             href={`/my-collaborations/${slug}`}
                             onClick={() => setOpenMenu(null)}
@@ -204,7 +204,7 @@ export function MyCollabBoard({ projects }: MyCollabBoardProps) {
                     {columnProjects.length > 0 && (
                       <Link
                         href={`/my-collaborations/${slug}`}
-                        className="flex h-10 items-center justify-center gap-1 rounded-xl bg-bg text-sm font-medium text-muted transition-colors hover:text-ink focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+                        className="flex h-10 items-center justify-center gap-1 rounded-lg bg-bg text-sm font-medium text-muted transition-colors hover:text-ink focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
                       >
                         {columnProjects.length > PREVIEW_LIMIT
                           ? `View ${columnProjects.length - PREVIEW_LIMIT} more`

@@ -146,12 +146,12 @@ export function CollabCard({ project }: { project: CollabProject }) {
   const seatDots = Array.from({ length: project.slotsTotal }, (_, i) => i < project.slotsFilled);
 
   return (
-    <article className="group relative flex h-full flex-col rounded-2xl border border-line bg-surface p-4 transition-[border-color] duration-200 hover:border-ink/30 sm:p-5">
+    <article className="group relative flex h-full flex-col rounded-lg border border-line bg-surface p-4 transition-[border-color] duration-200 hover:border-ink/30 sm:p-5">
       {/* Stretched link — whole card clickable, keyboard reachable */}
       <Link
         href={"/collaborations/" + project.id}
         aria-label={"View " + project.title}
-        className="absolute inset-0 z-0 rounded-2xl focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+        className="absolute inset-0 z-0 rounded-lg focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
       />
 
       {/* Owner + title + save */}

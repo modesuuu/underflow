@@ -215,7 +215,7 @@ export function MessageItem({
                 if (e.key === "Escape") setEditing(false);
               }}
               aria-label="Edit message"
-              className="w-full resize-none rounded-xl bg-bg px-3 py-2 text-sm text-ink outline-none placeholder:text-subtle focus:ring-2 focus:ring-accent"
+              className="w-full resize-none rounded-lg bg-bg px-3 py-2 text-sm text-ink outline-none placeholder:text-subtle focus:ring-2 focus:ring-accent"
             />
             <div className="flex gap-2">
               <button
@@ -362,7 +362,7 @@ export function MessageItem({
                 />
                 <div
                   role="menu"
-                  className="absolute top-full right-0 z-20 mt-1 w-52 rounded-xl border border-line bg-surface p-1.5 shadow-[0_16px_40px_-12px_rgba(var(--uf-shadow-rgb),0.25)]"
+                  className="absolute top-full right-0 z-20 mt-1 w-52 rounded-lg border border-line bg-surface p-1.5 shadow-[0_16px_40px_-12px_rgba(var(--uf-shadow-rgb),0.25)]"
                 >
                   <div className="flex items-center gap-1 px-1.5 py-1">
                     {REACTION_SET.map((emoji) => (

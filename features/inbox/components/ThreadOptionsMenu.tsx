@@ -119,7 +119,7 @@ export function ThreadOptionsMenu({
               right: coords.right,
               width: MENU_WIDTH,
             }}
-            className="z-50 rounded-xl border border-line bg-surface p-1 shadow-lg"
+            className="z-50 rounded-lg border border-line bg-surface p-1 shadow-lg"
           >
             <button
               type="button"

@@ -42,7 +42,7 @@ function ProjectsGridSkeleton() {
         {Array.from({ length: 4 }).map((_, i) => (
           <div
             key={i}
-            className={`flex h-[235px] flex-col justify-between rounded-xl bg-bg p-5 ${
+            className={`flex h-[235px] flex-col justify-between rounded-lg bg-bg p-5 ${
               i === 0 ? "sm:col-span-2" : ""
             }`}
           >
@@ -57,7 +57,7 @@ function ProjectsGridSkeleton() {
                 <div className="size-7 rounded-full bg-placeholder" />
                 <div className="size-7 -ml-3 rounded-full bg-placeholder" />
               </div>
-              <div className="h-10 w-24 rounded-xl bg-placeholder" />
+              <div className="h-10 w-24 rounded-lg bg-placeholder" />
             </div>
           </div>
         ))}

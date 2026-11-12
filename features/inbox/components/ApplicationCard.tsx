@@ -33,7 +33,7 @@ export function ApplicationCard({
       <span className="text-xs text-muted">
         {direction === "incoming" ? "Application received" : "Application sent"}
       </span>
-      <div className="flex flex-col gap-3 rounded-xl border border-line bg-surface p-3">
+      <div className="flex flex-col gap-3 rounded-lg border border-line bg-surface p-3">
         <div className="flex flex-col gap-0.5">
           <p className="text-base leading-snug font-bold text-ink">
             {application.projectTitle}

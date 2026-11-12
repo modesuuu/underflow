@@ -60,7 +60,7 @@ function NotificationRow({
 
   return (
     <div
-      className="card-stagger -mx-3 rounded-xl px-3 py-2.5 transition-[background-color,transform] duration-150 ease-(--uf-ease-out) hover:bg-bg active:scale-[0.99]"
+      className="card-stagger -mx-3 rounded-lg px-3 py-2.5 transition-[background-color,transform] duration-150 ease-(--uf-ease-out) hover:bg-bg active:scale-[0.99]"
       style={{ "--stagger-i": String(Math.min(index, STAGGER_CAP)) } as CSSProperties}
     >
       <div className="flex items-start gap-3">

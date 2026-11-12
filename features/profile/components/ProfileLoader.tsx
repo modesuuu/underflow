@@ -73,7 +73,7 @@ export function ProfileLoader({ userId }: { userId: string }) {
         <div className="w-full shrink-0 rounded-3xl bg-bg p-6 lg:w-[397px]">
           <div className="h-5 w-44 rounded bg-placeholder" />
           <div className="mt-5 flex flex-col gap-3">
-            <div className="rounded-xl border border-line p-3">
+            <div className="rounded-lg border border-line p-3">
               <div className="size-6 rounded bg-placeholder" />
               <div className="mt-3 h-6 w-10 rounded bg-placeholder" />
             </div>

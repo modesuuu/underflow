@@ -39,7 +39,7 @@ function MyCollabDetailLoadingBody() {
     >
       <div className="flex flex-col gap-6 px-4 pb-12 pt-6 sm:px-6">
         {/* 1. Header band */}
-        <div className="flex flex-col gap-4 rounded-2xl p-6">
+        <div className="flex flex-col gap-4 rounded-lg p-6">
           <div className="h-6 w-24 rounded-full bg-bg" />
           <div className="h-10 w-2/3 rounded-lg bg-placeholder" />
           <div className="flex items-center gap-4">
@@ -54,7 +54,7 @@ function MyCollabDetailLoadingBody() {
         </div>
 
         {/* 2. Owner card + about + work items */}
-        <div className="flex flex-col gap-4 rounded-2xl bg-bg p-6">
+        <div className="flex flex-col gap-4 rounded-lg bg-bg p-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="size-[42px] shrink-0 rounded-full bg-placeholder" />

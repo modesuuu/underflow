@@ -34,7 +34,7 @@ function Tile({ photo, overlayCount = 0, onClick, className }: TileProps) {
       onClick={onClick}
       disabled={!onClick}
       className={clsx(
-        "relative overflow-hidden rounded-md bg-tile",
+        "relative overflow-hidden rounded-lg bg-tile",
         // P1-C #19: a keyboard-visible focus ring was missing on the tiles.
         "focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none",
         onClick && "cursor-pointer",

@@ -17,7 +17,7 @@ export default function CollabDetailLoading() {
     >
       <div className="flex flex-col gap-6 px-6 pb-12 pt-6">
         {/* Header band */}
-        <div className="flex flex-col gap-4 rounded-2xl p-6">
+        <div className="flex flex-col gap-4 rounded-lg p-6">
           <div className="h-6 w-24 rounded-full bg-bg" />
           <div className="h-10 w-2/3 rounded bg-placeholder" />
           <div className="flex items-center gap-4">
@@ -32,7 +32,7 @@ export default function CollabDetailLoading() {
         </div>
 
         {/* Owner card */}
-        <div className="flex flex-col gap-4 rounded-2xl bg-bg p-6">
+        <div className="flex flex-col gap-4 rounded-lg bg-bg p-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="size-[42px] rounded-full bg-placeholder" />
@@ -80,7 +80,7 @@ export default function CollabDetailLoading() {
         </div>
 
         {/* Apply CTA */}
-        <div className="flex items-center justify-center rounded-2xl bg-bg p-6">
+        <div className="flex items-center justify-center rounded-lg bg-bg p-6">
           <div className="h-12 w-44 rounded-md bg-placeholder" />
         </div>
       </div>

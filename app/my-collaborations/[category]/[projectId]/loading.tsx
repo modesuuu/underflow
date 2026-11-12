@@ -39,7 +39,7 @@ export default function MyCollabDetailLoading() {
         </div>
 
         {/* 4. Owner card + about + work items */}
-        <div className="flex flex-col gap-4 rounded-2xl bg-bg p-6">
+        <div className="flex flex-col gap-4 rounded-lg bg-bg p-6">
           <div className="h-3 w-24 rounded bg-placeholder" />
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">

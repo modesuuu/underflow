@@ -26,7 +26,7 @@ export default function CollaborationsLoading() {
           {Array.from({ length: 6 }).map((_, i) => (
             <div
               key={i}
-              className="flex flex-col gap-3 rounded-2xl border border-line bg-surface p-4 sm:p-5"
+              className="flex flex-col gap-3 rounded-lg border border-line bg-surface p-4 sm:p-5"
             >
               <div className="flex items-start gap-3">
                 <div className="size-14 shrink-0 rounded-full bg-placeholder" />

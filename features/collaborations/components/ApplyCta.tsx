@@ -108,7 +108,7 @@ export function ApplyCta({
   };
 
   return (
-    <div className="flex flex-col gap-3 items-center rounded-2xl bg-bg p-6">
+    <div className="flex flex-col gap-3 items-center rounded-lg bg-bg p-6">
       {isOwner && (
         <button
           type="button"

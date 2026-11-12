@@ -135,7 +135,7 @@ export function Composer({
       }}
     >
       {pickerOpen && (
-        <div className="absolute right-4 bottom-full left-4 z-20 mb-1 overflow-hidden rounded-xl border border-line bg-surface shadow-[0_16px_40px_-12px_rgba(var(--uf-shadow-rgb),0.25)]">
+        <div className="absolute right-4 bottom-full left-4 z-20 mb-1 overflow-hidden rounded-lg border border-line bg-surface shadow-[0_16px_40px_-12px_rgba(var(--uf-shadow-rgb),0.25)]">
           {mentionCandidates.map((member, i) => (
             <button
               key={member.userId}
@@ -157,7 +157,7 @@ export function Composer({
         </div>
       )}
       {replyTo && (
-        <div className="mb-2 flex items-center gap-2 rounded-xl bg-bg px-3 py-2">
+        <div className="mb-2 flex items-center gap-2 rounded-lg bg-bg px-3 py-2">
           <Icon name="reply" size={14} className="shrink-0 text-subtle" />
           <span className="min-w-0 flex-1 truncate text-xs text-muted">
             Replying to{" "}
@@ -204,7 +204,7 @@ export function Composer({
           ))}
         </div>
       )}
-      <div className="flex items-end gap-2 rounded-[24px] bg-bg p-2">
+      <div className="flex items-end gap-2 rounded-lg bg-bg p-2">
         <input
           ref={fileRef}
           type="file"

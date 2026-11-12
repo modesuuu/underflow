@@ -198,7 +198,7 @@ export function ChatPane({
                 {block.messages.map((message) => (
                   <p
                     key={message.id}
-                    className={`max-w-[85%] rounded-2xl px-3 py-3 text-base whitespace-pre-wrap sm:max-w-[310px] ${
+                    className={`max-w-[85%] rounded-lg px-3 py-3 text-base whitespace-pre-wrap sm:max-w-[310px] ${
                       mine
                         ? "rounded-br-[2px] bg-accent text-on-accent"
                         : "rounded-bl-[2px] bg-bg text-ink"

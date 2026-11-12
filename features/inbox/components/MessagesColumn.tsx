@@ -88,7 +88,7 @@ export function MessagesColumn({
           return (
             <li key={thread.id}>
               <div
-                className={`flex items-center rounded-xl pr-1 transition-colors ${
+                className={`flex items-center rounded-lg pr-1 transition-colors ${
                   selected ? "bg-active" : "hover:bg-active/70"
                 }`}
               >

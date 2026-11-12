@@ -53,7 +53,7 @@ export function ApplyMessageModal({
       onClick={onClose}
     >
       <div
-        className="flex w-full max-w-lg flex-col gap-4 rounded-2xl bg-surface p-6"
+        className="flex w-full max-w-lg flex-col gap-4 rounded-lg bg-surface p-6"
         onClick={(event) => event.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-4">
@@ -85,7 +85,7 @@ export function ApplyMessageModal({
             onChange={(event) => setMessage(event.target.value)}
             rows={5}
             autoFocus
-            className="w-full resize-none rounded-xl border border-line bg-surface p-3 text-base text-ink outline-none placeholder:text-muted focus-visible:ring-2 focus-visible:ring-accent"
+            className="w-full resize-none rounded-lg border border-line bg-surface p-3 text-base text-ink outline-none placeholder:text-muted focus-visible:ring-2 focus-visible:ring-accent"
             placeholder="Introduce yourself, your experience, and how much time you can commit…"
           />
         </label>

@@ -45,7 +45,7 @@ export function ConfirmDialog({
     >
       <div
         onClick={(event) => event.stopPropagation()}
-        className="flex w-full max-w-[320px] flex-col gap-4 rounded-3xl bg-surface p-6 shadow-xl"
+        className="flex w-full max-w-[320px] flex-col gap-4 rounded-lg bg-surface p-6 shadow-xl"
       >
         <div className="flex items-center gap-2">
           <Icon
@@ -61,14 +61,14 @@ export function ConfirmDialog({
             type="button"
             autoFocus
             onClick={onCancel}
-            className="cursor-pointer rounded-xl bg-bg px-4 py-2 text-sm font-medium text-muted transition-colors hover:bg-line/50"
+            className="cursor-pointer rounded-md bg-bg px-4 py-2 text-sm font-medium text-muted transition-colors hover:bg-line/50"
           >
             Cancel
           </button>
           <button
             type="button"
             onClick={onConfirm}
-            className="cursor-pointer rounded-xl bg-badge px-4 py-2 text-sm font-medium text-white transition-opacity hover:opacity-85"
+            className="cursor-pointer rounded-md bg-badge px-4 py-2 text-sm font-medium text-white transition-opacity hover:opacity-85"
           >
             {confirmLabel}
           </button>

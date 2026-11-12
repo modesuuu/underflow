@@ -107,7 +107,7 @@ export function DateField({
         </button>
       </div>
       {open && (
-        <div className="uf-datepicker-pop absolute left-0 top-full z-50 mt-2 rounded-2xl border border-line bg-surface p-3 shadow-lg">
+        <div className="uf-datepicker-pop absolute left-0 top-full z-50 mt-2 rounded-lg border border-line bg-surface p-3 shadow-lg">
           <DayPicker
             className="uf-datepicker"
             mode="single"
