@@ -1,6 +1,7 @@
 // features/circle/mock.ts
 import type { MyCollabProject } from "@/features/my-collaborations/types";
 import { CURRENT_USER } from "@/components/layout/nav";
+import { getSessionUser } from "@/features/auth/session";
 import type {
   ChannelId,
   CircleData,
@@ -64,13 +65,19 @@ export function circleMembers(project: MyCollabProject): CircleMember[] {
       avatarUrl: m.avatarUrl,
       presence: PRESENCE_BY_USER[m.id] ?? "offline",
     }));
-  members.push({
-    userId: "me",
-    name: CURRENT_USER.name,
-    role: myRole(project),
-    isOwner: false,
-    presence: PRESENCE_BY_USER.me,
-  });
+  // The current user joins as "me" ONLY when they are not already in
+  // the list — the owner always is, and appending them again listed
+  // (and keyed) the same person twice.
+  const sessionUser = getSessionUser();
+  if (!sessionUser || !members.some((m) => m.userId === sessionUser.id)) {
+    members.push({
+      userId: "me",
+      name: CURRENT_USER.name,
+      role: myRole(project),
+      isOwner: false,
+      presence: PRESENCE_BY_USER.me,
+    });
+  }
   return members;
 }
 

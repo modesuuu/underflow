@@ -72,5 +72,5 @@ export interface CircleProjectSummary {
   title: string;
   /** My Collaborations status label, e.g. "Not Started". */
   statusLabel: string;
-  memberNames: string[];
+  members: { userId: string; name: string }[];
 }

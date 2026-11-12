@@ -41,10 +41,10 @@ export function CircleIndexList({
             className="group flex items-center gap-3 px-3 py-3.5 transition-colors hover:bg-bg focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
           >
             <div className="flex -space-x-2">
-              {project.memberNames.slice(0, 3).map((name) => (
+              {project.members.slice(0, 3).map((member) => (
                 <Avatar
-                  key={name}
-                  alt={name}
+                  key={member.userId}
+                  alt={member.name}
                   size={32}
                   className="ring-2 ring-surface"
                 />
@@ -55,7 +55,7 @@ export function CircleIndexList({
                 {project.title}
               </span>
               <span className="text-xs text-muted">
-                {project.statusLabel} · {project.memberNames.length} members
+                {project.statusLabel} · {project.members.length} members
               </span>
             </div>
             {unread > 0 && (

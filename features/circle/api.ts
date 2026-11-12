@@ -34,7 +34,10 @@ export async function getCircleProjects(): Promise<CircleProjectSummary[]> {
       statusLabel:
         MY_COLLAB_CATEGORIES.find((c) => c.slug === project.myStatus)
           ?.crumbLabel ?? project.myStatus,
-      memberNames: data.members.map((m) => m.name),
+      members: data.members.map((m) => ({
+        userId: m.userId,
+        name: m.name,
+      })),
     };
   });
 }
