@@ -241,7 +241,7 @@ export function CollabGrid({ initial, clientList }: CollabGridProps) {
       ) : (
         /* Person cards in a grid, one page at a time. */
         <>
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
             {visibleProjects.map((project, i) => (
               <div
                 key={project.id}
