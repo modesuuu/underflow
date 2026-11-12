@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Avatar } from "@/components/ui/Avatar";
 import { applyToCollab, backendErrorMessage } from "../api";
 import { useSessionUser } from "@/features/auth/store";
 import { startApplicationThread } from "@/features/inbox/store";
@@ -108,8 +107,8 @@ function CardApply({ project }: { project: CollabProject }) {
         onClick={() => setModalOpen(true)}
         className={
           blocked
-            ? "rounded-full bg-placeholder px-4 py-2 text-sm font-semibold text-muted"
-            : "pressable cursor-pointer rounded-full bg-accent px-4 py-2 text-sm font-semibold text-on-accent transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+            ? "rounded-full bg-placeholder px-5 py-2 text-[13px] font-medium text-muted"
+            : "pressable cursor-pointer rounded-full bg-accent px-5 py-2 text-[13px] font-medium text-on-accent transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
         }
       >
         {label}
@@ -131,22 +130,27 @@ function CardApply({ project }: { project: CollabProject }) {
 }
 
 /**
- * One person-led card of the collaborations board (redesign v2
- * 2026-11-09, CRM reference): owner avatar, project title, owner
- * role line, skill tags, seat dots, Apply. No cover photo and no
- * description — the reference's lead cards carry people, tags and
- * dots, not artwork. The whole card links to the detail (stretched
- * link); Apply runs inline.
+ * One card of the collaborations board (redesign 2026-11-12,
+ * structure borrowed from a job-board card, colors from the
+ * app's own theme): due-date pill, title, a two-line mini
+ * description, outlined skill tags, and a footer with the seat
+ * count and the Apply pill. No owner avatar or name on the
+ * card — that lives on the detail page. The card background
+ * comes from .collab-card (tokens.css): the surface color in
+ * light; in dark the page ground goes black and the card
+ * itself carries the brand green. The whole card links to the
+ * detail (stretched link); Apply runs inline.
  */
 export function CollabCard({ project }: { project: CollabProject }) {
   const isFull = project.slotsFilled >= project.slotsTotal;
   const spotsLeft = project.slotsTotal - project.slotsFilled;
   const shownSkills = project.skills.slice(0, 3);
   const extraSkills = project.skills.length - shownSkills.length;
-  const seatDots = Array.from({ length: project.slotsTotal }, (_, i) => i < project.slotsFilled);
+  const hasSkills = project.skills.length > 0;
+  const hasDescription = project.description.trim() !== "";
 
   return (
-    <article className="group relative flex h-full flex-col rounded-lg border border-line bg-surface p-4 transition-[border-color] duration-200 hover:border-ink/30 sm:p-5">
+    <article className="collab-card group relative flex h-full flex-col rounded-lg border border-line p-5 transition-[border-color] duration-200 hover:border-ink/30">
       {/* Stretched link — whole card clickable, keyboard reachable */}
       <Link
         href={"/collaborations/" + project.id}
@@ -154,65 +158,70 @@ export function CollabCard({ project }: { project: CollabProject }) {
         className="absolute inset-0 z-0 rounded-lg focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
       />
 
-      {/* Owner + title + save */}
-      <div className="pointer-events-none relative z-10 flex items-start gap-3">
-        <Avatar size={56} src={project.owner.avatarUrl} alt={project.owner.name} />
-        <div className="min-w-0 flex-1">
-          <h3 className="line-clamp-1 text-[15px] font-semibold leading-snug text-ink">
-            {project.title}
-          </h3>
-          <p className="line-clamp-1 pt-0.5 text-[13px] text-muted">
-            {project.owner.name} · {project.owner.role}
-          </p>
-          {/* Always rendered: an invisible "Open" pill reserves the
-              status row's height on open cards, so every card's
-              header is the same height and the divider gap below
-              the tags stays identical across the row (it was 0px
-              on open cards and 13px on the in-progress card). */}
-          <span
-            aria-hidden={project.status === "open" ? true : undefined}
-            className={
-              "mt-1.5 inline-flex items-center gap-1.5 rounded-full bg-bg px-2 py-0.5 text-[11px] font-semibold text-ink" +
-              (project.status === "open" ? " invisible" : "")
-            }
-          >
-            <span aria-hidden="true" className={"size-1.5 rounded-full " + STATUS_DOT[project.status]} />
-            {STATUS_LABEL[project.status]}
-          </span>
-        </div>
+      {/* Top row: due pill + status pill. The status pill keeps
+          the old reserve trick: on open cards it renders
+          invisibly, so every card's top row is the same height. */}
+      <div className="pointer-events-none relative z-10 flex items-center justify-between gap-2">
+        <span className="inline-flex items-center rounded-full bg-placeholder px-2.5 py-1 text-[11px] font-semibold text-accent">
+          {project.dueDate
+            ? "Due " + formatDueDate(project.dueDate)
+            : "No deadline"}
+        </span>
+        <span
+          aria-hidden={project.status === "open" ? true : undefined}
+          className={
+            "inline-flex items-center gap-1.5 rounded-full bg-placeholder px-2 py-0.5 text-[11px] font-semibold text-ink" +
+            (project.status === "open" ? " invisible" : "")
+          }
+        >
+          <span aria-hidden="true" className={"size-1.5 rounded-full " + STATUS_DOT[project.status]} />
+          {STATUS_LABEL[project.status]}
+        </span>
       </div>
 
-      {/* Skill tags — the reference's Source tags */}
-      {project.skills.length > 0 && (
-        <div className="pointer-events-none relative z-10 mt-3 mb-3 flex flex-wrap gap-1.5">
+      {/* Title + mini description */}
+      <h3 className="pointer-events-none relative z-10 mt-3.5 line-clamp-2 text-xl leading-snug font-semibold text-ink">
+        {project.title}
+      </h3>
+      {hasDescription && (
+        <p className="pointer-events-none relative z-10 mt-1.5 line-clamp-2 text-[13px] leading-relaxed text-muted">
+          {project.description}
+        </p>
+      )}
+
+      {/* Skill tags — outlined pills, anchored to the bottom
+          of the card above the footer. */}
+      {hasSkills && (
+        <div className="pointer-events-none relative z-10 mt-auto flex flex-wrap gap-1.5 pt-4">
           {shownSkills.map((s) => (
-            <span key={s.label} className="rounded-full bg-bg px-2.5 py-1 text-xs font-medium text-muted">
+            <span key={s.label} className="rounded-full border border-line/50 px-2.5 py-1 text-[11px] font-medium text-ink">
               {s.label}
             </span>
           ))}
           {extraSkills > 0 && (
-            <span className="rounded-full bg-bg px-2.5 py-1 text-xs font-medium text-subtle">
+            <span className="rounded-full border border-line/50 px-2.5 py-1 text-[11px] font-medium text-muted">
               +{extraSkills} more
             </span>
           )}
         </div>
       )}
 
-      {/* Footer: seat dots + seats, Apply */}
-      <div className="pointer-events-none relative z-10 mt-auto flex items-center justify-between gap-3 border-t border-line pt-3">
-        <span className="flex min-w-0 items-center gap-2">
-          <span className="flex shrink-0 items-center gap-1" aria-hidden="true">
-            {seatDots.map((filled, i) => (
-              <span
-                key={i}
-                className={filled ? "size-2 rounded-full bg-ink" : "size-2 rounded-full bg-placeholder"}
-              />
-            ))}
+      {/* Footer: seats + spots, Apply */}
+      <div
+        className={
+          "pointer-events-none relative z-10 flex items-center justify-between gap-3 border-t border-line/60 pt-3.5" +
+          (hasSkills ? " mt-3.5" : " mt-auto")
+        }
+      >
+        <span className="min-w-0">
+          <span className="block truncate text-[15px] font-bold text-ink">
+            {project.slotsFilled}/{project.slotsTotal} member
+            {project.slotsTotal === 1 ? "" : "s"}
           </span>
-          <span className="truncate text-xs font-medium text-ink">
-            {project.slotsFilled} member{project.slotsFilled === 1 ? "" : "s"}
-            {" · "}
-            {isFull ? "Full" : spotsLeft + " spot" + (spotsLeft === 1 ? "" : "s") + " left"}
+          <span className="mt-0.5 block truncate text-xs text-muted">
+            {isFull
+              ? "Team is full"
+              : spotsLeft + " spot" + (spotsLeft === 1 ? "" : "s") + " left"}
           </span>
         </span>
         <span className="pointer-events-auto shrink-0">

@@ -139,4 +139,10 @@
    Used by the page wrapper and the sticky toolbar so the toolbar
    matches the ground it sticks over. */
 .collab-ground { background-color: #ffffff; }
-[data-theme="dark"] .collab-ground { background-color: var(--uf-bg); }
+[data-theme="dark"] .collab-ground { background-color: var(--uf-surface); }
+
+/* Collab board cards (redesign 2026-11-12): the surface color
+   in light; in dark the page ground is the black surface and
+   the card itself carries the brand green. */
+.collab-card { background-color: var(--uf-surface); }
+[data-theme="dark"] .collab-card { background-color: var(--uf-brand); }

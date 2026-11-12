@@ -26,22 +26,28 @@ export default function CollaborationsLoading() {
           {Array.from({ length: 6 }).map((_, i) => (
             <div
               key={i}
-              className="flex flex-col gap-3 rounded-lg border border-line bg-surface p-4 sm:p-5"
+              className="collab-card flex flex-col rounded-lg border border-line p-5"
             >
-              <div className="flex items-start gap-3">
-                <div className="size-14 shrink-0 rounded-full bg-placeholder" />
-                <div className="flex min-w-0 flex-1 flex-col gap-2">
-                  <div className="h-4 w-3/4 rounded bg-placeholder" />
-                  <div className="h-3.5 w-1/2 rounded bg-placeholder" />
-                </div>
+              <div className="flex items-center justify-between">
+                <div className="h-6 w-24 rounded-full bg-placeholder" />
+                <div className="h-6 w-16 rounded-full bg-placeholder/60" />
               </div>
-              <div className="flex gap-1.5">
+              <div className="mt-3.5 h-5 w-2/3 rounded bg-placeholder" />
+              <div className="mt-2 flex flex-col gap-1.5">
+                <div className="h-3.5 w-full rounded bg-placeholder/70" />
+                <div className="h-3.5 w-4/5 rounded bg-placeholder/70" />
+              </div>
+              <div className="mt-auto flex gap-1.5 pt-4">
                 <div className="h-6 w-16 rounded-full bg-placeholder/70" />
                 <div className="h-6 w-20 rounded-full bg-placeholder/70" />
+                <div className="h-6 w-14 rounded-full bg-placeholder/70" />
               </div>
-              <div className="mt-auto flex items-center justify-between border-t border-line pt-3">
-                <div className="h-3.5 w-28 rounded bg-placeholder" />
-                <div className="h-9 w-20 rounded-full bg-placeholder" />
+              <div className="mt-3.5 flex items-center justify-between border-t border-line/60 pt-3.5">
+                <div className="flex flex-col gap-1.5">
+                  <div className="h-4 w-24 rounded bg-placeholder" />
+                  <div className="h-3 w-16 rounded bg-placeholder/70" />
+                </div>
+                <div className="h-8 w-20 rounded-full bg-placeholder" />
               </div>
             </div>
           ))}
