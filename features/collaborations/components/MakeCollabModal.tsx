@@ -526,7 +526,7 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
                 aria-label="Add skill"
                 className="pressable flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-sm bg-accent text-on-accent disabled:cursor-not-allowed disabled:opacity-40 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
               >
-                <Icon name="plus" size={14} className="text-ink" />
+                <Icon name="plus" size={14} />
               </button>
             </div>
             <div className="flex flex-wrap gap-2 mt-3">
@@ -555,10 +555,10 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
                     <span
                       key={skill.id}
                       className={
-                        "flex items-center rounded-full text-xs font-medium text-ink " +
+                        "flex items-center rounded-full text-xs font-medium " +
                         (selectedSkills.has(skill.id)
-                          ? "bg-accent"
-                          : "border border-line")
+                          ? "bg-accent text-on-accent"
+                          : "border border-line text-ink")
                       }
                     >
                       <button
@@ -586,7 +586,12 @@ export function MakeCollabModal({ open, onClose }: MakeCollabModalProps) {
                           disabled={deletingSkillId === skill.id}
                           aria-label={`Delete skill ${skill.name}`}
                           title={`Delete skill ${skill.name}`}
-                          className="pressable mr-1 flex size-4 shrink-0 cursor-pointer items-center justify-center rounded-full text-muted transition-colors hover:text-ink focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40"
+                          className={
+                            "pressable mr-1 flex size-4 shrink-0 cursor-pointer items-center justify-center rounded-full transition-colors focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40 " +
+                            (selectedSkills.has(skill.id)
+                              ? "text-on-accent"
+                              : "text-muted hover:text-ink")
+                          }
                         >
                           <Icon name="x" size={10} />
                         </button>
