@@ -146,3 +146,21 @@
    the card itself carries the brand green. */
 .collab-card { background-color: var(--uf-surface); }
 [data-theme="dark"] .collab-card { background-color: var(--uf-brand); }
+
+/* Hover motion for the live card only (loading skeletons share
+   .collab-card for color but stay still): a 3px lift, a soft
+   shadow fading in, and the border strengthening to ink at
+   30%. 200ms ease-out so the card decelerates into place;
+   hover-capable pointers only, and off for reduced motion. */
+.collab-card-live { transition: transform 200ms ease-out, box-shadow 200ms ease-out, border-color 200ms ease-out; }
+@media (hover: hover) {
+  .collab-card-live:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 32px rgba(var(--uf-shadow-rgb), 0.12);
+    border-color: color-mix(in srgb, var(--uf-ink) 30%, transparent);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .collab-card-live { transition: none; }
+  .collab-card-live:hover { transform: none; }
+}

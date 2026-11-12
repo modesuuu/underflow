@@ -150,7 +150,7 @@ export function CollabCard({ project }: { project: CollabProject }) {
   const hasDescription = project.description.trim() !== "";
 
   return (
-    <article className="collab-card group relative flex h-full flex-col rounded-lg border border-line p-5 transition-[border-color] duration-200 hover:border-ink/30">
+    <article className="collab-card collab-card-live group relative flex h-full flex-col rounded-lg border border-line p-5">
       {/* Stretched link — whole card clickable, keyboard reachable */}
       <Link
         href={"/collaborations/" + project.id}
