@@ -244,7 +244,7 @@ export function CollabDetailContent({ project }: CollabDetailContentProps) {
         {/* About the project */}
         <div className="flex flex-col gap-2">
           <h2 className="text-xl font-medium text-ink">About the project</h2>
-          <p className="text-sm leading-relaxed text-ink">
+          <p className="whitespace-pre-wrap text-sm leading-relaxed text-ink">
             {project.description}
           </p>
         </div>

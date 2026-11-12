@@ -66,7 +66,7 @@ export function PostCard({ post }: { post: Post }) {
         <PostOptionsMenu onReport={() => setReported(true)} />
       </div>
 
-      <p className="text-[15px] leading-relaxed">{post.text}</p>
+      <p className="whitespace-pre-wrap text-[15px] leading-relaxed">{post.text}</p>
 
       {/* Photo click -> post detail (replaces the old lightbox) */}
       <PhotoGrid photos={post.photos} onPhotoClick={openDetail} />

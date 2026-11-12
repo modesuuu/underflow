@@ -71,7 +71,7 @@ export function PostDetailBody({ post }: { post: Post }) {
         <PostOptionsMenu onReport={() => setReported(true)} />
       </div>
 
-      <p className="text-[15px] leading-relaxed">{post.text}</p>
+      <p className="whitespace-pre-wrap text-[15px] leading-relaxed">{post.text}</p>
 
       <PhotoViewer photos={post.photos} />
 
