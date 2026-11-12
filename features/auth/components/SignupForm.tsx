@@ -77,7 +77,7 @@ export function SignupForm() {
           label="Username"
           type="text"
           autoComplete="username"
-          placeholder="russel"
+          placeholder="Username"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
           error={errors.username}
