@@ -1,14 +1,15 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { markThreadRead, useConversations } from "../store";
+import { openThread, refreshConversations, useConversations } from "../store";
 import { ChatPane } from "./ChatPane";
 import { MessagesColumn } from "./MessagesColumn";
 
 /**
  * The Inbox page body: Messages rail + chat pane, driven by the
- * session inbox store. Selecting a thread marks it read (the Sidebar
- * badge follows the same store, so it stays in sync).
+ * API-backed inbox store. Selecting a thread loads its history
+ * and marks it read (the Sidebar badge follows the same store,
+ * so it stays in sync).
  */
 export function InboxShell() {
   const conversations = useConversations();
@@ -30,9 +31,18 @@ export function InboxShell() {
     conversations[0] ??
     null;
 
+  // The list is server-backed: load it on mount. LivePoller keeps
+  // it fresh afterwards (realtime events + polling fallback).
   useEffect(() => {
-    if (selected) markThreadRead(selected.id);
-  }, [selected?.id]);
+    void refreshConversations();
+  }, []);
+
+  // Opening a thread fetches its history and marks it read; the
+  // effect re-runs when new messages land in the open thread so
+  // they are read while the user is looking at them.
+  useEffect(() => {
+    if (selected) void openThread(selected.id);
+  }, [selected?.id, selected?.messages.length]);
 
   return (
     <div className="flex h-full min-h-0 overflow-hidden">

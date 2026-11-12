@@ -211,12 +211,18 @@ export function CollabDetailContent({ project }: CollabDetailContentProps) {
           ) : (
             <button
               type="button"
-              onClick={() => {
-                startDirectThread({
-                  personId: ownerPersonId,
-                  name: project.owner.name,
-                });
-                router.push("/inbox");
+              onClick={async () => {
+                try {
+                  await startDirectThread({
+                    personId: ownerPersonId,
+                    name: project.owner.name,
+                  });
+                  router.push("/inbox");
+                } catch (err) {
+                  toast.error("Couldn't open the chat", {
+                    description: backendErrorMessage(err),
+                  });
+                }
               }}
               className="flex cursor-pointer items-center gap-1 rounded-full bg-accent px-4 py-2 text-xs font-medium text-on-accent transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
             >

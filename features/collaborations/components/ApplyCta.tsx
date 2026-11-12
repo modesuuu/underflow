@@ -70,7 +70,7 @@ export function ApplyCta({
       // Applying = messaging the owner: open the Inbox thread with the
       // applicant's message and the outgoing application card, then go
       // straight to it so the sender sees where the message landed.
-      startApplicationThread({
+      await startApplicationThread({
         ownerPersonId,
         ownerName,
         projectId,
@@ -95,11 +95,16 @@ export function ApplyCta({
     }
   };
 
-  const handleCancel = () => {
-    // TODO(backend): DELETE /api/collaborations/:id/apply
-    withdrawApplication(projectId);
-    setState("default");
-    toast("Application withdrawn", { description: projectTitle });
+  const handleCancel = async () => {
+    try {
+      await withdrawApplication(projectId);
+      setState("default");
+      toast("Application withdrawn", { description: projectTitle });
+    } catch (err) {
+      toast.error("Couldn't withdraw the application", {
+        description: backendErrorMessage(err),
+      });
+    }
   };
 
   return (

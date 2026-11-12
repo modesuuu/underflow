@@ -1,6 +1,5 @@
 "use client";
 
-import { Avatar } from "@/components/ui/Avatar";
 import { Icon } from "@/components/ui/Icon";
 import type { ThreadApplication } from "../types";
 
@@ -47,10 +46,7 @@ export function ApplicationCard({
         </div>
         <div className="h-px w-full bg-placeholder" />
         <div className="flex items-center gap-2">
-          <span className="flex -space-x-2">
-            <Avatar size={24} alt="" className="ring-2 ring-surface" />
-            <Avatar size={24} alt="" className="ring-2 ring-surface" />
-          </span>
+          <Icon name="group" size={18} className="text-muted" />
           <span className="text-sm font-medium text-ink">
             {application.slotsLabel}
           </span>

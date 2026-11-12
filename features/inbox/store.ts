@@ -1,18 +1,46 @@
 import { useSyncExternalStore } from "react";
-import type { ApplicationStatus, Conversation } from "./types";
+import { toast } from "sonner";
+import { getSessionUser } from "@/features/auth/session";
+import {
+  acceptCollabApplication,
+  declineCollabApplication,
+  withdrawCollabApplication,
+} from "@/features/collaborations/api";
+import { formatDueDate } from "@/features/collaborations/sort";
+import {
+  clearConversation as apiClearConversation,
+  ensureDirectConversation,
+  fetchConversations,
+  fetchMessages,
+  hideConversation as apiHideConversation,
+  markConversationRead,
+  postMessage,
+  restoreConversation as apiRestoreConversation,
+  toggleConversationMute,
+  toggleConversationPin,
+  type BackendConversation,
+  type BackendInboxMessage,
+} from "./api";
+import type { ApplicationStatus, ChatMessage, Conversation } from "./types";
 
 /**
- * Session-scoped inbox store — same pattern as the dashboard
- * like-store: module state + listeners + useSyncExternalStore, so the
- * thread list, the open chat, and the Sidebar unread badge all read
- * one source and never drift apart.
+ * Inbox store — API-backed since 2026-11-12 (was session memory).
+ * Conversations and messages live in the backend (dm_* tables);
+ * this module keeps the same external-store shape the UI already
+ * reads (thread list, open chat, Sidebar badge) and syncs it with
+ * the API: refresh on mount / realtime events / polling fallback,
+ * messages fetched per thread when it is opened, sends optimistic.
  *
- * TODO(backend): state lives in session memory and dies on refresh.
- * Real persistence waits on the inbox API (docs/api-contract.md).
+ * One source of truth for unread, as before: a loaded thread
+ * derives it from its messages; an unloaded one trusts the
+ * server's per-thread count. Muted threads never feed the badge.
  */
 
 let conversations: Conversation[] = [];
 const listeners = new Set<() => void>();
+/** Threads whose full message history has been fetched. */
+const loadedMessages = new Set<string>();
+let refreshInFlight: Promise<void> | null = null;
 
 function emit() {
   for (const listener of listeners) listener();
@@ -29,7 +57,7 @@ function getSnapshot(): Conversation[] {
   return conversations;
 }
 
-/** Plain (non-hook) read of the current thread list, for the api layer. */
+/** Plain (non-hook) read of the current thread list. */
 export function getConversationsList(): Conversation[] {
   return conversations;
 }
@@ -38,18 +66,16 @@ export function useConversations(): Conversation[] {
   return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
 }
 
-/**
- * The one source of truth for unread: incoming messages not yet
- * read. Every badge (row, rail dot, Sidebar total) derives from
- * the messages themselves, so the numbers can never drift apart.
- */
 export function unreadCount(thread: Conversation): number {
-  return thread.messages.filter((m) => m.from === "them" && !m.read).length;
+  if (loadedMessages.has(thread.id)) {
+    return thread.messages.filter((m) => m.from === "them" && !m.read).length;
+  }
+  return thread.serverUnread ?? 0;
 }
 
 export function countUnread(list: Conversation[]): number {
   return list.reduce(
-    (sum, thread) => sum + unreadCount(thread),
+    (sum, thread) => sum + (thread.muted ? 0 : unreadCount(thread)),
     0,
   );
 }
@@ -69,71 +95,27 @@ function replaceThread(id: string, update: (thread: Conversation) => Conversatio
   emit();
 }
 
-export function markThreadRead(id: string) {
-  const thread = conversations.find((t) => t.id === id);
-  if (!thread || unreadCount(thread) === 0) return;
-  replaceThread(id, (t) => ({
-    ...t,
-    messages: t.messages.map((m) => (m.read ? m : { ...m, read: true })),
-  }));
+// ── Wire → UI mapping ──────────────────────────────────────────
+
+function myId(): string | null {
+  return getSessionUser()?.id ?? null;
 }
 
-/** Remove the thread entirely (Delete chat, after confirmation). */
-export function deleteThread(id: string) {
-  conversations = conversations.filter((thread) => thread.id !== id);
-  emit();
+function timeLabelOf(iso: string): string {
+  const ms = Date.now() - new Date(iso).getTime();
+  if (Number.isNaN(ms) || ms < 60_000) return "now";
+  const minutes = Math.floor(ms / 60_000);
+  if (minutes < 60) return `${minutes}min`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h`;
+  return `${Math.floor(hours / 24)}d`;
 }
 
-/**
- * Undo for Clear/Delete: put a snapshot back. A still-present
- * thread is replaced in place; a deleted one re-enters at the top
- * of its pin group (the list's sort does the rest).
- */
-export function restoreThread(snapshot: Conversation) {
-  if (conversations.some((t) => t.id === snapshot.id)) {
-    conversations = conversations.map((t) =>
-      t.id === snapshot.id ? snapshot : t,
-    );
-  } else {
-    const pinnedCount = conversations.filter((t) => t.pinned).length;
-    const at = snapshot.pinned ? 0 : pinnedCount;
-    conversations = [
-      ...conversations.slice(0, at),
-      snapshot,
-      ...conversations.slice(at),
-    ];
-  }
-  emit();
+function clockOf(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
 }
-
-/** Empty the history (Clear chat); the thread and its application stay. */
-export function clearThread(id: string) {
-  replaceThread(id, (t) => ({ ...t, messages: [] }));
-}
-
-export function toggleMuteThread(id: string) {
-  replaceThread(id, (t) => ({ ...t, muted: !t.muted }));
-}
-
-export function togglePinThread(id: string) {
-  replaceThread(id, (t) => ({ ...t, pinned: !t.pinned }));
-}
-
-export function markThreadUnread(id: string) {
-  replaceThread(id, (t) => {
-    if (unreadCount(t) > 0) return t;
-    const lastIncoming = t.messages.map((m) => m.from).lastIndexOf("them");
-    if (lastIncoming === -1) return t;
-    return {
-      ...t,
-      messages: t.messages.map((m, i) =>
-        i === lastIncoming ? { ...m, read: false } : m,
-      ),
-    };
-  });
-}
-
-let messageSeq = 0;
 
 const clockNow = () =>
   new Date().toLocaleTimeString("en-GB", {
@@ -141,24 +123,249 @@ const clockNow = () =>
     minute: "2-digit",
   });
 
+function mapMessage(m: BackendInboxMessage): ChatMessage {
+  return {
+    id: m.id,
+    from: m.sender_id === myId() ? "me" : "them",
+    text: m.body,
+    timeLabel: timeLabelOf(m.created_at),
+    clock: clockOf(m.created_at),
+    read: m.is_read,
+  };
+}
+
+function mapConversation(
+  b: BackendConversation,
+  prev?: Conversation,
+): Conversation {
+  const hasLoaded = prev !== undefined && loadedMessages.has(b.id);
+  return {
+    id: b.id,
+    personId: b.other.id,
+    name: b.other.username,
+    avatarUrl: b.other.photo_profile_url || undefined,
+    messages: hasLoaded ? prev.messages : [],
+    muted: b.is_muted || undefined,
+    pinned: b.is_pinned || undefined,
+    serverUnread: hasLoaded ? 0 : b.unread_count,
+    updatedAt: b.updated_at,
+    preview:
+      !hasLoaded && b.last_message
+        ? {
+            from: b.last_message.sender_id === myId() ? "me" : "them",
+            text: b.last_message.body,
+            timeLabel: timeLabelOf(b.last_message.created_at),
+          }
+        : undefined,
+    application: b.application
+      ? {
+          applicationId: b.application.id,
+          projectId: b.application.collab_id,
+          projectTitle: b.application.project_title,
+          projectMeta: b.application.project_meta,
+          dueLabel: b.application.due_date
+            ? formatDueDate(b.application.due_date)
+            : "No due date",
+          slotsLabel: `${b.application.slots_filled} / ${b.application.slots_total}`,
+          direction: b.application.direction,
+          status: b.application.status,
+        }
+      : undefined,
+  };
+}
+
+// ── Sync ───────────────────────────────────────────────────────
+
+/**
+ * Reload the conversation list from the API. Loaded threads keep
+ * their fetched messages; everything else (order, unread, flags,
+ * application cards) follows the server. Deduped while in flight.
+ */
+export function refreshConversations(): Promise<void> {
+  if (refreshInFlight) return refreshInFlight;
+  refreshInFlight = (async () => {
+    try {
+      const list = await fetchConversations();
+      const prevById = new Map(conversations.map((t) => [t.id, t]));
+      conversations = list.map((b) => mapConversation(b, prevById.get(b.id)));
+      emit();
+    } catch {
+      // Best-effort: keep showing what we have; the next tick retries.
+    } finally {
+      refreshInFlight = null;
+    }
+  })();
+  return refreshInFlight;
+}
+
+/** A realtime inbox-message event landed (LivePoller forwards it). */
+export function applyRealtimeInboxMessage(
+  conversationId: string,
+  raw: BackendInboxMessage,
+): void {
+  const thread = conversations.find((t) => t.id === conversationId);
+  if (thread && loadedMessages.has(conversationId)) {
+    const mapped = mapMessage(raw);
+    if (!thread.messages.some((m) => m.id === mapped.id)) {
+      const updated = { ...thread, messages: [...thread.messages, mapped] };
+      conversations = [
+        updated,
+        ...conversations.filter((t) => t.id !== conversationId),
+      ];
+      emit();
+    }
+  }
+  void refreshConversations();
+}
+
+/** A realtime inbox-update event landed (status changed, no message). */
+export function applyRealtimeInboxUpdate(_conversationId: string): void {
+  void refreshConversations();
+}
+
+/**
+ * Open a thread: fetch its history once, then mark it read on the
+ * server and locally. Called by the shell when a thread is selected
+ * (and again when new messages land in the open thread).
+ */
+export async function openThread(id: string): Promise<void> {
+  if (!loadedMessages.has(id)) {
+    try {
+      const messages = await fetchMessages(id);
+      loadedMessages.add(id);
+      replaceThread(id, (t) => ({
+        ...t,
+        messages: messages.map(mapMessage),
+        preview: undefined,
+        serverUnread: 0,
+      }));
+    } catch {
+      return;
+    }
+  }
+  try {
+    await markConversationRead(id);
+  } catch {
+    // Best-effort: the local state below still clears the badge.
+  }
+  replaceThread(id, (t) => ({
+    ...t,
+    serverUnread: 0,
+    messages: t.messages.map((m) => (m.read ? m : { ...m, read: true })),
+  }));
+}
+
+/** Local-only quick marker kept for API compatibility. */
+export function markThreadRead(id: string) {
+  const thread = conversations.find((t) => t.id === id);
+  if (!thread || unreadCount(thread) === 0) return;
+  replaceThread(id, (t) => ({
+    ...t,
+    serverUnread: 0,
+    messages: t.messages.map((m) => (m.read ? m : { ...m, read: true })),
+  }));
+}
+
+// ── Thread actions (local-first, API follows) ──────────────────
+
+/** Remove the thread from my list (Delete chat, after confirmation). */
+export function deleteThread(id: string) {
+  conversations = conversations.filter((thread) => thread.id !== id);
+  loadedMessages.delete(id);
+  emit();
+  void apiHideConversation(id).catch(() => {
+    void refreshConversations();
+  });
+}
+
+/**
+ * Undo for Clear/Delete: the server un-hides and un-clears the
+ * thread for me, then the list reloads (history included).
+ */
+export function restoreThread(snapshot: Conversation) {
+  void (async () => {
+    try {
+      await apiRestoreConversation(snapshot.id);
+    } catch {
+      // Still refresh — the list resyncs either way.
+    }
+    loadedMessages.delete(snapshot.id);
+    await refreshConversations();
+  })();
+}
+
+/** Empty my visible history (Clear chat); the thread + application stay. */
+export function clearThread(id: string) {
+  replaceThread(id, (t) => ({ ...t, messages: [], serverUnread: 0 }));
+  void apiClearConversation(id).catch(() => {
+    void refreshConversations();
+  });
+}
+
+export function toggleMuteThread(id: string) {
+  replaceThread(id, (t) => ({ ...t, muted: !t.muted }));
+  void toggleConversationMute(id).catch(() => {
+    void refreshConversations();
+  });
+}
+
+export function togglePinThread(id: string) {
+  replaceThread(id, (t) => ({ ...t, pinned: !t.pinned }));
+  void toggleConversationPin(id).catch(() => {
+    void refreshConversations();
+  });
+}
+
+/**
+ * Mark-as-unread is a local affordance only (the server has no
+ * "unread by me" flag): it re-lights this session's badges.
+ */
+export function markThreadUnread(id: string) {
+  replaceThread(id, (t) => {
+    if (unreadCount(t) > 0) return t;
+    if (loadedMessages.has(id)) {
+      const lastIncoming = t.messages.map((m) => m.from).lastIndexOf("them");
+      if (lastIncoming === -1) return t;
+      return {
+        ...t,
+        messages: t.messages.map((m, i) =>
+          i === lastIncoming ? { ...m, read: false } : m,
+        ),
+      };
+    }
+    return { ...t, serverUnread: 1 };
+  });
+}
+
+// ── Sending ────────────────────────────────────────────────────
+
+let messageSeq = 0;
+
+/**
+ * Optimistic send: the bubble appears immediately and is swapped
+ * for the server message; on failure it rolls back with a toast.
+ * The other participant receives it via the realtime publish.
+ */
 export function sendMessage(threadId: string, text: string) {
   const trimmed = text.trim();
   if (!trimmed) return;
   const thread = conversations.find((t) => t.id === threadId);
   if (!thread) return;
   messageSeq += 1;
+  const tempId = `temp-${messageSeq}`;
+  const optimistic: ChatMessage = {
+    id: tempId,
+    from: "me",
+    text: trimmed,
+    timeLabel: "now",
+    clock: clockNow(),
+    read: true,
+  };
+  loadedMessages.add(threadId);
   const updated = {
     ...thread,
-    messages: [
-      ...thread.messages,
-      {
-        id: `${threadId}-sent-${messageSeq}`,
-        from: "me" as const,
-        text: trimmed,
-        timeLabel: "now",
-        clock: clockNow(),
-      },
-    ],
+    messages: [...thread.messages, optimistic],
+    preview: undefined,
   };
   // Latest activity rises: the thread moves to the top of its
   // pin group (the list renders pinned threads first).
@@ -167,28 +374,80 @@ export function sendMessage(threadId: string, text: string) {
     ...conversations.filter((t) => t.id !== threadId),
   ];
   emit();
+
+  void (async () => {
+    try {
+      const saved = await postMessage(threadId, trimmed);
+      replaceThread(threadId, (t) => ({
+        ...t,
+        messages: t.messages.map((m) =>
+          m.id === tempId ? mapMessage(saved) : m,
+        ),
+      }));
+    } catch {
+      replaceThread(threadId, (t) => ({
+        ...t,
+        messages: t.messages.filter((m) => m.id !== tempId),
+      }));
+      toast.error("Message failed to send", {
+        description: "Check your connection and try again.",
+      });
+    }
+  })();
 }
 
-export function resolveApplication(
+// ── Applications ───────────────────────────────────────────────
+
+/**
+ * Owner Accept/Decline from the thread's application card — hits
+ * the real collab endpoints, so the roster and seat counts move.
+ * Throws on failure (the caller toasts the backend's message).
+ */
+export async function resolveApplication(
   threadId: string,
   status: Extract<ApplicationStatus, "accepted" | "declined">,
-) {
+): Promise<void> {
+  const thread = conversations.find((t) => t.id === threadId);
+  const application = thread?.application;
+  if (!thread || !application) return;
+  if (status === "accepted") {
+    await acceptCollabApplication(
+      application.projectId,
+      application.applicationId,
+    );
+  } else {
+    await declineCollabApplication(
+      application.projectId,
+      application.applicationId,
+    );
+  }
   replaceThread(threadId, (t) =>
     t.application
       ? { ...t, application: { ...t.application, status } }
       : t,
   );
+  void refreshConversations();
 }
 
-export function withdrawApplication(projectId: string) {
+/**
+ * Applicant withdraws their own pending application (real endpoint;
+ * the backend application leaves 'pending' for good). Throws on
+ * failure.
+ */
+export async function withdrawApplication(projectId: string): Promise<void> {
+  await withdrawCollabApplication(projectId);
   const thread = conversations.find(
-    (t) => t.application?.projectId === projectId && t.application.direction === "outgoing",
+    (t) =>
+      t.application?.projectId === projectId &&
+      t.application.direction === "outgoing",
   );
-  if (!thread || !thread.application || thread.application.status !== "pending") return;
-  replaceThread(thread.id, (t) => ({
-    ...t,
-    application: t.application ? { ...t.application, status: "withdrawn" } : t.application,
-  }));
+  if (thread) {
+    replaceThread(thread.id, (t) =>
+      t.application
+        ? { ...t, application: { ...t.application, status: "withdrawn" } }
+        : t,
+    );
+  }
 }
 
 export interface OutgoingApplicationInput {
@@ -203,71 +462,19 @@ export interface OutgoingApplicationInput {
 }
 
 /**
- * The apply flow lands here: applying to a project opens (or reuses)
- * the thread with its owner, appends the applicant's message, and
- * attaches the outgoing application card. Returns the thread id so
- * the caller can navigate straight to it.
+ * After a successful apply, the backend has already created the
+ * application conversation (with the apply message as its first
+ * message): reload the list and return the thread's id so the
+ * caller can navigate to the inbox.
  */
-export function startApplicationThread(input: OutgoingApplicationInput): string {
-  const existing = conversations.find(
+export async function startApplicationThread(
+  input: OutgoingApplicationInput,
+): Promise<string | null> {
+  await refreshConversations();
+  const thread = conversations.find(
     (t) => t.application?.projectId === input.projectId,
   );
-  messageSeq += 1;
-  const message = {
-    id: `apply-${input.projectId}-${messageSeq}`,
-    from: "me" as const,
-    text: input.messageText,
-    timeLabel: "now",
-    clock: clockNow(),
-  };
-  if (existing) {
-    replaceThread(existing.id, (t) => ({
-      ...t,
-      messages: [...t.messages, message],
-      application: t.application
-        ? { ...t.application, status: "pending" }
-        : t.application,
-    }));
-    return existing.id;
-  }
-  const byOwner = conversations.find((t) => t.name === input.ownerName);
-  if (byOwner && !byOwner.application) {
-    replaceThread(byOwner.id, (t) => ({
-      ...t,
-      messages: [...t.messages, message],
-      application: {
-        projectId: input.projectId,
-        projectTitle: input.projectTitle,
-        projectMeta: input.projectMeta,
-        dueLabel: input.dueLabel,
-        slotsLabel: input.slotsLabel,
-        direction: "outgoing",
-        status: "pending",
-      },
-    }));
-    return byOwner.id;
-  }
-  const id = `t-apply-${input.projectId}`;
-  conversations = [
-    {
-      id,
-      personId: input.ownerPersonId,
-      name: input.ownerName,
-      messages: [message],
-      application: {
-        projectId: input.projectId,
-        projectTitle: input.projectTitle,
-        projectMeta: input.projectMeta,
-        dueLabel: input.dueLabel,
-        slotsLabel: input.slotsLabel,
-        direction: "outgoing",
-        status: "pending",
-      },
-    },
-    ...conversations,
-  ];
-  emit();
-  return id;
+  return thread?.id ?? null;
 }
 
 export interface DirectThreadInput {
@@ -276,34 +483,15 @@ export interface DirectThreadInput {
 }
 
 /**
- * "Chat with owner": open (or create) the plain 1:1 thread with a
- * person — no application card, no message appended. The thread is
- * moved to the top so /inbox opens it via the first-thread fallback.
- * Matches by canonical personId first, then by name. Returns the
- * thread id.
+ * "Chat with owner": find-or-create the plain 1:1 conversation on
+ * the server, reload the list, and return its id. Throws on
+ * failure (the caller toasts).
  */
-export function startDirectThread(input: DirectThreadInput): string {
-  const existing =
-    (input.personId
-      ? conversations.find((t) => t.personId === input.personId)
-      : undefined) ?? conversations.find((t) => t.name === input.name);
-  if (existing) {
-    conversations = [
-      existing,
-      ...conversations.filter((t) => t.id !== existing.id),
-    ];
-    emit();
-    return existing.id;
-  }
-  const slug = (input.personId ?? input.name)
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-  const id = `t-dm-${slug}`;
-  conversations = [
-    { id, personId: input.personId, name: input.name, messages: [] },
-    ...conversations,
-  ];
-  emit();
-  return id;
+export async function startDirectThread(
+  input: DirectThreadInput,
+): Promise<string | null> {
+  if (!input.personId) return null;
+  const summary = await ensureDirectConversation(input.personId);
+  await refreshConversations();
+  return summary.id;
 }

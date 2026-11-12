@@ -451,3 +451,16 @@ export async function declineCollabApplication(
     { method: "PUT" }
   );
 }
+
+/**
+ * Withdraw my own pending application to a collab
+ * (DELETE /api/collab/:id/apply). The backend flips it to
+ * 'withdrawn'; re-applying afterwards reopens it.
+ */
+export async function withdrawCollabApplication(
+  projectId: string
+): Promise<void> {
+  await apiFetch<ApiEnvelope<unknown>>(`/api/collab/${projectId}/apply`, {
+    method: "DELETE",
+  });
+}

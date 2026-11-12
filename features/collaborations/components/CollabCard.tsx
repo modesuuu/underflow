@@ -56,7 +56,7 @@ function CardApply({ project }: { project: CollabProject }) {
         router.push("/inbox");
         return;
       }
-      startApplicationThread({
+      await startApplicationThread({
         ownerPersonId: project.owner.id,
         ownerName: project.owner.name,
         projectId: project.id,

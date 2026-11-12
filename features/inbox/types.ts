@@ -21,6 +21,8 @@ export type ApplicationStatus =
  * application card from Figma 386:5.
  */
 export interface ThreadApplication {
+  /** Backend application id (for the accept/decline endpoints). */
+  applicationId: string;
   projectId: string;
   projectTitle: string;
   /** The project's need line, e.g. "Need Frontend Developer". */
@@ -50,7 +52,15 @@ export interface Conversation {
   /** Canonical profile-registry id when the person is resolvable, else null. */
   personId: string | null;
   name: string;
+  /** The other participant's profile photo, when they have one. */
+  avatarUrl?: string;
   messages: ChatMessage[];
+  /** Server unread count, trusted until the history is loaded. */
+  serverUnread?: number;
+  /** List-row preview while the history is not loaded yet. */
+  preview?: { from: "me" | "them"; text: string; timeLabel: string };
+  /** Last-activity timestamp (the server orders the list by it). */
+  updatedAt?: string;
   /** Muted threads show the bell-off state (session model: their
    * unread still counts — the badge must always match the messages). */
   muted?: boolean;

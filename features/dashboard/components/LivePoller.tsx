@@ -18,6 +18,12 @@ import {
   removeNotification,
   setNotifications,
 } from "../notifications-store";
+import {
+  applyRealtimeInboxMessage,
+  applyRealtimeInboxUpdate,
+  refreshConversations,
+} from "@/features/inbox/store";
+import type { BackendInboxMessage } from "@/features/inbox/api";
 
 /**
  * LivePoller — realtime delivery for notifications + like/comment counts.
@@ -130,6 +136,7 @@ export function LivePoller() {
     const fetchAll = () => {
       void fetchNotifications();
       void fetchPostStats();
+      void refreshConversations();
     };
 
     const wsLive = () =>
@@ -231,6 +238,24 @@ export function LivePoller() {
               syncLikeCount(p.postId, p.likes);
             if (typeof p.commentCount === "number")
               setCommentCount(p.postId, p.commentCount);
+          }
+          return;
+        }
+        if (msg.type === "inbox-message") {
+          const conversationId = msg.payload?.conversationId;
+          const message = msg.payload?.message;
+          if (typeof conversationId === "string" && message) {
+            applyRealtimeInboxMessage(
+              conversationId,
+              message as unknown as BackendInboxMessage,
+            );
+          }
+          return;
+        }
+        if (msg.type === "inbox-update") {
+          const conversationId = msg.payload?.conversationId;
+          if (typeof conversationId === "string") {
+            applyRealtimeInboxUpdate(conversationId);
           }
           return;
         }

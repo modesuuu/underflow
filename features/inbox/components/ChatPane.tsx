@@ -12,6 +12,7 @@ import {
   restoreThread,
   sendMessage,
 } from "../store";
+import { backendErrorMessage } from "@/features/collaborations/api";
 import type { Conversation } from "../types";
 import { ApplicationCard } from "./ApplicationCard";
 import { ConfirmDialog } from "./ConfirmDialog";
@@ -42,6 +43,11 @@ export function ChatPane({
     const el = scrollRef.current;
     if (el) el.scrollTop = el.scrollHeight;
   }, [conversation?.id, conversation?.messages.length]);
+
+  // The draft belongs to one thread: switching threads clears it.
+  useEffect(() => {
+    setDraft("");
+  }, [conversation?.id]);
 
   if (!conversation) {
     return (
@@ -78,14 +84,20 @@ export function ChatPane({
     if (index === 0 && application) blocks.push({ kind: "card" });
   });
 
-  const handleResolve = (status: "accepted" | "declined") => {
-    resolveApplication(conversation.id, status);
+  const handleResolve = async (status: "accepted" | "declined") => {
     if (!application) return;
-    const description = `${conversation.name}'s application for ${application.projectTitle} was ${status}.`;
-    if (status === "accepted") {
-      toast.success("Application accepted", { description });
-    } else {
-      toast("Application declined", { description });
+    try {
+      await resolveApplication(conversation.id, status);
+      const description = `${conversation.name}'s application for ${application.projectTitle} was ${status}.`;
+      if (status === "accepted") {
+        toast.success("Application accepted", { description });
+      } else {
+        toast("Application declined", { description });
+      }
+    } catch (err) {
+      toast.error("Couldn't update the application", {
+        description: backendErrorMessage(err),
+      });
     }
   };
 
@@ -116,7 +128,7 @@ export function ChatPane({
 
       {/* Floating identity chip — photo + name only, no bar. */}
       <div className="pointer-events-none absolute top-4 left-1/2 z-10 flex -translate-x-1/2 flex-col items-center gap-1 [filter:drop-shadow(0_18px_20px_rgba(0,0,0,0.15))]">
-        <Avatar size={42} alt={conversation.name} />
+        <Avatar size={42} alt={conversation.name} src={conversation.avatarUrl} />
         <span className="min-w-[88px] rounded-full bg-accent px-3 py-1 text-center text-base font-medium text-on-accent">
           {conversation.name}
         </span>
