@@ -186,6 +186,11 @@ export async function unlikePost(postId: string): Promise<void> {
   await apiFetch("/api/posts/" + postId + "/unlike", { method: "DELETE" });
 }
 
+/** DELETE /api/posts/:postId (auth required, owner only; soft delete). */
+export async function deletePost(postId: string): Promise<void> {
+  await apiFetch("/api/posts/" + postId, { method: "DELETE" });
+}
+
 /**
  * POST /api/comments/:commentId/like (auth required). A 400 means the
  * like already exists — treat as success so a double-tap / retry

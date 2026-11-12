@@ -6,10 +6,17 @@ import { Icon } from "@/components/ui/Icon";
 /**
  * The ••• menu on a feed post (header, right side) — same glyph and
  * hitbox as the Profile cards' options buttons. Holds the post-level
- * actions; today that is Report, which the parent turns into the
- * reported state. Closes on outside click and on Escape.
+ * actions: Report on other people's posts (the parent turns it into
+ * the reported state), Delete on your own posts (the parent confirms
+ * first). Closes on outside click and on Escape.
  */
-export function PostOptionsMenu({ onReport }: { onReport: () => void }) {
+export function PostOptionsMenu({
+  onReport,
+  onDelete,
+}: {
+  onReport?: () => void;
+  onDelete?: () => void;
+}) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
 
@@ -49,18 +56,34 @@ export function PostOptionsMenu({ onReport }: { onReport: () => void }) {
           aria-label="Post options"
           className="absolute top-full right-0 z-30 mt-1 min-w-44 rounded-xl border border-line bg-surface p-1 shadow-lg"
         >
-          <button
-            type="button"
-            role="menuitem"
-            onClick={() => {
-              setOpen(false);
-              onReport();
-            }}
-            className="flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-medium text-ink transition-colors hover:bg-bg"
-          >
-            <Icon name="flag" size={18} />
-            Report post
-          </button>
+          {onReport && (
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => {
+                setOpen(false);
+                onReport();
+              }}
+              className="flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-medium text-ink transition-colors hover:bg-bg"
+            >
+              <Icon name="flag" size={18} />
+              Report post
+            </button>
+          )}
+          {onDelete && (
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => {
+                setOpen(false);
+                onDelete();
+              }}
+              className="flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-medium text-badge transition-colors hover:bg-bg"
+            >
+              <Icon name="trash" size={18} />
+              Delete post
+            </button>
+          )}
         </div>
       )}
     </div>

@@ -13,6 +13,9 @@ import { PhotoGrid } from "@/components/ui/PhotoGrid";
 import { LikeButton } from "./LikeButton";
 import { useCommentCount } from "../comment-count-store";
 import { PostOptionsMenu } from "./PostOptionsMenu";
+import { ConfirmDialog } from "@/features/inbox/components/ConfirmDialog";
+import { deletePost } from "../api";
+import { toast } from "sonner";
 import { ReportedPostNotice } from "./ReportedPostNotice";
 
 /**
@@ -26,13 +29,27 @@ const CARD_CHROME = "px-1 py-2";
 export function PostCard({ post }: { post: Post }) {
   const router = useRouter();
   const [reported, setReported] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [deleted, setDeleted] = useState(false);
   // Subscribe to the session so this re-renders when the photo is
   // backfilled (CURRENT_USER is a plain getter — it only re-reads
   // on re-render, and this hook is what triggers it).
-  useSessionUser();
+  const sessionUser = useSessionUser();
   // Live comment count: seeded from the server prop, then kept fresh
   // by the LivePoller (other people's comments tick it up).
   const liveCommentCount = useCommentCount(post.id, post.commentCount);
+
+  const isOwner = sessionUser !== null && sessionUser.id === post.author.id;
+
+  const handleDelete = async () => {
+    try {
+      await deletePost(post.id);
+      setDeleted(true);
+      toast.success("Post deleted");
+    } catch {
+      toast("Couldn't delete this post. Try again.");
+    }
+  };
 
   const openDetail = () => router.push(`/dashboard/${post.id}`);
   const openDetailAtComment = () =>
@@ -45,6 +62,8 @@ export function PostCard({ post }: { post: Post }) {
       </article>
     );
   }
+
+  if (deleted) return null;
 
   return (
     <article className={`flex flex-col gap-4 ${CARD_CHROME}`}>
@@ -63,7 +82,11 @@ export function PostCard({ post }: { post: Post }) {
             <span className="text-xs text-subtle">{post.postedAgo}</span>
           </div>
         </Link>
-        <PostOptionsMenu onReport={() => setReported(true)} />
+        <PostOptionsMenu
+          {...(isOwner
+            ? { onDelete: () => setConfirmingDelete(true) }
+            : { onReport: () => setReported(true) })}
+        />
       </div>
 
       <p className="whitespace-pre-wrap text-[15px] leading-relaxed">{post.text}</p>
@@ -108,6 +131,18 @@ export function PostCard({ post }: { post: Post }) {
           <Icon name="send" size={18} className="text-muted" />
         </button>
       </div>
+      {confirmingDelete && (
+        <ConfirmDialog
+          title="Delete this post?"
+          description="This post will be removed from the feed for everyone. This can't be undone."
+          confirmLabel="Delete"
+          onConfirm={() => {
+            setConfirmingDelete(false);
+            void handleDelete();
+          }}
+          onCancel={() => setConfirmingDelete(false)}
+        />
+      )}
     </article>
   );
 }
