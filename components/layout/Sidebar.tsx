@@ -27,6 +27,7 @@ import {
   type NavItem,
   type NavSection,
 } from "./nav";
+import { useSessionUser } from "@/features/auth/store";
 
 // P1-E #28 / P1-C #21: the sidebar no longer uses GSAP — the hover
 // background, chevron rotation, and section accordion are pure CSS
@@ -360,6 +361,9 @@ function routeToNavId(pathname: string): string {
 }
 
 export function Sidebar() {
+  const sessionUser = useSessionUser();
+  const isAdminTier =
+    sessionUser?.role === "monitor" || sessionUser?.role === "super_admin";
   const pathname = usePathname();
   // Route-aware active state: init from URL, sync on navigation.
   const [activeId, setActiveId] = useState(() => routeToNavId(pathname));
@@ -634,6 +638,16 @@ export function Sidebar() {
         {/* Footer */}
         <div className="flex flex-col gap-3">
           <div className="flex flex-col gap-3">
+            {isAdminTier && (
+              <NavRow
+                item={{ id: "admin", label: "Admin", icon: "shield", href: "/admin" }}
+                active={false}
+                mini={mini}
+                animate={animateWidth}
+                onSelect={setActiveId}
+                registerRef={registerRow}
+              />
+            )}
             {FOOTER_LINKS.map((link) => (
               <NavRow
                 key={link.id}

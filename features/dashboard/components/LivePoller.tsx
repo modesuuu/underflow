@@ -98,6 +98,38 @@ export function LivePoller() {
     })();
   }, [isAuthed]);
 
+  // Role backfill: sessions saved before roles existed pick the
+  // role up from /api/profiles/me so the sidebar can show the
+  // Admin entry (spec-admin.md §2). One shot per mount.
+  const roleRefreshDone = useRef(false);
+  useEffect(() => {
+    if (!isAuthed || roleRefreshDone.current) return;
+    if (getSessionUser()?.role) {
+      roleRefreshDone.current = true;
+      return;
+    }
+    roleRefreshDone.current = true;
+    (async () => {
+      try {
+        const res = await apiFetch<ApiEnvelope<{ role?: string | null }>>(
+          "/api/profiles/me"
+        );
+        const role = res.data?.role;
+        const sess = getSession();
+        if (!role || !sess) return;
+        setSession({
+          ...sess,
+          user: {
+            ...sess.user,
+            role: role as "user" | "monitor" | "super_admin",
+          },
+        });
+      } catch {
+        // Best-effort: no Admin entry until the next login.
+      }
+    })();
+  }, [isAuthed]);
+
   useEffect(() => {
     if (!isAuthed) return;
     let stopped = false;

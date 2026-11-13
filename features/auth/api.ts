@@ -20,6 +20,7 @@ function toAuthUser(record: {
   username: string;
   email?: string | null;
   photo_profile_url?: string | null;
+  role?: string | null;
 }): AuthUser {
   return {
     id: record.id,
@@ -27,6 +28,7 @@ function toAuthUser(record: {
     email: record.email ?? "",
     name: record.username,
     photo: record.photo_profile_url ?? undefined,
+    role: (record.role ?? "user") as AuthUser["role"],
     provider: "password",
   };
 }

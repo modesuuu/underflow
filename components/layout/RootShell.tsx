@@ -40,6 +40,14 @@ export function RootShell({ children }: { children: ReactNode }) {
   if (isAuthRoute) {
     return <RedirectIfAuthed>{children}</RedirectIfAuthed>;
   }
+  if (pathname?.startsWith("/admin")) {
+    return (
+      <RequireAuth>
+        <LivePoller />
+        {children}
+      </RequireAuth>
+    );
+  }
   if (pathname?.startsWith("/profile")) {
     return (
       <RequireAuth>

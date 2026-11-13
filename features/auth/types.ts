@@ -17,6 +17,8 @@ export interface AuthUser {
   photo?: string;
   /** How this session was established. */
   provider: "password" | "google";
+  /** Admin tier from the backend (spec-admin.md §2). Absent in older saved sessions; backfilled from /api/profiles/me. */
+  role?: "user" | "monitor" | "super_admin";
 }
 
 export interface AuthSession {
