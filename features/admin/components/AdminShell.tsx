@@ -2,6 +2,7 @@
 
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useState,
@@ -57,6 +58,30 @@ export function AdminShell({ children }: { children: ReactNode }) {
   const pathname = usePathname() ?? "/admin";
   const [gate, setGate] = useState<GateState>({ kind: "loading" });
   const [attempt, setAttempt] = useState(0);
+
+  // Silent refetch: only ever updates an already-ready gate, so the
+  // badges stay true without flashing the loading screen.
+  const silentRefresh = useCallback(() => {
+    getAdminOverview()
+      .then((fresh) => {
+        setGate((g) => (g.kind === "ready" ? { kind: "ready", overview: fresh } : g));
+      })
+      .catch(() => {
+        // Badges may go stale; the gate itself stays up.
+      });
+  }, []);
+
+  // Queues change outside this tab too (users filing reports and
+  // appeals from the app, monitors proposing actions): re-check on
+  // every navigation inside the admin area and on window focus.
+  useEffect(() => {
+    silentRefresh();
+  }, [pathname, silentRefresh]);
+  useEffect(() => {
+    const onFocus = () => silentRefresh();
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, [silentRefresh]);
 
   useEffect(() => {
     let cancelled = false;
@@ -128,13 +153,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
     return retryScreen;
   }
 
-  const refreshOverview = () => {
-    getAdminOverview()
-      .then((fresh) => setGate({ kind: "ready", overview: fresh }))
-      .catch(() => {
-        // Badges may go stale; the gate itself stays up.
-      });
-  };
+  const refreshOverview = silentRefresh;
   const badgeCount = (badge: "reports" | "requests" | "appeals" | null): number =>
     badge === "reports"
       ? overview.reports_open
