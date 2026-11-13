@@ -4,7 +4,6 @@ import Link from "next/link";
 import clsx from "clsx";
 import type { CSSProperties } from "react";
 import { Card } from "@astryxdesign/core/Card";
-import { Badge } from "@astryxdesign/core/Badge";
 import { Avatar } from "@/components/ui/Avatar";
 import { Icon } from "@/components/ui/Icon";
 import { formatDueDate, parseDueDate } from "@/features/collaborations/sort";
@@ -18,21 +17,28 @@ import type { MyCollabProject } from "../types";
  * pastel classes. The board passes the GLOBAL index
  * (startIndex + position) so the colors cycle across the whole
  * board; a category page passes the same global offset so a
- * project keeps its board color there too. Skill chips are
- * Astryx Badges in the card's own color.
+ * project keeps its board color there too. Skill tags are white
+ * surface chips: the Astryx Badges in the card's own color
+ * washed into the tint and did not read as tags (user call,
+ * 2026-11-13), while a white chip sits ON the card in any tint.
  */
 const CARD_VARIANTS = ["blue", "purple", "pink", "orange", "green"] as const;
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
+/** Circles shown in the seat stack before a "+N" bubble. */
+const SEAT_STACK_MAX = 7;
+
 /**
  * One project card: Astryx Card surface in a rotating color,
- * skill badges on top, title + subtitle, a dotted seat meter,
- * and a footer of owner avatar + due date. The whole card is
- * the link; there is no inner button and no status pill (on
- * the board the column is the status; on a category page the
- * page itself is the status). Shared by the Kanban board and
- * the category pages.
+ * skill tags on top, title + subtitle, a seat stack (member
+ * avatars overlapped, open seats as dashed slots — the dot
+ * meter was replaced at the user's order, 2026-11-13), and a
+ * footer of owner avatar + due date. The whole card is the
+ * link; there is no inner button and no status pill (on the
+ * board the column is the status; on a category page the page
+ * itself is the status). Shared by the Kanban board and the
+ * category pages.
  */
 export function KanbanCard({
   project,
@@ -50,6 +56,28 @@ export function KanbanCard({
     project.myStatus !== "complete" && daysLeft !== null && daysLeft <= 7;
   const variant = CARD_VARIANTS[index % CARD_VARIANTS.length];
 
+  // Seat stack: real seated members first (owner included, join
+  // order from the payload), then one open slot per free seat.
+  const seated = project.members.filter((m) => !m.isOpenSlot);
+  const openCount = Math.max(0, project.slotsTotal - seated.length);
+  const seatItems: (
+    | { kind: "member"; id: string; name: string; avatarUrl?: string }
+    | { kind: "open"; id: string }
+  )[] = [
+    ...seated.map((m) => ({
+      kind: "member" as const,
+      id: m.id,
+      name: m.name,
+      avatarUrl: m.avatarUrl,
+    })),
+    ...Array.from({ length: openCount }, (_, i) => ({
+      kind: "open" as const,
+      id: `open-${i}`,
+    })),
+  ];
+  const visibleSeats = seatItems.slice(0, SEAT_STACK_MAX);
+  const seatOverflow = seatItems.length - visibleSeats.length;
+
   return (
     <Link
       href={`/my-collaborations/${project.myStatus}/${project.id}`}
@@ -62,16 +90,20 @@ export function KanbanCard({
         padding={4}
         className="flex flex-col gap-3 transition-shadow duration-200 group-hover:shadow-[0_1px_2px_rgba(var(--uf-shadow-rgb),0.06),0_12px_28px_-12px_rgba(var(--uf-shadow-rgb),0.20)]"
       >
-        {/* Skill badges — the reference's #website / #client row. */}
+        {/* Skill tags — white chips on the tinted card. */}
         <span className="flex flex-wrap gap-1.5">
           {project.skills.slice(0, 3).map((s) => (
-            <Badge key={s.id} variant={variant} label={s.label} />
+            <span
+              key={s.id}
+              className="rounded-full border border-ink/10 bg-surface px-2.5 py-[3px] text-[11px] leading-4 font-medium text-ink"
+            >
+              {s.label}
+            </span>
           ))}
           {project.skills.length > 3 && (
-            <Badge
-              variant={variant}
-              label={"+" + (project.skills.length - 3) + " more"}
-            />
+            <span className="rounded-full border border-ink/10 bg-surface px-2.5 py-[3px] text-[11px] leading-4 font-medium text-muted">
+              {"+" + (project.skills.length - 3) + " more"}
+            </span>
           )}
         </span>
         <span className="flex flex-col gap-0.5">
@@ -82,31 +114,47 @@ export function KanbanCard({
             {project.subtitle}
           </span>
         </span>
-        {/* Seat meter — the reference's dotted Progress slot.
-            Dots, not bars: filled = ink, next open = accent,
-            open = placeholder. */}
+        {/* Seat stack — member photos overlapped like the
+            reference; open seats are dashed slots. */}
         <span className="flex flex-col gap-1.5">
           <span className="text-[11px] font-medium text-muted">
             Seats · {project.slotsFilled} of {project.slotsTotal}
           </span>
           <span
-            className="flex gap-[3px]"
+            className="flex items-center"
             role="img"
             aria-label={`${project.slotsFilled} of ${project.slotsTotal} seats filled`}
           >
-            {Array.from({ length: project.slotsTotal }).map((_, i) => (
-              <span
-                key={i}
-                className={clsx(
-                  "size-2 rounded-full",
-                  i < project.slotsFilled
-                    ? "bg-ink"
-                    : i === project.slotsFilled
-                      ? "bg-ink/40"
-                      : "bg-ink/15"
-                )}
-              />
-            ))}
+            {visibleSeats.map((seat, i) =>
+              seat.kind === "member" ? (
+                <Avatar
+                  key={seat.id}
+                  size={26}
+                  src={seat.avatarUrl}
+                  alt={seat.name}
+                  className={clsx(
+                    "relative ring-2 ring-surface",
+                    i > 0 && "-ms-2"
+                  )}
+                />
+              ) : (
+                <span
+                  key={seat.id}
+                  aria-hidden="true"
+                  className={clsx(
+                    "relative flex size-[26px] items-center justify-center rounded-full border border-dashed border-ink/30 bg-surface/70 text-muted ring-2 ring-surface",
+                    i > 0 && "-ms-2"
+                  )}
+                >
+                  <Icon name="user-plus" size={13} />
+                </span>
+              )
+            )}
+            {seatOverflow > 0 && (
+              <span className="relative -ms-2 flex size-[26px] items-center justify-center rounded-full bg-ink text-[10px] font-semibold text-surface ring-2 ring-surface">
+                +{seatOverflow}
+              </span>
+            )}
           </span>
         </span>
         <span className="mt-auto flex items-center gap-2 pt-1">
