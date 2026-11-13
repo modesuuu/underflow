@@ -481,8 +481,9 @@ export function MakeCollabModal({
         aria-modal="true"
         aria-labelledby="make-collab-title"
         onClick={(e) => e.stopPropagation()}
+        style={{ boxShadow: "-16px 0 40px rgb(0 0 0 / 0.14)" }}
         className={clsx(
-          "fixed inset-y-0 right-0 flex w-full max-w-[560px] flex-col border-l border-line bg-bg shadow-2xl sm:rounded-l-lg",
+          "fixed inset-y-0 right-0 flex w-full max-w-[596px] flex-col border-l border-line bg-bg sm:rounded-l-lg",
           closing ? "sheet-out" : "sheet-in"
         )}
       >
