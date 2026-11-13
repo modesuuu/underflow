@@ -19,8 +19,9 @@ interface AuthFieldProps
  * app's original one (event-based onChange) so the auth forms
  * did not have to change; the adapter lives here. The password
  * eye stays a real toggle: Astryx has no trailing slot inside
- * TextInput, so the toggle rides beside the field as an Astryx
- * ghost IconButton, aligned to the input box under the label.
+ * TextInput, so the toggle is an Astryx ghost IconButton overlaid
+ * inside the control's right edge, and the control reserves right
+ * padding so typed text never slides under it.
  */
 export function AuthField({ label, error, hint, id, type, onChange, value, ...rest }: AuthFieldProps) {
   const [showPassword, setShowPassword] = useState(false);
@@ -56,7 +57,7 @@ export function AuthField({ label, error, hint, id, type, onChange, value, ...re
       id={id}
       label={label}
       size="lg"
-      controlStyle={{ height: 48, fontSize: 15 }}
+      controlStyle={{ height: 48, fontSize: 15, ...(isPassword ? { paddingRight: 46 } : {}) }}
       type={astryxType}
       description={error ? undefined : hint}
       status={error ? { type: "error", message: error } : undefined}
@@ -69,16 +70,16 @@ export function AuthField({ label, error, hint, id, type, onChange, value, ...re
   if (!isPassword) return field;
 
   return (
-    <div className="flex items-start gap-2">
-      <div className="min-w-0 flex-1">{field}</div>
+    <div className="relative">
+      {field}
       <IconButton
         label={showPassword ? "Hide password" : "Show password"}
         variant="ghost"
         icon={<Icon name={showPassword ? "hide" : "show"} size={20} />}
         onClick={() => setShowPassword((v) => !v)}
         aria-pressed={showPassword}
-        className="shrink-0"
-        style={{ marginTop: 46 }}
+        className="absolute"
+        style={{ top: 32, right: 6 }}
       />
     </div>
   );
