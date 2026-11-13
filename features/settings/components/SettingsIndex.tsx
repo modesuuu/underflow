@@ -61,7 +61,7 @@ export function SettingsIndex() {
             key={cat.href}
             href={cat.href}
             className={
-              "pressable flex items-center gap-3 py-4 transition-colors hover:bg-bg " +
+              "flex items-center gap-3 py-4 " +
               (i > 0 ? "border-t border-line" : "")
             }
           >
