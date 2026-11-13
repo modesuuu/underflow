@@ -33,7 +33,7 @@ const ACTION_LABEL: Record<string, string> = {
 
 function RequestMeta({ row }: { row: ActionRequestRow }) {
   return (
-    <>
+    <div className="flex flex-col gap-2">
       <div className="flex flex-wrap items-center gap-2">
         <span className="font-medium">
           {ACTION_LABEL[row.action_type] ?? row.action_type}
@@ -43,11 +43,11 @@ function RequestMeta({ row }: { row: ActionRequestRow }) {
           by {row.requester_name} · {fmtDateTime(row.created_at)}
         </span>
       </div>
-      <p className="mt-1 line-clamp-2 text-sm">{row.target_label}</p>
-      <p className="mt-1 text-sm text-muted">
+      <p className="line-clamp-2 text-sm">{row.target_label}</p>
+      <p className="text-sm text-muted">
         Reason: <span className="text-ink">{row.reason}</span>
       </p>
-    </>
+    </div>
   );
 }
 
@@ -85,10 +85,10 @@ function PendingRow({
   }
 
   return (
-    <div className="rounded-lg border border-line bg-surface px-4 py-3.5">
+    <div className="rounded-lg border border-line bg-surface px-5 py-4">
       <RequestMeta row={row} />
       {isSuper ? (
-        <div className="mt-3 border-t border-line pt-3">
+        <div className="mt-3.5 border-t border-line pt-3.5">
           {mode === "idle" && (
             <div className="flex gap-2">
               <button
@@ -161,7 +161,7 @@ function PendingRow({
           )}
         </div>
       ) : (
-        <p className="mt-3 border-t border-line pt-3 text-[13px] text-muted">
+        <p className="mt-3.5 border-t border-line pt-3.5 text-[13px] text-muted">
           Waiting for a Super Admin to decide.
         </p>
       )}
@@ -242,12 +242,10 @@ export default function AdminApprovalsPage() {
                 {history.map((row) => (
                   <div
                     key={row.id}
-                    className="rounded-lg border border-line bg-surface px-4 py-3.5"
+                    className="rounded-lg border border-line bg-surface px-5 py-4"
                   >
-                    <div className="flex flex-wrap items-center gap-2">
-                      <RequestMeta row={row} />
-                    </div>
-                    <div className="mt-2.5 flex flex-wrap items-center gap-2 border-t border-line pt-2.5 text-[13px] text-muted">
+                    <RequestMeta row={row} />
+                    <div className="mt-3.5 flex flex-wrap items-center gap-2 border-t border-line pt-3.5 text-[13px] text-muted">
                       {row.status === "approved" ? (
                         <Pill tone="success">Approved</Pill>
                       ) : (
