@@ -105,13 +105,14 @@ export function ModerationForm({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
+      className="fixed inset-0 z-50 flex items-center justify-center px-4"
+      style={{ backgroundColor: "rgba(0, 0, 0, 0.4)" }}
       onClick={onClose}
       role="presentation"
     >
       <div
-        className="w-full rounded-lg bg-surface p-5 shadow-xl"
-        style={{ maxWidth: 480 }}
+        className="w-full rounded-lg p-5 shadow-xl"
+        style={{ maxWidth: 480, backgroundColor: "var(--uf-surface)" }}
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
