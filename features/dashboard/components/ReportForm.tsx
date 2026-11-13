@@ -13,9 +13,11 @@ import { Icon } from "@/components/ui/Icon";
 export function ReportForm({
   onCancel,
   onSubmit,
+  noun = "post",
 }: {
   onCancel: () => void;
   onSubmit: (reason: string) => Promise<void>;
+  noun?: string;
 }) {
   const [reason, setReason] = useState("");
   const [sending, setSending] = useState(false);
@@ -40,7 +42,7 @@ export function ReportForm({
       <div className="flex items-center gap-3">
         <Icon name="flag" size={20} className="shrink-0 text-muted" />
         <p className="text-sm text-muted">
-          <span className="font-medium text-ink">Report this post.</span>{" "}
+          <span className="font-medium text-ink">Report this {noun}.</span>{" "}
           Tell the team what is wrong with it.
         </p>
       </div>

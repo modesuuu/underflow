@@ -1,10 +1,15 @@
 "use client";
 
-import { type CSSProperties, type Ref } from "react";
+import { useState, type CSSProperties, type Ref } from "react";
 import Link from "next/link";
 import { Avatar } from "@/components/ui/Avatar";
+import { useSessionUser } from "@/features/auth/store";
 import type { PostComment } from "../types";
+import { reportComment, withdrawReport } from "../api";
 import { LikeButton } from "./LikeButton";
+import { CommentOptionsMenu } from "./CommentOptionsMenu";
+import { ReportForm } from "./ReportForm";
+import { ReportedPostNotice } from "./ReportedPostNotice";
 
 interface CommentItemProps {
   comment: PostComment;
@@ -18,9 +23,39 @@ interface CommentItemProps {
  * Book body (the post is 15px), 12px time, a compact like. The
  * content column aligns under the name, so a comment reads as a
  * single block instead of stacked full-width rows.
+ *
+ * Other people's comments carry a ••• menu on the byline row:
+ * Report swaps the comment body for the reason form and then the
+ * reported notice, the same flow as reporting a post (the report
+ * goes to the admin queue; Undo withdraws it).
  */
 function CommentItem({ comment, innerRef, isNew = false }: CommentItemProps) {
   const profileHref = `/profile/${comment.author.id}`;
+  const sessionUser = useSessionUser();
+  const isOwn = sessionUser !== null && sessionUser.id === comment.author.id;
+  const [reportFormOpen, setReportFormOpen] = useState(false);
+  const [reported, setReported] = useState(false);
+  const [reportedId, setReportedId] = useState<string | null>(null);
+
+  const handleReportSubmit = async (reason: string) => {
+    const report = await reportComment(comment.id, reason);
+    setReportedId(report.id);
+    setReportFormOpen(false);
+    setReported(true);
+  };
+
+  const handleUndoReport = async () => {
+    if (reportedId) {
+      try {
+        await withdrawReport(reportedId);
+      } catch {
+        // Gagal menarik laporan tidak boleh menjebak tampilan.
+      }
+      setReportedId(null);
+    }
+    setReported(false);
+  };
+
   const byline = (
     <>
       <span className="text-sm font-medium group-hover:underline">
@@ -54,31 +89,48 @@ function CommentItem({ comment, innerRef, isNew = false }: CommentItemProps) {
 
       {/* Content column */}
       <div className="flex min-w-0 flex-1 flex-col gap-1">
-        {profileHref ? (
-          <Link
-            href={profileHref}
-            className="group flex w-fit items-center gap-1.5"
-            aria-label={`View ${comment.author.name}'s profile`}
-          >
-            {byline}
-          </Link>
-        ) : (
-          <div className="flex items-center gap-1.5">{byline}</div>
-        )}
-
-        <p className="text-sm leading-relaxed">{comment.text}</p>
-
-        {/* Like — compact variant; the shared store keeps it in
-            step with every other surface, persisted to the
-            backend like a post like. */}
-        <div className="mt-0.5 w-fit">
-          <LikeButton
-            size="sm"
-            storeKey={`comment:${comment.id}`}
-            initialLiked={comment.liked}
-            initialLikes={comment.likes}
-          />
+        <div className="flex items-start justify-between gap-2">
+          {profileHref ? (
+            <Link
+              href={profileHref}
+              className="group flex w-fit items-center gap-1.5"
+              aria-label={`View ${comment.author.name}'s profile`}
+            >
+              {byline}
+            </Link>
+          ) : (
+            <div className="flex items-center gap-1.5">{byline}</div>
+          )}
+          {!isOwn && !reportFormOpen && !reported ? (
+            <CommentOptionsMenu onReport={() => setReportFormOpen(true)} />
+          ) : null}
         </div>
+
+        {reportFormOpen ? (
+          <ReportForm
+            noun="comment"
+            onCancel={() => setReportFormOpen(false)}
+            onSubmit={handleReportSubmit}
+          />
+        ) : reported ? (
+          <ReportedPostNotice noun="comment" onUndo={handleUndoReport} />
+        ) : (
+          <>
+            <p className="text-sm leading-relaxed">{comment.text}</p>
+
+            {/* Like — compact variant; the shared store keeps it in
+                step with every other surface, persisted to the
+                backend like a post like. */}
+            <div className="mt-0.5 w-fit">
+              <LikeButton
+                size="sm"
+                storeKey={`comment:${comment.id}`}
+                initialLiked={comment.liked}
+                initialLikes={comment.likes}
+              />
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

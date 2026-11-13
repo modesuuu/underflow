@@ -321,6 +321,29 @@ export async function reportPost(
   return res.data.report;
 }
 
+/**
+ * POST /api/reports (auth required) — report a comment to the admin
+ * moderation queue. Same contract as reportPost; Undo withdraws it
+ * again through withdrawReport.
+ */
+export async function reportComment(
+  commentId: string,
+  reason: string
+): Promise<{ id: string }> {
+  const res = await apiFetch<ApiEnvelope<{ report: { id: string } }>>(
+    "/api/reports",
+    {
+      method: "POST",
+      body: JSON.stringify({
+        target_type: "comment",
+        target_id: commentId,
+        reason,
+      }),
+    }
+  );
+  return res.data.report;
+}
+
 /** DELETE /api/reports/:id (auth required) — withdraw my open report. */
 export async function withdrawReport(reportId: string): Promise<void> {
   await apiFetch("/api/reports/" + reportId, { method: "DELETE" });
