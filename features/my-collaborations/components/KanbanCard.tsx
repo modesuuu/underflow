@@ -4,6 +4,7 @@ import Link from "next/link";
 import clsx from "clsx";
 import type { CSSProperties } from "react";
 import { Card } from "@astryxdesign/core/Card";
+import { Token } from "@astryxdesign/core/Token";
 import { Avatar } from "@/components/ui/Avatar";
 import { Icon } from "@/components/ui/Icon";
 import { formatDueDate, parseDueDate } from "@/features/collaborations/sort";
@@ -17,10 +18,10 @@ import type { MyCollabProject } from "../types";
  * pastel classes. The board passes the GLOBAL index
  * (startIndex + position) so the colors cycle across the whole
  * board; a category page passes the same global offset so a
- * project keeps its board color there too. Skill tags are white
- * surface chips: the Astryx Badges in the card's own color
- * washed into the tint and did not read as tags (user call,
- * 2026-11-13), while a white chip sits ON the card in any tint.
+ * project keeps its board color there too. Skill tags are
+ * Astryx Tokens — the design system's own tag component (the
+ * same-color Astryx Badges washed into the tint, and hand-made
+ * white chips still looked wrong; user call, 2026-11-13).
  */
 const CARD_VARIANTS = ["blue", "purple", "pink", "orange", "green"] as const;
 
@@ -90,20 +91,16 @@ export function KanbanCard({
         padding={4}
         className="flex flex-col gap-3 transition-shadow duration-200 group-hover:shadow-[0_1px_2px_rgba(var(--uf-shadow-rgb),0.06),0_12px_28px_-12px_rgba(var(--uf-shadow-rgb),0.20)]"
       >
-        {/* Skill tags — white chips on the tinted card. */}
+        {/* Skill tags — Astryx Tokens. */}
         <span className="flex flex-wrap gap-1.5">
           {project.skills.slice(0, 3).map((s) => (
-            <span
-              key={s.id}
-              className="rounded-full border border-ink/10 bg-surface px-2.5 py-[3px] text-[11px] leading-4 font-medium text-ink"
-            >
-              {s.label}
-            </span>
+            <Token key={s.id} size="sm" label={s.label} />
           ))}
           {project.skills.length > 3 && (
-            <span className="rounded-full border border-ink/10 bg-surface px-2.5 py-[3px] text-[11px] leading-4 font-medium text-muted">
-              {"+" + (project.skills.length - 3) + " more"}
-            </span>
+            <Token
+              size="sm"
+              label={"+" + (project.skills.length - 3) + " more"}
+            />
           )}
         </span>
         <span className="flex flex-col gap-0.5">
@@ -134,7 +131,7 @@ export function KanbanCard({
                   alt={seat.name}
                   className={clsx(
                     "relative ring-2 ring-surface",
-                    i > 0 && "-ms-2"
+                    i > 0 && "-ms-3"
                   )}
                 />
               ) : (
@@ -142,8 +139,8 @@ export function KanbanCard({
                   key={seat.id}
                   aria-hidden="true"
                   className={clsx(
-                    "relative flex size-[26px] items-center justify-center rounded-full border border-dashed border-ink/30 bg-surface/70 text-muted ring-2 ring-surface",
-                    i > 0 && "-ms-2"
+                    "relative flex size-[26px] items-center justify-center rounded-full border border-dashed border-ink/30 bg-surface text-muted ring-2 ring-surface",
+                    i > 0 && "-ms-3"
                   )}
                 >
                   <Icon name="user-plus" size={13} />
@@ -151,7 +148,7 @@ export function KanbanCard({
               )
             )}
             {seatOverflow > 0 && (
-              <span className="relative -ms-2 flex size-[26px] items-center justify-center rounded-full bg-ink text-[10px] font-semibold text-surface ring-2 ring-surface">
+              <span className="relative -ms-3 flex size-[26px] items-center justify-center rounded-full bg-ink text-[10px] font-semibold text-surface ring-2 ring-surface">
                 +{seatOverflow}
               </span>
             )}
