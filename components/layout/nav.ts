@@ -40,7 +40,7 @@ export const NAV_SECTIONS: NavSection[] = [
 // Help Center used to live here; removed 2026-11-07 (user's plan:
 // it moves to the Settings page later).
 export const FOOTER_LINKS: NavItem[] = [
-  { id: "settings", label: "Setting", icon: "cog" },
+  { id: "settings", label: "Setting", icon: "cog", href: "/settings" },
 ];
 
 // TODO(backend): replace with GET /api/me once auth lands.
