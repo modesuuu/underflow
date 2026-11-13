@@ -26,6 +26,8 @@ import type { AdminOverview, AdminViewer } from "../types";
 interface AdminContextValue {
   viewer: AdminViewer;
   overview: AdminOverview;
+  /** Silent refetch so queue badges stay true after an action. */
+  refreshOverview: () => void;
 }
 
 const AdminContext = createContext<AdminContextValue | null>(null);
@@ -37,9 +39,11 @@ export function useAdmin(): AdminContextValue {
 }
 
 const NAV = [
-  { href: "/admin", label: "Overview", icon: "home", match: (p: string) => p === "/admin" },
-  { href: "/admin/users", label: "Users", icon: "group", match: (p: string) => p.startsWith("/admin/users") },
-  { href: "/admin/content", label: "Content", icon: "news", match: (p: string) => p.startsWith("/admin/content") },
+  { href: "/admin", label: "Overview", icon: "home", badge: null as null | "reports" | "requests", match: (p: string) => p === "/admin" },
+  { href: "/admin/users", label: "Users", icon: "group", badge: null as null | "reports" | "requests", match: (p: string) => p.startsWith("/admin/users") },
+  { href: "/admin/content", label: "Content", icon: "news", badge: null as null | "reports" | "requests", match: (p: string) => p.startsWith("/admin/content") },
+  { href: "/admin/reports", label: "Reports", icon: "flag", badge: "reports" as null | "reports" | "requests", match: (p: string) => p.startsWith("/admin/reports") },
+  { href: "/admin/approvals", label: "Approvals", icon: "check-square", badge: "requests" as null | "reports" | "requests", match: (p: string) => p.startsWith("/admin/approvals") },
 ];
 
 type GateState =
@@ -123,8 +127,22 @@ export function AdminShell({ children }: { children: ReactNode }) {
     return retryScreen;
   }
 
+  const refreshOverview = () => {
+    getAdminOverview()
+      .then((fresh) => setGate({ kind: "ready", overview: fresh }))
+      .catch(() => {
+        // Badges may go stale; the gate itself stays up.
+      });
+  };
+  const badgeCount = (badge: "reports" | "requests" | null): number =>
+    badge === "reports"
+      ? overview.reports_open
+      : badge === "requests"
+        ? overview.action_requests_pending
+        : 0;
+
   return (
-    <AdminContext.Provider value={{ viewer, overview }}>
+    <AdminContext.Provider value={{ viewer, overview, refreshOverview }}>
       <div className="flex h-dvh w-full overflow-hidden bg-bg text-ink">
         <aside className="flex w-[232px] shrink-0 flex-col border-r border-line bg-surface">
           <div className="flex items-center gap-2 px-4 pt-5 pb-4">
@@ -154,6 +172,18 @@ export function AdminShell({ children }: { children: ReactNode }) {
                 >
                   <Icon name={item.icon} size={18} />
                   {item.label}
+                  {badgeCount(item.badge) > 0 && (
+                    <span
+                      className="ml-auto rounded-full px-1.5 py-0.5 text-[11px] font-semibold"
+                      style={{
+                        background:
+                          "color-mix(in srgb, var(--color-error, #c9303a) 14%, transparent)",
+                        color: "var(--color-error, #c9303a)",
+                      }}
+                    >
+                      {badgeCount(item.badge)}
+                    </span>
+                  )}
                 </Link>
               );
             })}

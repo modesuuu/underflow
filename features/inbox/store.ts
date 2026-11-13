@@ -142,7 +142,8 @@ function mapConversation(
   return {
     id: b.id,
     personId: b.other.id,
-    name: b.other.username,
+    name: b.kind === "system" ? "Underflow Admin" : b.other.username,
+    kind: (b.kind as Conversation["kind"]) ?? "direct",
     avatarUrl: b.other.photo_profile_url || undefined,
     messages: hasLoaded ? prev.messages : [],
     muted: b.is_muted || undefined,

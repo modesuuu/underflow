@@ -139,13 +139,15 @@ export function ChatPane({
           Clear All / Delete Chat buttons floated here as labeled
           pills; the user found them intrusive, so they live in
           this menu now, same as on the rail rows). */}
-      <div className="absolute top-4 right-4 z-10 sm:right-6">
-        <ThreadOptionsMenu
-          thread={conversation}
-          onClearRequest={() => setConfirm("clear")}
-          onDeleteRequest={() => setConfirm("delete")}
-        />
-      </div>
+      {conversation.kind !== "system" && (
+        <div className="absolute top-4 right-4 z-10 sm:right-6">
+          <ThreadOptionsMenu
+            thread={conversation}
+            onClearRequest={() => setConfirm("clear")}
+            onDeleteRequest={() => setConfirm("delete")}
+          />
+        </div>
+      )}
 
       <div
         ref={scrollRef}
@@ -220,7 +222,15 @@ export function ChatPane({
         </div>
       </div>
 
-      <form onSubmit={handleSend} className="shrink-0 px-4 pt-2 pb-4 sm:px-6 sm:pb-6">
+      {conversation.kind === "system" ? (
+        <div className="shrink-0 px-4 pt-2 pb-4 sm:px-6 sm:pb-6">
+          <p className="rounded-full bg-bg px-4 py-2.5 text-center text-sm text-muted">
+            Announcements from the Underflow team. This thread is
+            one-way, so you can&apos;t reply.
+          </p>
+        </div>
+      ) : (
+        <form onSubmit={handleSend} className="shrink-0 px-4 pt-2 pb-4 sm:px-6 sm:pb-6">
         <div className="flex items-center gap-3">
           <div className="flex min-w-0 flex-1 items-center gap-1 rounded-full bg-bg px-4 py-2 transition-shadow focus-within:ring-2 focus-within:ring-accent">
             <label className="sr-only" htmlFor={`composer-${conversation.id}`}>
@@ -244,7 +254,8 @@ export function ChatPane({
             <Icon name="send" size={20} />
           </button>
         </div>
-      </form>
+        </form>
+      )}
 
       {confirm && (
         <ConfirmDialog

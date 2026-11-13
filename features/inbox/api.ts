@@ -41,6 +41,7 @@ export interface BackendConversation {
   is_pinned: boolean;
   updated_at: string;
   application: BackendInboxApplication | null;
+  kind: string;
 }
 
 export async function fetchConversations(): Promise<BackendConversation[]> {

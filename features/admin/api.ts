@@ -1,11 +1,13 @@
 import { ApiEnvelope, apiFetch } from "@/lib/api-client";
 import type {
+  ActionRequestRow,
   AdminContentType,
   AdminOverview,
   AdminPage,
   AdminContentItem,
   AdminUserDetail,
   AdminUserRow,
+  ReportGroup,
 } from "./types";
 
 /**
@@ -69,6 +71,80 @@ export async function getAdminContent(
     `/api/admin/content/${type}?${params.toString()}`
   );
   return res.data;
+}
+
+// ── Fase 2: moderation writes ──────────────────────────────────────
+
+export interface AdminActionInput {
+  action_type: string;
+  target_type?: string;
+  target_id: string;
+  reason?: string;
+  with_strike?: boolean;
+}
+
+/** Direct execution — Super Admin only (backend enforces). */
+export async function postAdminAction(
+  input: AdminActionInput
+): Promise<{ action_id: string }> {
+  const res = await apiFetch<ApiEnvelope<{ action_id: string }>>(
+    "/api/admin/actions",
+    { method: "POST", body: JSON.stringify(input) }
+  );
+  return res.data;
+}
+
+/** A monitor's proposal — executes only after Super Admin approval. */
+export async function postActionRequest(input: {
+  action_type: string;
+  target_id: string;
+  reason: string;
+  with_strike?: boolean;
+}): Promise<{ id: string }> {
+  const res = await apiFetch<ApiEnvelope<{ id: string }>>(
+    "/api/admin/action-requests",
+    { method: "POST", body: JSON.stringify(input) }
+  );
+  return res.data;
+}
+
+export async function getActionRequests(
+  status?: string
+): Promise<ActionRequestRow[]> {
+  const qs = status ? `?status=${status}` : "";
+  const res = await apiFetch<ApiEnvelope<{ items: ActionRequestRow[] }>>(
+    `/api/admin/action-requests${qs}`
+  );
+  return res.data?.items ?? [];
+}
+
+export async function decideActionRequest(
+  id: string,
+  decision: "approved" | "rejected",
+  note?: string
+): Promise<void> {
+  await apiFetch(`/api/admin/action-requests/${id}/decide`, {
+    method: "POST",
+    body: JSON.stringify({ decision, note }),
+  });
+}
+
+export async function getAdminReports(): Promise<ReportGroup[]> {
+  const res = await apiFetch<ApiEnvelope<{ groups: ReportGroup[] }>>(
+    "/api/admin/reports"
+  );
+  return res.data?.groups ?? [];
+}
+
+/** Direct report dismissal — Super Admin only. */
+export async function dismissReport(
+  reportId: string,
+  reason?: string
+): Promise<void> {
+  await apiFetch(`/api/admin/reports/${reportId}/dismiss`, {
+    method: "POST",
+    body: JSON.stringify({ reason: reason ?? "" }),
+  });
 }
 
 /** Backend timestamps arrive as "YYYY-MM-DD HH:mm:ss" — normalize. */

@@ -116,3 +116,59 @@ export interface AdminPage<T> {
   limit: number;
   total_pages: number;
 }
+
+// ── Fase 2: moderation actions, requests, reports ──────────────────
+
+export type ModerationActionType =
+  | "remove_post"
+  | "remove_comment"
+  | "remove_collab"
+  | "suspend_user"
+  | "unsuspend_user"
+  | "restore_content"
+  | "dismiss_report";
+
+export interface ActionRequestRow {
+  id: string;
+  requester_id: string;
+  requester_name: string;
+  action_type: string;
+  target_type: string;
+  target_id: string;
+  target_label: string;
+  reason: string;
+  with_strike: boolean | number;
+  status: "pending" | "approved" | "rejected";
+  decided_by: string | null;
+  decider_name: string | null;
+  decided_at: string | null;
+  decision_note: string | null;
+  executed_at: string | null;
+  created_at: string;
+}
+
+export interface ReportItem {
+  id: string;
+  reason: string;
+  created_at: string;
+  reporter_name: string;
+}
+
+export interface ReportGroup {
+  target_type: "post" | "comment" | "collab" | "user";
+  target_id: string;
+  open_count: number;
+  first_at: string;
+  target_label: string;
+  target_state: string | null;
+  owner_name: string | null;
+  reports: ReportItem[];
+}
+
+/** The target bundle every moderation form works on. */
+export interface ModerationTarget {
+  actionType: ModerationActionType;
+  targetType: string;
+  targetId: string;
+  targetLabel: string;
+}

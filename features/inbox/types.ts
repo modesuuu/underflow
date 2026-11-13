@@ -66,5 +66,7 @@ export interface Conversation {
   muted?: boolean;
   /** Pinned threads sort above the rest of the list. */
   pinned?: boolean;
+  /** Thread kind from the backend; "system" = one-way announcements. */
+  kind?: "direct" | "application" | "system";
   application?: ThreadApplication;
 }

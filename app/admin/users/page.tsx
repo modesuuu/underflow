@@ -2,10 +2,17 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { toast } from "sonner";
 import { Avatar } from "@/components/ui/Avatar";
 import { Icon } from "@/components/ui/Icon";
+import { useAdmin } from "@/features/admin/components/AdminShell";
+import { ModerationForm } from "@/features/admin/components/ModerationForm";
 import { fmtDate, getAdminUsers } from "@/features/admin/api";
-import type { AdminPage, AdminUserRow } from "@/features/admin/types";
+import type {
+  AdminPage,
+  AdminUserRow,
+  ModerationTarget,
+} from "@/features/admin/types";
 import {
   AccountPill,
   EmptyState,
@@ -28,6 +35,7 @@ const SELECT_CLASS =
   "cursor-pointer rounded-full border border-line bg-surface px-3 py-1.5 text-sm text-ink";
 
 export default function AdminUsersPage() {
+  const { viewer, refreshOverview } = useAdmin();
   const [q, setQ] = useState("");
   const [debouncedQ, setDebouncedQ] = useState("");
   const [status, setStatus] = useState("all");
@@ -36,6 +44,7 @@ export default function AdminUsersPage() {
   const [data, setData] = useState<AdminPage<AdminUserRow> | null>(null);
   const [error, setError] = useState(false);
   const [attempt, setAttempt] = useState(0);
+  const [formTarget, setFormTarget] = useState<ModerationTarget | null>(null);
 
   useEffect(() => {
     const t = setTimeout(() => {
@@ -122,6 +131,7 @@ export default function AdminUsersPage() {
                   <th className={TH}>Strikes</th>
                   <th className={TH}>Role</th>
                   <th className={TH}>Status</th>
+                  <th className={TH}>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -167,6 +177,46 @@ export default function AdminUsersPage() {
                     <td className={TD}>
                       <AccountPill status={u.account_status} />
                     </td>
+                    <td className={TD}>
+                      {u.account_status === "active" &&
+                        u.role !== "super_admin" &&
+                        u.id !== viewer.id && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setFormTarget({
+                                actionType: "suspend_user",
+                                targetType: "user",
+                                targetId: u.id,
+                                targetLabel: `@${u.username} (${u.email})`,
+                              })
+                            }
+                            className="cursor-pointer text-[13px] font-medium"
+                            style={{ color: "var(--color-error, #c9303a)" }}
+                          >
+                            {viewer.role === "super_admin"
+                              ? "Suspend"
+                              : "Propose suspension"}
+                          </button>
+                        )}
+                      {u.account_status === "suspended" &&
+                        viewer.role === "super_admin" && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setFormTarget({
+                                actionType: "unsuspend_user",
+                                targetType: "user",
+                                targetId: u.id,
+                                targetLabel: `@${u.username} (${u.email})`,
+                              })
+                            }
+                            className="cursor-pointer text-[13px] font-medium text-accent"
+                          >
+                            Unsuspend
+                          </button>
+                        )}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -180,6 +230,18 @@ export default function AdminUsersPage() {
           />
         </>
       )}
+
+      <ModerationForm
+        role={viewer.role}
+        target={formTarget}
+        onClose={() => setFormTarget(null)}
+        onDone={(message) => {
+          setFormTarget(null);
+          toast.success(message);
+          setAttempt((n) => n + 1);
+          refreshOverview();
+        }}
+      />
     </div>
   );
 }

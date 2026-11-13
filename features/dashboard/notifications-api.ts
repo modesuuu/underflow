@@ -10,7 +10,7 @@ import type { NotificationItem, PostAuthor } from "./types";
  */
 export interface BackendNotification {
   id: string;
-  type: "like" | "comment" | "comment_like" | "application";
+  type: "like" | "comment" | "comment_like" | "application" | "admin_action_request" | "admin_request_decided";
   title: string;
   is_read: boolean | number;
   created_at: string;
@@ -61,7 +61,10 @@ export function mapWireNotification(b: BackendNotification): NotificationItem {
           ? "liked your comment"
           : b.type === "application"
             ? "applied to your project"
-            : "commented on your post",
+            : b.type === "admin_action_request" ||
+                b.type === "admin_request_decided"
+              ? b.title
+              : "commented on your post",
     openCollabId:
       b.type === "application" ? (b.collabId ?? undefined) : undefined,
 

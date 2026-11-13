@@ -142,13 +142,15 @@ export function MessagesColumn({
                     )}
                   </span>
                 </button>
-                <ThreadOptionsMenu
-                  thread={thread}
-                  onClearRequest={(t) => setConfirm({ kind: "clear", thread: t })}
-                  onDeleteRequest={(t) =>
-                    setConfirm({ kind: "delete", thread: t })
-                  }
-                />
+                {thread.kind !== "system" && (
+                  <ThreadOptionsMenu
+                    thread={thread}
+                    onClearRequest={(t) => setConfirm({ kind: "clear", thread: t })}
+                    onDeleteRequest={(t) =>
+                      setConfirm({ kind: "delete", thread: t })
+                    }
+                  />
+                )}
               </div>
             </li>
           );

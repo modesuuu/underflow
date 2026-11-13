@@ -2,13 +2,17 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { toast } from "sonner";
 import { Avatar } from "@/components/ui/Avatar";
 import { Icon } from "@/components/ui/Icon";
+import { useAdmin } from "@/features/admin/components/AdminShell";
+import { ModerationForm } from "@/features/admin/components/ModerationForm";
 import { fmtDate, getAdminContent } from "@/features/admin/api";
 import type {
   AdminContentItem,
   AdminContentType,
   AdminPage,
+  ModerationTarget,
 } from "@/features/admin/types";
 import {
   EmptyState,
@@ -53,6 +57,7 @@ function ReportsCell({ count }: { count: number }) {
 }
 
 export default function AdminContentPage() {
+  const { viewer, refreshOverview } = useAdmin();
   const [tab, setTab] = useState<AdminContentType>("posts");
   const [state, setState] = useState("all");
   const [q, setQ] = useState("");
@@ -61,6 +66,55 @@ export default function AdminContentPage() {
   const [data, setData] = useState<AdminPage<AdminContentItem> | null>(null);
   const [error, setError] = useState(false);
   const [attempt, setAttempt] = useState(0);
+  const [formTarget, setFormTarget] = useState<ModerationTarget | null>(null);
+
+  const removeActionFor = (item: AdminContentItem): ModerationTarget => ({
+    actionType:
+      tab === "posts"
+        ? "remove_post"
+        : tab === "comments"
+          ? "remove_comment"
+          : "remove_collab",
+    targetType:
+      tab === "posts" ? "post" : tab === "comments" ? "comment" : "collab",
+    targetId: item.id,
+    targetLabel: item.title ?? item.description ?? item.content ?? item.id,
+  });
+
+  const actionCell = (item: AdminContentItem) => (
+    <span className="flex items-center justify-end gap-3">
+      {item.moderation_state === "visible" ? (
+        <button
+          type="button"
+          onClick={() => setFormTarget(removeActionFor(item))}
+          className="cursor-pointer text-[13px] font-medium"
+          style={{ color: "var(--color-error, #c9303a)" }}
+        >
+          {viewer.role === "super_admin" ? "Remove" : "Propose removal"}
+        </button>
+      ) : viewer.role === "super_admin" ? (
+        <button
+          type="button"
+          onClick={() =>
+            setFormTarget({
+              actionType: "restore_content",
+              targetType:
+                tab === "posts"
+                  ? "post"
+                  : tab === "comments"
+                    ? "comment"
+                    : "collab",
+              targetId: item.id,
+              targetLabel: item.title ?? item.description ?? item.content ?? item.id,
+            })
+          }
+          className="cursor-pointer text-[13px] font-medium text-accent"
+        >
+          Restore
+        </button>
+      ) : null}
+    </span>
+  );
 
   useEffect(() => {
     const t = setTimeout(() => {
@@ -231,15 +285,18 @@ export default function AdminContentPage() {
                     </td>
                     <td className={`${TD} text-muted`}>{fmtDate(item.created_at)}</td>
                     <td className={TD}>
-                      {tab !== "comments" && item.moderation_state === "visible" && (
-                        <Link
-                          href={tab === "posts" ? `/dashboard/${item.id}` : `/collaborations/${item.id}`}
-                          className="text-muted hover:text-ink"
-                          aria-label="Open"
-                        >
-                          <Icon name="link-external" size={16} />
-                        </Link>
-                      )}
+                      <span className="flex items-center justify-end gap-3">
+                        {actionCell(item)}
+                        {tab !== "comments" && item.moderation_state === "visible" && (
+                          <Link
+                            href={tab === "posts" ? `/dashboard/${item.id}` : `/collaborations/${item.id}`}
+                            className="text-muted hover:text-ink"
+                            aria-label="Open"
+                          >
+                            <Icon name="link-external" size={16} />
+                          </Link>
+                        )}
+                      </span>
                     </td>
                   </tr>
                 ))}
@@ -254,6 +311,18 @@ export default function AdminContentPage() {
           />
         </>
       )}
+
+      <ModerationForm
+        role={viewer.role}
+        target={formTarget}
+        onClose={() => setFormTarget(null)}
+        onDone={(message) => {
+          setFormTarget(null);
+          toast.success(message);
+          setAttempt((n) => n + 1);
+          refreshOverview();
+        }}
+      />
     </div>
   );
 }

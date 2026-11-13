@@ -3,10 +3,16 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { toast } from "sonner";
 import { Avatar } from "@/components/ui/Avatar";
 import { Icon } from "@/components/ui/Icon";
+import { useAdmin } from "@/features/admin/components/AdminShell";
+import { ModerationForm } from "@/features/admin/components/ModerationForm";
 import { fmtDate, fmtDateTime, getAdminUser } from "@/features/admin/api";
-import type { AdminUserDetail } from "@/features/admin/types";
+import type {
+  AdminUserDetail,
+  ModerationTarget,
+} from "@/features/admin/types";
 import {
   AccountPill,
   ModerationPill,
@@ -46,11 +52,44 @@ function Stat({ label, value }: { label: string; value: number }) {
 }
 
 export default function AdminUserDetailPage() {
+  const { viewer, refreshOverview } = useAdmin();
   const params = useParams();
   const id = String(params.id ?? "");
   const [data, setData] = useState<AdminUserDetail | null>(null);
   const [error, setError] = useState<"load" | "missing" | null>(null);
   const [attempt, setAttempt] = useState(0);
+  const [formTarget, setFormTarget] = useState<ModerationTarget | null>(null);
+
+  const done = (message: string) => {
+    setFormTarget(null);
+    toast.success(message);
+    setAttempt((n) => n + 1);
+    refreshOverview();
+  };
+
+  const contentButton = (
+    state: string,
+    makeRemove: () => ModerationTarget,
+    makeRestore: () => ModerationTarget
+  ) =>
+    state === "visible" ? (
+      <button
+        type="button"
+        onClick={() => setFormTarget(makeRemove())}
+        className="shrink-0 cursor-pointer text-[13px] font-medium"
+        style={{ color: "var(--color-error, #c9303a)" }}
+      >
+        {viewer.role === "super_admin" ? "Remove" : "Propose removal"}
+      </button>
+    ) : viewer.role === "super_admin" ? (
+      <button
+        type="button"
+        onClick={() => setFormTarget(makeRestore())}
+        className="shrink-0 cursor-pointer text-[13px] font-medium text-accent"
+      >
+        Restore
+      </button>
+    ) : null;
 
   const load = useCallback(() => {
     setError(null);
@@ -135,6 +174,49 @@ export default function AdminUserDetailPage() {
             </div>
           </div>
 
+          {(data.user.account_status === "active" &&
+            data.user.role !== "super_admin" &&
+            data.user.id !== viewer.id) ||
+          (data.user.account_status === "suspended" &&
+            viewer.role === "super_admin") ? (
+            <div className="mt-4 flex gap-2">
+              {data.user.account_status === "active" ? (
+                <button
+                  type="button"
+                  onClick={() =>
+                    setFormTarget({
+                      actionType: "suspend_user",
+                      targetType: "user",
+                      targetId: data.user.id,
+                      targetLabel: `@${data.user.username} (${data.user.email})`,
+                    })
+                  }
+                  className="cursor-pointer rounded-full px-4 py-1.5 text-sm font-medium text-white"
+                  style={{ background: "var(--color-error, #c9303a)" }}
+                >
+                  {viewer.role === "super_admin"
+                    ? "Suspend account"
+                    : "Propose suspension"}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() =>
+                    setFormTarget({
+                      actionType: "unsuspend_user",
+                      targetType: "user",
+                      targetId: data.user.id,
+                      targetLabel: `@${data.user.username} (${data.user.email})`,
+                    })
+                  }
+                  className="cursor-pointer rounded-full bg-accent px-4 py-1.5 text-sm font-medium text-on-accent"
+                >
+                  Unsuspend account
+                </button>
+              )}
+            </div>
+          ) : null}
+
           <div className="mt-5 grid grid-cols-2 gap-3 md:grid-cols-4">
             <Stat label="Posts" value={data.user.post_count} />
             <Stat label="Collaborations" value={data.user.collab_count} />
@@ -170,6 +252,21 @@ export default function AdminUserDetailPage() {
                     className="flex items-center gap-3 border-b border-line px-4 py-2.5 text-sm last:border-b-0"
                   >
                     <span className="min-w-0 flex-1 truncate">{p.description}</span>
+                    {contentButton(
+                      p.moderation_state,
+                      () => ({
+                        actionType: "remove_post",
+                        targetType: "post",
+                        targetId: p.id,
+                        targetLabel: p.description,
+                      }),
+                      () => ({
+                        actionType: "restore_content",
+                        targetType: "post",
+                        targetId: p.id,
+                        targetLabel: p.description,
+                      })
+                    )}
                     <ModerationPill state={p.moderation_state} />
                     <span className="shrink-0 text-[13px] text-subtle">
                       {fmtDate(p.created_at)}
@@ -197,6 +294,21 @@ export default function AdminUserDetailPage() {
                       {c.relation === "owner" ? "Owner" : "Member"}
                     </Pill>
                     <Pill tone="neutral">{c.status}</Pill>
+                    {contentButton(
+                      c.moderation_state,
+                      () => ({
+                        actionType: "remove_collab",
+                        targetType: "collab",
+                        targetId: c.id,
+                        targetLabel: c.title,
+                      }),
+                      () => ({
+                        actionType: "restore_content",
+                        targetType: "collab",
+                        targetId: c.id,
+                        targetLabel: c.title,
+                      })
+                    )}
                     <ModerationPill state={c.moderation_state} />
                     <span className="shrink-0 text-[13px] text-subtle">
                       {fmtDate(c.created_at)}
@@ -241,6 +353,13 @@ export default function AdminUserDetailPage() {
           </p>
         </>
       )}
+
+      <ModerationForm
+        role={viewer.role}
+        target={formTarget}
+        onClose={() => setFormTarget(null)}
+        onDone={done}
+      />
     </div>
   );
 }
