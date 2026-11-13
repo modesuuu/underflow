@@ -471,7 +471,7 @@ export function MakeCollabModal({
       ref={overlayRef}
       onClick={requestClose}
       className={clsx(
-        "fixed inset-0 z-50 flex items-center justify-center bg-ink/60 p-4",
+        "fixed inset-0 z-50 bg-ink/60",
         closing ? "modal-overlay-out" : "modal-overlay-in"
       )}
     >
@@ -482,12 +482,12 @@ export function MakeCollabModal({
         aria-labelledby="make-collab-title"
         onClick={(e) => e.stopPropagation()}
         className={clsx(
-          "no-scrollbar max-h-[90vh] w-full max-w-[596px] overflow-y-auto rounded-lg bg-bg p-6",
-          closing ? "modal-panel-out" : "modal-panel-in"
+          "fixed inset-y-0 right-0 flex w-full max-w-[560px] flex-col border-l border-line bg-bg shadow-2xl sm:rounded-l-lg",
+          closing ? "sheet-out" : "sheet-in"
         )}
       >
         {/* Header */}
-        <div className="mb-6 flex items-start justify-between">
+        <div className="flex items-start justify-between px-6 pt-6 pb-6">
           <div>
             <h2 id="make-collab-title" className="text-2xl font-medium">
               {editing ? "Edit Project" : "Create Project"}
@@ -508,7 +508,8 @@ export function MakeCollabModal({
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-5">
+        <form onSubmit={handleSubmit} noValidate className="flex min-h-0 flex-1 flex-col">
+          <div className="no-scrollbar flex flex-1 flex-col gap-5 overflow-y-auto px-6 pb-6">
           {/* Title (Astryx TextInput; its status carries the error) */}
           <TextInput
             id="make-collab-title-input"
@@ -830,22 +831,28 @@ export function MakeCollabModal({
             </div>
           )}
 
-          {/* Submit */}
-          {submitError && (
-            <p className="text-xs font-medium text-badge" role="alert">
-              {submitError}
-            </p>
-          )}
-          <Button
-            type="submit"
-            label={editing ? "Save changes" : "Create Project"}
-            variant="primary"
-            size="lg"
-            width="100%"
-            icon={<Icon name={editing ? "check" : "send"} size={20} />}
-            isLoading={submitting}
-            isDisabled={submitting || selectedSkills.size === 0}
-          />
+          </div>
+
+          {/* Pinned submit footer — stays visible while the
+              form scrolls (drawer pattern, user order
+              2026-11-13). The submit error rides with it. */}
+          <div className="shrink-0 border-t border-line px-6 py-4">
+            {submitError && (
+              <p className="mb-3 text-xs font-medium text-badge" role="alert">
+                {submitError}
+              </p>
+            )}
+            <Button
+              type="submit"
+              label={editing ? "Save changes" : "Create Project"}
+              variant="primary"
+              size="lg"
+              width="100%"
+              icon={<Icon name={editing ? "check" : "send"} size={20} />}
+              isLoading={submitting}
+              isDisabled={submitting || selectedSkills.size === 0}
+            />
+          </div>
         </form>
       </div>
     </div>
