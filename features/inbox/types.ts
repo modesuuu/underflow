@@ -45,6 +45,8 @@ export interface ChatMessage {
   clock: string;
   /** Incoming only: not true = unread. Own messages are always read. */
   read?: boolean;
+  /** System notices only: the moderation action this message reports. */
+  moderationActionId?: string | null;
 }
 
 export interface Conversation {

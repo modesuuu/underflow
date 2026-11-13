@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import clsx from "clsx";
 import { Avatar } from "@/components/ui/Avatar";
 import { Icon } from "@/components/ui/Icon";
@@ -17,6 +17,8 @@ import type { Conversation } from "../types";
 import { ApplicationCard } from "./ApplicationCard";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { ThreadOptionsMenu } from "./ThreadOptionsMenu";
+import { AppealControl } from "@/features/appeals/components/AppealControl";
+import { getMyAppeals, type MyAppeal } from "@/features/appeals/api";
 
 /**
  * Right side of the Inbox (Figma 386:5), WhatsApp-Web model: the
@@ -48,6 +50,30 @@ export function ChatPane({
   useEffect(() => {
     setDraft("");
   }, [conversation?.id]);
+
+  const [appeals, setAppeals] = useState<Record<string, MyAppeal>>({});
+
+  // Appeal states for the system thread (spec §4.4): one fetch per
+  // thread, keyed by moderation action id.
+  useEffect(() => {
+    if (conversation?.kind !== "system") return;
+    let live = true;
+    getMyAppeals()
+      .then((rows) => {
+        if (!live) return;
+        const map: Record<string, MyAppeal> = {};
+        rows.forEach((a) => {
+          map[a.moderation_action_id] = a;
+        });
+        setAppeals(map);
+      })
+      .catch(() => {
+        // The appeal buttons simply stay hidden on failure.
+      });
+    return () => {
+      live = false;
+    };
+  }, [conversation?.id, conversation?.kind]);
 
   if (!conversation) {
     return (
@@ -198,23 +224,37 @@ export function ChatPane({
                 }`}
               >
                 {block.messages.map((message) => (
-                  <p
-                    key={message.id}
-                    className={`max-w-[85%] rounded-lg px-3 py-3 text-base whitespace-pre-wrap sm:max-w-[310px] ${
-                      mine
-                        ? "rounded-br-[2px] bg-accent text-on-accent"
-                        : "rounded-bl-[2px] bg-bg text-ink"
-                    }`}
-                  >
-                    {message.text}
-                    <span
-                      className={`float-right mt-2.5 ml-3 text-[10px] leading-none ${
-                        mine ? "text-on-accent/70" : "text-subtle"
+                  <Fragment key={message.id}>
+                    <p
+                      className={`max-w-[85%] rounded-lg px-3 py-3 text-base whitespace-pre-wrap sm:max-w-[310px] ${
+                        mine
+                          ? "rounded-br-[2px] bg-accent text-on-accent"
+                          : "rounded-bl-[2px] bg-bg text-ink"
                       }`}
                     >
-                      {message.clock}
-                    </span>
-                  </p>
+                      {message.text}
+                      <span
+                        className={`float-right mt-2.5 ml-3 text-[10px] leading-none ${
+                          mine ? "text-on-accent/70" : "text-subtle"
+                        }`}
+                      >
+                        {message.clock}
+                      </span>
+                    </p>
+                    {conversation.kind === "system" &&
+                    message.moderationActionId ? (
+                      <AppealControl
+                        actionId={message.moderationActionId}
+                        appeal={appeals[message.moderationActionId]}
+                        onSubmitted={(a) =>
+                          setAppeals((prev) => ({
+                            ...prev,
+                            [a.moderation_action_id]: a,
+                          }))
+                        }
+                      />
+                    ) : null}
+                  </Fragment>
                 ))}
               </div>
             );

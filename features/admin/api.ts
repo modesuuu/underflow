@@ -8,6 +8,7 @@ import type {
   AdminUserDetail,
   AdminUserRow,
   ReportGroup,
+  AdminAppealRow,
 } from "./types";
 
 /**
@@ -172,4 +173,22 @@ export function fmtDateTime(iso: string | null | undefined): string {
     ", " +
     d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })
   );
+}
+
+export async function getAdminAppeals(): Promise<AdminAppealRow[]> {
+  const res = await apiFetch<ApiEnvelope<{ appeals: AdminAppealRow[] }>>(
+    "/api/admin/appeals",
+  );
+  return res.data.appeals;
+}
+
+export async function decideAppeal(
+  id: string,
+  decision: "granted" | "denied",
+  note?: string,
+): Promise<void> {
+  await apiFetch("/api/admin/appeals/" + id + "/decide", {
+    method: "POST",
+    body: JSON.stringify({ decision, note }),
+  });
 }

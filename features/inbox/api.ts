@@ -14,6 +14,7 @@ export interface BackendInboxMessage {
   body: string;
   is_read: boolean;
   created_at: string;
+  moderation_action_id: string | null;
 }
 
 export interface BackendInboxApplication {

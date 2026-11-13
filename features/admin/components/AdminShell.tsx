@@ -39,11 +39,12 @@ export function useAdmin(): AdminContextValue {
 }
 
 const NAV = [
-  { href: "/admin", label: "Overview", icon: "home", badge: null as null | "reports" | "requests", match: (p: string) => p === "/admin" },
-  { href: "/admin/users", label: "Users", icon: "group", badge: null as null | "reports" | "requests", match: (p: string) => p.startsWith("/admin/users") },
-  { href: "/admin/content", label: "Content", icon: "news", badge: null as null | "reports" | "requests", match: (p: string) => p.startsWith("/admin/content") },
-  { href: "/admin/reports", label: "Reports", icon: "flag", badge: "reports" as null | "reports" | "requests", match: (p: string) => p.startsWith("/admin/reports") },
-  { href: "/admin/approvals", label: "Approvals", icon: "check-square", badge: "requests" as null | "reports" | "requests", match: (p: string) => p.startsWith("/admin/approvals") },
+  { href: "/admin", label: "Overview", icon: "home", badge: null as null | "reports" | "requests" | "appeals", match: (p: string) => p === "/admin" },
+  { href: "/admin/users", label: "Users", icon: "group", badge: null as null | "reports" | "requests" | "appeals", match: (p: string) => p.startsWith("/admin/users") },
+  { href: "/admin/content", label: "Content", icon: "news", badge: null as null | "reports" | "requests" | "appeals", match: (p: string) => p.startsWith("/admin/content") },
+  { href: "/admin/reports", label: "Reports", icon: "flag", badge: "reports" as null | "reports" | "requests" | "appeals", match: (p: string) => p.startsWith("/admin/reports") },
+  { href: "/admin/approvals", label: "Approvals", icon: "check-square", badge: "requests" as null | "reports" | "requests" | "appeals", match: (p: string) => p.startsWith("/admin/approvals") },
+  { href: "/admin/appeals", label: "Appeals", icon: "undo", badge: "appeals" as null | "reports" | "requests" | "appeals", match: (p: string) => p.startsWith("/admin/appeals") },
 ];
 
 type GateState =
@@ -134,12 +135,14 @@ export function AdminShell({ children }: { children: ReactNode }) {
         // Badges may go stale; the gate itself stays up.
       });
   };
-  const badgeCount = (badge: "reports" | "requests" | null): number =>
+  const badgeCount = (badge: "reports" | "requests" | "appeals" | null): number =>
     badge === "reports"
       ? overview.reports_open
       : badge === "requests"
         ? overview.action_requests_pending
-        : 0;
+        : badge === "appeals"
+          ? overview.appeals_pending
+          : 0;
 
   return (
     <AdminContext.Provider value={{ viewer, overview, refreshOverview }}>

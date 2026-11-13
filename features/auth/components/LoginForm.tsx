@@ -5,12 +5,13 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { ApiError } from "@/lib/api-client";
-import { login } from "../api";
+import { login, SuspendedAccountError, type SuspendedInfo } from "../api";
 import { firstError, validateLogin, type FieldErrors } from "../validation";
 import { Button } from "@astryxdesign/core/Button";
 import { AuthField } from "./AuthField";
 import { AuthShell } from "./AuthShell";
 import { GoogleButton } from "./GoogleButton";
+import { SuspendedNotice } from "./SuspendedNotice";
 
 export function LoginForm() {
   const router = useRouter();
@@ -20,6 +21,12 @@ export function LoginForm() {
   const [password, setPassword] = useState("");
   const [errors, setErrors] = useState<FieldErrors>({});
   const [submitting, setSubmitting] = useState(false);
+  const [suspended, setSuspended] = useState<{
+    info: SuspendedInfo;
+    username: string;
+    password: string;
+    googleIdToken?: string;
+  } | null>(null);
 
 
   const submit = async (event: FormEvent) => {
@@ -38,6 +45,12 @@ export function LoginForm() {
       await login({ username, password });
       router.replace(next);
     } catch (err) {
+      if (err instanceof SuspendedAccountError) {
+        // Suspended accounts get their own screen (reason + appeal),
+        // not a toast (spec §4.4).
+        setSuspended({ info: err.suspended, username, password });
+        return;
+      }
       // Credential failures arrive pre-genericized from the api
       // layer ("Username/password salah"); anything else that is
       // not an ApiError is a network failure.
@@ -50,6 +63,36 @@ export function LoginForm() {
       setSubmitting(false);
     }
   };
+
+  if (suspended) {
+    return (
+      <AuthShell
+        title="Account suspended"
+        subtitle="Your account was suspended by the moderation team"
+        footer={
+          <button
+            type="button"
+            onClick={() => setSuspended(null)}
+            className="font-medium text-ink underline underline-offset-2"
+          >
+            Back to log in
+          </button>
+        }
+      >
+        <SuspendedNotice
+          info={suspended.info}
+          username={suspended.username || undefined}
+          password={suspended.password || undefined}
+          googleIdToken={suspended.googleIdToken}
+          onAppealSent={(appeal) =>
+            setSuspended((prev) =>
+              prev ? { ...prev, info: { ...prev.info, appeal } } : prev,
+            )
+          }
+        />
+      </AuthShell>
+    );
+  }
 
   return (
     <AuthShell
@@ -103,7 +146,13 @@ export function LoginForm() {
         or continue with
         <span className="h-px flex-1 bg-line" aria-hidden="true" />
       </div>
-      <GoogleButton next={next} disabled={submitting} />
+      <GoogleButton
+        next={next}
+        disabled={submitting}
+        onSuspended={(info, idToken) =>
+          setSuspended({ info, username: "", password: "", googleIdToken: idToken })
+        }
+      />
     </AuthShell>
   );
 }

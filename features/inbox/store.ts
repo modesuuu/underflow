@@ -131,6 +131,7 @@ function mapMessage(m: BackendInboxMessage): ChatMessage {
     timeLabel: timeLabelOf(m.created_at),
     clock: clockOf(m.created_at),
     read: m.is_read,
+    moderationActionId: m.moderation_action_id ?? null,
   };
 }
 

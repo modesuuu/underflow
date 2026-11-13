@@ -172,3 +172,28 @@ export interface ModerationTarget {
   targetId: string;
   targetLabel: string;
 }
+
+export interface AdminAppealRow {
+  id: string;
+  user_id: string;
+  appellant_name: string;
+  moderation_action_id: string;
+  message: string;
+  status: "pending" | "granted" | "denied";
+  decision_note: string | null;
+  decided_by: string | null;
+  decided_at: string | null;
+  created_at: string;
+  action: {
+    action_type: string;
+    target_type: ModerationTarget;
+    target_id: string;
+    label: string | null;
+    reason: string;
+    actor_id: string;
+    requested_by: string | null;
+    created_at: string;
+  };
+  appellant_strikes: number;
+  appellant_history: number;
+}

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@astryxdesign/core/Button";
-import { signInWithGoogle } from "../api";
+import { signInWithGoogle, SuspendedAccountError, type SuspendedInfo } from "../api";
 
 /** The Google "G" mark (official four-color mark, drawn as SVG). */
 function GoogleMark({ className }: { className?: string }) {
@@ -35,7 +35,15 @@ function GoogleMark({ className }: { className?: string }) {
  * 2026-11-06: Google only). The mock signs in as the Google-linked demo
  * account; see signInWithGoogle for the backend TODO.
  */
-export function GoogleButton({ next, disabled }: { next: string; disabled?: boolean }) {
+export function GoogleButton({
+  next,
+  disabled,
+  onSuspended,
+}: {
+  next: string;
+  disabled?: boolean;
+  onSuspended?: (info: SuspendedInfo, idToken: string) => void;
+}) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
 
@@ -46,6 +54,10 @@ export function GoogleButton({ next, disabled }: { next: string; disabled?: bool
       await signInWithGoogle();
       router.replace(next);
     } catch (err) {
+      if (err instanceof SuspendedAccountError && onSuspended) {
+        onSuspended(err.suspended, err.googleIdToken ?? "");
+        return;
+      }
       // The user closed Google's chooser: reset silently, no error.
       const cancelled =
         err instanceof Error && "code" in err && (err as { code?: string }).code === "google_cancelled";

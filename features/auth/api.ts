@@ -14,6 +14,67 @@ import { firstError, validateLogin, validateRegister } from "./validation";
 /** 3 days, in ms — mirrors the backend JWT expiry (utils/JWT.php: 259200s). */
 export const TOKEN_TTL_MS = 3 * 24 * 60 * 60 * 1000;
 
+/** Status banding atas suspend aktif, dari payload login 403 (§4.4). */
+export interface SuspendedAppealInfo {
+  status: "pending" | "granted" | "denied";
+  decisionNote: string | null;
+  createdAt: string;
+}
+
+export interface SuspendedInfo {
+  reason: string | null;
+  suspendedAt: string | null;
+  appeal: SuspendedAppealInfo | null;
+}
+
+/**
+ * Dilempar alih-alih ApiError generik saat login ditolak karena akun
+ * disuspend, supaya layar login bisa menampilkan alasan + form
+ * banding. googleIdToken dibawa untuk akun Google: kredensial yang
+ * barusan terverifikasi adalah verifikasi untuk bandingnya.
+ */
+export class SuspendedAccountError extends ApiError {
+  readonly suspended: SuspendedInfo;
+  readonly googleIdToken?: string;
+
+  constructor(info: SuspendedInfo, googleIdToken?: string) {
+    super(403, "account_suspended", "Akun kamu sedang disuspend.");
+    this.name = "SuspendedAccountError";
+    this.suspended = info;
+    this.googleIdToken = googleIdToken;
+  }
+}
+
+interface SuspendedPayload {
+  suspended?: boolean;
+  reason?: string | null;
+  suspended_at?: string | null;
+  appeal?: {
+    status: "pending" | "granted" | "denied";
+    decision_note: string | null;
+    created_at: string;
+  } | null;
+}
+
+function throwIfSuspended(data: unknown, googleIdToken?: string): void {
+  const d = data as SuspendedPayload | null;
+  if (!d?.suspended) return;
+  throw new SuspendedAccountError(
+    {
+      reason: d.reason ?? null,
+      suspendedAt: d.suspended_at ?? null,
+      appeal: d.appeal
+        ? {
+            status: d.appeal.status,
+            decisionNote: d.appeal.decision_note,
+            createdAt: d.appeal.created_at,
+          }
+        : null,
+    },
+    googleIdToken,
+  );
+}
+
 
 function toAuthUser(record: {
   id: string;
@@ -170,6 +231,7 @@ export async function signInWithGoogle(): Promise<AuthSession> {
     token: string;
     email?: string | null;
   }>(res);
+  throwIfSuspended(body.data, idToken);
   if (!res.ok || !body.success || !body.data?.token) {
     throw new ApiError(res.status, "invalid_credentials", body.message || "Google sign-in failed.");
   }
@@ -225,6 +287,7 @@ async function loginViaBackend(input: LoginInput): Promise<AuthSession> {
     token: string;
     email?: string | null;
   }>(res);
+  throwIfSuspended(body.data);
   if (!res.ok || !body.success || !body.data?.token) {
     // Deliberately generic (user rule 2026-11-12): the backend
     // distinguishes "user not found" (404) from "wrong password"
