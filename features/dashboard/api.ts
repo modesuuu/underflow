@@ -297,3 +297,31 @@ export async function postComment(
 
 // Notifications live in ./notifications-api.ts (getNotifications /
 // markNotificationRead / markAllNotificationsRead).
+
+/**
+ * POST /api/reports (auth required) — report a post to the admin
+ * moderation queue (spec-admin.md §4.3). Returns the report so the
+ * notice's Undo can withdraw it again by id.
+ */
+export async function reportPost(
+  postId: string,
+  reason: string
+): Promise<{ id: string }> {
+  const res = await apiFetch<ApiEnvelope<{ report: { id: string } }>>(
+    "/api/reports",
+    {
+      method: "POST",
+      body: JSON.stringify({
+        target_type: "post",
+        target_id: postId,
+        reason,
+      }),
+    }
+  );
+  return res.data.report;
+}
+
+/** DELETE /api/reports/:id (auth required) — withdraw my open report. */
+export async function withdrawReport(reportId: string): Promise<void> {
+  await apiFetch("/api/reports/" + reportId, { method: "DELETE" });
+}

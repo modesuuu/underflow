@@ -15,9 +15,10 @@ import { useCommentCount } from "../comment-count-store";
 import { PostOptionsMenu } from "./PostOptionsMenu";
 import { PostModal } from "./PostModal";
 import { ConfirmDialog } from "@/features/inbox/components/ConfirmDialog";
-import { deletePost } from "../api";
+import { deletePost, reportPost, withdrawReport } from "../api";
 import { toast } from "sonner";
 import { ReportedPostNotice } from "./ReportedPostNotice";
+import { ReportForm } from "./ReportForm";
 
 /**
  * Feed post: flat on the page surface — no card border (the
@@ -30,6 +31,8 @@ const CARD_CHROME = "px-1 py-2";
 export function PostCard({ post }: { post: Post }) {
   const router = useRouter();
   const [reported, setReported] = useState(false);
+  const [reportFormOpen, setReportFormOpen] = useState(false);
+  const [reportedId, setReportedId] = useState<string | null>(null);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [deleted, setDeleted] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
@@ -54,14 +57,46 @@ export function PostCard({ post }: { post: Post }) {
     }
   };
 
+  // Report beneran ke backend (spec-admin §4.3): form alasan ->
+  // POST /api/reports -> notice; Undo menarik laporannya lagi.
+  const handleReportSubmit = async (reason: string) => {
+    const report = await reportPost(post.id, reason);
+    setReportedId(report.id);
+    setReportFormOpen(false);
+    setReported(true);
+  };
+
+  const handleUndoReport = async () => {
+    if (reportedId) {
+      try {
+        await withdrawReport(reportedId);
+      } catch {
+        // Gagal menarik laporan tidak boleh menjebak tampilan.
+      }
+      setReportedId(null);
+    }
+    setReported(false);
+  };
+
   const openDetail = () => router.push(`/dashboard/${post.id}`);
   const openDetailAtComment = () =>
     router.push(`/dashboard/${post.id}?focus=comment`);
 
+  if (reportFormOpen) {
+    return (
+      <article className={CARD_CHROME}>
+        <ReportForm
+          onCancel={() => setReportFormOpen(false)}
+          onSubmit={handleReportSubmit}
+        />
+      </article>
+    );
+  }
+
   if (reported) {
     return (
       <article className={CARD_CHROME}>
-        <ReportedPostNotice onUndo={() => setReported(false)} />
+        <ReportedPostNotice onUndo={handleUndoReport} />
       </article>
     );
   }
@@ -91,7 +126,7 @@ export function PostCard({ post }: { post: Post }) {
                 onEdit: () => setEditOpen(true),
                 onDelete: () => setConfirmingDelete(true),
               }
-            : { onReport: () => setReported(true) })}
+            : { onReport: () => setReportFormOpen(true) })}
         />
       </div>
 

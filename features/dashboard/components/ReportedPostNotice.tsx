@@ -5,7 +5,8 @@ import { Icon } from "@/components/ui/Icon";
 /**
  * The post-report confirmation that replaces a post's content —
  * one shared treatment: the feed card swaps to it, and so does
- * the post detail body. Undo restores the post (session state).
+ * the post detail body. Undo withdraws the report at the backend
+ * and restores the post.
  */
 export function ReportedPostNotice({ onUndo }: { onUndo: () => void }) {
   return (

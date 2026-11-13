@@ -11,7 +11,8 @@ import { LikeHydrator } from "./LikeHydrator";
 import { PhotoViewer } from "./PhotoViewer";
 import { PostOptionsMenu } from "./PostOptionsMenu";
 import { ReportedPostNotice } from "./ReportedPostNotice";
-import { recordView } from "../api";
+import { ReportForm } from "./ReportForm";
+import { recordView, reportPost, withdrawReport } from "../api";
 
 /**
  * The post itself on the detail page — deliberately the feed
@@ -26,6 +27,8 @@ import { recordView } from "../api";
  */
 export function PostDetailBody({ post }: { post: Post }) {
   const [reported, setReported] = useState(false);
+  const [reportFormOpen, setReportFormOpen] = useState(false);
+  const [reportedId, setReportedId] = useState<string | null>(null);
   const [views, setViews] = useState(post.views);
   const recordedRef = useRef(false);
 
@@ -40,8 +43,37 @@ export function PostDetailBody({ post }: { post: Post }) {
       .catch(() => {});
   }, [post.id]);
 
+  // Report beneran ke backend (spec-admin §4.3), sama seperti feed.
+  const handleReportSubmit = async (reason: string) => {
+    const report = await reportPost(post.id, reason);
+    setReportedId(report.id);
+    setReportFormOpen(false);
+    setReported(true);
+  };
+
+  const handleUndoReport = async () => {
+    if (reportedId) {
+      try {
+        await withdrawReport(reportedId);
+      } catch {
+        // Gagal menarik laporan tidak boleh menjebak tampilan.
+      }
+      setReportedId(null);
+    }
+    setReported(false);
+  };
+
+  if (reportFormOpen) {
+    return (
+      <ReportForm
+        onCancel={() => setReportFormOpen(false)}
+        onSubmit={handleReportSubmit}
+      />
+    );
+  }
+
   if (reported) {
-    return <ReportedPostNotice onUndo={() => setReported(false)} />;
+    return <ReportedPostNotice onUndo={handleUndoReport} />;
   }
 
   const focusComment = () => {
@@ -68,7 +100,7 @@ export function PostDetailBody({ post }: { post: Post }) {
             <span className="text-xs text-subtle">{post.postedAgo}</span>
           </div>
         </Link>
-        <PostOptionsMenu onReport={() => setReported(true)} />
+        <PostOptionsMenu onReport={() => setReportFormOpen(true)} />
       </div>
 
       <p className="whitespace-pre-wrap text-[15px] leading-relaxed">{post.text}</p>
