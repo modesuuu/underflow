@@ -27,8 +27,12 @@ export function SuspendedNotice({
   onAppealSent: (appeal: SuspendedAppealInfo) => void;
 }) {
   const [message, setMessage] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const appeal = info.appeal;
+  // Reached via a mid-session kick: no just-typed credential exists,
+  // so the appeal needs the password re-entered to verify the filer.
+  const needsCredential = !password && !googleIdToken && appeal === null;
 
   const suspendedDate = info.suspendedAt
     ? new Date(info.suspendedAt.replace(" ", "T")).toLocaleDateString(
@@ -41,12 +45,14 @@ export function SuspendedNotice({
     if (busy || message.trim().length < 3) return;
     setBusy(true);
     try {
-      const created = await createSuspendedAppeal({
+      const args = {
         username,
-        password,
         idToken: googleIdToken,
         message: message.trim(),
-      });
+      } as Parameters<typeof createSuspendedAppeal>[0];
+      const credential = password || confirmPassword || undefined;
+      if (credential) args.password = credential;
+      const created = await createSuspendedAppeal(args);
       toast.success("Appeal sent. The moderation team will review it.");
       onAppealSent({
         status: created.status,
@@ -89,6 +95,25 @@ export function SuspendedNotice({
               can appeal once.
             </p>
           </div>
+          {needsCredential ? (
+            <div className="flex flex-col gap-1.5">
+              <label
+                htmlFor="suspended-confirm-password"
+                className="text-sm font-medium"
+              >
+                Your password
+              </label>
+              <input
+                id="suspended-confirm-password"
+                type="password"
+                autoComplete="current-password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="Re-enter your password to verify it is you"
+                className="w-full rounded-lg border border-line bg-surface px-3 py-2.5 text-sm outline-none placeholder:text-subtle focus:border-accent"
+              />
+            </div>
+          ) : null}
           <textarea
             value={message}
             onChange={(e) => setMessage(e.target.value)}
@@ -103,7 +128,11 @@ export function SuspendedNotice({
             size="lg"
             width="100%"
             isLoading={busy}
-            isDisabled={busy || message.trim().length < 3}
+            isDisabled={
+              busy ||
+              message.trim().length < 3 ||
+              (needsCredential && confirmPassword.length === 0)
+            }
             onClick={submit}
           />
         </div>

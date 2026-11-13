@@ -11,7 +11,7 @@
  * here, so call sites keep reading `res.data` unchanged.
  */
 
-import { getSession } from "@/features/auth/session";
+import { getSession, setSession } from "@/features/auth/session";
 
 const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL ?? "").replace(
   /\/$/,
@@ -21,6 +21,37 @@ const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL ?? "").replace(
 /** True when a real backend base URL is configured. */
 export function isApiConfigured(): boolean {
   return API_BASE_URL.length > 0;
+}
+
+/** localStorage key the login screen reads once to show why a
+ *  mid-session suspension kicked the user out (see LoginForm). */
+export const SUSPENDED_NOTICE_KEY = "uf-suspended-notice";
+
+let suspendedKickDone = false;
+
+/**
+ * A suspended account loses API access entirely (the backend
+ * AuthMiddleware 403s every call), so a session that was alive when
+ * the suspension landed would otherwise sit on a frozen app. Clear
+ * the session, stash the suspension payload for the login screen,
+ * and send the user there.
+ */
+function handleSuspendedKick(data: unknown): void {
+  if (typeof window === "undefined" || suspendedKickDone) return;
+  if (window.location.pathname.startsWith("/login")) return;
+  const session = getSession();
+  if (!session) return;
+  suspendedKickDone = true;
+  try {
+    window.localStorage.setItem(
+      SUSPENDED_NOTICE_KEY,
+      JSON.stringify({ payload: data, username: session.user.username }),
+    );
+  } catch {
+    // Storage full/blocked: the redirect still applies.
+  }
+  setSession(null);
+  window.location.assign("/login");
 }
 
 /** Raw base URL for endpoints whose envelope differs from the contract (auth adapter). */
@@ -120,7 +151,11 @@ export async function apiFetch<T>(
         error?: { code?: string; message?: string };
         success?: boolean;
         message?: string;
+        data?: { suspended?: boolean } | null;
       };
+      if (res.status === 403 && parsed.data?.suspended === true) {
+        handleSuspendedKick(parsed.data);
+      }
       code = parsed.error?.code;
       // Backend error shape: { success: false, message, data: null }.
       message = parsed.error?.message ?? parsed.message ?? message;

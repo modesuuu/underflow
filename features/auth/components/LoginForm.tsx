@@ -1,11 +1,16 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
-import { ApiError } from "@/lib/api-client";
-import { login, SuspendedAccountError, type SuspendedInfo } from "../api";
+import { ApiError, SUSPENDED_NOTICE_KEY } from "@/lib/api-client";
+import {
+  login,
+  mapSuspendedInfo,
+  SuspendedAccountError,
+  type SuspendedInfo,
+} from "../api";
 import { firstError, validateLogin, type FieldErrors } from "../validation";
 import { Button } from "@astryxdesign/core/Button";
 import { AuthField } from "./AuthField";
@@ -27,6 +32,28 @@ export function LoginForm() {
     password: string;
     googleIdToken?: string;
   } | null>(null);
+
+  // A mid-session suspension (see api-client) lands here with the
+  // notice payload stashed: show the suspension screen directly.
+  // The username is known but no password — the notice asks for the
+  // password again before an appeal can be filed.
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(SUSPENDED_NOTICE_KEY);
+      if (!raw) return;
+      window.localStorage.removeItem(SUSPENDED_NOTICE_KEY);
+      const parsed = JSON.parse(raw) as {
+        payload?: unknown;
+        username?: string;
+      };
+      const info = mapSuspendedInfo(parsed.payload);
+      if (info) {
+        setSuspended({ info, username: parsed.username ?? "", password: "" });
+      }
+    } catch {
+      // A malformed stash must never break the login screen.
+    }
+  }, []);
 
 
   const submit = async (event: FormEvent) => {

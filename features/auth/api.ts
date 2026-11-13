@@ -56,23 +56,28 @@ interface SuspendedPayload {
   } | null;
 }
 
-function throwIfSuspended(data: unknown, googleIdToken?: string): void {
+/** Map a raw suspended payload (login 403 / middleware 403) into
+ *  the notice shape; null when the payload is not a suspension. */
+export function mapSuspendedInfo(data: unknown): SuspendedInfo | null {
   const d = data as SuspendedPayload | null;
-  if (!d?.suspended) return;
-  throw new SuspendedAccountError(
-    {
-      reason: d.reason ?? null,
-      suspendedAt: d.suspended_at ?? null,
-      appeal: d.appeal
-        ? {
-            status: d.appeal.status,
-            decisionNote: d.appeal.decision_note,
-            createdAt: d.appeal.created_at,
-          }
-        : null,
-    },
-    googleIdToken,
-  );
+  if (!d?.suspended) return null;
+  return {
+    reason: d.reason ?? null,
+    suspendedAt: d.suspended_at ?? null,
+    appeal: d.appeal
+      ? {
+          status: d.appeal.status,
+          decisionNote: d.appeal.decision_note,
+          createdAt: d.appeal.created_at,
+        }
+      : null,
+  };
+}
+
+function throwIfSuspended(data: unknown, googleIdToken?: string): void {
+  const info = mapSuspendedInfo(data);
+  if (!info) return;
+  throw new SuspendedAccountError(info, googleIdToken);
 }
 
 
