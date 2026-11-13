@@ -6,7 +6,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { Card } from "@astryxdesign/core/Card";
 import { Button } from "@astryxdesign/core/Button";
-import { Badge } from "@astryxdesign/core/Badge";
+import { Token } from "@astryxdesign/core/Token";
 import { applyToCollab, backendErrorMessage } from "../api";
 import { useSessionUser } from "@/features/auth/store";
 import { startApplicationThread } from "@/features/inbox/store";
@@ -140,8 +140,10 @@ function CardApply({ project }: { project: CollabProject }) {
 /**
  * One card of the collaborations board (Astryx rebuild
  * 2026-11-13): the surface is Astryx's Card (its own border,
- * background and container radius), the due/status/skill chips
- * are Astryx Badges, and Apply is Astryx's Button. Content
+ * background and container radius), the due/status/skill tags
+ * are Astryx Tokens (the design system's tag component — the
+ * same treatment the board's Kanban cards got, user order
+ * 2026-11-13), and Apply is Astryx's Button. Content
  * anatomy stays the board's: due badge, title, a two-line mini
  * description, skill badges, and a footer with the seat count
  * and Apply. No owner avatar or name on the card — that lives
@@ -174,8 +176,8 @@ export function CollabCard({ project }: { project: CollabProject }) {
           the old reserve trick: on open cards it renders
           invisibly, so every card's top row is the same height. */}
       <div className="pointer-events-none relative z-10 flex items-center justify-between gap-2">
-        <Badge
-          variant="neutral"
+        <Token
+          size="sm"
           label={
             project.dueDate
               ? "Due " + formatDueDate(project.dueDate)
@@ -186,8 +188,8 @@ export function CollabCard({ project }: { project: CollabProject }) {
           aria-hidden={project.status === "open" ? true : undefined}
           className={project.status === "open" ? "invisible" : undefined}
         >
-          <Badge
-            variant="neutral"
+          <Token
+            size="sm"
             icon={
               <span
                 aria-hidden="true"
@@ -214,10 +216,10 @@ export function CollabCard({ project }: { project: CollabProject }) {
       {hasSkills && (
         <div className="pointer-events-none relative z-10 mt-auto flex flex-wrap gap-1.5 pt-4">
           {shownSkills.map((s) => (
-            <Badge key={s.label} variant="neutral" label={s.label} />
+            <Token key={s.label} size="sm" label={s.label} />
           ))}
           {extraSkills > 0 && (
-            <Badge variant="neutral" label={"+" + extraSkills + " more"} />
+            <Token size="sm" label={"+" + extraSkills + " more"} />
           )}
         </div>
       )}
