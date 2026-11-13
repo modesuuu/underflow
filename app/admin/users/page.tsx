@@ -119,19 +119,31 @@ export default function AdminUsersPage() {
       ) : (
         <>
           <div className={TABLE_WRAP}>
-            <table className="w-full text-sm">
+            <table className="w-full table-fixed text-sm">
+              <colgroup>
+                <col style={{ width: "15%" }} />
+                <col style={{ width: "18%" }} />
+                <col style={{ width: "9%" }} />
+                <col style={{ width: "10%" }} />
+                <col style={{ width: "6%" }} />
+                <col style={{ width: "6%" }} />
+                <col style={{ width: "7%" }} />
+                <col style={{ width: "10%" }} />
+                <col style={{ width: "10%" }} />
+                <col style={{ width: "9%" }} />
+              </colgroup>
               <thead>
                 <tr className="border-b border-line">
-                  <th className={TH}>User</th>
-                  <th className={TH}>Email</th>
-                  <th className={TH}>Sign-in</th>
-                  <th className={TH}>Joined</th>
-                  <th className={TH}>Posts</th>
-                  <th className={TH}>Collabs</th>
-                  <th className={TH}>Strikes</th>
-                  <th className={TH}>Role</th>
-                  <th className={TH}>Status</th>
-                  <th className={TH}>Actions</th>
+                  <th className={TH + " whitespace-nowrap"}>User</th>
+                  <th className={TH + " whitespace-nowrap"}>Email</th>
+                  <th className={TH + " whitespace-nowrap"}>Sign-in</th>
+                  <th className={TH + " whitespace-nowrap"}>Joined</th>
+                  <th className={TH + " whitespace-nowrap"}>Posts</th>
+                  <th className={TH + " whitespace-nowrap"}>Collabs</th>
+                  <th className={TH + " whitespace-nowrap"}>Strikes</th>
+                  <th className={TH + " whitespace-nowrap"}>Role</th>
+                  <th className={TH + " whitespace-nowrap"}>Status</th>
+                  <th className={TH + " whitespace-nowrap"}>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -140,23 +152,23 @@ export default function AdminUsersPage() {
                     <td className={TD}>
                       <Link
                         href={`/admin/users/${u.id}`}
-                        className="flex items-center gap-2.5"
+                        className="flex min-w-0 items-center gap-2.5"
                       >
                         <Avatar
                           size={30}
                           src={u.photo_profile_url ?? undefined}
                           alt={u.username}
                         />
-                        <span className="font-medium hover:underline">
+                        <span className="truncate font-medium hover:underline">
                           {u.username}
                         </span>
                       </Link>
                     </td>
-                    <td className={`${TD} text-muted`}>{u.email}</td>
-                    <td className={`${TD} text-muted`}>
+                    <td className={`${TD} truncate text-muted`}>{u.email}</td>
+                    <td className={`${TD} whitespace-nowrap text-muted`}>
                       {u.provider === "google" ? "Google" : "Password"}
                     </td>
-                    <td className={`${TD} text-muted`}>{fmtDate(u.created_at)}</td>
+                    <td className={`${TD} whitespace-nowrap text-muted`}>{fmtDate(u.created_at)}</td>
                     <td className={TD}>{u.post_count}</td>
                     <td className={TD}>{u.collab_count}</td>
                     <td className={TD}>

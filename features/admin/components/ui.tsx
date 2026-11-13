@@ -145,5 +145,5 @@ export function ErrorState({ onRetry }: { onRetry: () => void }) {
 }
 
 export const TABLE_WRAP = "overflow-x-auto rounded-lg border border-line bg-surface";
-export const TH = "px-4 py-2.5 text-left text-xs font-medium tracking-wide text-subtle uppercase";
-export const TD = "px-4 py-3 align-middle";
+export const TH = "px-3 py-2.5 text-left text-xs font-medium tracking-wide text-subtle uppercase";
+export const TD = "px-3 py-3 align-middle";
