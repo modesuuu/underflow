@@ -88,23 +88,23 @@ function CommentItem({ comment, innerRef, isNew = false }: CommentItemProps) {
       )}
 
       {/* Content column */}
-      <div className="flex min-w-0 flex-1 flex-col gap-1">
-        <div className="flex items-start justify-between gap-2">
-          {profileHref ? (
-            <Link
-              href={profileHref}
-              className="group flex w-fit items-center gap-1.5"
-              aria-label={`View ${comment.author.name}'s profile`}
-            >
-              {byline}
-            </Link>
-          ) : (
-            <div className="flex items-center gap-1.5">{byline}</div>
-          )}
-          {!isOwn && !reportFormOpen && !reported ? (
+      <div className="relative flex min-w-0 flex-1 flex-col gap-1">
+        {profileHref ? (
+          <Link
+            href={profileHref}
+            className="group flex w-fit items-center gap-1.5"
+            aria-label={`View ${comment.author.name}'s profile`}
+          >
+            {byline}
+          </Link>
+        ) : (
+          <div className="flex items-center gap-1.5">{byline}</div>
+        )}
+        {!isOwn && !reportFormOpen && !reported ? (
+          <div className="absolute top-0 right-0">
             <CommentOptionsMenu onReport={() => setReportFormOpen(true)} />
-          ) : null}
-        </div>
+          </div>
+        ) : null}
 
         {reportFormOpen ? (
           <ReportForm
