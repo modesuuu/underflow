@@ -47,44 +47,42 @@ const CATEGORIES: SettingsCategory[] = [
  */
 export function SettingsIndex() {
   return (
-    <div className="flex min-h-full flex-col collab-ground px-4 pt-6 pb-24 sm:px-6 sm:pt-8 sm:pb-8">
-      <div className="mx-auto flex w-full max-w-[680px] flex-col gap-4">
-        <header className="flex flex-col gap-1">
-          <h1 className="text-[40px] leading-none font-semibold tracking-tight text-ink uppercase">
-            Settings
-          </h1>
-          <p className="text-sm text-muted">
-            Pick a category to manage it.
-          </p>
-        </header>
-        <Card padding={0}>
-          <div className="flex flex-col">
-            {CATEGORIES.map((cat, i) => (
-              <Link
-                key={cat.href}
-                href={cat.href}
-                className={
-                  "pressable flex items-center gap-3 px-5 py-4 transition-colors hover:bg-bg " +
-                  (i > 0 ? "border-t border-line" : "")
-                }
-              >
-                <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-bg text-ink">
-                  <Icon name={cat.icon} size={20} />
+    <div className="flex min-h-full flex-col gap-4 collab-ground px-4 pt-6 pb-24 sm:px-6 sm:pt-8 sm:pb-8">
+      <header className="flex flex-col gap-1">
+        <h1 className="text-[40px] leading-none font-semibold tracking-tight text-ink uppercase">
+          Settings
+        </h1>
+        <p className="text-sm text-muted">
+          Pick a category to manage it.
+        </p>
+      </header>
+      <Card padding={0}>
+        <div className="flex flex-col">
+          {CATEGORIES.map((cat, i) => (
+            <Link
+              key={cat.href}
+              href={cat.href}
+              className={
+                "pressable flex items-center gap-3 px-5 py-4 transition-colors hover:bg-bg " +
+                (i > 0 ? "border-t border-line" : "")
+              }
+            >
+              <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-bg text-ink">
+                <Icon name={cat.icon} size={20} />
+              </span>
+              <span className="flex min-w-0 flex-1 flex-col">
+                <span className="font-medium text-ink">{cat.label}</span>
+                <span className="truncate text-sm text-muted">
+                  {cat.description}
                 </span>
-                <span className="flex min-w-0 flex-1 flex-col">
-                  <span className="font-medium text-ink">{cat.label}</span>
-                  <span className="truncate text-sm text-muted">
-                    {cat.description}
-                  </span>
-                </span>
-                <span className="text-muted">
-                  <Icon name="chevron-right" size={20} />
-                </span>
-              </Link>
-            ))}
-          </div>
-        </Card>
-      </div>
+              </span>
+              <span className="text-muted">
+                <Icon name="chevron-right" size={20} />
+              </span>
+            </Link>
+          ))}
+        </div>
+      </Card>
     </div>
   );
 }
