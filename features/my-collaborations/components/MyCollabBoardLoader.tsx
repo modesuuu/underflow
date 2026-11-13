@@ -11,11 +11,13 @@
 import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { getMyCollabProjects } from "../api";
+import { useSessionUser } from "@/features/auth/store";
 import { MyCollabBoard } from "./MyCollabBoard";
 import { MyCollabLoadError } from "./MyCollabLoadError";
 import type { MyCollabProject } from "../types";
 
 export function MyCollabBoardLoader({ fallback }: { fallback: ReactNode }) {
+  const sessionUser = useSessionUser();
   const [projects, setProjects] = useState<MyCollabProject[] | null>(null);
   const [failed, setFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
@@ -44,6 +46,6 @@ export function MyCollabBoardLoader({ fallback }: { fallback: ReactNode }) {
       />
     );
   }
-  if (projects === null) return <>{fallback}</>;
-  return <MyCollabBoard projects={projects} />;
+  if (projects === null || sessionUser === null) return <>{fallback}</>;
+  return <MyCollabBoard projects={projects} myUserId={sessionUser.id} />;
 }

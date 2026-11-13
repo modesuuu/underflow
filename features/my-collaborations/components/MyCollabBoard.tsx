@@ -5,31 +5,27 @@ import Link from "next/link";
 import { Icon } from "@/components/ui/Icon";
 import { clearToolbar, useMyCollabToolbar } from "../toolbar-store";
 import { KanbanCard } from "./KanbanCard";
-import {
-  MY_COLLAB_CATEGORIES,
-  getCategory,
+import { MY_COLLAB_CATEGORIES } from "../types";
+import type {
+  MyCollabCategory,
+  MyCollabCategorySlug,
+  MyCollabProject,
 } from "../types";
-import type { MyCollabCategory, MyCollabProject, MyCollabStatus } from "../types";
-
-/**
- * Dashboard order for the columns: the category-table order
- * (Active, Pending, Complete, Revise).
- */
-export const STATS_ORDER: MyCollabStatus[] = [
-  "not-started",
-  "pending",
-  "complete",
-  "revise",
-];
+import { groupMyCollabBoard } from "../columns";
 
 interface MyCollabBoardProps {
   projects: MyCollabProject[];
+  /** The signed-in user: the Owned column keys off it. */
+  myUserId: string | null;
 }
 
 /**
  * The user's project board, redesigned 2026-11-10 as a weihu-style
  * Kanban (user order: "redesign lagi kaya gini", "harus bener-bener
- * mirip"). Four columns by status; the status chips are gone
+ * mirip"). Four columns: three by joined status plus Owned
+ * (the user's own projects, any status — it replaced the
+ * Revise column at his order 2026-11-13; see ../columns for
+ * the partition model). The status chips are gone
  * because the columns ARE the filter, and the header stats are
  * gone because each column header shows its count and links to
  * its category page. The search pill moved to the TopBar (user
@@ -44,9 +40,9 @@ interface MyCollabBoardProps {
 /** How many cards a column previews before the View more button. */
 const PREVIEW_LIMIT = 4;
 
-export function MyCollabBoard({ projects }: MyCollabBoardProps) {
+export function MyCollabBoard({ projects, myUserId }: MyCollabBoardProps) {
   const { query } = useMyCollabToolbar();
-  const [openMenu, setOpenMenu] = useState<MyCollabStatus | null>(null);
+  const [openMenu, setOpenMenu] = useState<MyCollabCategorySlug | null>(null);
 
   // Reset the shared search on unmount so each visit starts
   // fresh (same pattern as the collaborations grid).
@@ -65,37 +61,20 @@ export function MyCollabBoard({ projects }: MyCollabBoardProps) {
 
   const clearSearch = clearToolbar;
 
-  const bySlug = new Map<MyCollabStatus, MyCollabCategory>(
+  const bySlug = new Map<MyCollabCategorySlug, MyCollabCategory>(
     MY_COLLAB_CATEGORIES.map((c) => [c.slug, c])
   );
 
-  // Columns with a global pastel offset, so the 5 tints cycle across
-  // the whole board. (Per-column indexing never reaches the 5th
-  // tint — the largest column has 4 cards.)
-  let pastelOffset = 0;
-  const columns = STATS_ORDER.map((slug) => {
-    const cat = bySlug.get(slug);
-    const list = filtered.filter((p) => p.myStatus === slug);
-    const col = {
-      slug,
-      cat,
-      projects: list,
-      startIndex: pastelOffset,
-    };
-    pastelOffset += list.length;
-    return col;
-  }).filter(
-    (c): c is {
-      slug: MyCollabStatus;
-      cat: MyCollabCategory;
-      projects: MyCollabProject[];
-      startIndex: number;
-    } => c.cat !== undefined
-  );
+  // Columns partition the (search-filtered) list with a global
+  // pastel offset, so the 5 tints cycle across the whole board.
+  const columns = groupMyCollabBoard(filtered, myUserId).flatMap((col) => {
+    const cat = bySlug.get(col.slug);
+    return cat ? [{ ...col, cat }] : [];
+  });
 
   const totalCount = projects.length;
-  const statusCount = STATS_ORDER.filter(
-    (slug) => projects.some((p) => p.myStatus === slug)
+  const statusCount = groupMyCollabBoard(projects, myUserId).filter(
+    (c) => c.projects.length > 0
   ).length;
 
   return (

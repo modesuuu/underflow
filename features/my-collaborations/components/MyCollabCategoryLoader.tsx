@@ -3,8 +3,9 @@
 import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { getMyCollabProjects } from "../api";
-import { MY_COLLAB_CATEGORIES } from "../types";
-import type { MyCollabProject, MyCollabStatus } from "../types";
+import { myCollabCategorySlice } from "../columns";
+import { useSessionUser } from "@/features/auth/store";
+import type { MyCollabCategorySlug, MyCollabProject } from "../types";
 import { MyCollabCategoryGrid } from "./MyCollabCategoryGrid";
 import { MyCollabLoadError } from "./MyCollabLoadError";
 
@@ -24,9 +25,10 @@ export function MyCollabCategoryLoader({
   status,
   fallback,
 }: {
-  status: MyCollabStatus;
+  status: MyCollabCategorySlug;
   fallback: ReactNode;
 }) {
+  const sessionUser = useSessionUser();
   const [data, setData] = useState<{
     projects: MyCollabProject[];
     startIndex: number;
@@ -39,19 +41,9 @@ export function MyCollabCategoryLoader({
     getMyCollabProjects()
       .then((all) => {
         if (!alive) return;
-        const projects = all.filter((p) => p.myStatus === status);
-        // Global pastel offset: sum of the counts of the
-        // categories before this one, so a project keeps its
-        // board tint here.
-        const order = MY_COLLAB_CATEGORIES.map((c) => c.slug);
-        const startIndex = order
-          .slice(0, order.indexOf(status))
-          .reduce(
-            (sum, slug) =>
-              sum + all.filter((p) => p.myStatus === slug).length,
-            0
-          );
-        setData({ projects, startIndex });
+        // Board categories reuse the board's partition (same
+        // lists, same global tint offsets); see ../columns.
+        setData(myCollabCategorySlice(all, sessionUser?.id ?? null, status));
       })
       .catch(() => {
         if (alive) setFailed(true);
@@ -59,7 +51,7 @@ export function MyCollabCategoryLoader({
     return () => {
       alive = false;
     };
-  }, [status, attempt]);
+  }, [status, attempt, sessionUser]);
 
   if (failed) {
     return (
