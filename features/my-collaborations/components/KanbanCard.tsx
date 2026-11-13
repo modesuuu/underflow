@@ -32,7 +32,8 @@ const SEAT_STACK_MAX = 7;
 
 /**
  * One project card: Astryx Card surface in a rotating color,
- * skill tags on top, title + subtitle, a seat stack (member
+ * skill tags on top, title only (no description line on the
+ * card — user order 2026-11-13), a seat stack (member
  * avatars overlapped, open seats as dashed slots — the dot
  * meter was replaced at the user's order, 2026-11-13), and a
  * footer of owner avatar + due date. The whole card is the
@@ -103,12 +104,9 @@ export function KanbanCard({
             />
           )}
         </span>
-        <span className="flex flex-col gap-0.5">
+        <span className="flex flex-col">
           <span className="text-[15px] leading-snug font-semibold text-ink">
             {project.title}
-          </span>
-          <span className="truncate text-[13px] text-muted">
-            {project.subtitle}
           </span>
         </span>
         {/* Seat stack — member photos overlapped like the
