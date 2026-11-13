@@ -146,7 +146,7 @@ export function KanbanCard({
               )
             )}
             {seatOverflow > 0 && (
-              <span className="relative -ms-3 flex size-[26px] items-center justify-center rounded-full bg-ink text-[10px] font-semibold text-surface ring-2 ring-surface">
+              <span className="relative -ms-3 flex size-[26px] items-center justify-center rounded-full bg-accent text-[10px] font-semibold text-on-accent ring-2 ring-surface">
                 +{seatOverflow}
               </span>
             )}

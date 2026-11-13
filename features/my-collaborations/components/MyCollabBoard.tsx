@@ -110,7 +110,7 @@ export function MyCollabBoard({ projects, myUserId }: MyCollabBoardProps) {
           <button
             type="button"
             onClick={clearSearch}
-            className="pressable mt-2 cursor-pointer rounded-full bg-ink px-4 py-2 text-sm font-medium text-surface transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+            className="pressable mt-2 cursor-pointer rounded-full bg-accent px-4 py-2 text-sm font-medium text-on-accent transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
           >
             Clear search
           </button>
@@ -131,7 +131,7 @@ export function MyCollabBoard({ projects, myUserId }: MyCollabBoardProps) {
                   >
                     {cat.crumbLabel}
                   </Link>
-                  <span className="rounded-full bg-ink px-2 py-0.5 text-[11px] font-semibold text-surface tabular-nums">
+                  <span className="rounded-full bg-accent px-2 py-0.5 text-[11px] font-semibold text-on-accent tabular-nums">
                     {columnProjects.length}
                   </span>
                   <div className="relative ms-auto">

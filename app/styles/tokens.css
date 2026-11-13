@@ -30,7 +30,7 @@
   --uf-ink-30: rgba(0, 0, 0, 0.3);
   --uf-muted: #474747;
   --uf-subtle: #6a6a6a;
-  --uf-accent: #1b1b1b;
+  --uf-accent: #35702b;
   --uf-badge: #c9303a;
   --uf-heart: #c9303a;
   --uf-placeholder: #eaeaea;
@@ -88,7 +88,7 @@
   --uf-ink-30: rgba(255, 255, 255, 0.3);
   --uf-muted: #9e9e9e;
   --uf-subtle: #767676;
-  --uf-accent: #f1f1f1;
+  --uf-accent: #d8e9a8;
   --uf-badge: #ff705d;
   --uf-heart: #ff705d;
   --uf-placeholder: #2e2e2e;
@@ -143,4 +143,22 @@
 @media (prefers-reduced-motion: reduce) {
   .collab-card-live { transition: none; }
   .collab-card-live:hover { transform: none; }
+}
+
+/* Green accent (user order 2026-11-13: "yang tadinya pake
+   item sekarang pakai hijau"): Astryx's own accent variables
+   take the same greens as --uf-accent above, so Astryx
+   primary Buttons match the app's accent surfaces. This file
+   is imported unlayered, so these win over the theme's
+   layered @scope declarations. The theme's on-dark/on-light
+   context scopes keep their own contrast values, and
+   --color-on-accent already pairs correctly (white on the
+   deep green, near-black on the pale green). */
+@scope ([data-astryx-theme="neutral"]) to ([data-astryx-theme]) {
+  :scope {
+    --color-accent: light-dark(#35702b, #d8e9a8);
+    --color-text-accent: light-dark(#35702b, #d8e9a8);
+    --color-icon-accent: light-dark(#35702b, #d8e9a8);
+    --color-accent-muted: light-dark(#cfe3b8, #46543d);
+  }
 }
