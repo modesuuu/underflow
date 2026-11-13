@@ -347,9 +347,9 @@ export default function AdminUserDetailPage() {
 
           <p className="mt-8 text-[13px] text-subtle">
             Public profile:{" "}
-            <Link href={`/profile/${data.user.id}`} className="underline">
+            <a href={`/profile/${data.user.id}`} className="underline">
               /profile/{data.user.username}
-            </Link>
+            </a>
           </p>
         </>
       )}

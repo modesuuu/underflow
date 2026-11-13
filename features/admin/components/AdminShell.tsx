@@ -95,12 +95,12 @@ export function AdminShell({ children }: { children: ReactNode }) {
           Your account does not have an admin role. If you are on the
           Underflow team, ask a Super Admin to check your role.
         </p>
-        <Link
+        <a
           href="/"
           className="mt-2 rounded-full bg-accent px-4 py-1.5 text-sm font-medium text-on-accent"
         >
           Back to app
-        </Link>
+        </a>
       </div>
     );
   }
@@ -204,13 +204,13 @@ export function AdminShell({ children }: { children: ReactNode }) {
                 </span>
               </div>
             </div>
-            <Link
+            <a
               href="/"
               className="flex items-center gap-2 text-sm text-muted hover:text-ink"
             >
               <Icon name="arrow-back" size={16} />
               Back to app
-            </Link>
+            </a>
           </div>
         </aside>
         <main className="min-w-0 flex-1 overflow-y-auto px-8 py-6">{children}</main>

@@ -145,14 +145,23 @@ export default function AdminReportsPage() {
                 </div>
 
                 <div className="mt-3 flex items-center gap-2 border-t border-line pt-3">
-                  {href && (
-                    <Link
-                      href={href}
-                      className="rounded-full border border-line px-3 py-1 text-[13px] font-medium hover:text-ink"
-                    >
-                      View target
-                    </Link>
-                  )}
+                  {href ? (
+                    href.startsWith("/admin") ? (
+                      <Link
+                        href={href}
+                        className="rounded-full border border-line px-3 py-1 text-[13px] font-medium hover:text-ink"
+                      >
+                        View target
+                      </Link>
+                    ) : (
+                      <a
+                        href={href}
+                        className="rounded-full border border-line px-3 py-1 text-[13px] font-medium hover:text-ink"
+                      >
+                        View target
+                      </a>
+                    )
+                  ) : null}
                   {removed ? (
                     <span className="text-[13px] text-muted">
                       Already removed by moderation.

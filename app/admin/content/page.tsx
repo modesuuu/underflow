@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import Link from "next/link";
 import { toast } from "sonner";
 import { Avatar } from "@/components/ui/Avatar";
 import { Icon } from "@/components/ui/Icon";
@@ -255,9 +254,13 @@ export default function AdminContentPage() {
                           <OwnerCell item={item} />
                         </td>
                         <td className={TD}>
-                          <Link href={`/dashboard/${item.post_id}`} className="text-muted underline">
-                            Open post
-                          </Link>
+                          {item.post_id ? (
+                            <a href={`/dashboard/${item.post_id}`} className="text-muted underline">
+                              Open post
+                            </a>
+                          ) : (
+                            <span className="text-muted">—</span>
+                          )}
                         </td>
                       </>
                     )}
@@ -288,13 +291,13 @@ export default function AdminContentPage() {
                       <span className="flex items-center justify-end gap-3">
                         {actionCell(item)}
                         {tab !== "comments" && item.moderation_state === "visible" && (
-                          <Link
+                          <a
                             href={tab === "posts" ? `/dashboard/${item.id}` : `/collaborations/${item.id}`}
                             className="text-muted hover:text-ink"
                             aria-label="Open"
                           >
                             <Icon name="link-external" size={16} />
-                          </Link>
+                          </a>
                         )}
                       </span>
                     </td>
