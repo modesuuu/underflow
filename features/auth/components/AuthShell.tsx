@@ -28,13 +28,13 @@ export function AuthShell({
 }) {
   return (
     <div className="page-enter flex min-h-dvh w-full lg:h-dvh lg:overflow-hidden">
-      <aside className="hidden w-[60%] shrink-0 flex-col justify-between gap-6 bg-brand p-10 text-on-brand lg:flex xl:p-12">
+      <aside className="hidden w-[60%] shrink-0 flex-col justify-between gap-6 p-10 text-on-brand lg:flex xl:p-12" style={{ backgroundColor: "#1e5128" }}>
         <div className="flex items-center gap-3">
           <LogoMark className="size-8 text-on-brand" />
           <span className="text-base font-medium">Underflow</span>
         </div>
         <div className="flex flex-col gap-4">
-          <h1 className="text-[44px] leading-[1.05] font-medium tracking-[-0.02em]">
+          <h1 className="text-[44px] leading-[1.05] font-medium tracking-[-0.02em]" style={{ color: "#eff4de" }}>
             <span className="block">Find your team.</span>
             <span className="block">Build something real.</span>
           </h1>

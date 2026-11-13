@@ -55,6 +55,8 @@ export function AuthField({ label, error, hint, id, type, onChange, value, ...re
     <TextInput
       id={id}
       label={label}
+      size="lg"
+      controlStyle={{ height: 48, fontSize: 15 }}
       type={astryxType}
       description={error ? undefined : hint}
       status={error ? { type: "error", message: error } : undefined}
@@ -75,7 +77,8 @@ export function AuthField({ label, error, hint, id, type, onChange, value, ...re
         icon={<Icon name={showPassword ? "hide" : "show"} size={20} />}
         onClick={() => setShowPassword((v) => !v)}
         aria-pressed={showPassword}
-        className="mt-6 shrink-0"
+        className="shrink-0"
+        style={{ marginTop: 46 }}
       />
     </div>
   );
