@@ -34,9 +34,9 @@ const ACTION_LABEL: Record<string, string> = {
 
 function AppealMeta({ row }: { row: AdminAppealRow }) {
   return (
-    <>
+    <div className="flex flex-col gap-3.5">
       <div className="flex flex-wrap items-center gap-2">
-        <span className="font-medium">{row.appellant_name}</span>
+        <span className="text-[15px] font-semibold">{row.appellant_name}</span>
         {row.appellant_strikes > 0 ? (
           <Pill tone="danger">
             {row.appellant_strikes} active strike
@@ -45,26 +45,39 @@ function AppealMeta({ row }: { row: AdminAppealRow }) {
         ) : null}
         <span className="text-[13px] text-muted">
           {row.appellant_history} moderation action
-          {row.appellant_history === 1 ? "" : "s"} on record ·{" "}
-          {fmtDateTime(row.created_at)}
+          {row.appellant_history === 1 ? "" : "s"} on record
         </span>
       </div>
-      <p className="mt-1 text-sm">
-        Appeals:{" "}
-        <span className="font-medium">
-          {ACTION_LABEL[row.action.action_type] ?? row.action.action_type}
-        </span>
-        {row.action.label ? (
-          <span className="text-muted"> · “{row.action.label}”</span>
-        ) : null}
-      </p>
-      <p className="mt-1 text-sm text-muted">
-        Original reason: <span className="text-ink">{row.action.reason}</span>
-      </p>
-      <p className="mt-2 rounded-lg bg-bg px-3 py-2 text-sm whitespace-pre-wrap">
-        {row.message}
-      </p>
-    </>
+
+      <dl className="flex flex-col gap-1.5 text-sm">
+        <div className="flex gap-3">
+          <dt className="w-28 shrink-0 text-muted">Appeals</dt>
+          <dd className="min-w-0">
+            <span className="font-medium">
+              {ACTION_LABEL[row.action.action_type] ?? row.action.action_type}
+            </span>
+            {row.action.label ? (
+              <span className="text-muted"> · “{row.action.label}”</span>
+            ) : null}
+          </dd>
+        </div>
+        <div className="flex gap-3">
+          <dt className="w-28 shrink-0 text-muted">Original reason</dt>
+          <dd className="min-w-0">{row.action.reason}</dd>
+        </div>
+        <div className="flex gap-3">
+          <dt className="w-28 shrink-0 text-muted">Filed</dt>
+          <dd className="text-muted">{fmtDateTime(row.created_at)}</dd>
+        </div>
+      </dl>
+
+      <div>
+        <p className="text-[13px] font-medium text-muted">Appeal message</p>
+        <p className="mt-1.5 rounded-lg bg-bg px-3.5 py-2.5 text-sm whitespace-pre-wrap">
+          {row.message}
+        </p>
+      </div>
+    </div>
   );
 }
 
@@ -107,10 +120,10 @@ function PendingRow({
   };
 
   return (
-    <div className="rounded-xl border border-line bg-surface p-4">
+    <div className="rounded-xl border border-line bg-surface px-5 py-4">
       <AppealMeta row={row} />
       {isSuper ? (
-        <div className="mt-3 border-t border-line pt-3">
+        <div className="mt-4 border-t border-line pt-4">
           {confirmGrant ? (
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-sm">
@@ -180,7 +193,7 @@ function PendingRow({
           )}
         </div>
       ) : (
-        <p className="mt-3 border-t border-line pt-3 text-sm text-muted">
+        <p className="mt-4 border-t border-line pt-4 text-sm text-muted">
           Waiting for a Super Admin to decide.
         </p>
       )}
@@ -257,27 +270,24 @@ export default function AdminAppealsPage() {
               {history.map((row) => (
                 <div
                   key={row.id}
-                  className="rounded-xl border border-line bg-surface p-4"
+                  className="rounded-xl border border-line bg-surface px-5 py-4"
                 >
-                  <div className="flex flex-wrap items-center gap-2">
+                  <AppealMeta row={row} />
+                  <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-line pt-3.5 text-[13px] text-muted">
                     {row.status === "granted" ? (
                       <Pill tone="success">Granted</Pill>
                     ) : (
                       <Pill tone="danger">Denied</Pill>
                     )}
-                    <span className="text-[13px] text-muted">
+                    <span>
                       decided {row.decided_at ? fmtDateTime(row.decided_at) : ""}
                     </span>
+                    {row.decision_note ? (
+                      <span className="text-ink">
+                        Note: {row.decision_note}
+                      </span>
+                    ) : null}
                   </div>
-                  <div className="mt-2">
-                    <AppealMeta row={row} />
-                  </div>
-                  {row.decision_note ? (
-                    <p className="mt-2 text-sm text-muted">
-                      Decision note:{" "}
-                      <span className="text-ink">{row.decision_note}</span>
-                    </p>
-                  ) : null}
                 </div>
               ))}
             </section>
