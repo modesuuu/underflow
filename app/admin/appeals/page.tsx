@@ -236,7 +236,7 @@ export default function AdminAppealsPage() {
   const history = rows?.filter((r) => r.status !== "pending") ?? [];
 
   return (
-    <div className="mx-auto w-full max-w-[860px] px-6 py-6">
+    <div>
       <PageHeader
         title="Appeals"
         subtitle="Users asking for a moderation action to be reversed. Granting restores the content or reactivates the account."
