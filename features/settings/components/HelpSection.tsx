@@ -23,7 +23,7 @@ const FAQS: { q: string; a: string }[] = [
   },
   {
     q: "How do I change my photo or skills?",
-    a: "In the Profile section above. A new photo and skill changes apply everywhere right away: your profile, your applications, and the member lists of your projects.",
+    a: "From the Settings page, open Profile. A new photo and skill changes apply everywhere right away: your profile, your applications, and the member lists of your projects.",
   },
 ];
 

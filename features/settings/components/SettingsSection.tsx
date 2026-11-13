@@ -2,11 +2,11 @@ import type { ReactNode } from "react";
 import { Card } from "@astryxdesign/core/Card";
 
 /**
- * One Settings section: an Astryx Card with a title, a one-line
- * description of what the section controls, and the controls
- * themselves. Every section on the page shares this shell so the
- * page reads as one system (Jev chose the stacked-cards layout,
- * 0.96, over a two-pane tab layout).
+ * One Settings category: an Astryx Card with a title, a one-line
+ * description of what the category controls, and the controls
+ * themselves. Each category renders this shell on its own
+ * sub-page (hub-and-spoke, the user's structure call), so every
+ * detail page reads the same way.
  */
 export function SettingsSection({
   title,
