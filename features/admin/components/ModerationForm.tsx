@@ -110,7 +110,8 @@ export function ModerationForm({
       role="presentation"
     >
       <div
-        className="w-full max-w-[480px] rounded-lg bg-surface p-5 shadow-xl"
+        className="w-full rounded-lg bg-surface p-5 shadow-xl"
+        style={{ maxWidth: 480 }}
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
