@@ -151,14 +151,20 @@ export function CommentThread({ comments, newCommentId, newCommentRef }: Comment
     );
   }
   return (
-    <div className="flex flex-col gap-6">
-      {comments.map((comment) => (
-        <CommentItem
+    <div className="flex flex-col gap-5">
+      {comments.map((comment, i) => (
+        <div
           key={comment.id}
-          comment={comment}
-          innerRef={comment.id === newCommentId ? newCommentRef : undefined}
-          isNew={comment.id === newCommentId}
-        />
+          className={
+            i < comments.length - 1 ? "border-b border-line pb-5" : undefined
+          }
+        >
+          <CommentItem
+            comment={comment}
+            innerRef={comment.id === newCommentId ? newCommentRef : undefined}
+            isNew={comment.id === newCommentId}
+          />
+        </div>
       ))}
     </div>
   );
