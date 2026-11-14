@@ -22,6 +22,7 @@ import {
   type BackendInboxMessage,
 } from "./api";
 import type { ApplicationStatus, ChatMessage, Conversation } from "./types";
+import { formatShortAgo, localeTag, tStatic } from "@/lib/i18n/format";
 
 /**
  * Inbox store — API-backed since 2026-11-12 (was session memory).
@@ -102,23 +103,17 @@ function myId(): string | null {
 }
 
 function timeLabelOf(iso: string): string {
-  const ms = Date.now() - new Date(iso).getTime();
-  if (Number.isNaN(ms) || ms < 60_000) return "now";
-  const minutes = Math.floor(ms / 60_000);
-  if (minutes < 60) return `${minutes}min`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h`;
-  return `${Math.floor(hours / 24)}d`;
+  return formatShortAgo(iso);
 }
 
 function clockOf(iso: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "";
-  return d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+  return d.toLocaleTimeString(localeTag(), { hour: "2-digit", minute: "2-digit" });
 }
 
 const clockNow = () =>
-  new Date().toLocaleTimeString("en-GB", {
+  new Date().toLocaleTimeString(localeTag(), {
     hour: "2-digit",
     minute: "2-digit",
   });
@@ -391,8 +386,8 @@ export function sendMessage(threadId: string, text: string) {
         ...t,
         messages: t.messages.filter((m) => m.id !== tempId),
       }));
-      toast.error("Message failed to send", {
-        description: "Check your connection and try again.",
+      toast.error(tStatic("inbox.messageFailed"), {
+        description: tStatic("inbox.checkConnection"),
       });
     }
   })();

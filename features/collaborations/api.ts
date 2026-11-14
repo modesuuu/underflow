@@ -3,6 +3,7 @@ import { ApiEnvelope, apiFetch, ApiError, isApiConfigured } from "@/lib/api-clie
 import type { CollabMember, CollabProject, CollabSortKey, ProjectType } from "./types";
 import { SYSTEM_SKILL_ICONS } from "./skills-api";
 import { uploadImage } from "@/features/dashboard/api";
+import { formatRelativeAgo } from "@/lib/i18n/format";
 
 /** Wire shape of GET /api/collab (CollabModel::getAll, enriched 2026-11-10). */
 interface BackendCollab {
@@ -30,13 +31,7 @@ interface BackendCollab {
 
 function relativeAgo(iso: string | undefined): string {
   if (!iso) return "";
-  const ms = Date.now() - new Date(iso).getTime();
-  if (Number.isNaN(ms) || ms < 0) return "";
-  const days = Math.floor(ms / 86_400_000);
-  if (days >= 1) return days + "d ago";
-  const hours = Math.floor(ms / 3_600_000);
-  if (hours >= 1) return hours + "h ago";
-  return "just now";
+  return formatRelativeAgo(iso);
 }
 
 /** user_collaboration.status values the UI understands; anything

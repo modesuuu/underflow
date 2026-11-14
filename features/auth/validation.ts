@@ -11,7 +11,9 @@ export const MIN_PASSWORD_LENGTH = 8;
 /**
  * Field errors keyed by field name; an empty object means valid. Pure
  * functions, shared by the forms and the mock "server" so the two cannot
- * drift apart.
+ * drift apart. VALUES ARE DICTIONARY KEYS (lib/i18n) — the forms
+ * translate them before display; the password-length key mirrors
+ * MIN_PASSWORD_LENGTH in its copy.
  */
 export type FieldErrors = Record<string, string>;
 
@@ -19,24 +21,24 @@ const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export function validateLogin(input: LoginInput): FieldErrors {
   const errors: FieldErrors = {};
-  if (!input.username.trim()) errors.username = "Username is required.";
-  if (!input.password) errors.password = "Password is required.";
+  if (!input.username.trim()) errors.username = "auth.errUsernameRequired";
+  if (!input.password) errors.password = "auth.errPasswordRequired";
   return errors;
 }
 
 export function validateRegister(input: RegisterInput): FieldErrors {
   const errors: FieldErrors = {};
   const username = input.username.trim();
-  if (!username) errors.username = "Username is required.";
+  if (!username) errors.username = "auth.errUsernameRequired";
   else if (!USERNAME_PATTERN.test(username))
     errors.username =
-      "Use 3–20 lowercase letters, numbers, dots, underscores, or dashes.";
-  if (!input.email.trim()) errors.email = "Email is required.";
+      "auth.errUsernamePattern";
+  if (!input.email.trim()) errors.email = "auth.errEmailRequired";
   else if (!EMAIL_PATTERN.test(input.email.trim()))
-    errors.email = "Enter a valid email address.";
-  if (!input.password) errors.password = "Password is required.";
+    errors.email = "auth.errEmailInvalid";
+  if (!input.password) errors.password = "auth.errPasswordRequired";
   else if (input.password.length < MIN_PASSWORD_LENGTH)
-    errors.password = `Password must be at least ${MIN_PASSWORD_LENGTH} characters.`;
+    errors.password = "auth.errPasswordLength";
   return errors;
 }
 

@@ -2,6 +2,7 @@
 // Pure helpers — no "use client", no side effects.
 
 import type { CollabProject } from "./types";
+import { getActiveLang } from "@/lib/i18n/format";
 
 /**
  * Parse a due date deterministically. Accepts the contract wire format
@@ -51,6 +52,14 @@ export function formatDueDate(raw: string): string {
   const d = new Date(
     Date.UTC(Number(iso[1]), Number(iso[2]) - 1, Number(iso[3]))
   );
+  if (getActiveLang() === "id") {
+    return new Intl.DateTimeFormat("id-ID", {
+      day: "2-digit",
+      month: "short",
+      year: "2-digit",
+      timeZone: "UTC",
+    }).format(d);
+  }
   return `${MONTH_NAMES[d.getUTCMonth()]} ${String(d.getUTCDate()).padStart(2, "0")}, ${String(
     d.getUTCFullYear()
   ).slice(-2)}`;
@@ -67,6 +76,12 @@ export function formatDueDate(raw: string): string {
  * sorting reads the `postedAt` ISO timestamp instead.
  */
 export function parsePostedAgo(raw: string): number {
+  const idMatch = raw.match(/^(\d+)\s*(hari|jam|mnt)\s*lalu$/);
+  if (idMatch) {
+    const v = parseInt(idMatch[1], 10);
+    return idMatch[2] === "hari" ? v : idMatch[2] === "jam" ? v / 24 : v / (60 * 24);
+  }
+  if (raw === "baru saja") return Infinity;
   const m = raw.match(/^(\d+)\s*(\w+)\s*ago$/);
   if (!m) return Infinity;
   const value = parseInt(m[1], 10);

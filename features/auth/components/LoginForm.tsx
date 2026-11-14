@@ -18,6 +18,7 @@ import { AuthShell } from "./AuthShell";
 import { GoogleButton } from "./GoogleButton";
 import { SuspendedNotice } from "./SuspendedNotice";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
+import type { DictKey } from "@/lib/i18n/dictionary";
 
 export function LoginForm() {
   const { t } = useLanguage();
@@ -62,11 +63,15 @@ export function LoginForm() {
     event.preventDefault();
     if (submitting) return;
     const fieldErrors = validateLogin({ username, password });
-    setErrors(fieldErrors);
+    const localizedErrors: FieldErrors = {};
+    for (const [field, key] of Object.entries(fieldErrors)) {
+      localizedErrors[field] = t(key as DictKey);
+    }
+    setErrors(localizedErrors);
     if (Object.keys(fieldErrors).length > 0) {
       // Inline errors pinpoint the field; the toast is the clear
       // notification the user asked for (first problem, spelled out).
-      toast.error(firstError(fieldErrors) ?? "Check the form and try again.");
+      toast.error(firstError(localizedErrors) ?? t("auth.checkForm"));
       return;
     }
     setSubmitting(true);

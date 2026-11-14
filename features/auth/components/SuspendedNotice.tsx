@@ -27,7 +27,7 @@ export function SuspendedNotice({
   googleIdToken?: string;
   onAppealSent: (appeal: SuspendedAppealInfo) => void;
 }) {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const [message, setMessage] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [busy, setBusy] = useState(false);
@@ -38,7 +38,7 @@ export function SuspendedNotice({
 
   const suspendedDate = info.suspendedAt
     ? new Date(info.suspendedAt.replace(" ", "T")).toLocaleDateString(
-        "en-GB",
+        lang === "id" ? "id-ID" : "en-GB",
         { day: "numeric", month: "short", year: "numeric" },
       )
     : null;

@@ -12,6 +12,7 @@ import { AuthField } from "./AuthField";
 import { AuthShell } from "./AuthShell";
 import { GoogleButton } from "./GoogleButton";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
+import type { DictKey } from "@/lib/i18n/dictionary";
 
 export function SignupForm() {
   const { t } = useLanguage();
@@ -28,9 +29,13 @@ export function SignupForm() {
     event.preventDefault();
     if (submitting) return;
     const fieldErrors = validateRegister({ username, email, password });
-    setErrors(fieldErrors);
+    const localizedErrors: FieldErrors = {};
+    for (const [field, key] of Object.entries(fieldErrors)) {
+      localizedErrors[field] = t(key as DictKey);
+    }
+    setErrors(localizedErrors);
     if (Object.keys(fieldErrors).length > 0) {
-      toast.error(firstError(fieldErrors) ?? t("auth.checkForm"));
+      toast.error(firstError(localizedErrors) ?? t("auth.checkForm"));
       return;
     }
     setSubmitting(true);

@@ -5,6 +5,7 @@ import {
   isApiConfigured,
 } from "@/lib/api-client";
 import type { Post, PostComment } from "./types";
+import { formatRelativeAgo } from "@/lib/i18n/format";
 
 /** Wire shape of GET /api/posts (PostModel::getAll). */
 interface BackendPost {
@@ -27,13 +28,7 @@ interface BackendPost {
 
 function relativeAgo(iso: string | undefined): string {
   if (!iso) return "";
-  const ms = Date.now() - new Date(iso).getTime();
-  if (Number.isNaN(ms) || ms < 0) return "";
-  const days = Math.floor(ms / 86_400_000);
-  if (days >= 1) return days + "d ago";
-  const hours = Math.floor(ms / 3_600_000);
-  if (hours >= 1) return hours + "h ago";
-  return "just now";
+  return formatRelativeAgo(iso);
 }
 
 function mapBackendPost(b: BackendPost): Post {

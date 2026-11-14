@@ -1,4 +1,5 @@
 import { ApiEnvelope, apiFetch } from "@/lib/api-client";
+import { localeTag } from "@/lib/i18n/format";
 import type {
   ActionRequestRow,
   AdminContentType,
@@ -153,7 +154,7 @@ export function fmtDate(iso: string | null | undefined): string {
   if (!iso) return "";
   const d = new Date(iso.replace(" ", "T"));
   if (Number.isNaN(d.getTime())) return "";
-  return d.toLocaleDateString("en-GB", {
+  return d.toLocaleDateString(localeTag(), {
     day: "numeric",
     month: "short",
     year: "numeric",
@@ -165,13 +166,13 @@ export function fmtDateTime(iso: string | null | undefined): string {
   const d = new Date(iso.replace(" ", "T"));
   if (Number.isNaN(d.getTime())) return "";
   return (
-    d.toLocaleDateString("en-GB", {
+    d.toLocaleDateString(localeTag(), {
       day: "numeric",
       month: "short",
       year: "numeric",
     }) +
     ", " +
-    d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })
+    d.toLocaleTimeString(localeTag(), { hour: "2-digit", minute: "2-digit" })
   );
 }
 

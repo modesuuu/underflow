@@ -9,12 +9,12 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { en, id, type DictKey } from "./dictionary";
+import type { DictKey } from "./dictionary";
+import { setActiveLang, translate, type Lang } from "./format";
 
-export type Lang = "en" | "id";
+export type { Lang } from "./format";
 
 const STORAGE_KEY = "uf-language";
-const DICTS: Record<Lang, Record<DictKey, string>> = { en, id };
 
 interface LanguageContextValue {
   lang: Lang;
@@ -29,7 +29,8 @@ const LanguageContext = createContext<LanguageContextValue | null>(null);
  * device in localStorage like the theme. Server markup is English;
  * a saved Indonesian choice applies right after mount, then stays
  * live for every surface that reads copy through t(). The
- * <html lang> attribute follows the choice.
+ * <html lang> attribute follows the choice, and non-React code
+ * (mappers, stores) reads the same choice through format.ts.
  */
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const [lang, setLangState] = useState<Lang>("en");
@@ -45,6 +46,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     document.documentElement.lang = lang;
+    setActiveLang(lang);
   }, [lang]);
 
   const setLang = useCallback((next: Lang) => {
@@ -57,15 +59,8 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const t = useCallback(
-    (key: DictKey, vars?: Record<string, string | number>) => {
-      let text: string = DICTS[lang][key] ?? en[key] ?? key;
-      if (vars) {
-        for (const [name, value] of Object.entries(vars)) {
-          text = text.replaceAll(`{${name}}`, String(value));
-        }
-      }
-      return text;
-    },
+    (key: DictKey, vars?: Record<string, string | number>) =>
+      translate(lang, key, vars),
     [lang],
   );
 
