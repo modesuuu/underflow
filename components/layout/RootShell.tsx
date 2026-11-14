@@ -6,6 +6,7 @@ import { setMobileNav, useMobileNavOpen } from "./mobile-nav";
 import { Sidebar } from "./Sidebar";
 import { LivePoller } from "@/features/dashboard/components/LivePoller";
 import { RedirectIfAuthed, RequireAuth } from "@/features/auth/components/AuthGate";
+import { VerifyEmailBanner } from "@/features/auth/components/VerifyEmailBanner";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 
 /**
@@ -42,7 +43,8 @@ export function RootShell({ children }: { children: ReactNode }) {
     pathname === "/login" ||
     pathname === "/signup" ||
     pathname === "/forgot-password" ||
-    pathname === "/reset-password";
+    pathname === "/reset-password" ||
+    pathname === "/verify-email";
   // Framed routes (app + admin) own their scrolling through inner
   // containers; the document itself must never scroll, or a stray
   // window scroll leaves the whole frame shifted with a void below
@@ -68,7 +70,8 @@ export function RootShell({ children }: { children: ReactNode }) {
     // The reset page stays reachable while signed in: a reset link
     // can be opened in a browser with a live session, and the reset
     // itself revokes older sessions server-side.
-    if (pathname === "/reset-password") return <>{children}</>;
+    if (pathname === "/reset-password" || pathname === "/verify-email")
+      return <>{children}</>;
     return <RedirectIfAuthed>{children}</RedirectIfAuthed>;
   }
   if (pathname?.startsWith("/admin")) {
@@ -90,7 +93,9 @@ export function RootShell({ children }: { children: ReactNode }) {
   return (
     <RequireAuth>
       <LivePoller />
-      <div className="flex h-dvh w-full overflow-hidden">
+      <div className="flex h-dvh w-full flex-col overflow-hidden">
+        <VerifyEmailBanner />
+        <div className="flex min-h-0 w-full flex-1 overflow-hidden">
         <Sidebar />
         {mobileOpen && (
           <button
@@ -101,6 +106,7 @@ export function RootShell({ children }: { children: ReactNode }) {
           />
         )}
         {children}
+        </div>
       </div>
     </RequireAuth>
   );

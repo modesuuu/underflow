@@ -87,6 +87,7 @@ function toAuthUser(record: {
   email?: string | null;
   photo_profile_url?: string | null;
   role?: string | null;
+  email_verified?: boolean | null;
 }): AuthUser {
   return {
     id: record.id,
@@ -95,6 +96,7 @@ function toAuthUser(record: {
     name: record.username,
     photo: record.photo_profile_url ?? undefined,
     role: (record.role ?? "user") as AuthUser["role"],
+    emailVerified: record.email_verified ?? undefined,
     provider: "password",
   };
 }
@@ -416,4 +418,36 @@ export async function resetPassword(
       body.message || `Reset password failed (HTTP ${res.status}).`,
     );
   }
+}
+
+/**
+ * POST /api/auth/verify-email. Exchanges the emailed token for the
+ * verified flag; a 400 means the link is invalid, expired, or used.
+ */
+export async function verifyEmail(token: string): Promise<void> {
+  const payload: Record<string, string> = {};
+  payload.token = token;
+  const res = await fetch(`${getApiBaseUrl()}/api/auth/verify-email`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  const body = await readBackendEnvelope<null>(res);
+  if (!res.ok || !body.success) {
+    throw new ApiError(
+      res.status,
+      "verify_failed",
+      body.message || `Verify email failed (HTTP ${res.status}).`,
+    );
+  }
+}
+
+/**
+ * POST /api/auth/resend-verification (signed in). Sends a fresh
+ * verification link; the backend caps this at 3 per hour (429).
+ */
+export async function resendVerification(): Promise<void> {
+  await apiFetch<ApiEnvelope<null>>("/api/auth/resend-verification", {
+    method: "POST",
+  });
 }

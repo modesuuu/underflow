@@ -99,6 +99,30 @@ export function LivePoller() {
     })();
   }, [isAuthed]);
 
+  // Email-verification backfill: sessions saved before verification
+  // existed learn the flag from /api/profiles/me so the reminder
+  // banner shows (or stays hidden) correctly. One shot per mount,
+  // and only while the flag is still unknown.
+  const verifyRefreshDone = useRef(false);
+  useEffect(() => {
+    if (!isAuthed || verifyRefreshDone.current) return;
+    if (getSessionUser()?.emailVerified !== undefined) {
+      verifyRefreshDone.current = true;
+      return;
+    }
+    verifyRefreshDone.current = true;
+    (async () => {
+      try {
+        const res = await apiFetch<ApiEnvelope<{ email_verified?: boolean }>>("/api/profiles/me");
+        const sess = getSession();
+        if (!sess || typeof res.data?.email_verified !== "boolean") return;
+        setSession({ ...sess, user: { ...sess.user, emailVerified: res.data.email_verified } });
+      } catch {
+        // Best-effort: the banner simply stays hidden this session.
+      }
+    })();
+  }, [isAuthed]);
+
   // Token refresh (audit P0, 2026-11-14): when the session token
   // is in its last day, swap it for a fresh one via POST
   // /api/auth/refresh (the old token is revoked server-side).
