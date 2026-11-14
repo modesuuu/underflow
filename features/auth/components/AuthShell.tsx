@@ -1,5 +1,8 @@
+"use client";
+
 import type { ReactNode } from "react";
 import { LogoMark } from "@/components/ui/LogoMark";
+import { useLanguage } from "@/lib/i18n/LanguageProvider";
 
 /**
  * Shared split layout for /login and /signup — FULL-BLEED, no card, no
@@ -26,6 +29,7 @@ export function AuthShell({
   children: ReactNode;
   footer: ReactNode;
 }) {
+  const { t } = useLanguage();
   return (
     <div className="page-enter flex min-h-dvh w-full lg:h-dvh lg:overflow-hidden">
       <aside className="hidden w-[60%] shrink-0 flex-col justify-between gap-6 p-10 text-on-brand lg:flex xl:p-12" style={{ backgroundColor: "#1e5128" }}>
@@ -35,12 +39,11 @@ export function AuthShell({
         </div>
         <div className="flex flex-col gap-4">
           <h1 className="text-[44px] leading-[1.05] font-medium tracking-[-0.02em]" style={{ color: "#eff4de" }}>
-            <span className="block">Find your team.</span>
-            <span className="block">Build something real.</span>
+            <span className="block">{t("auth.headline1")}</span>
+            <span className="block">{t("auth.headline2")}</span>
           </h1>
           <p className="max-w-[520px] text-base leading-relaxed text-on-brand/80">
-            Underflow matches students by skill and ambition, not by who
-            they already know.
+            {t("auth.tagline")}
           </p>
         </div>
         <div className="flex min-h-0 flex-1 items-center justify-center">

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { logout } from "../api";
 import { Icon } from "@/components/ui/Icon";
 import { ConfirmDialog } from "@/features/inbox/components/ConfirmDialog";
+import { useLanguage } from "@/lib/i18n/LanguageProvider";
 
 /**
  * Signs out — but only after confirming: an accidental tap used to
@@ -18,14 +19,15 @@ export function LogoutButton({
 }: {
   variant?: "full" | "icon";
 }) {
+  const { t } = useLanguage();
   const [confirming, setConfirming] = useState(false);
   return (
     <>
       <button
         type="button"
         onClick={() => setConfirming(true)}
-        aria-label="Log out"
-        title="Log out"
+        aria-label={t("nav.logOut")}
+        title={t("nav.logOut")}
         className={
           variant === "icon"
             ? "flex size-9 cursor-pointer items-center justify-center rounded-full text-muted transition-colors hover:bg-surface hover:text-ink"
@@ -37,15 +39,15 @@ export function LogoutButton({
         ) : (
           <>
             <Icon name="log-out" size={18} />
-            Log out
+            {t("nav.logOut")}
           </>
         )}
       </button>
       {confirming && (
         <ConfirmDialog
-          title="Log out?"
-          description="You'll need to log in again to continue."
-          confirmLabel="Log out"
+          title={t("auth.logOutTitle")}
+          description={t("auth.logOutBody")}
+          confirmLabel={t("nav.logOut")}
           onConfirm={() => logout()}
           onCancel={() => setConfirming(false)}
         />

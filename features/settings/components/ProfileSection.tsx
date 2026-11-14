@@ -19,6 +19,7 @@ import {
   type Skill,
 } from "@/features/collaborations/skills-api";
 import { SettingsSection } from "./SettingsSection";
+import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import { updateProfilePhoto } from "../api";
 
 const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
@@ -32,6 +33,7 @@ const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
  * New Project modal uses.
  */
 export function ProfileSection() {
+  const { t } = useLanguage();
   const user = useSessionUser();
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
@@ -49,7 +51,7 @@ export function ProfileSection() {
     try {
       setSkills(await getSkills());
     } catch {
-      setSkillsError("Could not load your skills.");
+      setSkillsError(t("settings.profile.couldNotLoadSkills"));
     }
   }
 
@@ -59,11 +61,11 @@ export function ProfileSection() {
 
   async function handlePhoto(file: File) {
     if (!file.type.startsWith("image/")) {
-      toast.error("That file is not an image.");
+      toast.error(t("settings.profile.notImage"));
       return;
     }
     if (file.size > MAX_PHOTO_BYTES) {
-      toast.error("Photo is too large. Max 5 MB.");
+      toast.error(t("settings.profile.photoTooLarge"));
       return;
     }
     setUploading(true);
@@ -79,10 +81,10 @@ export function ProfileSection() {
           user: { ...session.user, photo: url },
         });
       }
-      toast.success("Profile photo updated");
+      toast.success(t("settings.profile.photoUpdated"));
     } catch (err) {
       toast.error(
-        err instanceof Error ? err.message : "Could not update your photo.",
+        err instanceof Error ? err.message : t("settings.profile.couldNotUpdatePhoto"),
       );
     } finally {
       setUploading(false);
@@ -104,7 +106,7 @@ export function ProfileSection() {
       setDraft("");
     } catch (err) {
       setAddError(
-        err instanceof Error ? err.message : "Could not add that skill.",
+        err instanceof Error ? err.message : t("settings.profile.couldNotAddSkill"),
       );
     } finally {
       setAdding(false);
@@ -119,7 +121,7 @@ export function ProfileSection() {
       setConfirmRemoveId(null);
     } catch (err) {
       toast.error(
-        err instanceof Error ? err.message : "Could not remove that skill.",
+        err instanceof Error ? err.message : t("settings.profile.couldNotRemoveSkill"),
       );
     } finally {
       setRemoving(false);
@@ -133,21 +135,21 @@ export function ProfileSection() {
 
   return (
     <SettingsSection
-      title="Profile"
-      description="Your photo and skills show on your profile and next to your applications."
+      title={t("settings.profile.title")}
+      description={t("settings.profile.description")}
     >
       <div className="flex items-center gap-4">
         <Avatar src={user?.photo} alt={user?.name ?? "You"} size={64} />
         <div className="flex min-w-0 flex-1 flex-col">
           <span className="truncate font-semibold text-ink">
-            {user?.name ?? "Loading…"}
+            {user?.name ?? t("common.loading")}
           </span>
           <span className="truncate text-sm text-muted">
             {user ? `@${user.username}` : ""}
           </span>
         </div>
         <Button
-          label={uploading ? "Uploading…" : "Change photo"}
+          label={uploading ? t("settings.profile.uploading") : t("settings.profile.changePhoto")}
           variant="secondary"
           isDisabled={uploading || !user}
           onClick={() => fileRef.current?.click()}
@@ -165,16 +167,16 @@ export function ProfileSection() {
         />
       </div>
       <p className="-mt-2 text-[13px] text-muted">
-        JPG, PNG, WebP or GIF, up to 5 MB.
+        {t("settings.profile.photoHint")}
       </p>
 
       <div className="h-px w-full bg-line" />
 
       <div className="flex flex-col gap-3">
-        <h3 className="text-sm font-semibold text-ink">Your skills</h3>
+        <h3 className="text-sm font-semibold text-ink">{t("settings.profile.yourSkills")}</h3>
 
         {skills === null && !skillsError && (
-          <p className="text-sm text-muted">Loading your skills…</p>
+          <p className="text-sm text-muted">{t("settings.profile.loadingSkills")}</p>
         )}
         {skillsError && (
           <div className="flex items-center gap-3">
@@ -184,7 +186,7 @@ export function ProfileSection() {
               onClick={() => void loadSkills()}
               className="pressable cursor-pointer text-sm font-medium text-ink underline underline-offset-2"
             >
-              Retry
+              {t("common.retry")}
             </button>
           </div>
         )}
@@ -208,7 +210,7 @@ export function ProfileSection() {
                   ))}
                 </div>
                 <p className="text-[13px] text-muted">
-                  Standard roles, shared by everyone. They cannot be removed.
+                  {t("settings.profile.standardRolesNote")}
                 </p>
               </div>
             )}
@@ -226,14 +228,14 @@ export function ProfileSection() {
               </div>
             ) : (
               <p className="text-sm text-muted">
-                No personal skills yet. Add the ones you want to be found for.
+                {t("settings.profile.noSkillsYet")}
               </p>
             )}
 
             {confirming && (
               <div className="flex flex-wrap items-center gap-2 rounded-lg bg-bg px-3 py-2">
                 <span className="text-sm text-ink">
-                  Remove “{confirming.name}” from your skills?
+                  {t("settings.profile.removePrompt", { name: confirming.name })}
                 </span>
                 <button
                   type="button"
@@ -241,7 +243,7 @@ export function ProfileSection() {
                   onClick={() => void handleRemoveSkill(confirming)}
                   className="pressable cursor-pointer rounded-full bg-error px-3 py-1 text-[13px] font-medium text-white disabled:opacity-60"
                 >
-                  {removing ? "Removing…" : "Remove"}
+                  {removing ? t("settings.profile.removing") : t("settings.profile.remove")}
                 </button>
                 <button
                   type="button"
@@ -249,7 +251,7 @@ export function ProfileSection() {
                   onClick={() => setConfirmRemoveId(null)}
                   className="pressable cursor-pointer rounded-full px-3 py-1 text-[13px] font-medium text-muted hover:text-ink"
                 >
-                  Cancel
+                  {t("common.cancel")}
                 </button>
               </div>
             )}
@@ -265,9 +267,9 @@ export function ProfileSection() {
                 }}
               >
                 <TextInput
-                  label="Add a skill"
+                  label={t("settings.profile.addSkillPlaceholder")}
                   isLabelHidden
-                  placeholder="Add a skill, e.g. Figma"
+                  placeholder={t("settings.profile.addSkillPlaceholder")}
                   value={draft}
                   onChange={(value) => {
                     setDraft(value);
@@ -279,7 +281,7 @@ export function ProfileSection() {
                 )}
               </div>
               <Button
-                label={adding ? "Adding…" : "Add"}
+                label={adding ? t("settings.profile.adding") : t("settings.profile.add")}
                 variant="primary"
                 isDisabled={adding || draft.trim().length === 0}
                 onClick={() => void addSkill()}

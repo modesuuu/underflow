@@ -2,6 +2,7 @@
 
 import { useSessionUser } from "@/features/auth/store";
 import { LogoutButton } from "@/features/auth/components/LogoutButton";
+import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import { SettingsSection } from "./SettingsSection";
 
 /**
@@ -13,26 +14,27 @@ import { SettingsSection } from "./SettingsSection";
  * change-password endpoint yet, so the control would be a fake.
  */
 export function AccountSection() {
+  const { t } = useLanguage();
   const user = useSessionUser();
 
   const rows: { label: string; value: string }[] = user
     ? [
-        { label: "Username", value: `@${user.username}` },
-        { label: "Email", value: user.email },
+        { label: t("settings.account.username"), value: `@${user.username}` },
+        { label: t("settings.account.email"), value: user.email },
         {
-          label: "Sign-in method",
-          value: user.provider === "google" ? "Google" : "Password",
+          label: t("settings.account.signInMethod"),
+          value: user.provider === "google" ? "Google" : t("settings.account.password"),
         },
       ]
     : [];
 
   return (
     <SettingsSection
-      title="Account"
-      description="The account you are signed in with."
+      title={t("settings.account.title")}
+      description={t("settings.account.description")}
     >
       {user === null ? (
-        <p className="text-sm text-muted">Loading your account…</p>
+        <p className="text-sm text-muted">{t("settings.account.loading")}</p>
       ) : (
         <>
           <div className="flex flex-col">

@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { Icon } from "@/components/ui/Icon";
+import { useLanguage } from "@/lib/i18n/LanguageProvider";
 
 interface ConfirmDialogProps {
   title: string;
@@ -27,6 +28,7 @@ export function ConfirmDialog({
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
+  const { t } = useLanguage();
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") onCancel();
@@ -63,7 +65,7 @@ export function ConfirmDialog({
             onClick={onCancel}
             className="cursor-pointer rounded-md bg-bg px-4 py-2 text-sm font-medium text-muted transition-colors hover:bg-line/50"
           >
-            Cancel
+            {t("common.cancel")}
           </button>
           <button
             type="button"

@@ -6,6 +6,7 @@ import { Avatar } from "@/components/ui/Avatar";
 import { Icon } from "@/components/ui/Icon";
 import { CURRENT_USER } from "@/components/layout/nav";
 import { useSessionUser } from "@/features/auth/store";
+import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import type { PostComment } from "../types";
 import { CommentThread } from "./CommentThread";
 import { getComments, postComment } from "../api";
@@ -39,6 +40,7 @@ interface CommentSectionProps {
 
 
 export function CommentSection({ postId, initialComments, autoFocusComment = false }: CommentSectionProps) {
+  const { t } = useLanguage();
   const [comments, setComments] = useState<PostComment[]>(initialComments);
   const [draft, setDraft] = useState("");
   // Subscribe to the session so this re-renders when the photo is
@@ -140,15 +142,15 @@ export function CommentSection({ postId, initialComments, autoFocusComment = fal
                 submit();
               }
             }}
-            placeholder="Write your comment"
+            placeholder={t("feed.writeComment")}
             // P1-C #20: the input had no accessible name beyond the
             // placeholder (placeholders disappear on focus) — add one.
-            aria-label="Write your comment"
+            aria-label={t("feed.writeComment")}
             className="min-w-0 flex-1 bg-transparent text-sm text-ink placeholder:text-muted focus:outline-none"
           />
           <button
             type="button"
-            aria-label="Send comment"
+            aria-label={t("feed.sendComment")}
             onClick={submit}
             disabled={!draft.trim()}
             className={`flex shrink-0 cursor-pointer items-center transition-colors hover:text-ink disabled:cursor-not-allowed disabled:opacity-40 ${

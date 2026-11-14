@@ -19,6 +19,7 @@ import { deletePost, reportPost, withdrawReport } from "../api";
 import { toast } from "sonner";
 import { ReportedPostNotice } from "./ReportedPostNotice";
 import { ReportForm } from "./ReportForm";
+import { useLanguage } from "@/lib/i18n/LanguageProvider";
 
 /**
  * Feed post: flat on the page surface — no card border (the
@@ -29,6 +30,7 @@ import { ReportForm } from "./ReportForm";
 const CARD_CHROME = "px-1 py-2";
 
 export function PostCard({ post }: { post: Post }) {
+  const { t } = useLanguage();
   const router = useRouter();
   const [reported, setReported] = useState(false);
   const [reportFormOpen, setReportFormOpen] = useState(false);
@@ -110,7 +112,7 @@ export function PostCard({ post }: { post: Post }) {
         <Link
           href={`/profile/${post.author.id}`}
           className="group flex items-center gap-2.5"
-          aria-label={`View ${post.author.name}'s profile`}
+          aria-label={t("feed.viewProfile", { name: post.author.name })}
         >
           <Avatar size={36} src={post.author.avatarUrl} alt={post.author.name} />
           <div className="flex flex-col">
@@ -149,12 +151,12 @@ export function PostCard({ post }: { post: Post }) {
         <button
           type="button"
           onClick={openDetailAtComment}
-          aria-label={`Comment on post by ${post.author.name}`}
+          aria-label={t("feed.commentOnPost", { name: post.author.name })}
           className="flex cursor-pointer items-center gap-1.5 text-muted transition-colors hover:text-ink"
         >
           <Icon name="message-rounded" size={20} />
           <span className="text-xs font-medium">
-            {liveCommentCount > 0 ? formatCount(liveCommentCount) : "Comment"}
+            {liveCommentCount > 0 ? formatCount(liveCommentCount) : t("feed.comment")}
           </span>
         </button>
       </div>
@@ -168,15 +170,15 @@ export function PostCard({ post }: { post: Post }) {
           onClick={openDetailAtComment}
           className="flex flex-1 cursor-text items-center justify-between rounded-full bg-bg px-4 py-2 text-left transition-colors hover:text-ink focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
         >
-          <span className="text-sm text-muted">Write your comment</span>
+          <span className="text-sm text-muted">{t("feed.writeComment")}</span>
           <Icon name="send" size={18} className="text-muted" />
         </button>
       </div>
       {confirmingDelete && (
         <ConfirmDialog
-          title="Delete this post?"
-          description="This post will be removed from the feed for everyone. This can't be undone."
-          confirmLabel="Delete"
+          title={t("feed.deletePostTitle")}
+          description={t("feed.deletePostBody")}
+          confirmLabel={t("common.delete")}
           onConfirm={() => {
             setConfirmingDelete(false);
             void handleDelete();

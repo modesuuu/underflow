@@ -13,28 +13,30 @@ import { Avatar } from "@/components/ui/Avatar";
 import { Icon } from "@/components/ui/Icon";
 import type { NotificationItem } from "../types";
 import { openApplicationThreadByProject } from "@/features/inbox/store";
+import { useLanguage } from "@/lib/i18n/LanguageProvider";
+import type { DictKey } from "@/lib/i18n/dictionary";
 
 type Tab = "all" | "unread" | "read";
 
 interface TabDef {
   id: Tab;
-  label: string;
+  labelKey: DictKey;
 }
 
 const TABS: TabDef[] = [
-  { id: "all", label: "All" },
-  { id: "unread", label: "Unread" },
-  { id: "read", label: "Read" },
+  { id: "all", labelKey: "notif.all" },
+  { id: "unread", labelKey: "notif.unread" },
+  { id: "read", labelKey: "notif.read" },
 ];
 
 // Stagger cap, same as the feed (FeedColumn): later rows stop cascading
 // so a long list does not take forever to settle.
 const STAGGER_CAP = 8;
 
-const EMPTY_COPY: Record<Tab, string> = {
-  all: "No notifications. Activity from your projects appears here.",
-  unread: "No unread notifications.",
-  read: "No read notifications. Notifications you open move here.",
+const EMPTY_KEYS: Record<Tab, DictKey> = {
+  all: "notif.emptyAll",
+  unread: "notif.emptyUnread",
+  read: "notif.emptyRead",
 };
 
 function filterByTab(items: NotificationItem[], tab: Tab): NotificationItem[] {
@@ -55,6 +57,7 @@ function NotificationRow({
 }) {
   // The subline is just the action ("kimi liked your post") — no quoted
   // detail. `title` (the headline) is the fallback when there is no action.
+  const { t: tr } = useLanguage();
   const name = item.actor?.name ?? item.title;
   const subline = item.action ?? item.title;
   const actorId = item.actor ? item.actor.id : null;
@@ -68,7 +71,7 @@ function NotificationRow({
         {actorId && item.actor ? (
           <Link
             href={`/profile/${actorId}`}
-            aria-label={`View ${item.actor.name}'s profile`}
+            aria-label={tr("notif.viewProfile", { name: item.actor.name })}
             className="shrink-0 rounded-full focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
           >
             <Avatar size={32} src={item.actor?.avatarUrl} alt={name} />
@@ -98,7 +101,7 @@ function NotificationRow({
               {!item.read && (
                 <span className="flex shrink-0 items-center">
                   <span aria-hidden="true" className="size-1.5 rounded-full bg-accent" />
-                  <span className="sr-only">Unread</span>
+                  <span className="sr-only">{tr("notif.unread")}</span>
                 </span>
               )}
             </span>
@@ -133,6 +136,7 @@ function NotificationRow({
  * this list always agree.
  */
 export function NotificationsPanel({ className }: { className?: string }) {
+  const { t: tr } = useLanguage();
   const [tab, setTab] = useState<Tab>("all");
   const items = useNotifications();
 
@@ -182,14 +186,14 @@ export function NotificationsPanel({ className }: { className?: string }) {
     <div className={"page-enter flex flex-col gap-6 py-6" + (className ? " " + className : "")}>
       <div className="flex flex-col gap-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-base font-semibold">Notifications</h2>
+          <h2 className="text-base font-semibold">{tr("notif.title")}</h2>
           {unreadCount > 0 && (
             <button
               type="button"
               onClick={markAllRead}
               className="cursor-pointer text-xs font-medium text-muted transition-colors hover:text-ink focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
             >
-              Mark all read
+              {tr("notif.markAllRead")}
             </button>
           )}
         </div>
@@ -197,7 +201,7 @@ export function NotificationsPanel({ className }: { className?: string }) {
             308px side panels the cap never binds. */}
         <div
           role="tablist"
-          aria-label="Notification filter"
+          aria-label={tr("notif.filterAria")}
           className="relative grid max-w-md grid-cols-3 rounded-full bg-bg p-1"
         >
           <span
@@ -217,7 +221,7 @@ export function NotificationsPanel({ className }: { className?: string }) {
                 tab === t.id ? "text-ink" : "text-muted hover:text-ink",
               )}
             >
-              {t.label}
+              {tr(t.labelKey)}
               <span className="text-[11px] text-subtle">{counts[t.id]}</span>
             </button>
           ))}
@@ -238,7 +242,7 @@ export function NotificationsPanel({ className }: { className?: string }) {
           </Fragment>
         ))}
         {visible.length === 0 && (
-          <p className="text-sm leading-relaxed text-muted">{EMPTY_COPY[tab]}</p>
+          <p className="text-sm leading-relaxed text-muted">{tr(EMPTY_KEYS[tab])}</p>
         )}
       </div>
     </div>

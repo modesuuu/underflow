@@ -1,8 +1,11 @@
+"use client";
+
 import type { CSSProperties } from "react";
 import { Icon } from "@/components/ui/Icon";
 import type { Post } from "../types";
 import { LikeHydrator } from "./LikeHydrator";
 import { PostCard } from "./PostCard";
+import { useLanguage } from "@/lib/i18n/LanguageProvider";
 
 /**
  * The feed river: flat posts separated by rhythm, not boxes —
@@ -22,6 +25,7 @@ export function FeedColumn({
       default left-pinned 28px margin. Profile posts keeps the default. */
   centered?: boolean;
 }) {
+  const { t } = useLanguage();
   return (
     <div
       className={
@@ -35,9 +39,9 @@ export function FeedColumn({
         <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-line px-6 py-16 text-center">
           <Icon name="message-rounded" size={32} className="text-muted" />
           <div className="flex flex-col gap-1">
-            <p className="text-base font-medium text-ink">No posts yet</p>
+            <p className="text-base font-medium text-ink">{t("feed.noPostsTitle")}</p>
             <p className="text-sm text-muted">
-              Updates from people in your projects appear here.
+              {t("feed.noPostsBody")}
             </p>
           </div>
         </div>

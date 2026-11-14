@@ -17,8 +17,10 @@ import { AuthField } from "./AuthField";
 import { AuthShell } from "./AuthShell";
 import { GoogleButton } from "./GoogleButton";
 import { SuspendedNotice } from "./SuspendedNotice";
+import { useLanguage } from "@/lib/i18n/LanguageProvider";
 
 export function LoginForm() {
+  const { t } = useLanguage();
   const router = useRouter();
   const searchParams = useSearchParams();
   const next = searchParams.get("next") || "/";
@@ -94,15 +96,15 @@ export function LoginForm() {
   if (suspended) {
     return (
       <AuthShell
-        title="Account suspended"
-        subtitle="Your account was suspended by the moderation team"
+        title={t("auth.accountSuspended")}
+        subtitle={t("auth.suspendedSubtitle")}
         footer={
           <button
             type="button"
             onClick={() => setSuspended(null)}
             className="font-medium text-ink underline underline-offset-2"
           >
-            Back to log in
+            {t("auth.backToLogin")}
           </button>
         }
       >
@@ -123,16 +125,16 @@ export function LoginForm() {
 
   return (
     <AuthShell
-      title="Welcome back"
-      subtitle="Log in to your account"
+      title={t("auth.welcomeBack")}
+      subtitle={t("auth.loginSubtitle")}
       footer={
         <>
-          Don&apos;t have an account?{" "}
+          {t("auth.dontHaveAccount")}{" "}
           <Link
             href={`/signup?next=${encodeURIComponent(next)}`}
             className="font-medium text-ink underline underline-offset-2"
           >
-            Sign up
+            {t("auth.signUp")}
           </Link>
         </>
       }
@@ -140,27 +142,27 @@ export function LoginForm() {
       <form onSubmit={submit} noValidate className="flex flex-col gap-5">
         <AuthField
           id="username"
-          label="Username"
+          label={t("auth.username")}
           type="text"
           autoComplete="username"
-          placeholder="Username"
+          placeholder={t("auth.username")}
           value={username}
           onChange={(e) => setUsername(e.target.value)}
           error={errors.username}
         />
         <AuthField
           id="password"
-          label="Password"
+          label={t("auth.password")}
           type="password"
           autoComplete="current-password"
-          placeholder="Your password"
+          placeholder={t("auth.yourPassword")}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           error={errors.password}
         />
         <Button
           type="submit"
-          label={submitting ? "Logging in…" : "Log in"}
+          label={submitting ? t("auth.loggingIn") : t("auth.logIn")}
           variant="primary"
           size="lg"
           width="100%"
@@ -170,7 +172,7 @@ export function LoginForm() {
       </form>
       <div className="flex items-center gap-3 text-xs text-subtle">
         <span className="h-px flex-1 bg-line" aria-hidden="true" />
-        or continue with
+        {t("auth.orContinueWith")}
         <span className="h-px flex-1 bg-line" aria-hidden="true" />
       </div>
       <GoogleButton

@@ -28,6 +28,8 @@ import {
   type NavSection,
 } from "./nav";
 import { useSessionUser } from "@/features/auth/store";
+import { useLanguage } from "@/lib/i18n/LanguageProvider";
+import type { DictKey } from "@/lib/i18n/dictionary";
 
 // P1-E #28 / P1-C #21: the sidebar no longer uses GSAP — the hover
 // background, chevron rotation, and section accordion are pure CSS
@@ -45,6 +47,22 @@ import { useSessionUser } from "@/features/auth/store";
 // the sidebar remounts on every navigation — a post-paint read
 // would flash the expanded rail, then replay the collapse
 // animation on each page change.
+
+const NAV_LABEL_KEYS: Record<string, DictKey> = {
+  feeds: "nav.feeds",
+  tasks: "nav.tasks",
+  collaborations: "nav.collaborations",
+  circle: "nav.circle",
+  inbox: "nav.inbox",
+  "my-collab": "nav.myCollaborations",
+  admin: "nav.admin",
+  settings: "nav.setting",
+};
+
+const SECTION_TITLE_KEYS: Record<string, DictKey> = {
+  dashboard: "nav.sectionDashboard",
+  tools: "nav.sectionTools",
+};
 
 const RAIL_STORAGE_KEY = "uf-sidebar-mini";
 const RAIL_WIDTH = 76;
@@ -88,6 +106,9 @@ interface NavRowProps {
 }
 
 function NavRow({ item, active, badge, mini, animate, onSelect, registerRef }: NavRowProps) {
+  const { t } = useLanguage();
+  const labelKey = NAV_LABEL_KEYS[item.id];
+  const label = labelKey ? t(labelKey) : item.label;
   // Items with an href are real <Link> anchors — Next.js prefetches the
   // destination route shell on hover/appearance, so slow compiles no longer
   // flash the wrong skeleton first (button + router.push had no prefetch).
@@ -183,7 +204,7 @@ function NavRow({ item, active, badge, mini, animate, onSelect, registerRef }: N
           mini ? "max-w-0 opacity-0" : "max-w-[140px] opacity-100"
         )}
       >
-        {item.label}
+        {label}
       </span>
       {/* Badge renders in every state: normal, hover, active */}
       {!mini && badge !== undefined && badge > 0 && (
@@ -200,7 +221,7 @@ function NavRow({ item, active, badge, mini, animate, onSelect, registerRef }: N
             style={{ left: tipPos.x, top: tipPos.y }}
             className="uf-tip pointer-events-none fixed z-[100] -translate-y-1/2 rounded-lg bg-ink px-2.5 py-1.5 text-xs font-medium whitespace-nowrap text-surface shadow-lg"
           >
-            {item.label}
+            {label}
             {badge !== undefined && badge > 0 ? ` (${badge})` : ""}
           </span>,
           document.body,
@@ -221,7 +242,7 @@ function NavRow({ item, active, badge, mini, animate, onSelect, registerRef }: N
         {...tipHandlers}
         className={className}
         aria-current={active ? "page" : undefined}
-        aria-label={mini ? item.label : undefined}
+        aria-label={mini ? label : undefined}
       >
         {inner}
       </a>
@@ -245,7 +266,7 @@ function NavRow({ item, active, badge, mini, animate, onSelect, registerRef }: N
         {...tipHandlers}
         className={className}
         aria-current={active ? "page" : undefined}
-        aria-label={mini ? item.label : undefined}
+        aria-label={mini ? label : undefined}
       >
         {inner}
       </Link>
@@ -264,7 +285,7 @@ function NavRow({ item, active, badge, mini, animate, onSelect, registerRef }: N
       {...tipHandlers}
       className={className}
       aria-current={active ? "page" : undefined}
-      aria-label={mini ? item.label : undefined}
+      aria-label={mini ? label : undefined}
     >
       {inner}
     </button>
@@ -381,6 +402,7 @@ function routeToNavId(pathname: string): string {
 }
 
 export function Sidebar() {
+  const { t } = useLanguage();
   const sessionUser = useSessionUser();
   const isAdminTier =
     sessionUser?.role === "monitor" || sessionUser?.role === "super_admin";
@@ -617,8 +639,8 @@ export function Sidebar() {
               type="button"
               onClick={toggleMini}
               aria-expanded={!mini}
-              aria-label={mini ? "Expand sidebar" : "Collapse sidebar"}
-              title={mini ? "Expand sidebar (Ctrl+B)" : "Collapse sidebar (Ctrl+B)"}
+              aria-label={mini ? t("nav.expandSidebar") : t("nav.collapseSidebar")}
+              title={(mini ? t("nav.expandSidebar") : t("nav.collapseSidebar")) + " (Ctrl+B)"}
               className={clsx(
                 "group nav-row-hoverable relative z-10 flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-lg text-muted transition-colors hover:text-ink",
                 !mini && "ml-auto"
@@ -630,7 +652,7 @@ export function Sidebar() {
                   aria-hidden="true"
                   className="pointer-events-none absolute top-1/2 left-full z-50 ml-3 -translate-y-1/2 translate-x-[-4px] rounded-lg bg-ink px-2.5 py-1.5 text-xs font-medium whitespace-nowrap text-surface opacity-0 shadow-lg transition-all duration-150 group-hover:translate-x-0 group-hover:opacity-100 group-hover:delay-300 group-focus-visible:translate-x-0 group-focus-visible:opacity-100"
                 >
-                  Expand sidebar
+                  {t("nav.expandSidebar")}
                 </span>
               )}
             </button>
@@ -641,7 +663,12 @@ export function Sidebar() {
             {NAV_SECTIONS.map((section) => (
               <NavSectionBlock
                 key={section.id}
-                section={section}
+                section={{
+                  ...section,
+                  title: SECTION_TITLE_KEYS[section.id]
+                    ? t(SECTION_TITLE_KEYS[section.id])
+                    : section.title,
+                }}
                 activeId={activeId}
                 collapsed={!!collapsed[section.id]}
                 mini={mini}
@@ -690,7 +717,7 @@ export function Sidebar() {
             )}
           >
             {!mini && (
-              <span className="text-xs font-medium text-muted">Theme</span>
+              <span className="text-xs font-medium text-muted">{t("nav.theme")}</span>
             )}
             <ThemeToggle variant={mini ? "rail" : "full"} />
           </div>
@@ -706,7 +733,7 @@ export function Sidebar() {
           >
             <Link
               href="/profile/me"
-              aria-label="View your profile"
+              aria-label={t("nav.viewYourProfile")}
               className={clsx(
                 "group relative z-10 flex cursor-pointer items-center rounded-sm bg-surface p-1",
                 mini ? "justify-center" : "min-w-0 flex-1 justify-between",
@@ -748,7 +775,7 @@ export function Sidebar() {
                 aria-hidden="true"
                 className="pointer-events-none absolute top-1/2 left-full z-50 ml-3 -translate-y-1/2 translate-x-[-4px] rounded-lg bg-ink px-2.5 py-1.5 text-xs font-medium whitespace-nowrap text-surface opacity-0 shadow-lg transition-all duration-150 group-hover:translate-x-0 group-hover:opacity-100 group-hover:delay-300 group-focus-visible:translate-x-0 group-focus-visible:opacity-100"
               >
-                Log out
+                {t("nav.logOut")}
               </span>
             </div>
           </div>

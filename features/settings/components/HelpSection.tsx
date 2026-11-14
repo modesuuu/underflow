@@ -3,28 +3,15 @@
 import { useState } from "react";
 import { Icon } from "@/components/ui/Icon";
 import { SettingsSection } from "./SettingsSection";
+import { useLanguage } from "@/lib/i18n/LanguageProvider";
+import type { DictKey } from "@/lib/i18n/dictionary";
 
-const FAQS: { q: string; a: string }[] = [
-  {
-    q: "How do I join a project?",
-    a: "Open a project on the Collaborations page and press Apply. Add a short message so the owner knows what you bring. The owner reviews your application in their Inbox; once you are accepted, the project appears in your My Collaborations.",
-  },
-  {
-    q: "How do I start a project?",
-    a: "Press New Project on the Collaborations page. Describe what you are building, add the roles you need as skills, and set the team size and a due date. Applications land in your Inbox, where you can accept or decline them.",
-  },
-  {
-    q: "What happens after I am accepted?",
-    a: "You become a member of the project. From My Collaborations you can open the project's Circle, a private space for the team with an announcements channel and a general channel.",
-  },
-  {
-    q: "Where do I manage applications?",
-    a: "In the Inbox. Applications live there as conversations with the applicant, and the application card inside carries the Accept and Decline actions. Your own sent applications show their status in the same place.",
-  },
-  {
-    q: "How do I change my photo or skills?",
-    a: "From the Settings page, open Profile. A new photo and skill changes apply everywhere right away: your profile, your applications, and the member lists of your projects.",
-  },
+const FAQ_KEYS: { q: DictKey; a: DictKey }[] = [
+  { q: "settings.help.q1", a: "settings.help.a1" },
+  { q: "settings.help.q2", a: "settings.help.a2" },
+  { q: "settings.help.q3", a: "settings.help.a3" },
+  { q: "settings.help.q4", a: "settings.help.a4" },
+  { q: "settings.help.q5", a: "settings.help.a5" },
 ];
 
 /**
@@ -34,11 +21,13 @@ const FAQS: { q: string; a: string }[] = [
  * keeps the section compact, one answer open at a time.
  */
 export function HelpSection() {
+  const { t } = useLanguage();
+  const FAQS = FAQ_KEYS.map(({ q, a }) => ({ q: t(q), a: t(a) }));
   const [openIndex, setOpenIndex] = useState<number | null>(null);
   return (
     <SettingsSection
-      title="Help Center"
-      description="How the main flows in Underflow work."
+      title={t("settings.help.title")}
+      description={t("settings.help.description")}
     >
       <div className="flex flex-col">
         {FAQS.map((item, i) => {

@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { Icon } from "@/components/ui/Icon";
 import { setMobileNav } from "./mobile-nav";
 import { NotificationsBell } from "./NotificationsBell";
+import { useLanguage } from "@/lib/i18n/LanguageProvider";
+import type { DictKey } from "@/lib/i18n/dictionary";
 
 export type TopBarVariant = "dashboard" | "detail";
 
@@ -17,6 +19,22 @@ interface TopBarProps {
   /** Page-specific right-side actions; rendered INSTEAD of the default Post button. */
   actions?: ReactNode;
 }
+
+const CRUMB_KEYS: Record<string, DictKey> = {
+  Dashboard: "crumb.dashboard",
+  Feed: "crumb.feed",
+  Settings: "crumb.settings",
+  Appearance: "crumb.appearance",
+  Profile: "crumb.profile",
+  Account: "crumb.account",
+  "Help Center": "crumb.helpCenter",
+  Language: "crumb.language",
+  Collaborations: "crumb.collaborations",
+  "My Collaborations": "crumb.myCollaborations",
+  Inbox: "crumb.inbox",
+  Circle: "crumb.circle",
+  Notifications: "crumb.notifications",
+};
 
 function Breadcrumb({ root, leaf }: { root: string; leaf: string }) {
   return (
@@ -36,6 +54,11 @@ export function TopBar({
   actions,
 }: TopBarProps) {
   const router = useRouter();
+  const { t } = useLanguage();
+  const crumb = (text: string) => {
+    const key = CRUMB_KEYS[text];
+    return key ? t(key) : text;
+  };
 
   const handleBack = () => {
     if (backHref) router.push(backHref);
@@ -48,7 +71,7 @@ export function TopBar({
         <button
           type="button"
           onClick={() => setMobileNav(true)}
-          aria-label="Open menu"
+          aria-label={t("topbar.openMenu")}
           className="pressable flex cursor-pointer items-center rounded-md text-ink focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none lg:hidden"
         >
           <Icon name="menu" size={24} />
@@ -57,13 +80,13 @@ export function TopBar({
           <button
             type="button"
             onClick={handleBack}
-            aria-label={`Back to ${backLabel}`}
+            aria-label={t("topbar.backTo", { label: crumb(backLabel) })}
             className="pressable flex cursor-pointer items-center rounded-md text-ink focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
           >
             <Icon name="chevron-left" size={24} />
           </button>
         )}
-        <Breadcrumb root={breadcrumbRoot} leaf={breadcrumbLeaf} />
+        <Breadcrumb root={crumb(breadcrumbRoot)} leaf={crumb(breadcrumbLeaf)} />
       </div>
 
       <div className="flex flex-1 items-center justify-end gap-3 sm:gap-6">

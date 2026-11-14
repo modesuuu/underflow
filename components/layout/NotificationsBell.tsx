@@ -12,6 +12,7 @@ import {
 } from "@/features/dashboard/notifications-store";
 import type { NotificationItem } from "@/features/dashboard/types";
 import { openApplicationThreadByProject } from "@/features/inbox/store";
+import { useLanguage } from "@/lib/i18n/LanguageProvider";
 
 /**
  * TopBar bell + notifications dropdown, present on every page.
@@ -25,6 +26,7 @@ import { openApplicationThreadByProject } from "@/features/inbox/store";
  * never disagree. Outside-click / Escape close included.
  */
 export function NotificationsBell() {
+  const { t } = useLanguage();
   const [bellOpen, setBellOpen] = useState(false);
   const items = useNotifications();
   const unreadCount = useUnreadNotificationCount();
@@ -89,8 +91,8 @@ export function NotificationsBell() {
         type="button"
         aria-label={
           unreadCount > 0
-            ? `Notifications, ${unreadCount} unread`
-            : "Notifications"
+            ? t("notif.ariaUnread", { count: unreadCount })
+            : t("notif.title")
         }
         aria-haspopup="true"
         aria-expanded={bellOpen}
@@ -108,12 +110,12 @@ export function NotificationsBell() {
         <div
           ref={bellPanelRef}
           role="dialog"
-          aria-label="Notifications"
+          aria-label={t("notif.title")}
           className="absolute right-0 top-full z-50 mt-2 w-80 max-w-[calc(100vw-2rem)] rounded-lg border border-line bg-surface p-3 shadow-lg"
         >
-          <h3 className="mb-2 text-sm font-medium text-ink">Notifications</h3>
+          <h3 className="mb-2 text-sm font-medium text-ink">{t("notif.title")}</h3>
           {items.length === 0 ? (
-            <p className="text-xs text-muted">No notifications.</p>
+            <p className="text-xs text-muted">{t("notif.emptyShort")}</p>
           ) : (
             <ul className="flex flex-col divide-y divide-placeholder">
               {items.slice(0, 5).map((item) => {
@@ -165,7 +167,7 @@ export function NotificationsBell() {
             onClick={() => setBellOpen(false)}
             className="mt-2 flex items-center justify-center rounded-md bg-bg px-3 py-2 text-xs font-medium text-ink transition-colors hover:bg-placeholder/60 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
           >
-            See all notifications
+            {t("notif.seeAll")}
           </Link>
         </div>
       )}

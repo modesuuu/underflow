@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { Icon } from "@/components/ui/Icon";
+import { useLanguage } from "@/lib/i18n/LanguageProvider";
+import type { DictKey } from "@/lib/i18n/dictionary";
 
 export type ThemeMode = "light" | "system" | "dark";
 
@@ -49,6 +51,8 @@ export function ThemeToggle({
 }: {
   variant?: "full" | "rail";
 }) {
+  const { t } = useLanguage();
+  const labelOf = (m: { id: ThemeMode }) => t(("theme." + m.id) as DictKey);
   const [mode, setMode] = useState<ThemeMode>("system");
   const [mounted, setMounted] = useState(false);
 
@@ -83,7 +87,7 @@ export function ThemeToggle({
       <button
         type="button"
         onClick={() => choose(next.id)}
-        aria-label={`Theme: ${current.label}. Switch to ${next.label}`}
+        aria-label={t("theme.switchAria", { current: labelOf(current), next: labelOf(next) })}
         className="nav-row-hoverable flex size-9 cursor-pointer items-center justify-center rounded-md text-muted transition-colors hover:text-ink focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
       >
         <Icon name={mounted ? current.icon : "desktop"} size={20} />
@@ -95,7 +99,7 @@ export function ThemeToggle({
     <div
       className="flex items-center gap-0.5 rounded-full bg-placeholder/50 p-1"
       role="group"
-      aria-label="Theme"
+      aria-label={t("theme.aria")}
     >
       {MODES.map((m) => (
         <button
@@ -103,7 +107,7 @@ export function ThemeToggle({
           type="button"
           onClick={() => choose(m.id)}
           aria-pressed={mode === m.id}
-          aria-label={`${m.label} theme`}
+          aria-label={t("theme.modeAria", { label: labelOf(m) })}
           className={
             mode === m.id
               ? "flex size-7 cursor-pointer items-center justify-center rounded-full bg-ink text-surface shadow-sm transition-colors focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"

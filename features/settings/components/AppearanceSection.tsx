@@ -1,6 +1,7 @@
 "use client";
 
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import { SettingsSection } from "./SettingsSection";
 
 /**
@@ -11,13 +12,14 @@ import { SettingsSection } from "./SettingsSection";
  * whole app immediately.
  */
 export function AppearanceSection() {
+  const { t } = useLanguage();
   return (
     <SettingsSection
-      title="Appearance"
-      description="Choose how Underflow looks on this device. System follows your device setting."
+      title={t("settings.appearance.title")}
+      description={t("settings.appearance.description")}
     >
       <div className="flex items-center justify-between gap-4">
-        <span className="text-sm font-medium text-ink">Theme</span>
+        <span className="text-sm font-medium text-ink">{t("settings.appearance.theme")}</span>
         <ThemeToggle variant="full" />
       </div>
     </SettingsSection>

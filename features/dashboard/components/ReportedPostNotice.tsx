@@ -1,6 +1,7 @@
 "use client";
 
 import { Icon } from "@/components/ui/Icon";
+import { useLanguage } from "@/lib/i18n/LanguageProvider";
 
 /**
  * The post-report confirmation that replaces a post's content —
@@ -15,19 +16,24 @@ export function ReportedPostNotice({
   onUndo: () => void;
   noun?: string;
 }) {
+  const { t } = useLanguage();
   return (
     <div className="flex items-center gap-3 rounded-lg border border-line px-4 py-3">
       <Icon name="flag" size={20} className="shrink-0 text-muted" />
       <p className="flex-1 text-sm text-muted">
-        <span className="font-medium text-ink">You reported this {noun}.</span>{" "}
-        Our team will review it.
+        <span className="font-medium text-ink">
+          {t("feed.reportedNotice", {
+            noun: noun === "comment" ? t("feed.commentNoun") : t("feed.postNoun"),
+          })}
+        </span>{" "}
+        {t("feed.reportedReview")}
       </p>
       <button
         type="button"
         onClick={onUndo}
         className="shrink-0 cursor-pointer text-sm font-medium text-ink hover:underline"
       >
-        Undo
+        {t("common.undo")}
       </button>
     </div>
   );

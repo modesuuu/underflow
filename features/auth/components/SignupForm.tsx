@@ -11,8 +11,10 @@ import { Button } from "@astryxdesign/core/Button";
 import { AuthField } from "./AuthField";
 import { AuthShell } from "./AuthShell";
 import { GoogleButton } from "./GoogleButton";
+import { useLanguage } from "@/lib/i18n/LanguageProvider";
 
 export function SignupForm() {
+  const { t } = useLanguage();
   const router = useRouter();
   const searchParams = useSearchParams();
   const next = searchParams.get("next") || "/";
@@ -28,7 +30,7 @@ export function SignupForm() {
     const fieldErrors = validateRegister({ username, email, password });
     setErrors(fieldErrors);
     if (Object.keys(fieldErrors).length > 0) {
-      toast.error(firstError(fieldErrors) ?? "Check the form and try again.");
+      toast.error(firstError(fieldErrors) ?? t("auth.checkForm"));
       return;
     }
     setSubmitting(true);
@@ -48,7 +50,7 @@ export function SignupForm() {
         toast.error(
           err instanceof ApiError
             ? err.message
-            : "Can't reach the server. Check your connection and try again.",
+            : t("auth.serverUnreachable"),
         );
       }
     } finally {
@@ -58,16 +60,16 @@ export function SignupForm() {
 
   return (
     <AuthShell
-      title="Create your account"
-      subtitle="Join Underflow to find your team"
+      title={t("auth.createTitle")}
+      subtitle={t("auth.createSubtitle")}
       footer={
         <>
-          Already have an account?{" "}
+          {t("auth.alreadyHaveAccount")}{" "}
           <Link
             href={`/login?next=${encodeURIComponent(next)}`}
             className="font-medium text-ink underline underline-offset-2"
           >
-            Log in
+            {t("auth.logIn")}
           </Link>
         </>
       }
@@ -75,18 +77,18 @@ export function SignupForm() {
       <form onSubmit={submit} noValidate className="flex flex-col gap-5">
         <AuthField
           id="username"
-          label="Username"
+          label={t("auth.username")}
           type="text"
           autoComplete="username"
-          placeholder="Username"
+          placeholder={t("auth.username")}
           value={username}
           onChange={(e) => setUsername(e.target.value)}
           error={errors.username}
-          hint="3–20 lowercase letters, numbers, dots, underscores, or dashes."
+          hint={t("auth.usernameHint")}
         />
         <AuthField
           id="email"
-          label="Email"
+          label={t("auth.email")}
           type="email"
           autoComplete="email"
           placeholder="you@university.ac.id"
@@ -96,17 +98,17 @@ export function SignupForm() {
         />
         <AuthField
           id="password"
-          label="Password"
+          label={t("auth.password")}
           type="password"
           autoComplete="new-password"
-          placeholder="At least 8 characters"
+          placeholder={t("auth.passwordHint")}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           error={errors.password}
         />
         <Button
           type="submit"
-          label={submitting ? "Creating your account…" : "Create account"}
+          label={submitting ? t("auth.creatingAccount") : t("auth.createAccount")}
           variant="primary"
           size="lg"
           width="100%"
@@ -116,7 +118,7 @@ export function SignupForm() {
       </form>
       <div className="flex items-center gap-3 text-xs text-subtle">
         <span className="h-px flex-1 bg-line" aria-hidden="true" />
-        or continue with
+        {t("auth.orContinueWith")}
         <span className="h-px flex-1 bg-line" aria-hidden="true" />
       </div>
       <GoogleButton next={next} disabled={submitting} />

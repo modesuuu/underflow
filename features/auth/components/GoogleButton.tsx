@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@astryxdesign/core/Button";
 import { signInWithGoogle, SuspendedAccountError, type SuspendedInfo } from "../api";
+import { useLanguage } from "@/lib/i18n/LanguageProvider";
 
 /** The Google "G" mark (official four-color mark, drawn as SVG). */
 function GoogleMark({ className }: { className?: string }) {
@@ -44,6 +45,7 @@ export function GoogleButton({
   disabled?: boolean;
   onSuspended?: (info: SuspendedInfo, idToken: string) => void;
 }) {
+  const { t } = useLanguage();
   const router = useRouter();
   const [busy, setBusy] = useState(false);
 
@@ -61,7 +63,7 @@ export function GoogleButton({
       // The user closed Google's chooser: reset silently, no error.
       const cancelled =
         err instanceof Error && "code" in err && (err as { code?: string }).code === "google_cancelled";
-      if (!cancelled) toast.error("Google sign-in failed. Try again.");
+      if (!cancelled) toast.error(t("auth.googleFailed"));
     } finally {
       setBusy(false);
     }
@@ -69,7 +71,7 @@ export function GoogleButton({
 
   return (
     <Button
-      label={busy ? "Signing in…" : "Continue with Google"}
+      label={busy ? t("auth.signingIn") : t("auth.continueWithGoogle")}
       variant="secondary"
       size="lg"
       width="100%"

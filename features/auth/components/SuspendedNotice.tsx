@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Button } from "@astryxdesign/core/Button";
 import { ApiError } from "@/lib/api-client";
 import { createSuspendedAppeal } from "@/features/appeals/api";
+import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import type { SuspendedAppealInfo, SuspendedInfo } from "../api";
 
 /**
@@ -26,6 +27,7 @@ export function SuspendedNotice({
   googleIdToken?: string;
   onAppealSent: (appeal: SuspendedAppealInfo) => void;
 }) {
+  const { t } = useLanguage();
   const [message, setMessage] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [busy, setBusy] = useState(false);
@@ -53,7 +55,7 @@ export function SuspendedNotice({
       const credential = password || confirmPassword || undefined;
       if (credential) args.password = credential;
       const created = await createSuspendedAppeal(args);
-      toast.success("Appeal sent. The moderation team will review it.");
+      toast.success(t("auth.appealSent"));
       onAppealSent({
         status: created.status,
         decisionNote: created.decision_note,
@@ -63,7 +65,7 @@ export function SuspendedNotice({
       toast.error(
         err instanceof ApiError
           ? err.message
-          : "Could not send your appeal. Try again.",
+          : t("auth.couldNotSendAppeal"),
       );
     } finally {
       setBusy(false);
@@ -74,14 +76,14 @@ export function SuspendedNotice({
     <div className="flex flex-col gap-5">
       <div className="rounded-lg bg-bg px-4 py-3">
         <p className="text-xs font-medium tracking-wide text-muted uppercase">
-          Reason
+          {t("auth.reason")}
         </p>
         <p className="mt-1 text-sm whitespace-pre-wrap">
-          {info.reason || "No reason was provided."}
+          {info.reason || t("auth.noReason")}
         </p>
         {suspendedDate ? (
           <p className="mt-2 text-xs text-muted">
-            Suspended on {suspendedDate}
+            {t("auth.suspendedOn", { date: suspendedDate })}
           </p>
         ) : null}
       </div>
@@ -89,10 +91,9 @@ export function SuspendedNotice({
       {appeal === null ? (
         <div className="flex flex-col gap-3">
           <div>
-            <p className="text-sm font-medium">Appeal this suspension</p>
+            <p className="text-sm font-medium">{t("auth.appealTitle")}</p>
             <p className="mt-0.5 text-sm text-muted">
-              Think this was a mistake? Tell the moderation team why. You
-              can appeal once.
+              {t("auth.appealSubtitle")}
             </p>
           </div>
           {needsCredential ? (
@@ -101,7 +102,7 @@ export function SuspendedNotice({
                 htmlFor="suspended-confirm-password"
                 className="text-sm font-medium"
               >
-                Your password
+                {t("auth.yourPassword")}
               </label>
               <input
                 id="suspended-confirm-password"
@@ -109,7 +110,7 @@ export function SuspendedNotice({
                 autoComplete="current-password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="Re-enter your password to verify it is you"
+                placeholder={t("auth.appealPasswordPlaceholder")}
                 className="w-full rounded-lg border border-line bg-surface px-3 py-2.5 text-sm outline-none placeholder:text-subtle focus:border-accent"
               />
             </div>
@@ -118,12 +119,12 @@ export function SuspendedNotice({
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             rows={4}
-            placeholder="Explain your situation"
+            placeholder={t("auth.appealMessagePlaceholder")}
             className="w-full rounded-lg border border-line bg-surface px-3 py-2.5 text-sm outline-none placeholder:text-subtle focus:border-accent"
           />
           <Button
             type="button"
-            label={busy ? "Sending…" : "Send appeal"}
+            label={busy ? t("auth.sending") : t("auth.sendAppeal")}
             variant="primary"
             size="lg"
             width="100%"
@@ -138,25 +139,23 @@ export function SuspendedNotice({
         </div>
       ) : appeal.status === "pending" ? (
         <p className="rounded-lg bg-bg px-4 py-3 text-sm text-muted">
-          Your appeal is being reviewed by the moderation team. If it is
-          accepted, your account will be reactivated and you can log in
-          again.
+          {t("auth.appealPending")}
         </p>
       ) : appeal.status === "denied" ? (
         <div className="rounded-lg bg-bg px-4 py-3">
-          <p className="text-sm font-medium">Your appeal was denied.</p>
+          <p className="text-sm font-medium">{t("auth.appealDenied")}</p>
           {appeal.decisionNote ? (
             <p className="mt-1 text-sm text-muted">
-              Decision note: {appeal.decisionNote}
+              {t("auth.decisionNote", { note: appeal.decisionNote })}
             </p>
           ) : null}
           <p className="mt-1 text-sm text-muted">
-            Your account remains suspended.
+            {t("auth.remainsSuspended")}
           </p>
         </div>
       ) : (
         <p className="rounded-lg bg-bg px-4 py-3 text-sm text-muted">
-          Your appeal was accepted. Try logging in again.
+          {t("auth.appealAccepted")}
         </p>
       )}
     </div>
