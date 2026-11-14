@@ -6,6 +6,9 @@ export interface NavItem {
   icon: string;
   /** Optional route path. When set, clicking the nav item navigates here. */
   href?: string;
+  /** Cross-frame destinations (e.g. Admin) load a fresh document
+   *  instead of soft-navigating between RootShell frames. */
+  hard?: boolean;
 }
 
 export interface NavSection {

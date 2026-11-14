@@ -208,6 +208,26 @@ function NavRow({ item, active, badge, mini, animate, onSelect, registerRef }: N
     </>
   );
 
+  if (item.href && item.hard) {
+    return (
+      <a
+        href={item.href}
+        ref={(el) => {
+          registerRef(item.id, el);
+        }}
+        onClick={() => {
+          onSelect(item.id);
+        }}
+        {...tipHandlers}
+        className={className}
+        aria-current={active ? "page" : undefined}
+        aria-label={mini ? item.label : undefined}
+      >
+        {inner}
+      </a>
+    );
+  }
+
   if (item.href) {
     return (
       <Link
@@ -640,7 +660,7 @@ export function Sidebar() {
           <div className="flex flex-col gap-3">
             {isAdminTier && (
               <NavRow
-                item={{ id: "admin", label: "Admin", icon: "shield", href: "/admin" }}
+                item={{ id: "admin", label: "Admin", icon: "shield", href: "/admin", hard: true }}
                 active={false}
                 mini={mini}
                 animate={animateWidth}

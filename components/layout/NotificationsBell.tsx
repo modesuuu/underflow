@@ -72,7 +72,13 @@ export function NotificationsBell() {
       void openApplicationThreadByProject(item.openCollabId);
       router.push("/inbox");
     } else if (item.href) {
-      router.push(item.href);
+      // Admin destinations live in the other RootShell frame: load
+      // a fresh document instead of soft-navigating across frames.
+      if (item.href.startsWith("/admin")) {
+        window.location.assign(item.href);
+      } else {
+        router.push(item.href);
+      }
     }
   };
 
