@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Icon } from "@/components/ui/Icon";
+import { useLanguage } from "@/lib/i18n/LanguageProvider";
 
 /**
  * The ••• menu on a comment (byline row, right side) — the same
@@ -11,6 +12,7 @@ import { Icon } from "@/components/ui/Icon";
  * the reported notice). Closes on outside click and on Escape.
  */
 export function CommentOptionsMenu({ onReport }: { onReport: () => void }) {
+  const { t } = useLanguage();
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
 
@@ -36,7 +38,7 @@ export function CommentOptionsMenu({ onReport }: { onReport: () => void }) {
     <div ref={rootRef} className="relative shrink-0">
       <button
         type="button"
-        aria-label="Comment options"
+        aria-label={t("post.commentOptions")}
         aria-haspopup="menu"
         aria-expanded={open}
         onClick={() => setOpen((value) => !value)}
@@ -47,7 +49,7 @@ export function CommentOptionsMenu({ onReport }: { onReport: () => void }) {
       {open && (
         <div
           role="menu"
-          aria-label="Comment options"
+          aria-label={t("post.commentOptions")}
           className="absolute top-full right-0 z-30 mt-1 min-w-44 rounded-lg border border-line bg-surface p-1 shadow-lg"
         >
           <button
@@ -60,7 +62,7 @@ export function CommentOptionsMenu({ onReport }: { onReport: () => void }) {
             className="flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-medium text-ink transition-colors hover:bg-bg"
           >
             <Icon name="flag" size={18} />
-            Report comment
+            {t("post.reportComment")}
           </button>
         </div>
       )}

@@ -9,6 +9,7 @@ import { Avatar } from "@/components/ui/Avatar";
 import { Icon } from "@/components/ui/Icon";
 import { formatDueDate, parseDueDate } from "@/features/collaborations/sort";
 import type { MyCollabProject } from "../types";
+import { useLanguage } from "@/lib/i18n/LanguageProvider";
 
 /**
  * Astryx Card color rotation for the board cards (rebuild
@@ -49,6 +50,7 @@ export function KanbanCard({
   project: MyCollabProject;
   index: number;
 }) {
+  const { t } = useLanguage();
   const dueMs = parseDueDate(project.dueDate);
   const daysLeft =
     dueMs === Infinity
@@ -100,7 +102,7 @@ export function KanbanCard({
           {project.skills.length > 3 && (
             <Token
               size="sm"
-              label={"+" + (project.skills.length - 3) + " more"}
+              label={t("collab.moreSkills", { count: project.skills.length - 3 })}
             />
           )}
         </span>
@@ -113,12 +115,12 @@ export function KanbanCard({
             reference; open seats are dashed slots. */}
         <span className="flex flex-col gap-1.5">
           <span className="text-[11px] font-medium text-muted">
-            Seats · {project.slotsFilled} of {project.slotsTotal}
+            {t("mycollab.seatsLine", { filled: project.slotsFilled, total: project.slotsTotal })}
           </span>
           <span
             className="flex items-center"
             role="img"
-            aria-label={`${project.slotsFilled} of ${project.slotsTotal} seats filled`}
+            aria-label={t("collab.seatsFilled", { filled: project.slotsFilled, total: project.slotsTotal })}
           >
             {visibleSeats.map((seat, i) =>
               seat.kind === "member" ? (
@@ -170,12 +172,12 @@ export function KanbanCard({
             <Icon name="calendar" size={14} />
             {project.dueDate ? (
               <>
-                Due {formatDueDate(project.dueDate)}
+                {t("mycollab.dueLabel", { date: formatDueDate(project.dueDate) })}
                 {urgent &&
-                  ` · ${daysLeft !== null && daysLeft <= 0 ? "due now" : `${daysLeft}d left`}`}
+                  ` · ${daysLeft !== null && daysLeft <= 0 ? t("mycollab.dueNow") : t("mycollab.daysLeft", { days: daysLeft ?? 0 })}`}
               </>
             ) : (
-              "No deadline"
+              t("mycollab.noDeadline")
             )}
           </span>
         </span>

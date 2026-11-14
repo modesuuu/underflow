@@ -3,6 +3,7 @@
 import { TextInput } from "@astryxdesign/core/TextInput";
 import { Button } from "@astryxdesign/core/Button";
 import { Icon } from "@/components/ui/Icon";
+import { useLanguage } from "@/lib/i18n/LanguageProvider";
 
 interface MyCollabSearchBarProps {
   draftQuery: string;
@@ -22,6 +23,7 @@ export function MyCollabSearchBar({
   onDraftChange,
   onSearch,
 }: MyCollabSearchBarProps) {
+  const { t } = useLanguage();
   return (
     <div className="flex flex-wrap items-center gap-3">
       {/* Search leads */}
@@ -34,25 +36,25 @@ export function MyCollabSearchBar({
         >
           <TextInput
             type="search"
-            label="Search projects"
+            label={t("collab.searchProjectsLabel")}
             isLabelHidden
             value={draftQuery}
             onChange={(value) => onDraftChange(value)}
-            placeholder="Search projects..."
+            placeholder={t("collab.searchProjectsLabel") + "..."}
             startIcon={<Icon name="search" size={18} className="text-muted" />}
           />
         </div>
         {draftQuery !== "" && (
           <button
             type="button"
-            aria-label="Clear search"
+            aria-label={t("collab.clearSearch")}
             onClick={() => onDraftChange("")}
             className="flex size-5 shrink-0 cursor-pointer items-center justify-center rounded-full bg-bg text-muted transition-colors hover:text-ink focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
           >
             <Icon name="x" size={12} />
           </button>
         )}
-        <Button label="Search" variant="primary" onClick={onSearch} />
+        <Button label={t("common.search")} variant="primary" onClick={onSearch} />
       </div>
     </div>
   );

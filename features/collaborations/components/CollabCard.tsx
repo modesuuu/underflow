@@ -13,11 +13,13 @@ import { startApplicationThread } from "@/features/inbox/store";
 import { formatDueDate } from "../sort";
 import type { CollabProject, ProjectStatus } from "../types";
 import { ApplyMessageModal } from "./ApplyMessageModal";
+import { useLanguage } from "@/lib/i18n/LanguageProvider";
+import type { DictKey } from "@/lib/i18n/dictionary";
 
-const STATUS_LABEL: Record<ProjectStatus, string> = {
-  open: "Open",
-  "in-progress": "In progress",
-  completed: "Completed",
+const STATUS_LABEL: Record<ProjectStatus, DictKey> = {
+  open: "collab.statusOpen",
+  "in-progress": "collab.statusInProgress",
+  completed: "collab.statusCompleted",
 };
 
 const STATUS_DOT: Record<ProjectStatus, string> = {
@@ -37,6 +39,7 @@ const STATUS_DOT: Record<ProjectStatus, string> = {
  * every terminal state.
  */
 function CardApply({ project }: { project: CollabProject }) {
+  const { t } = useLanguage();
   const router = useRouter();
   const [modalOpen, setModalOpen] = useState(false);
   const [sending, setSending] = useState(false);
@@ -54,16 +57,16 @@ function CardApply({ project }: { project: CollabProject }) {
   const declined = myApplication === "declined";
   const blocked = isOwner || applied || joined || declined || isFull;
   const label = isOwner
-    ? "This is your project"
+    ? t("collab.yourProject")
     : joined
-      ? "Joined"
+      ? t("collab.joined")
       : applied
-        ? "Pending"
+        ? t("collab.pending")
         : declined
-          ? "Declined"
+          ? t("collab.declinedBtn")
           : isFull
-            ? "Full"
-            : "Apply";
+            ? t("collab.full")
+            : t("collab.apply");
 
   const handleSend = async (message: string) => {
     setSending(true);
@@ -73,9 +76,8 @@ function CardApply({ project }: { project: CollabProject }) {
       if (result.alreadyApplied) {
         // 409 Already applied: the application already exists, so
         // no second inbox thread - just go to the existing one.
-        toast("Application already sent", {
-          description:
-            "Your application to " + project.title + " is pending review.",
+        toast(t("collab.alreadySentTitle"), {
+          description: t("collab.alreadySentBody", { title: project.title }),
         });
         router.push("/inbox");
         return;
@@ -90,12 +92,12 @@ function CardApply({ project }: { project: CollabProject }) {
         slotsLabel: project.slotsFilled + " / " + project.slotsTotal,
         messageText: message.trim(),
       });
-      toast.success("Application sent", {
-        description: "Your message is in " + project.owner.name + "'s inbox.",
+      toast.success(t("collab.sentTitle"), {
+        description: t("collab.sentBody", { name: project.owner.name }),
       });
       router.push("/inbox");
     } catch (err) {
-      toast.error("Application failed", {
+      toast.error(t("collab.failedTitle"), {
         description: backendErrorMessage(err),
       });
     } finally {
@@ -111,7 +113,7 @@ function CardApply({ project }: { project: CollabProject }) {
           variant="secondary"
           size="sm"
           isDisabled
-          tooltip={isOwner ? "This is your project" : undefined}
+          tooltip={isOwner ? t("collab.yourProject") : undefined}
         />
       ) : (
         <Button
@@ -152,6 +154,7 @@ function CardApply({ project }: { project: CollabProject }) {
  * come from .collab-card-live (tokens.css).
  */
 export function CollabCard({ project }: { project: CollabProject }) {
+  const { t } = useLanguage();
   const isFull = project.slotsFilled >= project.slotsTotal;
   const spotsLeft = project.slotsTotal - project.slotsFilled;
   const shownSkills = project.skills.slice(0, 3);
@@ -196,7 +199,7 @@ export function CollabCard({ project }: { project: CollabProject }) {
                 className={"size-1.5 rounded-full " + STATUS_DOT[project.status]}
               />
             }
-            label={STATUS_LABEL[project.status]}
+            label={t(STATUS_LABEL[project.status])}
           />
         </span>
       </div>
@@ -219,7 +222,7 @@ export function CollabCard({ project }: { project: CollabProject }) {
             <Token key={s.label} size="sm" label={s.label} />
           ))}
           {extraSkills > 0 && (
-            <Token size="sm" label={"+" + extraSkills + " more"} />
+            <Token size="sm" label={t("collab.moreSkills", { count: extraSkills })} />
           )}
         </div>
       )}

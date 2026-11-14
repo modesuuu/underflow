@@ -12,6 +12,7 @@ import {
   useCollabToolbar,
 } from "../toolbar-store";
 import type { CollabProject } from "../types";
+import { useLanguage } from "@/lib/i18n/LanguageProvider";
 
 /**
  * Mobile search sheet (user order 2026-11-09, reference image-24):
@@ -36,6 +37,7 @@ function matchesProject(p: CollabProject, q: string): boolean {
 }
 
 export function MobileSearchModal({ open, onClose }: MobileSearchModalProps) {
+  const { t } = useLanguage();
   const { draftQuery } = useCollabToolbar();
   const [projects, setProjects] = useState<CollabProject[]>([]);
   const [loading, setLoading] = useState(false);
@@ -132,7 +134,7 @@ export function MobileSearchModal({ open, onClose }: MobileSearchModalProps) {
       className="fixed inset-0 z-50"
       role="dialog"
       aria-modal="true"
-      aria-label="Search"
+      aria-label={t("common.search")}
     >
       <div
         className={`absolute inset-0 bg-ink/40 ${
@@ -150,7 +152,7 @@ export function MobileSearchModal({ open, onClose }: MobileSearchModalProps) {
         <div className="flex items-center gap-2 border-b border-line px-3 py-3">
           <button
             type="button"
-            aria-label="Back"
+            aria-label={t("common.back")}
             onClick={requestClose}
             className="flex size-10 shrink-0 cursor-pointer items-center justify-center rounded-full text-ink transition-colors hover:bg-bg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
           >
@@ -166,15 +168,15 @@ export function MobileSearchModal({ open, onClose }: MobileSearchModalProps) {
               onKeyDown={(e) => {
                 if (e.key === "Enter") commitAndClose();
               }}
-              placeholder="Search"
-              aria-label="Search projects"
+              placeholder={t("common.search")}
+              aria-label={t("collab.searchProjectsLabel")}
               autoComplete="off"
               className="min-w-0 flex-1 bg-transparent text-[15px] text-ink outline-none placeholder:text-muted"
             />
             {draftQuery && (
               <button
                 type="button"
-                aria-label="Clear search"
+                aria-label={t("collab.clearSearch")}
                 onClick={() => setDraftQuery("")}
                 className="flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-full text-muted transition-colors hover:bg-surface hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
               >

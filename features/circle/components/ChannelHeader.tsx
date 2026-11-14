@@ -3,6 +3,7 @@
 import { Icon } from "@/components/ui/Icon";
 import { setPanelOpen, usePanelState } from "../store";
 import type { ChannelId } from "../types";
+import { useLanguage } from "@/lib/i18n/LanguageProvider";
 
 /**
  * Channel header (spec §3, §6): channel name + member count, and the
@@ -19,6 +20,7 @@ export function ChannelHeader({
   /** Effective panel visibility (store override or viewport default). */
   panelVisible: boolean;
 }) {
+  const { t } = useLanguage();
   const panel = usePanelState();
   return (
     <div className="flex h-[52px] shrink-0 items-center gap-2 border-b border-line px-4">
@@ -33,7 +35,7 @@ export function ChannelHeader({
       <div className="flex-1" />
       <button
         type="button"
-        aria-label={panelVisible ? "Hide team panel" : "Show team panel"}
+        aria-label={panelVisible ? t("circle.hidePanel") : t("circle.showPanel")}
         aria-pressed={panelVisible}
         onClick={() => setPanelOpen(!panelVisible)}
         className={`flex size-9 cursor-pointer items-center justify-center rounded-lg transition-colors focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none ${

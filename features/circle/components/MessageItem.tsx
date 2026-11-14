@@ -10,6 +10,7 @@ import {
   toggleReaction,
 } from "../store";
 import type { CircleMember, CircleMessage } from "../types";
+import { useLanguage } from "@/lib/i18n/LanguageProvider";
 
 export const REACTION_SET = ["👍", "❤️", "🎉", "👀"];
 
@@ -117,6 +118,7 @@ export function MessageItem({
   meIsOwner: boolean;
   onReply: (message: CircleMessage) => void;
 }) {
+  const { t } = useLanguage();
   const [menuOpen, setMenuOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -214,7 +216,7 @@ export function MessageItem({
                 }
                 if (e.key === "Escape") setEditing(false);
               }}
-              aria-label="Edit message"
+              aria-label={t("circle.editMessage")}
               className="w-full resize-none rounded-lg bg-bg px-3 py-2 text-sm text-ink outline-none placeholder:text-subtle focus:ring-2 focus:ring-accent"
             />
             <div className="flex gap-2">
@@ -238,7 +240,7 @@ export function MessageItem({
           <>
             <MessageBody body={message.body} memberNames={memberNames} />
             {message.editedAt && (
-              <span className="text-xs text-subtle">(edited)</span>
+              <span className="text-xs text-subtle">{t("circle.edited")}</span>
             )}
           </>
         )}
@@ -269,7 +271,7 @@ export function MessageItem({
                 key={reaction.emoji}
                 type="button"
                 aria-pressed={reaction.reactedByMe}
-                aria-label={`${reaction.emoji} reaction, ${reaction.count}`}
+                aria-label={t("circle.reactWith", { emoji: reaction.emoji }) + ", " + reaction.count}
                 onClick={() => toggleReaction(projectId, message.id, reaction.emoji)}
                 className={`flex cursor-pointer items-center gap-1 rounded-full px-2 py-0.5 text-xs transition-colors focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none ${
                   reaction.reactedByMe
@@ -291,7 +293,7 @@ export function MessageItem({
           <div className="absolute -top-3 right-4 z-10 hidden items-center gap-0.5 rounded-lg border border-line bg-surface p-0.5 opacity-0 shadow-[0_8px_20px_-8px_rgba(var(--uf-shadow-rgb),0.35)] transition-opacity group-hover:opacity-100 focus-within:opacity-100 lg:flex">
             <button
               type="button"
-              aria-label="React with thumbs up"
+              aria-label={t("circle.reactThumbsUp")}
               onClick={() => toggleReaction(projectId, message.id, "👍")}
               className={toolButton}
             >
@@ -299,7 +301,7 @@ export function MessageItem({
             </button>
             <button
               type="button"
-              aria-label="Reply"
+              aria-label={t("circle.reply")}
               onClick={() => onReply(message)}
               className={toolButton}
             >
@@ -307,7 +309,7 @@ export function MessageItem({
             </button>
             <button
               type="button"
-              aria-label={message.pinned ? "Unpin message" : "Pin message"}
+              aria-label={message.pinned ? t("circle.unpinMessage") : t("circle.pinMessage")}
               aria-pressed={message.pinned}
               onClick={() => togglePin(projectId, message.id)}
               className={toolButton}
@@ -317,7 +319,7 @@ export function MessageItem({
             {isMine && (
               <button
                 type="button"
-                aria-label="Edit message"
+                aria-label={t("circle.editMessage")}
                 onClick={() => {
                   setDraft(message.body);
                   setEditing(true);
@@ -330,7 +332,7 @@ export function MessageItem({
             {canDelete && (
               <button
                 type="button"
-                aria-label="Delete message"
+                aria-label={t("circle.deleteMessage")}
                 onClick={() => {
                   setMenuOpen(true);
                   setConfirmDelete(true);
@@ -344,7 +346,7 @@ export function MessageItem({
           <div className="absolute top-0.5 right-4 z-10">
             <button
               type="button"
-              aria-label="Message actions"
+              aria-label={t("circle.messageActions")}
               aria-haspopup="menu"
               aria-expanded={menuOpen}
               onClick={() => (menuOpen ? closeMenu() : setMenuOpen(true))}
@@ -356,7 +358,7 @@ export function MessageItem({
               <>
                 <button
                   type="button"
-                  aria-label="Close menu"
+                  aria-label={t("circle.closeMenu")}
                   onClick={closeMenu}
                   className="fixed inset-0 z-10 cursor-default"
                 />
@@ -369,7 +371,7 @@ export function MessageItem({
                       <button
                         key={emoji}
                         type="button"
-                        aria-label={`React with ${emoji}`}
+                        aria-label={t("circle.reactWith", { emoji })}
                         onClick={() => {
                           toggleReaction(projectId, message.id, emoji);
                           closeMenu();

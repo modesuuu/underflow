@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { CollabHeaderActions } from "./CollabHeaderActions";
 import { MobileSearchModal } from "./MobileSearchModal";
+import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import { SearchFilterBar } from "./SearchFilterBar";
 import { Icon } from "@/components/ui/Icon";
 import {
@@ -27,6 +28,7 @@ import {
  */
 export function CollabTopBarActions() {
   const { draftQuery, sortKey } = useCollabToolbar();
+  const { t } = useLanguage();
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
 
   return (
@@ -44,7 +46,7 @@ export function CollabTopBarActions() {
       {/* Search icon — phones only (opens the search sheet). */}
       <button
         type="button"
-        aria-label="Search"
+        aria-label={t("common.search")}
         onClick={() => setMobileSearchOpen(true)}
         className="flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-full border border-line bg-surface text-ink transition-colors hover:bg-bg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent sm:hidden"
       >

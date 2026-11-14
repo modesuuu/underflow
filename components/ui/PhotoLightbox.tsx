@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Icon } from "@/components/ui/Icon";
+import { useLanguage } from "@/lib/i18n/LanguageProvider";
 
 /**
  * Generic photo lightbox (shared by feeds and collaborations). A photo only
@@ -28,6 +29,7 @@ interface PhotoLightboxProps {
 }
 
 export function PhotoLightbox({ photos, startIndex, onClose }: PhotoLightboxProps) {
+  const { t } = useLanguage();
   const [index, setIndex] = useState(startIndex);
   const [closing, setClosing] = useState(false);
   const [imgBroken, setImgBroken] = useState(false);
@@ -148,7 +150,7 @@ export function PhotoLightbox({ photos, startIndex, onClose }: PhotoLightboxProp
         <>
           <button
             type="button"
-            aria-label="Previous photo"
+            aria-label={t("misc.previousPhoto")}
             onClick={(e) => {
               e.stopPropagation();
               setIndex((i) => (i - 1 + photos.length) % photos.length);
@@ -159,7 +161,7 @@ export function PhotoLightbox({ photos, startIndex, onClose }: PhotoLightboxProp
           </button>
           <button
             type="button"
-            aria-label="Next photo"
+            aria-label={t("misc.nextPhoto")}
             onClick={(e) => {
               e.stopPropagation();
               setIndex((i) => (i + 1) % photos.length);
@@ -177,7 +179,7 @@ export function PhotoLightbox({ photos, startIndex, onClose }: PhotoLightboxProp
       {/* Close */}
       <button
         type="button"
-        aria-label="Close preview"
+        aria-label={t("misc.closePreview")}
         onClick={close}
         className="absolute right-4 top-4 cursor-pointer rounded-full bg-black/50 p-2 text-white transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
       >

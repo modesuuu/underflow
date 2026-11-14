@@ -13,6 +13,8 @@ import { PostOptionsMenu } from "./PostOptionsMenu";
 import { ReportedPostNotice } from "./ReportedPostNotice";
 import { ReportForm } from "./ReportForm";
 import { recordView, reportPost, withdrawReport } from "../api";
+import { useLanguage } from "@/lib/i18n/LanguageProvider";
+import { formatRelativeAgo } from "@/lib/i18n/format";
 
 /**
  * The post itself on the detail page — deliberately the feed
@@ -26,6 +28,7 @@ import { recordView, reportPost, withdrawReport } from "../api";
  * the feed's comment entry makes.
  */
 export function PostDetailBody({ post }: { post: Post }) {
+  const { t, lang } = useLanguage();
   const [reported, setReported] = useState(false);
   const [reportFormOpen, setReportFormOpen] = useState(false);
   const [reportedId, setReportedId] = useState<string | null>(null);
@@ -90,14 +93,14 @@ export function PostDetailBody({ post }: { post: Post }) {
         <Link
           href={`/profile/${post.author.id}`}
           className="group flex items-center gap-2.5"
-          aria-label={`View ${post.author.name}'s profile`}
+          aria-label={t("feed.viewProfile", { name: post.author.name })}
         >
           <Avatar size={36} src={post.author.avatarUrl} alt={post.author.name} />
           <div className="flex flex-col">
             <span className="text-[15px] font-medium group-hover:underline">
               {post.author.name}
             </span>
-            <span className="text-xs text-subtle">{post.postedAgo}</span>
+            <span className="text-xs text-subtle">{post.postedAt ? formatRelativeAgo(post.postedAt, lang) : post.postedAgo}</span>
           </div>
         </Link>
         <PostOptionsMenu onReport={() => setReportFormOpen(true)} />
@@ -121,11 +124,11 @@ export function PostDetailBody({ post }: { post: Post }) {
         <button
           type="button"
           onClick={focusComment}
-          aria-label="Comment on this post"
+          aria-label={t("post.commentOnThisPost")}
           className="flex cursor-pointer items-center gap-1.5 text-muted transition-colors hover:text-ink"
         >
           <Icon name="message-rounded" size={20} />
-          <span className="text-xs font-medium">Comment</span>
+          <span className="text-xs font-medium">{t("feed.comment")}</span>
         </button>
       </div>
     </div>

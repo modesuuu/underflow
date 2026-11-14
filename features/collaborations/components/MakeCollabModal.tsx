@@ -27,6 +27,7 @@ import {
 } from "../skills-api";
 import type { CollabProject } from "../types";
 import { ApiError } from "@/lib/api-client";
+import { useLanguage } from "@/lib/i18n/LanguageProvider";
 
 interface MakeCollabModalProps {
   open: boolean;
@@ -65,6 +66,7 @@ export function MakeCollabModal({
   // P1-C #17: remember the trigger that opened the modal so focus can be
   // restored on close.
   const previousFocusRef = useRef<HTMLElement | null>(null);
+  const { t } = useLanguage();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [selectedSkills, setSelectedSkills] = useState<Set<string>>(new Set());
@@ -347,7 +349,7 @@ export function MakeCollabModal({
       setSkillDraft("");
     } catch (err) {
       setSkillError(
-        err instanceof Error ? err.message : "Could not add this skill."
+        err instanceof Error ? err.message : t("modal.couldNotAddSkill")
       );
     } finally {
       setCreatingSkill(false);
@@ -379,7 +381,7 @@ export function MakeCollabModal({
       setSkillError(
         err instanceof Error
           ? backendErrorMessage(err)
-          : "Could not delete this skill."
+          : t("modal.couldNotDeleteSkill")
       );
       setPendingDeleteSkill(null);
     } finally {
@@ -401,8 +403,8 @@ export function MakeCollabModal({
 
     // Inline validation (visible errors, not just the native bubble)
     const errors: { title?: string; description?: string } = {};
-    if (!title.trim()) errors.title = "Title is required.";
-    if (!description.trim()) errors.description = "Description is required.";
+    if (!title.trim()) errors.title = t("modal.titleRequired");
+    if (!description.trim()) errors.description = t("modal.descriptionRequired");
     if (errors.title || errors.description) {
       setFieldErrors(errors);
       return;
@@ -444,21 +446,21 @@ export function MakeCollabModal({
         err instanceof Error
           ? err.message
           : editing
-            ? "Could not save the changes. Please try again."
-            : "Could not create the project. Please try again."
+            ? t("modal.couldNotSaveChanges")
+            : t("modal.couldNotCreateProject")
       );
       return;
     }
     setSubmitting(false);
     setClosing(false);
     if (editing) {
-      toast.success("Project updated", {
-        description: `"${title.trim()}" has been saved.`,
+      toast.success(t("modal.projectUpdated"), {
+        description: t("modal.projectUpdatedBody", { title: title.trim() }),
       });
       onUpdated?.();
     } else {
-      toast.success("Collaboration posted", {
-        description: `"${title.trim()}" is now on the board.`,
+      toast.success(t("modal.collabPosted"), {
+        description: t("modal.collabPostedBody", { title: title.trim() }),
       });
     }
     onClose();
@@ -491,18 +493,18 @@ export function MakeCollabModal({
         <div className="flex items-start justify-between px-6 pt-6 pb-6">
           <div>
             <h2 id="make-collab-title" className="text-2xl font-medium">
-              {editing ? "Edit Project" : "Create Project"}
+              {editing ? t("modal.editProject") : t("modal.createProject")}
             </h2>
             <p className="mt-1 text-xs font-medium text-muted">
               {editing
-                ? "Update your project details below."
-                : "Find your team, build your portfolio, ship real projects."}
+                ? t("modal.editProjectSub")
+                : t("modal.createProjectSub")}
             </p>
           </div>
           <button
             type="button"
             onClick={requestClose}
-            aria-label="Close"
+            aria-label={t("common.close")}
             className="pressable cursor-pointer rounded-md p-1 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
           >
             <Icon name="x" size={24} className="text-ink" />
@@ -515,14 +517,14 @@ export function MakeCollabModal({
           <TextInput
             id="make-collab-title-input"
             ref={firstFieldRef}
-            label="Title"
+            label={t("modal.titleLabel")}
             value={title}
             onChange={(value) => {
               setTitle(value);
               if (fieldErrors.title)
                 setFieldErrors((f) => ({ ...f, title: undefined }));
             }}
-            placeholder="Title"
+            placeholder={t("modal.titlePlaceholder")}
             status={
               fieldErrors.title
                 ? { type: "error", message: fieldErrors.title }
@@ -533,14 +535,14 @@ export function MakeCollabModal({
           {/* Descriptions (Astryx TextArea) */}
           <TextArea
             id="make-collab-desc-input"
-            label="Descriptions"
+            label={t("modal.descriptionsLabel")}
             value={description}
             onChange={(value) => {
               setDescription(value);
               if (fieldErrors.description)
                 setFieldErrors((f) => ({ ...f, description: undefined }));
             }}
-            placeholder="Descriptions"
+            placeholder={t("modal.descriptionsPlaceholder")}
             rows={3}
             status={
               fieldErrors.description
@@ -554,7 +556,7 @@ export function MakeCollabModal({
               asking for it here was pointless. The backend stores its
               default. */}
           <div className="flex flex-col gap-1">
-            <label htmlFor="make-collab-due-input" className="text-base font-medium">Due date</label>
+            <label htmlFor="make-collab-due-input" className="text-base font-medium">{t("modal.dueDate")}</label>
             <DateField
               id="make-collab-due-input"
               value={dueDate}
@@ -565,7 +567,7 @@ export function MakeCollabModal({
           {/* Roles / Skills */}
           <div className="flex flex-col gap-3">
             <label className="text-base font-medium">
-              What Role do you want to find?
+              {t("modal.roleQuestion")}
             </label>
             {/* The one and only skill input: whatever is typed here becomes
                 a private skill (POST /api/skills) and is selected as a role
@@ -584,15 +586,15 @@ export function MakeCollabModal({
                 }}
               >
                 <TextInput
-                  label="Add a skill"
+                  label={t("modal.addSkill")}
                   isLabelHidden
                   value={skillDraft}
                   onChange={(value) => setSkillDraft(value)}
-                  placeholder="Add a skill"
+                  placeholder={t("modal.addSkill")}
                 />
               </div>
               <IconButton
-                label="Add skill"
+                label={t("modal.addSkillBtn")}
                 variant="primary"
                 icon={<Icon name="plus" size={16} />}
                 onClick={addSkill}
@@ -601,7 +603,7 @@ export function MakeCollabModal({
             </div>
             <div className="flex flex-wrap gap-2 mt-3">
               {skillsLoading ? (
-                <p className="text-xs text-muted">Loading your skills…</p>
+                <p className="text-xs text-muted">{t("modal.loadingSkills")}</p>
               ) : skillsError ? (
                 <span className="flex flex-col items-start gap-2">
                   <span role="alert" className="text-xs font-medium text-badge">
@@ -612,12 +614,12 @@ export function MakeCollabModal({
                     onClick={loadSkills}
                     className="pressable cursor-pointer text-xs font-medium text-ink underline focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
                   >
-                    Try again
+                    {t("modal.tryAgain")}
                   </button>
                 </span>
               ) : visibleSkills.length === 0 ? (
                 <p className="text-xs text-muted">
-                  You don&apos;t have any skills yet — add your first one above.
+                  {t("modal.noSkillsYet")}
                 </p>
               ) : (
                 <>
@@ -654,8 +656,8 @@ export function MakeCollabModal({
                             setPendingDeleteSkill(skill);
                           }}
                           disabled={deletingSkillId === skill.id}
-                          aria-label={`Delete skill ${skill.name}`}
-                          title={`Delete skill ${skill.name}`}
+                          aria-label={t("modal.deleteSkillAria", { name: skill.name })}
+                          title={t("modal.deleteSkillAria", { name: skill.name })}
                           className={
                             "pressable mr-1 flex size-4 shrink-0 cursor-pointer items-center justify-center rounded-full transition-colors focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40 " +
                             (selectedSkills.has(skill.id)
@@ -680,8 +682,7 @@ export function MakeCollabModal({
                 className="flex flex-wrap items-center gap-2 rounded-lg bg-surface px-4 py-3"
               >
                 <p className="min-w-0 flex-1 text-xs font-medium text-ink">
-                  Delete skill &ldquo;{pendingDeleteSkill.name}&rdquo;? It
-                  will be removed from your skills.
+                  {t("modal.deleteSkillConfirm", { name: pendingDeleteSkill.name })}
                 </p>
                 <button
                   type="button"
@@ -690,8 +691,8 @@ export function MakeCollabModal({
                   className="pressable cursor-pointer rounded-full bg-ink px-3 py-1.5 text-xs font-medium text-bg focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   {deletingSkillId === pendingDeleteSkill.id
-                    ? "Deleting…"
-                    : "Delete"}
+                    ? t("modal.deleting")
+                    : t("common.delete")}
                 </button>
                 <button
                   type="button"
@@ -699,7 +700,7 @@ export function MakeCollabModal({
                   disabled={deletingSkillId === pendingDeleteSkill.id}
                   className="pressable cursor-pointer rounded-full border border-line px-3 py-1.5 text-xs font-medium text-ink focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40"
                 >
-                  Cancel
+                  {t("common.cancel")}
                 </button>
               </div>
             )}
@@ -721,14 +722,14 @@ export function MakeCollabModal({
               htmlFor="team-size-stepper"
               className="text-base font-medium"
             >
-              Team size
+              {t("modal.teamSizeLabel")}
             </label>
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
                 <button
                   type="button"
                   id="team-size-stepper"
-                  aria-label="Fewer team members"
+                  aria-label={t("modal.fewerMembers")}
                   disabled={roleCount <= 1}
                   onClick={() => setRoleCount((c) => Math.max(1, c - 1))}
                   className="pressable flex size-8 cursor-pointer items-center justify-center rounded-full border border-line text-ink disabled:cursor-not-allowed disabled:opacity-40 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
@@ -740,7 +741,7 @@ export function MakeCollabModal({
                 </span>
                 <button
                   type="button"
-                  aria-label="More team members"
+                  aria-label={t("modal.moreMembers")}
                   disabled={roleCount >= 10}
                   onClick={() => setRoleCount((c) => Math.min(10, c + 1))}
                   className="pressable flex size-8 cursor-pointer items-center justify-center rounded-full border border-line text-ink disabled:cursor-not-allowed disabled:opacity-40 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
@@ -749,7 +750,9 @@ export function MakeCollabModal({
                 </button>
               </div>
               <span className="text-xs text-muted">
-                {roleCount === 1 ? "1 member" : `${roleCount} members`}
+                {roleCount === 1
+                  ? t("modal.memberCountOne")
+                  : t("modal.memberCountMany", { count: roleCount })}
               </span>
             </div>
             {/* Owner slot + the open slots implied by the current count. */}
@@ -758,7 +761,7 @@ export function MakeCollabModal({
                 <Avatar size={32} alt={ownerName} src={sessionUser?.photo} />
                 <div className="flex flex-col">
                   <span className="text-base font-medium">{ownerName}</span>
-                  <span className="text-2xs text-muted">Owner</span>
+                  <span className="text-2xs text-muted">{t("modal.ownerRole")}</span>
                 </div>
               </div>
               {Array.from({ length: Math.max(0, roleCount - 1) }).map(
@@ -768,8 +771,8 @@ export function MakeCollabModal({
                       <Icon name="plus" size={14} className="text-ink" />
                     </div>
                     <div className="flex flex-col">
-                      <span className="text-base font-medium">Open slot</span>
-                      <span className="text-2xs text-muted">Waiting....</span>
+                      <span className="text-base font-medium">{t("modal.openSlot")}</span>
+                      <span className="text-2xs text-muted">{t("modal.waiting")}</span>
                     </div>
                   </div>
                 )
@@ -785,7 +788,7 @@ export function MakeCollabModal({
               type="file"
               accept="image/*"
               multiple
-              aria-label="Upload photos"
+              aria-label={t("modal.uploadPhotos")}
               onChange={handlePhotoChange}
               className="sr-only"
             />
@@ -795,7 +798,7 @@ export function MakeCollabModal({
               className="pressable flex cursor-pointer items-center gap-1 text-base font-medium text-muted transition-colors hover:text-ink focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
             >
               <Icon name="image-add" size={20} />
-              Photo
+              {t("modal.photo")}
             </button>
             {/* P1-C #18: the "File" paperclip had no onClick / no hidden
                 input — removed until non-image attachments exist. The
@@ -816,13 +819,13 @@ export function MakeCollabModal({
                   {/* Plain <img> — blob: URLs are not supported by next/image. */}
                   <img
                     src={photo.url}
-                    alt={`Photo preview ${i + 1}`}
+                    alt={t("modal.photoPreviewAlt", { n: i + 1 })}
                     className="size-[100px] rounded-lg object-cover"
                   />
                   <button
                     type="button"
                     onClick={() => removePhoto(i)}
-                    aria-label={`Remove photo ${i + 1}`}
+                    aria-label={t("modal.removePhotoAria", { n: i + 1 })}
                     className="pressable absolute right-1 top-1 flex size-5 cursor-pointer items-center justify-center rounded-full bg-ink/70 text-bg focus-visible:ring-2 focus-visible:ring-bg focus-visible:outline-none"
                   >
                     <Icon name="x" size={12} />
@@ -845,7 +848,7 @@ export function MakeCollabModal({
             )}
             <Button
               type="submit"
-              label={editing ? "Save changes" : "Create Project"}
+              label={editing ? t("modal.saveChanges") : t("modal.createProject")}
               variant="primary"
               size="lg"
               width="100%"

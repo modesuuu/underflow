@@ -8,6 +8,7 @@ import { CirclePanel } from "./CirclePanel";
 import { Composer } from "./Composer";
 import { MessageTimeline } from "./MessageTimeline";
 import type { ChannelId, CircleMessage } from "../types";
+import { useLanguage } from "@/lib/i18n/LanguageProvider";
 
 /**
  * The Circle shell (spec §3): channel rail, timeline column,
@@ -26,6 +27,7 @@ export function CircleShell({
   title: string;
   statusLabel: string;
 }) {
+  const { t } = useLanguage();
   const data = useCircle(projectId);
   const panel = usePanelState();
   const [replyTo, setReplyTo] = useState<CircleMessage | null>(null);
@@ -105,7 +107,7 @@ export function CircleShell({
           {!isWide && (
             <button
               type="button"
-              aria-label="Close panel"
+              aria-label={t("circle.closePanel")}
               onClick={() => setPanelOpen(false)}
               className="absolute inset-0 z-20 cursor-default bg-ink/40 xl:hidden"
             />

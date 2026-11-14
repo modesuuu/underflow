@@ -5,11 +5,13 @@ import clsx from "clsx";
 import { TextInput } from "@astryxdesign/core/TextInput";
 import { Icon } from "@/components/ui/Icon";
 import type { CollabSortKey } from "../types";
+import { useLanguage } from "@/lib/i18n/LanguageProvider";
+import type { DictKey } from "@/lib/i18n/dictionary";
 
-const SORT_OPTIONS: { value: CollabSortKey; label: string }[] = [
-  { value: "recommended", label: "Recommended" },
-  { value: "due", label: "Due soonest" },
-  { value: "newest", label: "Newest" },
+const SORT_OPTIONS: { value: CollabSortKey; labelKey: DictKey }[] = [
+  { value: "recommended", labelKey: "collab.sortRecommended" },
+  { value: "due", labelKey: "collab.sortDue" },
+  { value: "newest", labelKey: "collab.sortNewest" },
 ];
 
 /**
@@ -103,8 +105,11 @@ export function SearchFilterBar({
   sortKey,
   onSortChange,
 }: SearchFilterBarProps) {
-  const sortLabel =
-    SORT_OPTIONS.find((o) => o.value === sortKey)?.label ?? "Recommended";
+  const { t } = useLanguage();
+  const sortLabel = t(
+    SORT_OPTIONS.find((o) => o.value === sortKey)?.labelKey ??
+      "collab.sortRecommended",
+  );
 
   return (
     <div className="flex w-full max-w-md min-w-60 items-center gap-2">
@@ -116,18 +121,18 @@ export function SearchFilterBar({
       >
         <TextInput
           type="search"
-          label="Search projects"
+          label={t("collab.searchProjectsLabel")}
           isLabelHidden
           value={draftQuery}
           onChange={(value) => onDraftChange(value)}
-          placeholder="Search"
+          placeholder={t("common.search")}
           startIcon={<Icon name="search" size={18} className="text-muted" />}
         />
       </div>
       {draftQuery && (
         <button
           type="button"
-          aria-label="Clear search"
+          aria-label={t("collab.clearSearch")}
           onClick={() => onDraftChange("")}
           className="shrink-0 cursor-pointer text-muted transition-colors hover:text-ink"
         >
@@ -138,7 +143,7 @@ export function SearchFilterBar({
         trigger={
           <button
             type="button"
-            aria-label="Sort projects"
+            aria-label={t("collab.sortAria")}
             className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full px-2 py-1.5 text-sm font-medium text-ink transition-colors hover:bg-bg focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
           >
             <span className="flex items-center sm:hidden">
@@ -162,7 +167,7 @@ export function SearchFilterBar({
                     : "text-muted hover:bg-bg hover:text-ink",
                 )}
               >
-                {opt.label}
+                {t(opt.labelKey)}
                 {sortKey === opt.value && <Icon name="check" size={16} />}
               </button>
             ))}

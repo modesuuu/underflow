@@ -1,3 +1,7 @@
+"use client";
+
+import { useLanguage } from "@/lib/i18n/LanguageProvider";
+
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { Icon } from "@/components/ui/Icon";
@@ -67,16 +71,17 @@ function StatCard({
  * (Active Projects spans full width).
  */
 export function PerformanceSummary({ personId, stats }: PerformanceSummaryProps) {
+  const { t } = useLanguage();
   return (
     <section
-      aria-label="Performance summary"
+      aria-label={t("profile.performanceSummary")}
       className="flex w-full shrink-0 flex-col gap-5 rounded-3xl bg-bg p-5 lg:w-[397px]"
     >
       <div className="flex items-center justify-between">
-        <h2 className="text-[20px] font-medium text-ink">Performance Summary</h2>
+        <h2 className="text-[20px] font-medium text-ink">{t("profile.performanceSummary")}</h2>
         <button
           type="button"
-          aria-label="Performance summary options"
+          aria-label={t("profile.performanceOptions")}
           className="flex size-8 items-center justify-center rounded-full text-ink transition-colors hover:bg-surface"
         >
           <Icon name="dots-horizontal-rounded" size={24} />
@@ -89,14 +94,14 @@ export function PerformanceSummary({ personId, stats }: PerformanceSummaryProps)
             <StatCard
               icon={<FolderCheckIcon />}
               value={stats.completeProjects}
-              label="Complete Projects"
+              label={t("profile.completeProjects")}
             />
           </div>
           <div className="flex flex-1">
             <StatCard
               icon={<NoteIcon />}
               value={stats.postFeed}
-              label="Post Feed"
+              label={t("profile.postFeed")}
               href={`/profile/${personId}/posts`}
             />
           </div>
@@ -104,7 +109,7 @@ export function PerformanceSummary({ personId, stats }: PerformanceSummaryProps)
         <StatCard
           icon={<FileCodeIcon />}
           value={stats.activeProjects}
-          label="Active Projects"
+          label={t("profile.activeProjects")}
           href={`/profile/${personId}/projects`}
         />
       </div>

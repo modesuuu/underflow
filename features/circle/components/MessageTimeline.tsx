@@ -6,6 +6,9 @@ import { markChannelRead } from "../store";
 import { MessageGroup } from "./MessageGroup";
 import { formatTime } from "./MessageItem";
 import type { ChannelId, CircleData, CircleMember, CircleMessage } from "../types";
+import { useLanguage } from "@/lib/i18n/LanguageProvider";
+import { localeTag } from "@/lib/i18n/format";
+import type { Lang } from "@/lib/i18n/format";
 
 type Block =
   | { type: "date"; key: string; label: string }
@@ -20,8 +23,8 @@ function dayKey(iso: string): string {
   return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
 }
 
-function dayLabel(iso: string): string {
-  return new Date(iso).toLocaleDateString("en-US", {
+function dayLabel(iso: string, lang: Lang): string {
+  return new Date(iso).toLocaleDateString(localeTag(lang), {
     month: "long",
     day: "numeric",
     year: "numeric",
@@ -47,6 +50,7 @@ export function MessageTimeline({
   meIsOwner: boolean;
   onReply: (message: CircleMessage) => void;
 }) {
+  const { t, lang } = useLanguage();
   const [frozenLastRead] = useState(() => data.lastRead[channelId]);
   const scrollRef = useRef<HTMLDivElement>(null);
   const nearBottomRef = useRef(true);
@@ -81,7 +85,7 @@ export function MessageTimeline({
     for (const message of channelMessages) {
       const day = dayKey(message.createdAt);
       if (day !== lastDay) {
-        out.push({ type: "date", key: `date-${day}`, label: dayLabel(message.createdAt) });
+        out.push({ type: "date", key: `date-${day}`, label: dayLabel(message.createdAt, lang) });
         lastDay = day;
         group = null;
       }
@@ -179,9 +183,9 @@ export function MessageTimeline({
           }
           if (block.type === "new") {
             return (
-              <div key={block.key} className="flex items-center gap-3 px-4 pt-4" aria-label="Unread messages below">
+              <div key={block.key} className="flex items-center gap-3 px-4 pt-4" aria-label={t("circle.unreadBelow")}>
                 <span className="h-px flex-1 bg-badge/50" />
-                <span className="text-xs font-semibold text-badge">NEW</span>
+                <span className="text-xs font-semibold text-badge">{t("circle.newDivider")}</span>
                 <span className="h-px flex-1 bg-badge/50" />
               </div>
             );

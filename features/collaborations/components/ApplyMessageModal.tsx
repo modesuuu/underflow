@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { TextArea } from "@astryxdesign/core/TextArea";
 import { Button } from "@astryxdesign/core/Button";
 import { Icon } from "@/components/ui/Icon";
+import { useLanguage } from "@/lib/i18n/LanguageProvider";
 
 interface ApplyMessageModalProps {
   projectTitle: string;
@@ -30,8 +31,9 @@ export function ApplyMessageModal({
   onClose,
   onSend,
 }: ApplyMessageModalProps) {
-  const [message, setMessage] = useState(
-    `Hi! I'd like to apply as ${roleLabel} for ${projectTitle}. `,
+  const { t } = useLanguage();
+  const [message, setMessage] = useState(() =>
+    t("collab.applyPrefill", { role: roleLabel, title: projectTitle }),
   );
 
   useEffect(() => {
@@ -50,7 +52,7 @@ export function ApplyMessageModal({
     <div
       role="dialog"
       aria-modal="true"
-      aria-label={`Apply to ${projectTitle}`}
+      aria-label={t("collab.applyToProject", { title: projectTitle })}
       className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 p-4"
       onClick={onClose}
     >
@@ -61,17 +63,16 @@ export function ApplyMessageModal({
         <div className="flex items-start justify-between gap-4">
           <div className="flex flex-col gap-1">
             <h2 className="text-xl font-bold text-ink">
-              Apply to {projectTitle}
+              {t("collab.applyToProject", { title: projectTitle })}
             </h2>
             <p className="text-sm text-muted">
-              Your application is sent as a message to {ownerName} and
-              starts a conversation in your Inbox.
+              {t("collab.applyModalBody", { name: ownerName })}
             </p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            aria-label="Close"
+            aria-label={t("common.close")}
             className="flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-full text-ink transition-colors hover:bg-bg"
           >
             <Icon name="x" size={20} />
@@ -79,18 +80,18 @@ export function ApplyMessageModal({
         </div>
 
         <TextArea
-          label={"Message to " + ownerName}
+          label={t("collab.messageToOwner", { name: ownerName })}
           value={message}
           onChange={(value) => setMessage(value)}
           rows={5}
           hasAutoFocus
-          placeholder="Introduce yourself, your experience, and how much time you can commit…"
+          placeholder={t("collab.applyPlaceholder")}
         />
 
         <div className="flex justify-end gap-2">
-          <Button label="Cancel" variant="secondary" onClick={onClose} />
+          <Button label={t("common.cancel")} variant="secondary" onClick={onClose} />
           <Button
-            label={sending ? "Sending…" : "Send application"}
+            label={sending ? t("common.sending") : t("collab.sendApplication")}
             variant="primary"
             icon={<Icon name="send" size={18} />}
             isLoading={sending}

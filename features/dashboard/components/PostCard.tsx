@@ -20,6 +20,7 @@ import { toast } from "sonner";
 import { ReportedPostNotice } from "./ReportedPostNotice";
 import { ReportForm } from "./ReportForm";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
+import { formatRelativeAgo } from "@/lib/i18n/format";
 
 /**
  * Feed post: flat on the page surface — no card border (the
@@ -30,7 +31,7 @@ import { useLanguage } from "@/lib/i18n/LanguageProvider";
 const CARD_CHROME = "px-1 py-2";
 
 export function PostCard({ post }: { post: Post }) {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const router = useRouter();
   const [reported, setReported] = useState(false);
   const [reportFormOpen, setReportFormOpen] = useState(false);
@@ -53,9 +54,9 @@ export function PostCard({ post }: { post: Post }) {
     try {
       await deletePost(post.id);
       setDeleted(true);
-      toast.success("Post deleted");
+      toast.success(t("feed.postDeleted"));
     } catch {
-      toast("Couldn't delete this post. Try again.");
+      toast(t("feed.couldntDeletePost"));
     }
   };
 
@@ -119,7 +120,7 @@ export function PostCard({ post }: { post: Post }) {
             <span className="text-[15px] font-medium group-hover:underline">
               {post.author.name}
             </span>
-            <span className="text-xs text-subtle">{post.postedAgo}</span>
+            <span className="text-xs text-subtle">{post.postedAt ? formatRelativeAgo(post.postedAt, lang) : post.postedAgo}</span>
           </div>
         </Link>
         <PostOptionsMenu

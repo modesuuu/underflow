@@ -5,6 +5,7 @@ import { Icon } from "@/components/ui/Icon";
 import type { MyCollabProject } from "../types";
 import { KanbanCard } from "./KanbanCard";
 import { MyCollabSearchBar } from "./MyCollabSearchBar";
+import { useLanguage } from "@/lib/i18n/LanguageProvider";
 
 interface MyCollabCategoryGridProps {
   projects: MyCollabProject[];
@@ -27,6 +28,7 @@ export function MyCollabCategoryGrid({
   projects,
   startIndex,
 }: MyCollabCategoryGridProps) {
+  const { t } = useLanguage();
   const [draftQuery, setDraftQuery] = useState("");
   const [query, setQuery] = useState("");
 
@@ -63,17 +65,16 @@ export function MyCollabCategoryGrid({
           <span className="flex size-11 items-center justify-center rounded-full bg-surface">
             <Icon name="search" size={20} className="text-muted" />
           </span>
-          <p className="text-base font-semibold text-ink">No projects match</p>
+          <p className="text-base font-semibold text-ink">{t("mycollab.noMatchTitle")}</p>
           <p className="max-w-sm text-sm text-muted">
-            No projects in this category match your search.
-            Clear it to see all projects in this category.
+            {t("mycollab.categoryNoMatchBody")}
           </p>
           <button
             type="button"
             onClick={clearAll}
             className="pressable mt-2 cursor-pointer rounded-full bg-ink px-4 py-2 text-sm font-medium text-surface transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
           >
-            Clear search
+            {t("mycollab.clearSearchBtn")}
           </button>
         </div>
       ) : (

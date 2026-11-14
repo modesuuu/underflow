@@ -5,6 +5,7 @@ import { Icon } from "@/components/ui/Icon";
 import { sendMessage } from "../store";
 import { formatBytes, truncateMiddle } from "./MessageItem";
 import type { ChannelId, CircleAttachment, CircleMember, CircleMessage } from "../types";
+import { useLanguage } from "@/lib/i18n/LanguageProvider";
 
 const MAX_LENGTH = 2000;
 const COUNT_FROM = 1800;
@@ -35,6 +36,7 @@ export function Composer({
   replyAuthor: CircleMember | undefined;
   onClearReply: () => void;
 }) {
+  const { t } = useLanguage();
   const [value, setValue] = useState("");
   const [attachments, setAttachments] = useState<CircleAttachment[]>([]);
   const [attachError, setAttachError] = useState(false);
@@ -160,15 +162,15 @@ export function Composer({
         <div className="mb-2 flex items-center gap-2 rounded-lg bg-bg px-3 py-2">
           <Icon name="reply" size={14} className="shrink-0 text-subtle" />
           <span className="min-w-0 flex-1 truncate text-xs text-muted">
-            Replying to{" "}
+            {t("circle.replyingTo")}{" "}
             <span className="font-semibold text-ink">
-              {replyAuthor?.name ?? "Unknown"}
+              {replyAuthor?.name ?? t("circle.unknown")}
             </span>{" "}
             · {replyTo.body}
           </span>
           <button
             type="button"
-            aria-label="Cancel reply"
+            aria-label={t("circle.cancelReply")}
             onClick={onClearReply}
             className="flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-full text-subtle transition-colors hover:text-ink focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
           >
@@ -219,14 +221,14 @@ export function Composer({
         />
         <button
           type="button"
-          aria-label="Attach files"
+          aria-label={t("circle.attachFiles")}
           onClick={() => fileRef.current?.click()}
           className="flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-full text-muted transition-colors hover:text-ink focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
         >
           <Icon name="paperclip" size={17} />
         </button>
         <label className="sr-only" htmlFor={`circle-composer-${channelId}`}>
-          Message #{channelId}
+          {t("circle.messageChannelLabel", { channel: channelId })}
         </label>
         <textarea
           id={`circle-composer-${channelId}`}
@@ -266,7 +268,7 @@ export function Composer({
             }
           }}
           placeholder={
-            channelId === "announcements" ? "Post an announcement" : "Message #general"
+            channelId === "announcements" ? t("circle.announcementPlaceholder") : t("circle.messageGeneralPlaceholder")
           }
           className="max-h-[120px] min-w-0 flex-1 resize-none bg-transparent px-1 py-1.5 text-sm text-ink outline-none placeholder:text-subtle"
         />
@@ -277,7 +279,7 @@ export function Composer({
         )}
         <button
           type="submit"
-          aria-label="Send message"
+          aria-label={t("circle.sendMessage")}
           disabled={!value.trim() && attachments.length === 0}
           className="flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-full bg-accent text-on-accent transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40"
         >
@@ -285,7 +287,7 @@ export function Composer({
         </button>
       </div>
       {attachError && (
-        <p className="pt-2 text-xs text-badge">Up to 5 files, 5 MB each.</p>
+        <p className="pt-2 text-xs text-badge">{t("circle.filesHint")}</p>
       )}
     </form>
   );

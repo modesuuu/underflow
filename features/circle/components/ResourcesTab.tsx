@@ -3,6 +3,7 @@
 import { Icon } from "@/components/ui/Icon";
 import { deleteResource } from "../store";
 import type { CircleData, CircleResource } from "../types";
+import { useLanguage } from "@/lib/i18n/LanguageProvider";
 
 const KIND_ICON: Record<CircleResource["kind"], string> = {
   figma: "palette",
@@ -24,6 +25,7 @@ export function ResourcesTab({
   projectId: string;
   data: CircleData;
 }) {
+  const { t } = useLanguage();
   const meIsOwner = data.members.some((m) => m.userId === "me" && m.isOwner);
   const pinned = data.messages.filter((m) => m.pinned);
   const membersById = new Map(data.members.map((m) => [m.userId, m]));
@@ -32,7 +34,7 @@ export function ResourcesTab({
     <div className="flex flex-col py-3">
       {data.resources.length === 0 ? (
         <p className="px-4 py-2 text-sm text-muted">
-          No resources yet. Pin a message or wait for the owner to add links.
+          {t("circle.noResources")}
         </p>
       ) : (
         data.resources.map((resource) => {
@@ -88,10 +90,10 @@ export function ResourcesTab({
         })
       )}
       <span className="px-4 pt-5 pb-1 text-xs font-semibold text-subtle">
-        Pinned messages
+        {t("circle.pinnedMessages")}
       </span>
       {pinned.length === 0 ? (
-        <p className="px-4 py-1 text-sm text-muted">No pinned messages.</p>
+        <p className="px-4 py-1 text-sm text-muted">{t("circle.noPinned")}</p>
       ) : (
         pinned.map((message) => (
           <button

@@ -8,6 +8,7 @@ import { Icon } from "@/components/ui/Icon";
 import { FeedColumn } from "@/features/dashboard/components/FeedColumn";
 import { getPerson, getPersonPosts } from "@/features/profile/api";
 import { NotificationsPanel } from "@/features/dashboard/components/NotificationsPanel";
+import { tStatic } from "@/lib/i18n/format";
 
 interface ProfilePostsPageProps {
   params: Promise<{ userId: string }>;
@@ -58,9 +59,9 @@ async function PostsBody({ userId }: { userId: string }) {
         <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-line bg-surface px-6 py-16 text-center">
           <Icon name="image-add" size={32} className="text-muted" />
           <div className="flex flex-col gap-1">
-            <p className="text-base font-medium text-ink">No posts yet</p>
+            <p className="text-base font-medium text-ink">{tStatic("profile.noPostsYet")}</p>
             <p className="text-sm text-muted">
-              {person.name} hasn&rsquo;t shared any posts.
+              {tStatic("profile.noPostsBody", { name: person.name })}
             </p>
           </div>
         </div>

@@ -10,6 +10,7 @@ import { Icon } from "@/components/ui/Icon";
 import { ApiError } from "@/lib/api-client";
 import { createPost, updatePost, uploadImage } from "../api";
 import type { Post } from "../types";
+import { useLanguage } from "@/lib/i18n/LanguageProvider";
 
 /** A picked image file + its local preview URL (URL.createObjectURL). */
 interface ImageDraft {
@@ -53,6 +54,7 @@ interface PostModalProps {
  */
 export function PostModal({ open, onClose, editing, onUpdated }: PostModalProps) {
   const router = useRouter();
+  const { t } = useLanguage();
   const [description, setDescription] = useState("");
   const [images, setImages] = useState<ImageDraft[]>([]);
   const [imageError, setImageError] = useState<string | null>(null);
@@ -166,7 +168,7 @@ export function PostModal({ open, onClose, editing, onUpdated }: PostModalProps)
         // Description only — no media fields are sent, so the post's
         // photos stay exactly as they are.
         await updatePost(editing.id, { description: description.trim() });
-        toast.success("Post updated");
+        toast.success(t("modal.postUpdated"));
         onUpdated?.(description.trim());
         setSubmitting(false);
         requestClose();
@@ -183,7 +185,7 @@ export function PostModal({ open, onClose, editing, onUpdated }: PostModalProps)
         media_urls: uploaded.map((item) => item.url),
         media_public_ids: uploaded.map((item) => item.public_id),
       });
-      toast.success("Post published");
+      toast.success(t("modal.postPublished"));
       router.refresh();
       requestClose();
     } catch (err) {
@@ -219,18 +221,18 @@ export function PostModal({ open, onClose, editing, onUpdated }: PostModalProps)
         <div className="mb-6 flex items-start justify-between">
           <div>
             <h2 id="post-something-title" className="text-2xl font-medium">
-              {editing ? "Edit Post" : "Post Something"}
+              {editing ? t("modal.editPostTitle") : t("modal.postSomethingTitle")}
             </h2>
             <p className="mt-1 text-xs font-medium text-muted">
               {editing
-                ? "Only the description can be changed."
-                : "Share what you are working on with the community."}
+                ? t("modal.editPostSub")
+                : t("modal.postSomethingSub")}
             </p>
           </div>
           <button
             type="button"
             onClick={requestClose}
-            aria-label="Close"
+            aria-label={t("common.close")}
             className="pressable cursor-pointer rounded-md p-1 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
           >
             <Icon name="x" size={24} className="text-ink" />
@@ -241,7 +243,7 @@ export function PostModal({ open, onClose, editing, onUpdated }: PostModalProps)
           {/* Description */}
           <div className="flex flex-col gap-1">
             <label htmlFor="post-desc-input" className="text-base font-medium">
-              Description
+              {t("modal.descriptionLabel")}
             </label>
             <textarea
               id="post-desc-input"
@@ -249,7 +251,7 @@ export function PostModal({ open, onClose, editing, onUpdated }: PostModalProps)
               onChange={(event) => setDescription(event.target.value)}
               autoFocus
               rows={3}
-              placeholder="Description"
+              placeholder={t("modal.descriptionPlaceholder")}
               className="resize-none rounded-lg bg-surface px-4 py-3 text-base font-medium text-ink outline-none placeholder:text-muted focus-visible:ring-2 focus-visible:ring-accent"
             />
           </div>
@@ -263,7 +265,7 @@ export function PostModal({ open, onClose, editing, onUpdated }: PostModalProps)
                 type="file"
                 accept="image/*"
                 multiple
-                aria-label="Choose images"
+                aria-label={t("modal.chooseImages")}
                 onChange={handleImageChange}
                 className="sr-only"
               />
@@ -274,7 +276,7 @@ export function PostModal({ open, onClose, editing, onUpdated }: PostModalProps)
                 className="pressable flex cursor-pointer items-center gap-1 text-base font-medium text-muted transition-colors hover:text-ink focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40"
               >
                 <Icon name="image-add" size={20} />
-                Photo
+                {t("modal.photo")}
               </button>
             </div>
           )}
@@ -291,13 +293,13 @@ export function PostModal({ open, onClose, editing, onUpdated }: PostModalProps)
                   {/* Plain <img> — blob: URLs are not supported by next/image. */}
                   <img
                     src={item.url}
-                    alt={`Image preview ${index + 1}`}
+                    alt={t("modal.imagePreviewAlt", { n: index + 1 })}
                     className="size-[100px] rounded-lg object-cover"
                   />
                   <button
                     type="button"
                     onClick={() => removeImage(index)}
-                    aria-label={`Remove image ${index + 1}`}
+                    aria-label={t("modal.removeImageAria", { n: index + 1 })}
                     className="pressable absolute right-1 top-1 flex size-5 cursor-pointer items-center justify-center rounded-full bg-ink/70 text-bg focus-visible:ring-2 focus-visible:ring-bg focus-visible:outline-none"
                   >
                     <Icon name="x" size={12} />
@@ -321,11 +323,11 @@ export function PostModal({ open, onClose, editing, onUpdated }: PostModalProps)
             <Icon name={editing ? "check" : "send"} size={20} />
             {submitting
               ? editing
-                ? "Saving…"
-                : "Posting…"
+                ? t("modal.saving")
+                : t("modal.posting")
               : editing
-                ? "Save changes"
-                : "Post"}
+                ? t("modal.saveChanges")
+                : t("modal.postBtn")}
           </button>
         </form>
       </div>

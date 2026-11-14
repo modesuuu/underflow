@@ -12,6 +12,7 @@ import { CommentThread } from "./CommentThread";
 import { getComments, postComment } from "../api";
 import { syncLikeCount, syncLiked } from "../like-store";
 import { isApiConfigured } from "@/lib/api-client";
+import { formatRelativeAgo } from "@/lib/i18n/format";
 
 /**
  * Sync one authenticated comments fetch into the shared like-store.
@@ -40,7 +41,7 @@ interface CommentSectionProps {
 
 
 export function CommentSection({ postId, initialComments, autoFocusComment = false }: CommentSectionProps) {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const [comments, setComments] = useState<PostComment[]>(initialComments);
   const [draft, setDraft] = useState("");
   // Subscribe to the session so this re-renders when the photo is
@@ -86,7 +87,7 @@ export function CommentSection({ postId, initialComments, autoFocusComment = fal
   const submit = async () => {
     const text = draft.trim();
     if (!text) {
-      toast("Write a comment first");
+      toast(t("feed.writeCommentFirst"));
       return;
     }
     const tempId = `local-${Date.now()}`;
@@ -98,7 +99,7 @@ export function CommentSection({ postId, initialComments, autoFocusComment = fal
         id: tempId,
         author: { id: "me", name: CURRENT_USER.name },
         text,
-        postedAgo: "Just now",
+        postedAgo: formatRelativeAgo(new Date().toISOString(), lang),
         likes: 0,
         liked: false,
       },
@@ -114,7 +115,7 @@ export function CommentSection({ postId, initialComments, autoFocusComment = fal
     } catch {
       setComments((prev) => prev.filter((c) => c.id !== tempId));
       setLastAddedId(null);
-      toast("Couldn't post your comment. Try again.");
+      toast(t("feed.couldntPostComment"));
     }
   };
 

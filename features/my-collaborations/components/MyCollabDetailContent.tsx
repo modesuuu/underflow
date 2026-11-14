@@ -26,18 +26,21 @@ import {
 import { toast } from "sonner";
 import { useSessionUser } from "@/features/auth/store";
 import type { MyCollabProject } from "../types";
+import { useLanguage } from "@/lib/i18n/LanguageProvider";
+import type { DictKey } from "@/lib/i18n/dictionary";
+import { formatRelativeAgo } from "@/lib/i18n/format";
 
-const STATUS_LABEL: Record<ProjectStatus, string> = {
-  open: "Open",
-  "in-progress": "In progress",
-  completed: "Completed",
+const STATUS_LABEL: Record<ProjectStatus, DictKey> = {
+  open: "collab.statusOpen",
+  "in-progress": "collab.statusInProgress",
+  completed: "collab.statusCompleted",
 };
 
-const WORK_STATUS_LABEL = {
-  "not-started": "Active",
-  complete: "Complete",
-  revise: "Revise",
-} as const;
+const WORK_STATUS_LABEL: Record<"not-started" | "complete" | "revise", DictKey> = {
+  "not-started": "mycollab.memberActive",
+  complete: "mycollab.memberComplete",
+  revise: "mycollab.memberRevise",
+};
 
 const WORK_STATUS_CHIP: Record<
   "not-started" | "complete" | "revise",
@@ -50,11 +53,11 @@ const WORK_STATUS_CHIP: Record<
 
 const WORK_STATUS_OPTIONS: {
   value: "not-started" | "complete" | "revise";
-  label: string;
+  labelKey: DictKey;
 }[] = [
-  { value: "not-started", label: "Active" },
-  { value: "complete", label: "Complete" },
-  { value: "revise", label: "Revise" },
+  { value: "not-started", labelKey: "mycollab.memberActive" },
+  { value: "complete", labelKey: "mycollab.memberComplete" },
+  { value: "revise", labelKey: "mycollab.memberRevise" },
 ];
 
 /**
@@ -85,6 +88,7 @@ export function MyCollabDetailContent({
   // (the board refetches on its own mount, so no cross-page
   // invalidation is needed). Resynced when the loader hands over
   // a fresh project (e.g. after the edit modal's refresh).
+  const { t, lang } = useLanguage();
   const [project, setProject] = useState(initialProject);
   useEffect(() => {
     setProject(initialProject);
@@ -98,13 +102,13 @@ export function MyCollabDetailContent({
   const handleDeleteProject = async () => {
     try {
       await deleteCollabProject(project.id);
-      toast.success("Project deleted");
+      toast.success(t("collab.projectDeleted"));
       router.push("/my-collaborations");
     } catch (err) {
       toast.error(
         err instanceof Error
           ? backendErrorMessage(err)
-          : "Couldn't delete this project. Try again."
+          : t("collab.couldntDeleteProject")
       );
     }
   };
@@ -120,9 +124,9 @@ export function MyCollabDetailContent({
           m.isOpenSlot ? m : { ...m, workStatus: "complete" as const }
         ),
       }));
-      toast.success("Project marked complete");
+      toast.success(t("mycollab.projectCompletedToast"));
     } catch (err) {
-      toast.error("Couldn't complete this project", {
+      toast.error(t("mycollab.couldntComplete"), {
         description: backendErrorMessage(err),
       });
     } finally {
@@ -144,9 +148,9 @@ export function MyCollabDetailContent({
             : m
         ),
       }));
-      toast.success("Project reopened");
+      toast.success(t("mycollab.projectReopenedToast"));
     } catch (err) {
-      toast.error("Couldn't reopen this project", {
+      toast.error(t("mycollab.couldntReopen"), {
         description: backendErrorMessage(err),
       });
     } finally {
@@ -179,13 +183,13 @@ export function MyCollabDetailContent({
       }));
       toast.success(
         status === "complete"
-          ? `${member.name} marked complete`
+          ? t("mycollab.memberCompleteToast", { name: member.name })
           : status === "revise"
-            ? `Revision requested for ${member.name}`
-            : `${member.name} back to Active`
+            ? t("mycollab.memberReviseToast", { name: member.name })
+            : t("mycollab.memberActiveToast", { name: member.name })
       );
     } catch (err) {
-      toast.error("Couldn't update the member status", {
+      toast.error(t("mycollab.couldntUpdateMember"), {
         description: backendErrorMessage(err),
       });
     }
@@ -199,7 +203,7 @@ export function MyCollabDetailContent({
   const photos: Photo[] = project.photos.slice(0, 4).map((url, i) => ({
     id: `${project.id}-photo-${i + 1}`,
     url: isUrlish(url) ? url : undefined,
-    alt: `Project photo ${i + 1}`,
+    alt: t("collab.photoAlt", { n: i + 1 }),
   }));
 
   return (
@@ -211,7 +215,7 @@ export function MyCollabDetailContent({
           <div className="flex items-center justify-between gap-3">
             <span className="inline-flex items-center gap-1 rounded-full bg-surface px-3 py-1 text-xs font-medium text-ink">
               <Icon name={STATUS_ICONS[project.status]} size={14} />
-              {STATUS_LABEL[project.status]}
+              {t(STATUS_LABEL[project.status])}
             </span>
             {isOwner && (
               <div className="flex shrink-0 flex-wrap items-center gap-2">
@@ -223,7 +227,7 @@ export function MyCollabDetailContent({
                     className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full border border-line bg-surface px-3 py-1.5 text-xs font-medium text-ink transition-colors hover:bg-bg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     <Icon name="refresh" size={14} />
-                    Reopen project
+                    {t("mycollab.reopenProject")}
                   </button>
                 ) : (
                   <button
@@ -233,7 +237,7 @@ export function MyCollabDetailContent({
                     className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full bg-accent px-3 py-1.5 text-xs font-semibold text-on-accent transition-opacity hover:opacity-85 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     <Icon name="check" size={14} />
-                    Complete project
+                    {t("mycollab.completeProject")}
                   </button>
                 )}
                 <button
@@ -242,7 +246,7 @@ export function MyCollabDetailContent({
                   className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full border border-line bg-surface px-3 py-1.5 text-xs font-medium text-ink transition-colors hover:bg-bg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                 >
                   <Icon name="edit" size={14} />
-                  Edit
+                  {t("collab.editBtn")}
                 </button>
                 {project.slotsFilled <= 1 && (
                   <button
@@ -251,7 +255,7 @@ export function MyCollabDetailContent({
                     className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full border border-line bg-surface px-3 py-1.5 text-xs font-medium text-badge transition-colors hover:bg-bg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                   >
                     <Icon name="trash" size={14} />
-                    Delete
+                    {t("common.delete")}
                   </button>
                 )}
               </div>
@@ -268,12 +272,16 @@ export function MyCollabDetailContent({
             {project.dueDate ? (
               <span className="flex items-center gap-1 text-xs font-medium text-ink">
                 <Icon name="calendar" size={14} />
-                Due: {formatDueDate(project.dueDate)}
+                {t("collab.dueLine", { date: formatDueDate(project.dueDate) })}
               </span>
             ) : null}
             <span className="flex items-center gap-1 text-xs font-medium text-muted">
               <Icon name="time" size={14} />
-              posted {project.postedAgo}
+              {t("collab.postedLine", {
+                ago: project.postedAt
+                  ? formatRelativeAgo(project.postedAt, lang)
+                  : project.postedAgo,
+              })}
             </span>
           </div>
 
@@ -294,7 +302,7 @@ export function MyCollabDetailContent({
             <Link
               href={"/profile/" + (project.owner.id)}
               className="group flex items-center gap-3"
-              aria-label={"View " + project.owner.name + "'s profile"}
+                aria-label={t("feed.viewProfile", { name: project.owner.name })}
             >
               <Avatar size={42} src={project.owner.avatarUrl} alt={project.owner.name} />
               <div className="flex flex-col">
@@ -312,11 +320,11 @@ export function MyCollabDetailContent({
               <button
                 type="button"
                 disabled
-                title="This is your project"
+                title={t("collab.yourProject")}
                 className="flex cursor-not-allowed items-center gap-1 rounded-full bg-placeholder px-4 py-2 text-xs font-medium text-muted"
               >
                 <Icon name="message-rounded" size={14} />
-                This is your project
+                {t("collab.yourProject")}
               </button>
             ) : (
               <button
@@ -330,7 +338,7 @@ export function MyCollabDetailContent({
                     });
                     router.push("/inbox");
                   } catch (err) {
-                    toast.error("Couldn't open the chat", {
+                    toast.error(t("collab.couldntOpenChat"), {
                       description: backendErrorMessage(err),
                     });
                   }
@@ -338,13 +346,13 @@ export function MyCollabDetailContent({
                 className="flex cursor-pointer items-center gap-1 rounded-full bg-accent px-4 py-2 text-xs font-medium text-on-accent transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
               >
                 <Icon name="message-rounded" size={14} />
-                Chat with owner
+                {t("collab.chatWithOwner")}
               </button>
             )}
           </div>
 
           <div className="flex flex-col gap-2">
-            <h2 className="text-xl font-medium text-ink">About the project</h2>
+            <h2 className="text-xl font-medium text-ink">{t("collab.aboutProject")}</h2>
             <p className="whitespace-pre-wrap text-sm leading-relaxed text-ink">
               {project.description}
             </p>
@@ -354,7 +362,7 @@ export function MyCollabDetailContent({
 
         {/* 3. Skills needed (heading on white, lime pills with icon + label) */}
         <div className="flex flex-col gap-3">
-          <h2 className="text-xl font-medium text-ink">Skills needed</h2>
+          <h2 className="text-xl font-medium text-ink">{t("collab.skillsNeeded")}</h2>
           <div className="flex flex-wrap gap-2">
             {project.skills.map((skill) => (
               <span
@@ -371,7 +379,7 @@ export function MyCollabDetailContent({
         {/* 4. Team: heading + slot count top-right; filled members AND open slots */}
         <div className="flex flex-col gap-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-medium text-ink">Team</h2>
+            <h2 className="text-xl font-medium text-ink">{t("collab.team")}</h2>
             <div className="flex items-center gap-1.5">
               <span className="text-sm font-medium text-ink">
                 {project.slotsFilled}/{project.slotsTotal}
@@ -403,7 +411,7 @@ export function MyCollabDetailContent({
                   <Link
                     href={"/profile/" + (member.id)}
                     className="group flex items-center gap-2"
-                    aria-label={"View " + member.name + "'s profile"}
+                    aria-label={t("feed.viewProfile", { name: member.name })}
                   >
                     <Avatar size={32} src={member.avatarUrl} alt={member.name} />
                     <div className="flex flex-col">
@@ -416,7 +424,7 @@ export function MyCollabDetailContent({
                             WORK_STATUS_CHIP[member.workStatus]
                           }
                         >
-                          {WORK_STATUS_LABEL[member.workStatus]}
+                          {t(WORK_STATUS_LABEL[member.workStatus])}
                         </span>
                       )}
                     </div>
@@ -425,7 +433,7 @@ export function MyCollabDetailContent({
                     <>
                       <button
                         type="button"
-                        aria-label={"Set status for " + member.name}
+                        aria-label={t("mycollab.setStatusFor", { name: member.name })}
                         aria-haspopup="true"
                         onClick={() =>
                           setMemberMenuId((cur) =>
@@ -455,7 +463,7 @@ export function MyCollabDetailContent({
                                 }
                                 className="flex w-full cursor-pointer items-center justify-between rounded-md px-2.5 py-2 text-left text-sm text-ink transition-colors hover:bg-bg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                               >
-                                {opt.label}
+                                {t(opt.labelKey)}
                                 {member.workStatus === opt.value && (
                                   <Icon name="check" size={14} className="text-accent" />
                                 )}
@@ -481,7 +489,7 @@ export function MyCollabDetailContent({
             className="flex w-full items-center justify-center gap-1.5 rounded-md bg-accent py-3.5 text-base font-semibold text-on-accent transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
           >
             <Icon name="conversation" size={18} />
-            Open Circle
+            {t("mycollab.openCircle")}
           </Link>
         )}
         {/* 5. Bottom bar — status-aware (audit 2026-11-12). The old
@@ -492,15 +500,15 @@ export function MyCollabDetailContent({
                its call to action. */}
         {project.myStatus === "pending" ? (
           <div className="flex w-full items-center justify-center rounded-full bg-placeholder px-6 py-3 text-sm font-semibold text-muted">
-            Pending
+            {t("collab.pending")}
           </div>
         ) : project.myStatus === "revise" && !isOwner ? (
           <div className="flex w-full items-center justify-center rounded-full bg-placeholder px-6 py-3 text-sm font-semibold text-muted">
-            Revision requested by the owner
+            {t("mycollab.revisionRequestedBar")}
           </div>
         ) : project.status === "completed" ? (
           <div className="flex w-full items-center justify-center rounded-md bg-ink/80 py-3.5 text-base font-semibold text-surface">
-            Closed
+            {t("mycollab.closedBar")}
           </div>
         ) : null}
       </div>
@@ -519,9 +527,9 @@ export function MyCollabDetailContent({
       />
       {confirmingDelete && (
         <ConfirmDialog
-          title="Delete this project?"
-          description="This project will be removed for everyone. This can't be undone."
-          confirmLabel="Delete"
+          title={t("collab.deleteProjectTitle")}
+          description={t("collab.deleteProjectBody")}
+          confirmLabel={t("common.delete")}
           onConfirm={() => {
             setConfirmingDelete(false);
             void handleDeleteProject();

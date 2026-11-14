@@ -1,3 +1,7 @@
+"use client";
+
+import { useLanguage } from "@/lib/i18n/LanguageProvider";
+
 import Link from "next/link";
 import { OwnProfileLogout } from "./OwnProfileLogout";
 import { Avatar } from "@/components/ui/Avatar";
@@ -15,25 +19,26 @@ import type { PersonDetail } from "../types";
  * without data are hidden rather than rendered empty.
  */
 export function ProfileDetailCard({ person }: { person: PersonDetail }) {
+  const { t } = useLanguage();
   return (
     <section
-      aria-label="Profile detail"
+      aria-label={t("profile.profileDetail")}
       className="flex w-full shrink-0 flex-col gap-8 rounded-3xl bg-bg p-5 lg:w-[397px]"
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Link
             href="/"
-            aria-label="Back to Feed"
+            aria-label={t("profile.backToFeed")}
             className="flex size-8 items-center justify-center rounded-full text-ink transition-colors hover:bg-surface"
           >
             <Icon name="chevron-left" size={24} />
           </Link>
-          <h2 className="text-[20px] font-medium text-ink">Profile Detail</h2>
+          <h2 className="text-[20px] font-medium text-ink">{t("profile.profileDetail")}</h2>
         </div>
         <button
           type="button"
-          aria-label="Profile options"
+          aria-label={t("profile.profileOptions")}
           className="flex size-8 items-center justify-center rounded-full text-ink transition-colors hover:bg-surface"
         >
           <Icon name="dots-horizontal-rounded" size={24} />
@@ -56,7 +61,7 @@ export function ProfileDetailCard({ person }: { person: PersonDetail }) {
 
         <div className="flex flex-col items-center gap-3">
           {person.socials && person.socials.length > 0 && (
-            <ul className="flex items-center gap-1" aria-label="Social links">
+            <ul className="flex items-center gap-1" aria-label={t("profile.socialLinks")}>
               {person.socials.map((social) => (
                 <li key={social.label}>
                   <span
@@ -74,7 +79,7 @@ export function ProfileDetailCard({ person }: { person: PersonDetail }) {
           )}
 
           {person.skills && person.skills.length > 0 && (
-            <ul className="flex flex-wrap justify-center gap-1" aria-label="Skills">
+            <ul className="flex flex-wrap justify-center gap-1" aria-label={t("admin.sectionSkills")}>
               {person.skills.map((skill) => (
                 <li
                   key={skill.id}
@@ -91,8 +96,8 @@ export function ProfileDetailCard({ person }: { person: PersonDetail }) {
 
       <div className="flex flex-col gap-5">
         <div className="flex items-center justify-between">
-          <h3 className="text-[20px] font-medium text-ink">Detail Information</h3>
-          <span className="text-ink" title="Editing is not available yet">
+          <h3 className="text-[20px] font-medium text-ink">{t("profile.detailInformation")}</h3>
+          <span className="text-ink" title={t("profile.editingUnavailable")}>
             <Icon name="edit-alt" size={24} />
           </span>
         </div>
@@ -102,7 +107,7 @@ export function ProfileDetailCard({ person }: { person: PersonDetail }) {
               <Icon name="user" size={16} />
             </span>
             <div className="flex flex-col gap-0.5">
-              <span className="text-xs font-medium text-muted">Full Name</span>
+              <span className="text-xs font-medium text-muted">{t("profile.fullName")}</span>
               <span className="text-sm font-medium text-ink">{person.name}</span>
             </div>
           </div>
@@ -112,7 +117,7 @@ export function ProfileDetailCard({ person }: { person: PersonDetail }) {
                 <Icon name="envelope" size={16} />
               </span>
               <div className="flex flex-col gap-0.5">
-                <span className="text-xs font-medium text-muted">Email</span>
+                <span className="text-xs font-medium text-muted">{t("settings.account.email")}</span>
                 <span className="text-sm font-medium text-ink">{person.email}</span>
               </div>
             </div>

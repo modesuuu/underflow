@@ -12,6 +12,16 @@ import type {
   MyCollabProject,
 } from "../types";
 import { groupMyCollabBoard } from "../columns";
+import { useLanguage } from "@/lib/i18n/LanguageProvider";
+import type { DictKey } from "@/lib/i18n/dictionary";
+
+const COL_LABEL: Record<string, DictKey> = {
+  "not-started": "mycollab.colActive",
+  pending: "mycollab.colPending",
+  complete: "mycollab.colComplete",
+  owned: "mycollab.colOwned",
+  revise: "mycollab.statusRevise",
+};
 
 interface MyCollabBoardProps {
   projects: MyCollabProject[];
@@ -41,6 +51,7 @@ interface MyCollabBoardProps {
 const PREVIEW_LIMIT = 4;
 
 export function MyCollabBoard({ projects, myUserId }: MyCollabBoardProps) {
+  const { t } = useLanguage();
   const { query } = useMyCollabToolbar();
   const [openMenu, setOpenMenu] = useState<MyCollabCategorySlug | null>(null);
 
@@ -84,12 +95,12 @@ export function MyCollabBoard({ projects, myUserId }: MyCollabBoardProps) {
           columns carry the counts and the status filter. */}
       <div className="flex flex-col gap-1">
         <h1 className="text-[40px] leading-none font-semibold tracking-tight text-ink uppercase">
-          My Collaborations
+          {t("nav.myCollaborations")}
         </h1>
         <p className="text-sm text-muted">
-          {totalCount} projects · {statusCount} statuses
+          {t("mycollab.headerStats", { total: totalCount, statuses: statusCount })}
           {query.trim() !== "" &&
-            ` · ${filtered.length} matching "${query.trim()}"`}
+            t("mycollab.matching", { count: filtered.length, query: query.trim() })}
         </p>
       </div>
 
@@ -101,27 +112,27 @@ export function MyCollabBoard({ projects, myUserId }: MyCollabBoardProps) {
             <Icon name="search" size={20} className="text-muted" />
           </span>
           <p className="text-base font-semibold text-ink">
-            No projects match
+            {t("mycollab.noMatchTitle")}
           </p>
           <p className="max-w-sm text-sm text-muted">
-            No projects match your search. Clear it to see all
-            projects.
+            {t("mycollab.noMatchBody")}
           </p>
           <button
             type="button"
             onClick={clearSearch}
             className="pressable mt-2 cursor-pointer rounded-full bg-accent px-4 py-2 text-sm font-medium text-on-accent transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
           >
-            Clear search
+            {t("mycollab.clearSearchBtn")}
           </button>
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4 xl:divide-x xl:divide-line">
           {columns.map(({ slug, cat, projects: columnProjects, startIndex }) => {
+            const colLabel = t(COL_LABEL[slug] ?? "mycollab.colActive");
             return (
               <section
                 key={slug}
-                aria-label={cat.crumbLabel}
+                aria-label={colLabel}
                 className="flex flex-col gap-3 rounded-lg border border-line bg-bg p-3"
               >
                 <div className="flex items-center gap-1.5 px-1 pt-1">
@@ -129,7 +140,7 @@ export function MyCollabBoard({ projects, myUserId }: MyCollabBoardProps) {
                     href={`/my-collaborations/${slug}`}
                     className="kanban-tag rounded-full px-3 py-1 text-sm font-semibold focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
                   >
-                    {cat.crumbLabel}
+                    {colLabel}
                   </Link>
                   <span className="rounded-full bg-accent px-2 py-0.5 text-[11px] font-semibold text-on-accent tabular-nums">
                     {columnProjects.length}
@@ -137,7 +148,7 @@ export function MyCollabBoard({ projects, myUserId }: MyCollabBoardProps) {
                   <div className="relative ms-auto">
                     <button
                       type="button"
-                      aria-label={`More actions for ${cat.crumbLabel}`}
+                      aria-label={t("mycollab.moreActionsFor", { label: colLabel })}
                       aria-expanded={openMenu === slug}
                       onClick={() =>
                         setOpenMenu(openMenu === slug ? null : slug)
@@ -159,7 +170,7 @@ export function MyCollabBoard({ projects, myUserId }: MyCollabBoardProps) {
                             onClick={() => setOpenMenu(null)}
                             className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-ink transition-colors hover:bg-bg focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
                           >
-                            View all projects
+                            {t("mycollab.viewAllProjects")}
                           </Link>
                         </div>
                       </>
@@ -169,7 +180,7 @@ export function MyCollabBoard({ projects, myUserId }: MyCollabBoardProps) {
                   <div className="flex flex-col gap-3">
                     {columnProjects.length === 0 ? (
                       <p className="px-1 py-3 text-center text-[13px] text-muted">
-                        No projects match in this status.
+                        {t("mycollab.noMatchInStatus")}
                       </p>
                     ) : (
                       columnProjects.slice(0, PREVIEW_LIMIT).map((p, i) => (
@@ -186,8 +197,10 @@ export function MyCollabBoard({ projects, myUserId }: MyCollabBoardProps) {
                         className="flex h-10 items-center justify-center gap-1 rounded-lg bg-bg text-sm font-medium text-muted transition-colors hover:text-ink focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
                       >
                         {columnProjects.length > PREVIEW_LIMIT
-                          ? `View ${columnProjects.length - PREVIEW_LIMIT} more`
-                          : "View more"}
+                          ? t("mycollab.viewMoreCount", {
+                              count: columnProjects.length - PREVIEW_LIMIT,
+                            })
+                          : t("mycollab.viewMore")}
                         <Icon name="chevron-down" size={16} />
                       </Link>
                     )}

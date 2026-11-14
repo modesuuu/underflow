@@ -2,6 +2,7 @@
 
 import { Avatar } from "@/components/ui/Avatar";
 import type { CircleMember, Presence } from "../types";
+import { useLanguage } from "@/lib/i18n/LanguageProvider";
 
 /**
  * Presence colors use existing tokens only (spec §6): online = accent,
@@ -44,16 +45,17 @@ function MemberRow({ member }: { member: CircleMember }) {
 }
 
 export function TeamTab({ members }: { members: CircleMember[] }) {
+  const { t } = useLanguage();
   const owner = members.filter((m) => m.isOwner);
   const rest = members.filter((m) => !m.isOwner);
   return (
     <div className="flex flex-col py-3">
-      <span className="px-4 pb-1 text-xs font-semibold text-subtle">Owner</span>
+      <span className="px-4 pb-1 text-xs font-semibold text-subtle">{t("admin.ownerPill")}</span>
       {owner.map((member) => (
         <MemberRow key={member.userId} member={member} />
       ))}
       <span className="px-4 pt-4 pb-1 text-xs font-semibold text-subtle">
-        Members
+        {t("admin.thMembers")}
       </span>
       {rest.map((member) => (
         <MemberRow key={member.userId} member={member} />

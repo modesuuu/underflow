@@ -9,11 +9,11 @@ import { toast } from "sonner";
 import { startApplicationThread, withdrawApplication } from "@/features/inbox/store";
 import { applyToCollab, backendErrorMessage } from "../api";
 import { ApplyMessageModal } from "./ApplyMessageModal";
+import { useLanguage } from "@/lib/i18n/LanguageProvider";
 
 type ApplyState = "default" | "pending" | "entered" | "declined" | "closed";
 
-const HELPER_TEXT =
-  "The owner reviews your application after you apply. Track the status in My Collaborations.";
+
 
 interface ApplyCtaProps {
   projectId: string;
@@ -52,6 +52,7 @@ export function ApplyCta({
   isOwner = false,
   initialState = "default",
 }: ApplyCtaProps) {
+  const { t } = useLanguage();
   const router = useRouter();
   const [state, setState] = useState<ApplyState>(initialState);
   // The detail page fills initialState in after its authed fetch
@@ -71,8 +72,8 @@ export function ApplyCta({
         // show Pending instead of erroring (no second inbox thread).
         setState("pending");
         setModalOpen(false);
-        toast("Application already sent", {
-          description: `Your application to ${projectTitle} is pending review.`,
+        toast(t("collab.alreadySentTitle"), {
+          description: t("collab.alreadySentBody", { title: projectTitle }),
         });
         return;
       }
@@ -91,12 +92,12 @@ export function ApplyCta({
       });
       setState("pending");
       setModalOpen(false);
-      toast.success("Application sent", {
-        description: `Your message is in ${ownerName}'s inbox.`,
+      toast.success(t("collab.sentTitle"), {
+        description: t("collab.sentBody", { name: ownerName }),
       });
       router.push("/inbox");
     } catch (err) {
-      toast.error("Application failed", {
+      toast.error(t("collab.failedTitle"), {
         description: backendErrorMessage(err),
       });
     } finally {
@@ -108,9 +109,9 @@ export function ApplyCta({
     try {
       await withdrawApplication(projectId);
       setState("default");
-      toast("Application withdrawn", { description: projectTitle });
+      toast(t("collab.withdrawnToast"), { description: projectTitle });
     } catch (err) {
-      toast.error("Couldn't withdraw the application", {
+      toast.error(t("collab.couldntWithdraw"), {
         description: backendErrorMessage(err),
       });
     }
@@ -120,18 +121,18 @@ export function ApplyCta({
     <Card variant="muted" padding={6} className="flex flex-col items-center gap-3">
       {isOwner && (
         <Button
-          label="This is your project"
+          label={t("collab.yourProject")}
           variant="secondary"
           size="lg"
           width="100%"
           isDisabled
-          tooltip="This is your project"
+          tooltip={t("collab.yourProject")}
         />
       )}
       {!isOwner && state === "default" &&
         (slotsFull ? (
           <Button
-            label="Apply to this project"
+            label={t("collab.applyToProjectBtn")}
             variant="secondary"
             size="lg"
             width="100%"
@@ -139,7 +140,7 @@ export function ApplyCta({
           />
         ) : (
           <Button
-            label="Apply to this project"
+            label={t("collab.applyToProjectBtn")}
             variant="primary"
             size="lg"
             width="100%"
@@ -153,7 +154,7 @@ export function ApplyCta({
         <div className="flex w-full gap-2">
           <div className="flex-1">
             <Button
-              label="Pending"
+              label={t("collab.pending")}
               variant="secondary"
               size="lg"
               width="100%"
@@ -162,7 +163,7 @@ export function ApplyCta({
           </div>
           <div className="flex-1">
             <Button
-              label="Cancel Application"
+              label={t("collab.cancelApplication")}
               variant="destructive"
               size="lg"
               width="100%"
@@ -174,7 +175,7 @@ export function ApplyCta({
 
       {state === "entered" && (
         <Button
-          label="You have entered this project"
+          label={t("collab.enteredLong")}
           variant="primary"
           size="lg"
           width="100%"
@@ -184,7 +185,7 @@ export function ApplyCta({
 
       {state === "declined" && (
         <Button
-          label="Your application was declined by the owner"
+          label={t("collab.declinedLong")}
           variant="secondary"
           size="lg"
           width="100%"
@@ -194,7 +195,7 @@ export function ApplyCta({
 
       {state === "closed" && (
         <Button
-          label="This project is closed"
+          label={t("collab.closedLong")}
           variant="secondary"
           size="lg"
           width="100%"
@@ -203,7 +204,7 @@ export function ApplyCta({
       )}
 
       {/* Helper text below the button, per Figma "Collaborations - Details" */}
-      <p className="text-xs text-muted">{HELPER_TEXT}</p>
+      <p className="text-xs text-muted">{t("collab.helperText")}</p>
 
       {modalOpen && (
         <ApplyMessageModal

@@ -6,6 +6,7 @@ import { setMobileNav, useMobileNavOpen } from "./mobile-nav";
 import { Sidebar } from "./Sidebar";
 import { LivePoller } from "@/features/dashboard/components/LivePoller";
 import { RedirectIfAuthed, RequireAuth } from "@/features/auth/components/AuthGate";
+import { useLanguage } from "@/lib/i18n/LanguageProvider";
 
 /**
  * The persistent app frame, mounted once by the root layout.
@@ -22,6 +23,7 @@ import { RedirectIfAuthed, RequireAuth } from "@/features/auth/components/AuthGa
  * frame steps aside for them.
  */
 export function RootShell({ children }: { children: ReactNode }) {
+  const { t } = useLanguage();
   const pathname = usePathname();
   const mobileOpen = useMobileNavOpen();
   // The drawer never survives a navigation.
@@ -85,7 +87,7 @@ export function RootShell({ children }: { children: ReactNode }) {
         {mobileOpen && (
           <button
             type="button"
-            aria-label="Close menu"
+            aria-label={t("common.closeMenu")}
             onClick={() => setMobileNav(false)}
             className="fixed inset-0 z-40 cursor-pointer bg-ink/40 lg:hidden"
           />

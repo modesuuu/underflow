@@ -4,6 +4,7 @@ import { PostButton } from "@/components/layout/PostButton";
 import { getDashboardPosts } from "@/features/dashboard/api";
 import { FeedColumn } from "@/features/dashboard/components/FeedColumn";
 import { NotificationsPanel } from "@/features/dashboard/components/NotificationsPanel";
+import { tStatic } from "@/lib/i18n/format";
 
 /**
  * The feed page keeps its own shaped skeleton (post-card stack + notifications
@@ -62,7 +63,7 @@ export default function Home() {
     >
       {/* P1-C #20: one real h1 per page — visually hidden so the
           breadcrumb in the TopBar stays the visual heading. */}
-      <h1 className="sr-only">Feed</h1>
+      <h1 className="sr-only">{tStatic("crumb.feed")}</h1>
       <div className="pb-24 sm:pb-0">
         <Suspense fallback={<FeedColumnSkeleton />}>
           <FeedColumnAsync />

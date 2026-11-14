@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Icon } from "@/components/ui/Icon";
+import { useLanguage } from "@/lib/i18n/LanguageProvider";
 
 /**
  * The reason step of reporting a post (spec-admin.md §4.3):
@@ -19,6 +20,7 @@ export function ReportForm({
   onSubmit: (reason: string) => Promise<void>;
   noun?: string;
 }) {
+  const { t } = useLanguage();
   const [reason, setReason] = useState("");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -42,14 +44,14 @@ export function ReportForm({
       <div className="flex items-center gap-3">
         <Icon name="flag" size={20} className="shrink-0 text-muted" />
         <p className="text-sm text-muted">
-          <span className="font-medium text-ink">Report this {noun}.</span>{" "}
+          <span className="font-medium text-ink">{t("report.reportThis", { noun: noun === "comment" ? t("feed.commentNoun") : t("feed.postNoun") })}</span>{" "}
           Tell the team what is wrong with it.
         </p>
       </div>
       <textarea
         value={reason}
         onChange={(e) => setReason(e.target.value)}
-        placeholder="Reason, e.g. spam, harassment, not a real project"
+        placeholder={t("report.reasonPlaceholder")}
         rows={3}
         autoFocus
         className="w-full resize-none rounded-lg bg-surface px-3 py-2 text-sm text-ink outline-none placeholder:text-subtle"
@@ -70,7 +72,7 @@ export function ReportForm({
           disabled={!canSubmit}
           className="cursor-pointer rounded-full bg-accent px-4 py-1.5 text-sm font-medium text-on-accent disabled:opacity-50"
         >
-          {sending ? "Sending..." : "Submit report"}
+          {sending ? t("common.sending") : t("report.submitReport")}
         </button>
       </div>
     </div>

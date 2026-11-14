@@ -5,6 +5,7 @@ import { Icon } from "@/components/ui/Icon";
 import { CIRCLE_CHANNELS } from "../mock";
 import { channelMentions, channelUnread } from "../store";
 import type { ChannelId, CircleData } from "../types";
+import { useLanguage } from "@/lib/i18n/LanguageProvider";
 
 /**
  * The room's channel rail (spec §3): project header + the two
@@ -25,6 +26,7 @@ export function ChannelSidebar({
   channelId: ChannelId;
   data: CircleData;
 }) {
+  const { t } = useLanguage();
   return (
     <div className="hidden w-[260px] shrink-0 flex-col border-r border-line bg-surface lg:flex">
       <div className="flex flex-col gap-0.5 border-b border-line px-4 py-3.5">
@@ -33,7 +35,7 @@ export function ChannelSidebar({
         </span>
         <span className="text-xs text-muted">{statusLabel}</span>
       </div>
-      <nav aria-label="Channels" className="flex flex-col gap-1 p-2.5">
+      <nav aria-label={t("circle.channels")} className="flex flex-col gap-1 p-2.5">
         {CIRCLE_CHANNELS.map((channel) => {
           const unread = channelUnread(data, channel.id);
           const mentions = channelMentions(data, channel.id);
@@ -81,8 +83,9 @@ export function ChannelSwitcher({
   channelId: ChannelId;
   data: CircleData;
 }) {
+  const { t } = useLanguage();
   return (
-    <nav aria-label="Channels" className="flex gap-2 px-4 pt-3 lg:hidden">
+    <nav aria-label={t("circle.channels")} className="flex gap-2 px-4 pt-3 lg:hidden">
       {CIRCLE_CHANNELS.map((channel) => {
         const unread = channelUnread(data, channel.id);
         const active = channel.id === channelId;

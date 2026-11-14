@@ -13,6 +13,13 @@ import { ConfirmDialog } from "@/features/inbox/components/ConfirmDialog";
 import { formatDueDate } from "../sort";
 import { STATUS_ICONS } from "../status";
 import type { CollabProject } from "../types";
+import type { DictKey } from "@/lib/i18n/dictionary";
+
+const STATUS_LABEL: Record<CollabProject["status"], DictKey> = {
+  open: "collab.statusOpen",
+  "in-progress": "collab.statusInProgress",
+  completed: "collab.statusCompleted",
+};
 import {
   backendErrorMessage,
   deleteCollabProject,
@@ -21,6 +28,8 @@ import {
 import { toast } from "sonner";
 import { startDirectThread } from "@/features/inbox/store";
 import { useSessionUser } from "@/features/auth/store";
+import { useLanguage } from "@/lib/i18n/LanguageProvider";
+import { formatRelativeAgo } from "@/lib/i18n/format";
 
 /**
  * Collab photos are `string[]` (URLs per the API contract). The mock uses
@@ -37,6 +46,7 @@ interface CollabDetailContentProps {
 }
 
 export function CollabDetailContent({ project }: CollabDetailContentProps) {
+  const { t, lang } = useLanguage();
   const [liveProject, setLiveProject] = useState<CollabProject | null>(null);
 
   // Seat counts + application state come from the API, never computed
@@ -61,13 +71,13 @@ export function CollabDetailContent({ project }: CollabDetailContentProps) {
   const handleDeleteProject = async () => {
     try {
       await deleteCollabProject(project.id);
-      toast.success("Project deleted");
+      toast.success(t("collab.projectDeleted"));
       router.push("/collaborations");
     } catch (err) {
       toast.error(
         err instanceof Error
           ? backendErrorMessage(err)
-          : "Couldn't delete this project. Try again."
+          : t("collab.couldntDeleteProject")
       );
     }
   };
@@ -106,7 +116,7 @@ export function CollabDetailContent({ project }: CollabDetailContentProps) {
   const lightboxPhotos = project.photos.slice(0, 4).map((url, i) => ({
     id: `${project.id}-photo-${i + 1}`,
     url: isUrlish(url) ? url : undefined,
-    alt: `Project photo ${i + 1}`,
+    alt: t("collab.photoAlt", { n: i + 1 }),
   }));
 
   return (
@@ -118,7 +128,7 @@ export function CollabDetailContent({ project }: CollabDetailContentProps) {
         <div className="flex items-center justify-between gap-3">
           <span className="inline-flex items-center gap-1 rounded-full bg-surface px-3 py-1 text-xs font-medium text-ink">
             <Icon name={STATUS_ICONS[project.status]} size={14} />
-            {project.status}
+            {t(STATUS_LABEL[project.status])}
           </span>
           {isOwnProject && (
             <div className="flex shrink-0 items-center gap-2">
@@ -128,7 +138,7 @@ export function CollabDetailContent({ project }: CollabDetailContentProps) {
                 className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full border border-line bg-surface px-3 py-1.5 text-xs font-medium text-ink transition-colors hover:bg-bg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
               >
                 <Icon name="edit" size={14} />
-                Edit
+                {t("collab.editBtn")}
               </button>
               {project.slotsFilled <= 1 && (
                 <button
@@ -137,7 +147,7 @@ export function CollabDetailContent({ project }: CollabDetailContentProps) {
                   className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full border border-line bg-surface px-3 py-1.5 text-xs font-medium text-badge transition-colors hover:bg-bg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                 >
                   <Icon name="trash" size={14} />
-                  Delete
+                  {t("common.delete")}
                 </button>
               )}
             </div>
@@ -155,12 +165,16 @@ export function CollabDetailContent({ project }: CollabDetailContentProps) {
           {project.dueDate ? (
             <span className="flex items-center gap-1 text-xs font-medium text-ink">
               <Icon name="calendar" size={14} />
-              Due: {formatDueDate(project.dueDate)}
+              {t("collab.dueLine", { date: formatDueDate(project.dueDate) })}
             </span>
           ) : null}
           <span className="flex items-center gap-1 text-xs font-medium text-muted">
             <Icon name="time" size={14} />
-            posted {project.postedAgo}
+            {t("collab.postedLine", {
+              ago: project.postedAt
+                ? formatRelativeAgo(project.postedAt, lang)
+                : project.postedAgo,
+            })}
           </span>
         </div>
 
@@ -202,11 +216,11 @@ export function CollabDetailContent({ project }: CollabDetailContentProps) {
             <button
               type="button"
               disabled
-              title="This is your project"
+              title={t("collab.yourProject")}
               className="flex cursor-not-allowed items-center gap-1 rounded-full bg-placeholder px-4 py-2 text-xs font-medium text-muted"
             >
               <Icon name="message-rounded" size={14} />
-              This is your project
+              {t("collab.yourProject")}
             </button>
           ) : (
             <button
@@ -220,7 +234,7 @@ export function CollabDetailContent({ project }: CollabDetailContentProps) {
                   });
                   router.push("/inbox");
                 } catch (err) {
-                  toast.error("Couldn't open the chat", {
+                  toast.error(t("collab.couldntOpenChat"), {
                     description: backendErrorMessage(err),
                   });
                 }
@@ -228,14 +242,14 @@ export function CollabDetailContent({ project }: CollabDetailContentProps) {
               className="flex cursor-pointer items-center gap-1 rounded-full bg-accent px-4 py-2 text-xs font-medium text-on-accent transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
             >
               <Icon name="message-rounded" size={14} />
-              Chat with owner
+              {t("collab.chatWithOwner")}
             </button>
           )}
         </div>
 
         {/* About the project */}
         <div className="flex flex-col gap-2">
-          <h2 className="text-xl font-medium text-ink">About the project</h2>
+          <h2 className="text-xl font-medium text-ink">{t("collab.aboutProject")}</h2>
           <p className="whitespace-pre-wrap text-sm leading-relaxed text-ink">
             {project.description}
           </p>
@@ -245,7 +259,7 @@ export function CollabDetailContent({ project }: CollabDetailContentProps) {
 
       {/* 3. Skills needed (heading on white, lime pills with icon + label) */}
       <div className="flex flex-col gap-3">
-        <h2 className="text-xl font-medium text-ink">Skills needed</h2>
+        <h2 className="text-xl font-medium text-ink">{t("collab.skillsNeeded")}</h2>
         <div className="flex flex-wrap gap-2">
           {project.skills.map((skill) => (
             <span
@@ -262,7 +276,7 @@ export function CollabDetailContent({ project }: CollabDetailContentProps) {
       {/* 4. Team: heading + slot count top-right; filled members AND open slots */}
       <div className="flex flex-col gap-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-xl font-medium text-ink">Team</h2>
+          <h2 className="text-xl font-medium text-ink">{t("collab.team")}</h2>
           <div className="flex items-center gap-1.5">
             <span className="text-sm font-medium text-ink">
               {slotsFilled}/{slotsTotal}
@@ -289,7 +303,7 @@ export function CollabDetailContent({ project }: CollabDetailContentProps) {
                 key={member.id}
                 href={`/profile/${member.id}`}
                 className="group flex items-center gap-2"
-                aria-label={`View ${member.name}'s profile`}
+                aria-label={t("feed.viewProfile", { name: member.name })}
               >
                 <Avatar size={32} src={member.avatarUrl} alt={member.name} />
                 <div className="flex flex-col">
@@ -331,9 +345,9 @@ export function CollabDetailContent({ project }: CollabDetailContentProps) {
     />
     {confirmingDelete && (
       <ConfirmDialog
-        title="Delete this project?"
-        description="This project will be removed for everyone. This can't be undone."
-        confirmLabel="Delete"
+        title={t("collab.deleteProjectTitle")}
+        description={t("collab.deleteProjectBody")}
+        confirmLabel={t("common.delete")}
         onConfirm={() => {
           setConfirmingDelete(false);
           void handleDeleteProject();

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Icon } from "@/components/ui/Icon";
 import { MyCollabMobileSearchModal } from "./MyCollabMobileSearchModal";
 import { setQuery, useMyCollabToolbar } from "../toolbar-store";
+import { useLanguage } from "@/lib/i18n/LanguageProvider";
 
 /**
  * The /my-collaborations TopBar actions (user order 2026-11-10):
@@ -17,6 +18,7 @@ import { setQuery, useMyCollabToolbar } from "../toolbar-store";
  * the right (MyCollabMobileSearchModal).
  */
 export function MyCollabTopBarActions() {
+  const { t } = useLanguage();
   const { query } = useMyCollabToolbar();
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
 
@@ -30,14 +32,14 @@ export function MyCollabTopBarActions() {
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search projects"
-            aria-label="Search projects"
+            placeholder={t("collab.searchProjectsLabel")}
+            aria-label={t("collab.searchProjectsLabel")}
             className="min-w-0 flex-1 bg-transparent text-sm font-medium text-ink outline-none placeholder:text-muted"
           />
           {query !== "" && (
             <button
               type="button"
-              aria-label="Clear search"
+              aria-label={t("collab.clearSearch")}
               onClick={() => setQuery("")}
               className="flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-full bg-bg text-muted transition-colors hover:text-ink focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
             >
@@ -49,7 +51,7 @@ export function MyCollabTopBarActions() {
       {/* Search icon — phones only (opens the search sheet). */}
       <button
         type="button"
-        aria-label="Search"
+        aria-label={t("common.search")}
         onClick={() => setMobileSearchOpen(true)}
         className="flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-full border border-line bg-surface text-ink transition-colors hover:bg-bg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent sm:hidden"
       >

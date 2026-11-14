@@ -4,6 +4,7 @@ import { setPanelTab, usePanelState } from "../store";
 import { ResourcesTab } from "./ResourcesTab";
 import { TeamTab } from "./TeamTab";
 import type { CircleData } from "../types";
+import { useLanguage } from "@/lib/i18n/LanguageProvider";
 
 /**
  * The right panel (spec §3, §6): tabbed Team | Resources, 308px like
@@ -20,10 +21,11 @@ export function CirclePanel({
   data: CircleData;
   shown: boolean;
 }) {
+  const { t } = useLanguage();
   const panel = usePanelState();
   return (
     <aside
-      aria-label="Team and resources"
+      aria-label={t("circle.teamAndResources")}
       className={`absolute top-0 right-0 bottom-0 z-30 flex w-[308px] shrink-0 flex-col border-l border-line bg-surface transition-[transform,opacity] duration-[220ms] ease-(--uf-ease-out) xl:static xl:z-auto ${
         shown ? "translate-x-0 opacity-100" : "pointer-events-none translate-x-4 opacity-0"
       }`}
