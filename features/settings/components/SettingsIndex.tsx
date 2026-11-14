@@ -2,38 +2,46 @@
 
 import Link from "next/link";
 import { Icon } from "@/components/ui/Icon";
+import { useLanguage } from "@/lib/i18n/LanguageProvider";
+import type { DictKey } from "@/lib/i18n/dictionary";
 
 interface SettingsCategory {
   href: string;
   icon: string;
-  label: string;
-  description: string;
+  labelKey: DictKey;
+  descKey: DictKey;
 }
 
 const CATEGORIES: SettingsCategory[] = [
   {
     href: "/settings/profile",
     icon: "user",
-    label: "Profile",
-    description: "Your photo and skills",
+    labelKey: "settings.profile.label",
+    descKey: "settings.profile.desc",
   },
   {
     href: "/settings/appearance",
     icon: "palette",
-    label: "Appearance",
-    description: "Theme for this device",
+    labelKey: "settings.appearance.label",
+    descKey: "settings.appearance.desc",
+  },
+  {
+    href: "/settings/language",
+    icon: "globe",
+    labelKey: "settings.language.label",
+    descKey: "settings.language.desc",
   },
   {
     href: "/settings/help",
     icon: "help-circle",
-    label: "Help Center",
-    description: "How Underflow works",
+    labelKey: "settings.help.label",
+    descKey: "settings.help.desc",
   },
   {
     href: "/settings/account",
     icon: "lock-alt",
-    label: "Account",
-    description: "Sign-in method and log out",
+    labelKey: "settings.account.label",
+    descKey: "settings.account.desc",
   },
 ];
 
@@ -45,14 +53,15 @@ const CATEGORIES: SettingsCategory[] = [
  * backend work — instead of one page scrolling forever.
  */
 export function SettingsIndex() {
+  const { t } = useLanguage();
   return (
     <div className="flex min-h-full flex-col gap-4 px-4 pt-6 pb-24 sm:px-6 sm:pt-8 sm:pb-8">
       <header className="flex flex-col gap-1">
         <h1 className="text-[40px] leading-none font-semibold tracking-tight text-ink uppercase">
-          Settings
+          {t("settings.title")}
         </h1>
         <p className="text-sm text-muted">
-          Pick a category to manage it.
+          {t("settings.subtitle")}
         </p>
       </header>
       <div className="flex flex-col">
@@ -69,9 +78,9 @@ export function SettingsIndex() {
               <Icon name={cat.icon} size={20} />
             </span>
             <span className="flex min-w-0 flex-1 flex-col">
-              <span className="font-medium text-ink">{cat.label}</span>
+              <span className="font-medium text-ink">{t(cat.labelKey)}</span>
               <span className="truncate text-sm text-muted">
-                {cat.description}
+                {t(cat.descKey)}
               </span>
             </span>
             <span className="text-muted">

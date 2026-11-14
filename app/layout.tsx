@@ -4,6 +4,7 @@ import { RootShell } from "@/components/layout/RootShell";
 import { AppToaster } from "@/components/ui/AppToaster";
 import { ThemeInitScript } from "@/components/ui/ThemeInitScript";
 import { AstryxTheme } from "@/components/ui/AstryxTheme";
+import { LanguageProvider } from "@/lib/i18n/LanguageProvider";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -34,8 +35,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             not a rendered <script> element). */}
         <ThemeInitScript />
         <AstryxTheme>
-          <RootShell>{children}</RootShell>
-          <AppToaster />
+          <LanguageProvider>
+            <RootShell>{children}</RootShell>
+            <AppToaster />
+          </LanguageProvider>
         </AstryxTheme>
       </body>
     </html>
