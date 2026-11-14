@@ -368,3 +368,52 @@ async function registerViaBackend(input: RegisterInput): Promise<AuthSession> {
   }
   return loginViaBackend({ username: input.username, password: input.password });
 }
+
+/**
+ * POST /api/auth/forgot-password. The backend ALWAYS answers a
+ * generic success (registered or not), so this only throws when the
+ * request itself fails (server down, HTTP error) — never because
+ * the email is unknown.
+ */
+export async function forgotPassword(email: string): Promise<void> {
+  const payload: Record<string, string> = {};
+  payload.email = email;
+  const res = await fetch(`${getApiBaseUrl()}/api/auth/forgot-password`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      "forgot_failed",
+      `Forgot password failed (HTTP ${res.status}).`,
+    );
+  }
+}
+
+/**
+ * POST /api/auth/reset-password. Exchanges the emailed token for a
+ * new password; a 400 means the link is invalid, expired, or used.
+ */
+export async function resetPassword(
+  token: string,
+  newPassword: string,
+): Promise<void> {
+  const payload: Record<string, string> = {};
+  payload.token = token;
+  payload.new_password = newPassword;
+  const res = await fetch(`${getApiBaseUrl()}/api/auth/reset-password`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  const body = await readBackendEnvelope<null>(res);
+  if (!res.ok || !body.success) {
+    throw new ApiError(
+      res.status,
+      "reset_failed",
+      body.message || `Reset password failed (HTTP ${res.status}).`,
+    );
+  }
+}

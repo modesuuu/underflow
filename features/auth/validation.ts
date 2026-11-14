@@ -42,6 +42,13 @@ export function validateRegister(input: RegisterInput): FieldErrors {
   return errors;
 }
 
+/** Single-field email check for the forgot-password form. */
+export function validateEmailField(email: string): string | undefined {
+  if (!email.trim()) return "auth.errEmailRequired";
+  if (!EMAIL_PATTERN.test(email.trim())) return "auth.errEmailInvalid";
+  return undefined;
+}
+
 export function firstError(errors: FieldErrors): string | undefined {
   return Object.values(errors)[0];
 }

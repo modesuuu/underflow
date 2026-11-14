@@ -38,7 +38,11 @@ export function RootShell({ children }: { children: ReactNode }) {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [mobileOpen]);
-  const isAuthRoute = pathname === "/login" || pathname === "/signup";
+  const isAuthRoute =
+    pathname === "/login" ||
+    pathname === "/signup" ||
+    pathname === "/forgot-password" ||
+    pathname === "/reset-password";
   // Framed routes (app + admin) own their scrolling through inner
   // containers; the document itself must never scroll, or a stray
   // window scroll leaves the whole frame shifted with a void below
@@ -61,6 +65,10 @@ export function RootShell({ children }: { children: ReactNode }) {
     };
   }, [lockDocumentScroll, pathname]);
   if (isAuthRoute) {
+    // The reset page stays reachable while signed in: a reset link
+    // can be opened in a browser with a live session, and the reset
+    // itself revokes older sessions server-side.
+    if (pathname === "/reset-password") return <>{children}</>;
     return <RedirectIfAuthed>{children}</RedirectIfAuthed>;
   }
   if (pathname?.startsWith("/admin")) {

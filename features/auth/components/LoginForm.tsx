@@ -169,6 +169,14 @@ export function LoginForm() {
           onChange={(e) => setPassword(e.target.value)}
           error={errors.password}
         />
+        <div className="-mt-2 text-right">
+          <Link
+            href="/forgot-password"
+            className="text-sm font-medium text-ink underline underline-offset-2"
+          >
+            {t("auth.forgotPassword")}
+          </Link>
+        </div>
         <Button
           type="submit"
           label={submitting ? t("auth.loggingIn") : t("auth.logIn")}
