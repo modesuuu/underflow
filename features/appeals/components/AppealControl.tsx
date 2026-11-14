@@ -4,6 +4,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { ApiError } from "@/lib/api-client";
 import { createAppeal, type MyAppeal } from "../api";
+import { useLanguage } from "@/lib/i18n/LanguageProvider";
 
 /**
  * Appeal affordance under a moderation notice in the system thread
@@ -20,6 +21,7 @@ export function AppealControl({
   appeal?: MyAppeal;
   onSubmitted: (appeal: MyAppeal) => void;
 }) {
+  const { t } = useLanguage();
   const [open, setOpen] = useState(false);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
@@ -28,10 +30,10 @@ export function AppealControl({
     return (
       <p className="rounded-full border border-line px-3 py-1 text-xs text-muted">
         {appeal.status === "pending"
-          ? "Appeal sent. A Super Admin will review it."
+          ? t("appeal.statusPending")
           : appeal.status === "granted"
-            ? "Appeal accepted."
-            : "Appeal denied."}
+            ? t("appeal.statusGranted")
+            : t("appeal.statusDenied")}
       </p>
     );
   }
@@ -43,7 +45,7 @@ export function AppealControl({
         onClick={() => setOpen(true)}
         className="rounded-full border border-line px-3 py-1 text-xs font-medium text-muted transition-colors hover:text-ink"
       >
-        Appeal this decision
+        {t("appeal.button")}
       </button>
     );
   }
@@ -53,13 +55,13 @@ export function AppealControl({
     setBusy(true);
     try {
       const created = await createAppeal(actionId, message.trim());
-      toast.success("Appeal sent. The moderation team will review it.");
+      toast.success(t("auth.appealSent"));
       onSubmitted(created);
     } catch (err) {
       toast.error(
         err instanceof ApiError
           ? err.message
-          : "Could not send your appeal. Try again.",
+          : t("auth.couldNotSendAppeal"),
       );
     } finally {
       setBusy(false);
@@ -72,7 +74,7 @@ export function AppealControl({
         value={message}
         onChange={(e) => setMessage(e.target.value)}
         rows={3}
-        placeholder="Explain why this action should be reversed"
+        placeholder={t("appeal.placeholder")}
         className="w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm outline-none placeholder:text-subtle focus:border-accent"
       />
       <div className="mt-1.5 flex items-center gap-2">
@@ -82,14 +84,14 @@ export function AppealControl({
           disabled={busy || message.trim().length < 3}
           className="rounded-full bg-accent px-3.5 py-1.5 text-xs font-medium text-on-accent disabled:opacity-50"
         >
-          {busy ? "Sending…" : "Send appeal"}
+          {busy ? t("auth.sending") : t("auth.sendAppeal")}
         </button>
         <button
           type="button"
           onClick={() => setOpen(false)}
           className="px-2 py-1.5 text-xs font-medium text-muted transition-colors hover:text-ink"
         >
-          Cancel
+          {t("common.cancel")}
         </button>
       </div>
     </div>

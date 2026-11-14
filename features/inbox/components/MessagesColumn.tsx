@@ -14,6 +14,7 @@ import {
 import type { Conversation } from "../types";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { ThreadOptionsMenu } from "./ThreadOptionsMenu";
+import { useLanguage } from "@/lib/i18n/LanguageProvider";
 
 interface MessagesColumnProps {
   conversations: Conversation[];
@@ -42,6 +43,7 @@ export function MessagesColumn({
   onSelect,
   className,
 }: MessagesColumnProps) {
+  const { t } = useLanguage();
   const [confirm, setConfirm] = useState<ConfirmState>(null);
 
   const sorted = [...conversations].sort(
@@ -50,7 +52,7 @@ export function MessagesColumn({
 
   return (
     <section
-      aria-label="Conversations"
+      aria-label={t("inbox.conversations")}
       className={clsx(
         "flex h-full w-full shrink-0 flex-col border-r border-line bg-chrome lg:w-[336px]",
         className
@@ -58,11 +60,11 @@ export function MessagesColumn({
     >
       <div className="flex shrink-0 flex-col gap-5 px-6 pt-6">
         <div className="flex items-center justify-between">
-          <h2 className="text-[28px] font-bold text-ink">Messages</h2>
+          <h2 className="text-[28px] font-bold text-ink">{t("inbox.messages")}</h2>
         </div>
 
         <label className="relative block">
-          <span className="sr-only">Search conversations</span>
+          <span className="sr-only">{t("inbox.searchConversations")}</span>
           <Icon
             name="search"
             size={18}
@@ -72,7 +74,7 @@ export function MessagesColumn({
             type="search"
             value={query}
             onChange={(event) => onQueryChange(event.target.value)}
-            placeholder="Search"
+            placeholder={t("common.search")}
             className="h-[42px] w-full rounded-lg border border-line bg-active pr-3 pl-9 text-sm text-ink outline-none placeholder:text-muted focus-visible:ring-2 focus-visible:ring-accent"
           />
         </label>
@@ -125,8 +127,8 @@ export function MessagesColumn({
                       }`}
                     >
                       {last
-                        ? `${last.from === "me" ? "You: " : ""}${last.text}`
-                        : "No messages yet"}
+                        ? `${last.from === "me" ? t("inbox.youPrefix") : ""}${last.text}`
+                        : t("inbox.noMessagesYet")}
                     </span>
                   </span>
                   <span className="flex h-[42px] flex-col items-end justify-between py-0.5">
@@ -157,43 +159,43 @@ export function MessagesColumn({
         })}
         {conversations.length === 0 && (
           <li className="px-2 text-sm text-muted">
-            No conversations match your search.
+            {t("inbox.noConversationsMatch")}
           </li>
         )}
       </ul>
 
       <p className="shrink-0 px-6 pt-2 pb-6 text-sm text-muted">
-        Chat with applicants
+        {t("inbox.chatWithApplicants")}
       </p>
 
       {confirm && (
         <ConfirmDialog
-          title={confirm.kind === "delete" ? "Delete chat" : "Clear chat"}
+          title={confirm.kind === "delete" ? t("inbox.deleteChat") : t("inbox.clearChat")}
           description={
             confirm.kind === "delete"
-              ? `The chat with ${confirm.thread.name} will be deleted. This cannot be undone.`
-              : `Messages in this chat will be removed. The conversation and its application stay. This cannot be undone.`
+              ? t("inbox.deleteChatBody", { name: confirm.thread.name })
+              : t("inbox.clearChatBody")
           }
-          confirmLabel={confirm.kind === "delete" ? "Delete chat" : "Clear chat"}
+          confirmLabel={confirm.kind === "delete" ? t("inbox.deleteChat") : t("inbox.clearChat")}
           onConfirm={() => {
             const snapshot = confirm.thread;
             if (confirm.kind === "delete") {
               deleteThread(snapshot.id);
-              toast("Chat deleted", {
+              toast(t("inbox.chatDeleted"), {
                 description: snapshot.name,
                 duration: 5000,
                 action: {
-                  label: "Undo",
+                  label: t("common.undo"),
                   onClick: () => restoreThread(snapshot),
                 },
               });
             } else {
               clearThread(snapshot.id);
-              toast("Chat cleared", {
+              toast(t("inbox.chatCleared"), {
                 description: snapshot.name,
                 duration: 5000,
                 action: {
-                  label: "Undo",
+                  label: t("common.undo"),
                   onClick: () => restoreThread(snapshot),
                 },
               });

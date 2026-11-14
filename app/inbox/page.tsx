@@ -1,5 +1,6 @@
 import { AppShell } from "@/components/layout/AppShell";
 import { InboxShell } from "@/features/inbox/components/InboxShell";
+import { tStatic } from "@/lib/i18n/format";
 
 /**
  * Inbox (Figma 386:5, breadcrumb "Tools / Inbox"): the Messages rail
@@ -9,7 +10,7 @@ import { InboxShell } from "@/features/inbox/components/InboxShell";
 export default function InboxPage() {
   return (
     <AppShell breadcrumbRoot="Tools" breadcrumbLeaf="Inbox" fill>
-      <h1 className="sr-only">Inbox</h1>
+      <h1 className="sr-only">{tStatic("nav.inbox")}</h1>
       <InboxShell />
     </AppShell>
   );

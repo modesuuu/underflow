@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { toast } from "sonner";
 import { Icon } from "@/components/ui/Icon";
+import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import {
   markThreadUnread,
   toggleMuteThread,
@@ -37,6 +38,7 @@ export function ThreadOptionsMenu({
   onClearRequest,
   onDeleteRequest,
 }: ThreadOptionsMenuProps) {
+  const { t } = useLanguage();
   const [open, setOpen] = useState(false);
   const [coords, setCoords] = useState<{ top: number; right: number } | null>(
     null,
@@ -98,7 +100,7 @@ export function ThreadOptionsMenu({
     <div ref={rootRef} className="relative shrink-0">
       <button
         type="button"
-        aria-label={`Options for chat with ${thread.name}`}
+        aria-label={t("inbox.optionsForChat", { name: thread.name })}
         aria-haspopup="menu"
         aria-expanded={open}
         onClick={() => (open ? setOpen(false) : openMenu())}
@@ -112,7 +114,7 @@ export function ThreadOptionsMenu({
           <div
             ref={menuRef}
             role="menu"
-            aria-label={`Chat with ${thread.name} — options`}
+            aria-label={t("inbox.chatOptions", { name: thread.name })}
             style={{
               position: "fixed",
               top: coords.top,
@@ -131,7 +133,7 @@ export function ThreadOptionsMenu({
               className={itemClass}
             >
               <Icon name="pin" size={18} />
-              {thread.pinned ? "Unpin chat" : "Pin chat"}
+              {thread.pinned ? t("inbox.unpinChat") : t("inbox.pinChat")}
             </button>
             {unreadCount(thread) === 0 && (
               <button
@@ -144,7 +146,7 @@ export function ThreadOptionsMenu({
                 className={itemClass}
               >
                 <Icon name="envelope" size={18} />
-                Mark as unread
+                {t("inbox.markUnread")}
               </button>
             )}
             <button
@@ -153,14 +155,14 @@ export function ThreadOptionsMenu({
               onClick={() => {
                 setOpen(false);
                 toggleMuteThread(thread.id);
-                toast(thread.muted ? "Chat unmuted" : "Chat muted", {
+                toast(thread.muted ? t("inbox.chatUnmuted") : t("inbox.chatMuted"), {
                   description: thread.name,
                 });
               }}
               className={itemClass}
             >
               <Icon name={thread.muted ? "bell" : "bell-off"} size={18} />
-              {thread.muted ? "Unmute notifications" : "Mute notifications"}
+              {thread.muted ? t("inbox.unmuteNotifications") : t("inbox.muteNotifications")}
             </button>
             <button
               type="button"
@@ -172,7 +174,7 @@ export function ThreadOptionsMenu({
               className={itemClass}
             >
               <Icon name="brush" size={18} />
-              Clear chat
+              {t("inbox.clearChat")}
             </button>
             <button
               type="button"
@@ -184,7 +186,7 @@ export function ThreadOptionsMenu({
               className="flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-medium text-badge transition-colors hover:bg-bg"
             >
               <Icon name="trash" size={18} />
-              Delete chat
+              {t("inbox.deleteChat")}
             </button>
           </div>,
           document.body,

@@ -18,6 +18,7 @@ import { ApplicationCard } from "./ApplicationCard";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { ThreadOptionsMenu } from "./ThreadOptionsMenu";
 import { AppealControl } from "@/features/appeals/components/AppealControl";
+import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import { getMyAppeals, type MyAppeal } from "@/features/appeals/api";
 
 /**
@@ -37,6 +38,7 @@ export function ChatPane({
   onBack?: () => void;
   className?: string;
 }) {
+  const { t } = useLanguage();
   const [draft, setDraft] = useState("");
   const [confirm, setConfirm] = useState<"clear" | "delete" | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -78,13 +80,13 @@ export function ChatPane({
   if (!conversation) {
     return (
       <section
-        aria-label="Conversation"
+        aria-label={t("inbox.conversation")}
         className={clsx(
           "flex min-w-0 flex-1 items-center justify-center bg-surface",
           className
         )}
       >
-        <p className="text-sm text-muted">Select a conversation</p>
+        <p className="text-sm text-muted">{t("inbox.selectConversation")}</p>
       </section>
     );
   }
@@ -114,14 +116,17 @@ export function ChatPane({
     if (!application) return;
     try {
       await resolveApplication(conversation.id, status);
-      const description = `${conversation.name}'s application for ${application.projectTitle} was ${status}.`;
+      const description =
+        status === "accepted"
+          ? t("inbox.appAcceptedBody", { name: conversation.name, project: application.projectTitle })
+          : t("inbox.appDeclinedBody", { name: conversation.name, project: application.projectTitle });
       if (status === "accepted") {
-        toast.success("Application accepted", { description });
+        toast.success(t("inbox.appAccepted"), { description });
       } else {
-        toast("Application declined", { description });
+        toast(t("inbox.appDeclined"), { description });
       }
     } catch (err) {
-      toast.error("Couldn't update the application", {
+      toast.error(t("inbox.couldntUpdateApplication"), {
         description: backendErrorMessage(err),
       });
     }
@@ -136,7 +141,7 @@ export function ChatPane({
 
   return (
     <section
-      aria-label={`Conversation with ${conversation.name}`}
+      aria-label={t("inbox.conversationWith", { name: conversation.name })}
       className={clsx("relative flex min-w-0 flex-1 flex-col bg-surface", className)}
     >
       {/* Back to the conversation list: mobile only. On desktop
@@ -145,7 +150,7 @@ export function ChatPane({
         <button
           type="button"
           onClick={onBack}
-          aria-label="Back to conversations"
+          aria-label={t("inbox.backToConversations")}
           className="pressable absolute top-4 left-4 z-10 flex size-10 cursor-pointer items-center justify-center rounded-full bg-bg text-ink focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none lg:hidden"
         >
           <Icon name="chevron-left" size={22} />
@@ -196,7 +201,7 @@ export function ChatPane({
               </div>
             ) : (
               <p className="py-10 text-center text-sm text-muted">
-                No messages in this chat yet.
+                {t("inbox.noMessagesInChat")}
               </p>
             ))}
           {blocks.map((block, blockIndex) => {
@@ -265,8 +270,7 @@ export function ChatPane({
       {conversation.kind === "system" ? (
         <div className="shrink-0 px-4 pt-2 pb-4 sm:px-6 sm:pb-6">
           <p className="rounded-full bg-bg px-4 py-2.5 text-center text-sm text-muted">
-            Announcements from the Underflow team. This thread is
-            one-way, so you can&apos;t reply.
+            {t("inbox.systemNotice")}
           </p>
         </div>
       ) : (
@@ -274,7 +278,7 @@ export function ChatPane({
         <div className="flex items-center gap-3">
           <div className="flex min-w-0 flex-1 items-center gap-1 rounded-full bg-bg px-4 py-2 transition-shadow focus-within:ring-2 focus-within:ring-accent">
             <label className="sr-only" htmlFor={`composer-${conversation.id}`}>
-              Message {conversation.name}
+              {t("inbox.messageTo", { name: conversation.name })}
             </label>
             <input
               id={`composer-${conversation.id}`}
@@ -287,7 +291,7 @@ export function ChatPane({
           </div>
           <button
             type="submit"
-            aria-label="Send message"
+            aria-label={t("inbox.sendMessage")}
             disabled={!draft.trim()}
             className="flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-full bg-accent text-on-accent transition-opacity hover:opacity-85 disabled:cursor-not-allowed disabled:opacity-40"
           >
@@ -299,32 +303,32 @@ export function ChatPane({
 
       {confirm && (
         <ConfirmDialog
-          title={confirm === "delete" ? "Delete chat" : "Clear chat"}
+          title={confirm === "delete" ? t("inbox.deleteChat") : t("inbox.clearChat")}
           description={
             confirm === "delete"
-              ? `The chat with ${conversation.name} will be deleted. This cannot be undone.`
-              : `Messages in this chat will be removed. The conversation and its application stay. This cannot be undone.`
+              ? t("inbox.deleteChatBody", { name: conversation.name })
+              : t("inbox.clearChatBody")
           }
-          confirmLabel={confirm === "delete" ? "Delete" : "Clear"}
+          confirmLabel={confirm === "delete" ? t("common.delete") : t("inbox.clear")}
           onConfirm={() => {
             const snapshot = conversation;
             if (confirm === "delete") {
               deleteThread(conversation.id);
-              toast("Chat deleted", {
+              toast(t("inbox.chatDeleted"), {
                 description: snapshot.name,
                 duration: 5000,
                 action: {
-                  label: "Undo",
+                  label: t("common.undo"),
                   onClick: () => restoreThread(snapshot),
                 },
               });
             } else {
               clearThread(conversation.id);
-              toast("Chat cleared", {
+              toast(t("inbox.chatCleared"), {
                 description: snapshot.name,
                 duration: 5000,
                 action: {
-                  label: "Undo",
+                  label: t("common.undo"),
                   onClick: () => restoreThread(snapshot),
                 },
               });
