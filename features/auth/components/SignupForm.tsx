@@ -51,6 +51,8 @@ export function SignupForm() {
       } else if (err instanceof ApiError && err.code === "email_taken") {
         setErrors((prev) => ({ ...prev, email: err.message }));
         toast.error(err.message);
+      } else if (err instanceof ApiError && err.code === "rate_limited") {
+        toast.error(t("auth.errTooMany"));
       } else {
         toast.error(
           err instanceof ApiError

@@ -85,6 +85,10 @@ export function LoginForm() {
         setSuspended({ info: err.suspended, username, password });
         return;
       }
+      if (err instanceof ApiError && err.code === "rate_limited") {
+        toast.error(t("auth.errTooMany"));
+        return;
+      }
       // Credential failures arrive pre-genericized from the api
       // layer ("Username/password salah"); anything else that is
       // not an ApiError is a network failure.

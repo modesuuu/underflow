@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { AppShell } from "@/components/layout/AppShell";
 import { PostButton } from "@/components/layout/PostButton";
-import { getDashboardPosts } from "@/features/dashboard/api";
+import { getFeedPage } from "@/features/dashboard/api";
 import { FeedColumn } from "@/features/dashboard/components/FeedColumn";
 import { NotificationsPanel } from "@/features/dashboard/components/NotificationsPanel";
 import { tStatic } from "@/lib/i18n/format";
@@ -40,8 +40,8 @@ function FeedColumnSkeleton() {
 }
 
 async function FeedColumnAsync() {
-  const posts = await getDashboardPosts();
-  return <FeedColumn posts={posts} centered />;
+  const page = await getFeedPage(1);
+  return <FeedColumn posts={page.posts} centered feedTotal={page.total} />;
 }
 
 export default function Home() {

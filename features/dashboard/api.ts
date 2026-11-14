@@ -85,6 +85,45 @@ export async function getDashboardPosts(): Promise<Post[]> {
   }
 }
 
+export interface FeedPage {
+  posts: Post[];
+  total: number;
+  page: number;
+  totalPages: number;
+}
+
+export const FEED_PAGE_SIZE = 10;
+
+/**
+ * One page of the feed (audit P0, 2026-11-14): GET /api/posts now
+ * accepts page/limit and answers with pagination metadata, so the
+ * feed page no longer downloads every post at once. The legacy
+ * getDashboardPosts() above stays for the hydrator/poller/profile,
+ * which genuinely need the whole list.
+ */
+export async function getFeedPage(page: number, limit: number = FEED_PAGE_SIZE): Promise<FeedPage> {
+  if (!isApiConfigured()) {
+    return { posts: [], total: 0, page, totalPages: 0 };
+  }
+  try {
+    const res = await apiFetch<ApiEnvelope<BackendPost[]>>(
+      "/api/posts?page=" + page + "&limit=" + limit,
+    );
+    const pagination = res.pagination;
+    return {
+      posts: res.data.map(mapBackendPost),
+      total: pagination?.total ?? res.data.length,
+      page: pagination?.page ?? page,
+      totalPages: pagination?.total_pages ?? 1,
+    };
+  } catch (err) {
+    if (err instanceof Error && "code" in err && (err as { code?: string }).code === "network_error") {
+      return { posts: [], total: 0, page, totalPages: 0 };
+    }
+    throw err;
+  }
+}
+
 export interface CreatePostInput {
   description: string;
   media_urls: string[];

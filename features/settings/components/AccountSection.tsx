@@ -2,6 +2,7 @@
 
 import { useSessionUser } from "@/features/auth/store";
 import { LogoutButton } from "@/features/auth/components/LogoutButton";
+import { ChangePasswordForm } from "./ChangePasswordForm";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import { SettingsSection } from "./SettingsSection";
 
@@ -10,8 +11,8 @@ import { SettingsSection } from "./SettingsSection";
  * read-only (username and email are set at registration; there
  * is no rename flow), the way the session was established, and
  * Log out — the same confirmed logout the profile page uses.
- * Password changes are deliberately absent: the backend has no
- * change-password endpoint yet, so the control would be a fake.
+ * Change password is here too, backed by the real endpoint
+ * PUT /api/auth/change-password (audit P0, 2026-11-14).
  */
 export function AccountSection() {
   const { t } = useLanguage();
@@ -52,6 +53,9 @@ export function AccountSection() {
                 </span>
               </div>
             ))}
+          </div>
+          <div className="border-t border-line pt-4">
+            <ChangePasswordForm />
           </div>
           <LogoutButton />
         </>

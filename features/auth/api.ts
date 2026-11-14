@@ -1,4 +1,4 @@
-import { ApiError, getApiBaseUrl } from "@/lib/api-client";
+import { ApiError, apiFetch, getApiBaseUrl, type ApiEnvelope } from "@/lib/api-client";
 import { getSession, setSession } from "./session";
 import type { AuthSession, AuthUser, LoginInput, RegisterInput } from "./types";
 import { firstError, validateLogin, validateRegister } from "./validation";
@@ -259,9 +259,33 @@ export async function getMe(): Promise<AuthUser | null> {
   return current.user;
 }
 
-/** Client-side only: the backend has no logout endpoint, the token is simply discarded. */
-export function logout(): void {
+/**
+ * Signs out on the server too (audit P0, 2026-11-14): the backend
+ * revokes the token so it cannot be replayed, then the local
+ * session is discarded either way — a failed revoke call must
+ * never trap the user in a signed-in UI.
+ */
+export async function logout(): Promise<void> {
+  const token = getSession()?.token;
+  if (token) {
+    try {
+      await fetch(getApiBaseUrl() + "/api/auth/logout", {
+        method: "POST",
+        headers: { Authorization: "Bearer " + token },
+      });
+    } catch {
+      // Best effort: the local sign-out proceeds regardless.
+    }
+  }
   setSession(null);
+}
+
+/** Changes the signed-in user's password (PUT /api/auth/change-password). */
+export async function changePassword(currentPassword: string, newPassword: string): Promise<void> {
+  await apiFetch<ApiEnvelope<null>>("/api/auth/change-password", {
+    method: "PUT",
+    body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }),
+  });
 }
 
 /* --- Backend path --- */
@@ -293,10 +317,13 @@ async function loginViaBackend(input: LoginInput): Promise<AuthSession> {
     email?: string | null;
   }>(res);
   throwIfSuspended(body.data);
+  if (res.status === 429) {
+    throw new ApiError(429, "rate_limited", "Too many attempts. Try again in a few minutes.");
+  }
   if (!res.ok || !body.success || !body.data?.token) {
-    // Deliberately generic (user rule 2026-11-12): the backend
-    // distinguishes "user not found" (404) from "wrong password"
-    // (400), but the UI never reveals which one failed.
+    // Deliberately generic (user rule 2026-11-12): the backend now
+    // answers one generic 401 for unknown user and wrong password
+    // alike (audit P0), and the UI keeps the same generic wording.
     throw new ApiError(res.status, "invalid_credentials", "Username/password salah");
   }
   const session: AuthSession = {
@@ -319,6 +346,9 @@ async function registerViaBackend(input: RegisterInput): Promise<AuthSession> {
     }),
   });
   const body = await readBackendEnvelope<{ id: string; username: string }>(res);
+  if (res.status === 429) {
+    throw new ApiError(429, "rate_limited", "Too many attempts. Try again in a few minutes.");
+  }
   if (!res.ok || !body.success) {
     // The backend answers 400 for every register failure, so the
     // duplicates are recognized by message and mapped to the field

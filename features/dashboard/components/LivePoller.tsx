@@ -6,6 +6,7 @@ import { useIsAuthenticated } from "@/features/auth/store";
 import { getSession, getSessionUser, setSession } from "@/features/auth/session";
 import { apiFetch, type ApiEnvelope } from "@/lib/api-client";
 import { getDashboardPosts } from "../api";
+import { TOKEN_TTL_MS } from "@/features/auth/api";
 import { syncLikeCount } from "../like-store";
 import { setCommentCount } from "../comment-count-store";
 import {
@@ -94,6 +95,31 @@ export function LivePoller() {
         setSession({ ...sess, user: { ...sess.user, photo: url } });
       } catch {
         // Best-effort: the avatar keeps its initials fallback.
+      }
+    })();
+  }, [isAuthed]);
+
+  // Token refresh (audit P0, 2026-11-14): when the session token
+  // is in its last day, swap it for a fresh one via POST
+  // /api/auth/refresh (the old token is revoked server-side).
+  // One shot per mount, best-effort like the other backfills.
+  const tokenRefreshDone = useRef(false);
+  useEffect(() => {
+    if (!isAuthed || tokenRefreshDone.current) return;
+    const sess = getSession();
+    if (!sess) return;
+    tokenRefreshDone.current = true;
+    if (sess.expiresAt - Date.now() > 24 * 60 * 60 * 1000) return;
+    (async () => {
+      try {
+        const res = await apiFetch<ApiEnvelope<{ token: string }>>("/api/auth/refresh", {
+          method: "POST",
+        });
+        const cur = getSession();
+        if (!res.data?.token || !cur) return;
+        setSession({ ...cur, token: res.data.token, expiresAt: Date.now() + TOKEN_TTL_MS });
+      } catch {
+        // Best-effort: the current token keeps working until it expires.
       }
     })();
   }, [isAuthed]);

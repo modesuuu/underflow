@@ -48,7 +48,7 @@ export function LogoutButton({
           title={t("auth.logOutTitle")}
           description={t("auth.logOutBody")}
           confirmLabel={t("nav.logOut")}
-          onConfirm={() => logout()}
+          onConfirm={() => { void logout(); }}
           onCancel={() => setConfirming(false)}
         />
       )}
