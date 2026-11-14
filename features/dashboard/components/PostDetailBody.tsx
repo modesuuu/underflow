@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { scrollWithinContainer } from "@/lib/scroll";
 import { useEffect, useRef, useState } from "react";
 import { Avatar } from "@/components/ui/Avatar";
 import { Icon } from "@/components/ui/Icon";
@@ -81,7 +82,7 @@ export function PostDetailBody({ post }: { post: Post }) {
 
   const focusComment = () => {
     const el = document.getElementById("uf-comment-input");
-    el?.scrollIntoView({ behavior: "smooth", block: "center" });
+    scrollWithinContainer(el);
     el?.focus({ preventScroll: true });
   };
 

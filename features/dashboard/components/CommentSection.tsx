@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { scrollWithinContainer } from "@/lib/scroll";
 import { toast } from "sonner";
 import { Avatar } from "@/components/ui/Avatar";
 import { Icon } from "@/components/ui/Icon";
@@ -80,7 +81,7 @@ export function CommentSection({ postId, initialComments, autoFocusComment = fal
   // into view and focus it so the user can type immediately.
   useEffect(() => {
     if (!autoFocusComment) return;
-    inputBarRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    scrollWithinContainer(inputBarRef.current);
     inputRef.current?.focus({ preventScroll: true });
   }, [autoFocusComment]);
 
@@ -122,7 +123,7 @@ export function CommentSection({ postId, initialComments, autoFocusComment = fal
 
   useEffect(() => {
     if (!lastAddedId || !newCommentRef.current) return;
-    newCommentRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+    scrollWithinContainer(newCommentRef.current);
   }, [lastAddedId]);
 
   return (
