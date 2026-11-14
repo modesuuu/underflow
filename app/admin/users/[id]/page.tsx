@@ -9,6 +9,7 @@ import { Icon } from "@/components/ui/Icon";
 import { useAdmin } from "@/features/admin/components/AdminShell";
 import { ModerationForm } from "@/features/admin/components/ModerationForm";
 import { fmtDate, fmtDateTime, getAdminUser } from "@/features/admin/api";
+import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import type {
   AdminUserDetail,
   ModerationTarget,
@@ -52,6 +53,7 @@ function Stat({ label, value }: { label: string; value: number }) {
 }
 
 export default function AdminUserDetailPage() {
+  const { t } = useLanguage();
   const { viewer, refreshOverview } = useAdmin();
   const params = useParams();
   const id = String(params.id ?? "");
@@ -79,7 +81,7 @@ export default function AdminUserDetailPage() {
         className="shrink-0 cursor-pointer text-[13px] font-medium"
         style={{ color: "var(--color-error, #c9303a)" }}
       >
-        {viewer.role === "super_admin" ? "Remove" : "Propose removal"}
+        {viewer.role === "super_admin" ? t("admin.remove") : t("admin.proposeRemoval")}
       </button>
     ) : viewer.role === "super_admin" ? (
       <button
@@ -87,7 +89,7 @@ export default function AdminUserDetailPage() {
         onClick={() => setFormTarget(makeRestore())}
         className="shrink-0 cursor-pointer text-[13px] font-medium text-accent"
       >
-        Restore
+        {t("admin.restore")}
       </button>
     ) : null;
 
@@ -111,26 +113,26 @@ export default function AdminUserDetailPage() {
         className="mb-4 flex items-center gap-1.5 text-sm text-muted hover:text-ink"
       >
         <Icon name="arrow-back" size={16} />
-        Users
+        {t("admin.navUsers")}
       </Link>
 
       {error === "missing" ? (
         <div className="rounded-lg border border-line bg-surface px-4 py-10 text-center text-sm text-muted">
-          This user does not exist.
+          {t("admin.userMissing")}
         </div>
       ) : error === "load" ? (
         <div className="rounded-lg border border-line bg-surface px-4 py-10 text-center">
-          <p className="text-sm text-muted">Couldn&apos;t load this user.</p>
+          <p className="text-sm text-muted">{t("admin.couldntLoadUser")}</p>
           <button
             type="button"
             onClick={() => setAttempt((n) => n + 1)}
             className="mt-3 cursor-pointer rounded-full bg-accent px-4 py-1.5 text-sm font-medium text-on-accent"
           >
-            Retry
+            {t("common.retry")}
           </button>
         </div>
       ) : data === null ? (
-        <p className="text-sm text-muted">Loading user...</p>
+        <p className="text-sm text-muted">{t("admin.loadingUser")}</p>
       ) : (
         <>
           <div className="flex flex-wrap items-start gap-4">
@@ -149,8 +151,8 @@ export default function AdminUserDetailPage() {
               </div>
               <p className="mt-0.5 text-sm text-muted">
                 @{data.user.username} · {data.user.email} ·{" "}
-                {data.user.provider === "google" ? "Google sign-in" : "Password sign-in"} ·
-                joined {fmtDate(data.user.created_at)}
+                {data.user.provider === "google" ? t("admin.googleSignIn") : t("admin.passwordSignIn")} ·
+                {t("admin.joinedWord")} {fmtDate(data.user.created_at)}
               </p>
               {data.user.bio && (
                 <p className="mt-2 max-w-2xl text-sm whitespace-pre-wrap">
@@ -165,7 +167,7 @@ export default function AdminUserDetailPage() {
                       "color-mix(in srgb, var(--color-error, #c9303a) 10%, transparent)",
                   }}
                 >
-                  Suspended {fmtDateTime(data.user.suspended_at)}
+                  {t("admin.suspendedLine", { date: fmtDateTime(data.user.suspended_at) })}
                   {data.user.suspended_reason
                     ? ` · ${data.user.suspended_reason}`
                     : ""}
@@ -195,8 +197,8 @@ export default function AdminUserDetailPage() {
                   style={{ background: "var(--color-error, #c9303a)" }}
                 >
                   {viewer.role === "super_admin"
-                    ? "Suspend account"
-                    : "Propose suspension"}
+                    ? t("admin.formSuspendSuper")
+                    : t("admin.proposeSuspension")}
                 </button>
               ) : (
                 <button
@@ -211,22 +213,22 @@ export default function AdminUserDetailPage() {
                   }
                   className="cursor-pointer rounded-full bg-accent px-4 py-1.5 text-sm font-medium text-on-accent"
                 >
-                  Unsuspend account
+                  {t("admin.formUnsuspendSuper")}
                 </button>
               )}
             </div>
           ) : null}
 
           <div className="mt-5 grid grid-cols-2 gap-3 md:grid-cols-4">
-            <Stat label="Posts" value={data.user.post_count} />
-            <Stat label="Collaborations" value={data.user.collab_count} />
-            <Stat label="Strikes" value={data.user.strike_count} />
-            <Stat label="Open reports against" value={data.reports_open_against} />
+            <Stat label={t("admin.thPosts")} value={data.user.post_count} />
+            <Stat label={t("admin.tabCollabs")} value={data.user.collab_count} />
+            <Stat label={t("admin.thStrikes")} value={data.user.strike_count} />
+            <Stat label={t("admin.statOpenReports")} value={data.reports_open_against} />
           </div>
 
-          <Section title="Skills">
+          <Section title={t("admin.sectionSkills")}>
             {data.skills.length === 0 ? (
-              <p className="text-sm text-muted">No skills on this profile.</p>
+              <p className="text-sm text-muted">{t("admin.noSkillsProfile")}</p>
             ) : (
               <div className="flex flex-wrap gap-1.5">
                 {data.skills.map((s) => (
@@ -241,9 +243,9 @@ export default function AdminUserDetailPage() {
             )}
           </Section>
 
-          <Section title="Recent posts">
+          <Section title={t("admin.sectionRecentPosts")}>
             {data.posts.length === 0 ? (
-              <p className="text-sm text-muted">No posts yet.</p>
+              <p className="text-sm text-muted">{t("admin.noPostsYet")}</p>
             ) : (
               <div className="overflow-hidden rounded-lg border border-line bg-surface">
                 {data.posts.map((p) => (
@@ -277,9 +279,9 @@ export default function AdminUserDetailPage() {
             )}
           </Section>
 
-          <Section title="Collaborations">
+          <Section title={t("admin.tabCollabs")}>
             {data.collabs.length === 0 ? (
-              <p className="text-sm text-muted">No collaborations yet.</p>
+              <p className="text-sm text-muted">{t("admin.noCollabsYet")}</p>
             ) : (
               <div className="overflow-hidden rounded-lg border border-line bg-surface">
                 {data.collabs.map((c) => (
@@ -291,7 +293,7 @@ export default function AdminUserDetailPage() {
                       {c.title}
                     </span>
                     <Pill tone="neutral">
-                      {c.relation === "owner" ? "Owner" : "Member"}
+                      {c.relation === "owner" ? t("admin.ownerPill") : t("admin.memberPill")}
                     </Pill>
                     <Pill tone="neutral">{c.status}</Pill>
                     {contentButton(
@@ -319,10 +321,10 @@ export default function AdminUserDetailPage() {
             )}
           </Section>
 
-          <Section title="Moderation history">
+          <Section title={t("admin.sectionHistory")}>
             {data.moderation_history.length === 0 ? (
               <p className="text-sm text-muted">
-                No moderation actions against this user.
+                {t("admin.noHistory")}
               </p>
             ) : (
               <div className="overflow-hidden rounded-lg border border-line bg-surface">
@@ -346,7 +348,7 @@ export default function AdminUserDetailPage() {
           </Section>
 
           <p className="mt-8 text-[13px] text-subtle">
-            Public profile:{" "}
+            {t("admin.publicProfile")}{" "}
             <a href={`/profile/${data.user.id}`} className="underline">
               /profile/{data.user.username}
             </a>

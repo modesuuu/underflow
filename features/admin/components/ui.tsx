@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { useLanguage } from "@/lib/i18n/LanguageProvider";
 
 /**
  * Shared admin UI bits (spec-admin.md §7): dense, quiet, table-first.
@@ -41,24 +42,27 @@ export function Pill({
 }
 
 export function RoleLabel({ role }: { role: string }) {
-  if (role === "super_admin") return <Pill tone="warning">Super Admin</Pill>;
-  if (role === "monitor") return <Pill tone="neutral">Monitor</Pill>;
-  return <span className="text-muted">User</span>;
+  const { t } = useLanguage();
+  if (role === "super_admin") return <Pill tone="warning">{t("admin.superAdmin")}</Pill>;
+  if (role === "monitor") return <Pill tone="neutral">{t("admin.monitor")}</Pill>;
+  return <span className="text-muted">{t("admin.user")}</span>;
 }
 
 export function ModerationPill({ state }: { state: "visible" | "removed" }) {
+  const { t } = useLanguage();
   return state === "removed" ? (
-    <Pill tone="danger">Removed</Pill>
+    <Pill tone="danger">{t("admin.removed")}</Pill>
   ) : (
-    <Pill tone="success">Visible</Pill>
+    <Pill tone="success">{t("admin.visible")}</Pill>
   );
 }
 
 export function AccountPill({ status }: { status: "active" | "suspended" }) {
+  const { t } = useLanguage();
   return status === "suspended" ? (
-    <Pill tone="danger">Suspended</Pill>
+    <Pill tone="danger">{t("admin.suspended")}</Pill>
   ) : (
-    <Pill tone="success">Active</Pill>
+    <Pill tone="success">{t("admin.active")}</Pill>
   );
 }
 
@@ -93,11 +97,14 @@ export function Pagination({
   total: number;
   onPage: (page: number) => void;
 }) {
+  const { t } = useLanguage();
   if (total === 0) return null;
   return (
     <div className="mt-4 flex items-center justify-between text-sm text-muted">
       <span>
-        {total} item{total === 1 ? "" : "s"} · Page {page} of {totalPages}
+        {total === 1
+          ? t("admin.paginationOne", { total, page, pages: totalPages })
+          : t("admin.paginationMany", { total, page, pages: totalPages })}
       </span>
       <div className="flex gap-2">
         <button
@@ -106,7 +113,7 @@ export function Pagination({
           onClick={() => onPage(page - 1)}
           className="cursor-pointer rounded-full border border-line bg-surface px-3 py-1 text-ink disabled:cursor-default disabled:opacity-40"
         >
-          Previous
+          {t("admin.previous")}
         </button>
         <button
           type="button"
@@ -114,7 +121,7 @@ export function Pagination({
           onClick={() => onPage(page + 1)}
           className="cursor-pointer rounded-full border border-line bg-surface px-3 py-1 text-ink disabled:cursor-default disabled:opacity-40"
         >
-          Next
+          {t("admin.next")}
         </button>
       </div>
     </div>
@@ -130,15 +137,16 @@ export function EmptyState({ children }: { children: ReactNode }) {
 }
 
 export function ErrorState({ onRetry }: { onRetry: () => void }) {
+  const { t } = useLanguage();
   return (
     <div className="rounded-lg border border-line bg-surface px-4 py-10 text-center">
-      <p className="text-sm text-muted">Couldn&apos;t load this data.</p>
+      <p className="text-sm text-muted">{t("admin.couldntLoadData")}</p>
       <button
         type="button"
         onClick={onRetry}
         className="mt-3 cursor-pointer rounded-full bg-accent px-4 py-1.5 text-sm font-medium text-on-accent"
       >
-        Retry
+        {t("common.retry")}
       </button>
     </div>
   );

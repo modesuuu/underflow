@@ -7,6 +7,8 @@ import { Icon } from "@/components/ui/Icon";
 import { useAdmin } from "@/features/admin/components/AdminShell";
 import { ModerationForm } from "@/features/admin/components/ModerationForm";
 import { fmtDate, getAdminContent } from "@/features/admin/api";
+import { useLanguage } from "@/lib/i18n/LanguageProvider";
+import type { DictKey } from "@/lib/i18n/dictionary";
 import type {
   AdminContentItem,
   AdminContentType,
@@ -31,10 +33,10 @@ import {
  * removed by moderation. Read-only in Fase 1.
  */
 
-const TABS: { id: AdminContentType; label: string }[] = [
-  { id: "posts", label: "Posts" },
-  { id: "comments", label: "Comments" },
-  { id: "collabs", label: "Collaborations" },
+const TABS: { id: AdminContentType; labelKey: DictKey }[] = [
+  { id: "posts", labelKey: "admin.tabPosts" },
+  { id: "comments", labelKey: "admin.tabComments" },
+  { id: "collabs", labelKey: "admin.tabCollabs" },
 ];
 
 function OwnerCell({ item }: { item: AdminContentItem }) {
@@ -56,6 +58,7 @@ function ReportsCell({ count }: { count: number }) {
 }
 
 export default function AdminContentPage() {
+  const { t: tr } = useLanguage();
   const { viewer, refreshOverview } = useAdmin();
   const [tab, setTab] = useState<AdminContentType>("posts");
   const [state, setState] = useState("all");
@@ -89,7 +92,7 @@ export default function AdminContentPage() {
           className="cursor-pointer text-[13px] font-medium"
           style={{ color: "var(--color-error, #c9303a)" }}
         >
-          {viewer.role === "super_admin" ? "Remove" : "Propose removal"}
+          {viewer.role === "super_admin" ? tr("admin.remove") : tr("admin.proposeRemoval")}
         </button>
       ) : viewer.role === "super_admin" ? (
         <button
@@ -109,7 +112,7 @@ export default function AdminContentPage() {
           }
           className="cursor-pointer text-[13px] font-medium text-accent"
         >
-          Restore
+          {tr("admin.restore")}
         </button>
       ) : null}
     </span>
@@ -137,8 +140,8 @@ export default function AdminContentPage() {
   return (
     <div>
       <PageHeader
-        title="Content"
-        subtitle="Everything published on the platform, including removed items."
+        title={tr("admin.contentTitle")}
+        subtitle={tr("admin.contentSubtitle")}
       >
         <div className="flex flex-wrap items-center gap-2">
           <label className="flex items-center gap-2 rounded-full border border-line bg-surface px-3 py-1.5">
@@ -146,7 +149,7 @@ export default function AdminContentPage() {
             <input
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              placeholder="Search content or owner"
+              placeholder={tr("admin.searchContentPlaceholder")}
               className="w-52 bg-transparent text-sm outline-none placeholder:text-subtle"
             />
           </label>
@@ -157,11 +160,11 @@ export default function AdminContentPage() {
               setPage(1);
             }}
             className="cursor-pointer rounded-full border border-line bg-surface px-3 py-1.5 text-sm text-ink"
-            aria-label="Moderation state"
+            aria-label={tr("admin.stateAria")}
           >
-            <option value="all">All states</option>
-            <option value="visible">Visible</option>
-            <option value="removed">Removed</option>
+            <option value="all">{tr("admin.allStates")}</option>
+            <option value="visible">{tr("admin.visible")}</option>
+            <option value="removed">{tr("admin.removed")}</option>
           </select>
         </div>
       </PageHeader>
@@ -182,7 +185,7 @@ export default function AdminContentPage() {
                 : "border border-line bg-surface text-muted hover:text-ink"
             }`}
           >
-            {t.label}
+            {tr(t.labelKey)}
           </button>
         ))}
       </div>
@@ -191,10 +194,10 @@ export default function AdminContentPage() {
         <ErrorState onRetry={() => setAttempt((n) => n + 1)} />
       ) : data === null ? (
         <div className={`${TABLE_WRAP} px-4 py-10 text-center text-sm text-muted`}>
-          Loading content...
+          {tr("admin.loadingContent")}
         </div>
       ) : data.items.length === 0 ? (
-        <EmptyState>No content matches this filter.</EmptyState>
+        <EmptyState>{tr("admin.noContentMatch")}</EmptyState>
       ) : (
         <>
           <div className={TABLE_WRAP}>
@@ -203,30 +206,30 @@ export default function AdminContentPage() {
                 <tr className="border-b border-line">
                   {tab === "posts" && (
                     <>
-                      <th className={TH}>Post</th>
-                      <th className={TH}>Owner</th>
-                      <th className={TH}>Views</th>
-                      <th className={TH}>Comments</th>
+                      <th className={TH}>{tr("admin.thPost")}</th>
+                      <th className={TH}>{tr("admin.thOwner")}</th>
+                      <th className={TH}>{tr("admin.thViews")}</th>
+                      <th className={TH}>{tr("admin.thComments")}</th>
                     </>
                   )}
                   {tab === "comments" && (
                     <>
-                      <th className={TH}>Comment</th>
-                      <th className={TH}>Owner</th>
-                      <th className={TH}>On post</th>
+                      <th className={TH}>{tr("admin.thComment")}</th>
+                      <th className={TH}>{tr("admin.thOwner")}</th>
+                      <th className={TH}>{tr("admin.thOnPost")}</th>
                     </>
                   )}
                   {tab === "collabs" && (
                     <>
-                      <th className={TH}>Collaboration</th>
-                      <th className={TH}>Owner</th>
-                      <th className={TH}>Project status</th>
-                      <th className={TH}>Members</th>
+                      <th className={TH}>{tr("admin.thCollaboration")}</th>
+                      <th className={TH}>{tr("admin.thOwner")}</th>
+                      <th className={TH}>{tr("admin.thProjectStatus")}</th>
+                      <th className={TH}>{tr("admin.thMembers")}</th>
                     </>
                   )}
-                  <th className={TH}>Reports</th>
-                  <th className={TH}>State</th>
-                  <th className={TH}>Created</th>
+                  <th className={TH}>{tr("admin.thReports")}</th>
+                  <th className={TH}>{tr("admin.thState")}</th>
+                  <th className={TH}>{tr("admin.thCreated")}</th>
                   <th className={TH}></th>
                 </tr>
               </thead>
@@ -256,7 +259,7 @@ export default function AdminContentPage() {
                         <td className={TD}>
                           {item.post_id ? (
                             <a href={`/dashboard/${item.post_id}`} className="text-muted underline">
-                              Open post
+                              {tr("admin.openPost")}
                             </a>
                           ) : (
                             <span className="text-muted">—</span>
@@ -294,7 +297,7 @@ export default function AdminContentPage() {
                           <a
                             href={tab === "posts" ? `/dashboard/${item.id}` : `/collaborations/${item.id}`}
                             className="text-muted hover:text-ink"
-                            aria-label="Open"
+                            aria-label={tr("admin.openAria")}
                           >
                             <Icon name="link-external" size={16} />
                           </a>

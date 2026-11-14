@@ -8,6 +8,7 @@ import { Icon } from "@/components/ui/Icon";
 import { useAdmin } from "@/features/admin/components/AdminShell";
 import { ModerationForm } from "@/features/admin/components/ModerationForm";
 import { fmtDate, getAdminUsers } from "@/features/admin/api";
+import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import type {
   AdminPage,
   AdminUserRow,
@@ -35,6 +36,7 @@ const SELECT_CLASS =
   "cursor-pointer rounded-full border border-line bg-surface px-3 py-1.5 text-sm text-ink";
 
 export default function AdminUsersPage() {
+  const { t } = useLanguage();
   const { viewer, refreshOverview } = useAdmin();
   const [q, setQ] = useState("");
   const [debouncedQ, setDebouncedQ] = useState("");
@@ -67,14 +69,14 @@ export default function AdminUsersPage() {
 
   return (
     <div>
-      <PageHeader title="Users" subtitle="Every account on the platform.">
+      <PageHeader title={t("admin.usersTitle")} subtitle={t("admin.usersSubtitle")}>
         <div className="flex flex-wrap items-center gap-2">
           <label className="flex items-center gap-2 rounded-full border border-line bg-surface px-3 py-1.5">
             <Icon name="search" size={16} className="text-muted" />
             <input
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              placeholder="Search username or email"
+              placeholder={t("admin.searchUserPlaceholder")}
               className="w-52 bg-transparent text-sm outline-none placeholder:text-subtle"
             />
           </label>
@@ -85,11 +87,11 @@ export default function AdminUsersPage() {
               setPage(1);
             }}
             className={SELECT_CLASS}
-            aria-label="Account status"
+            aria-label={t("admin.statusAria")}
           >
-            <option value="all">All statuses</option>
-            <option value="active">Active</option>
-            <option value="suspended">Suspended</option>
+            <option value="all">{t("admin.allStatuses")}</option>
+            <option value="active">{t("admin.active")}</option>
+            <option value="suspended">{t("admin.suspended")}</option>
           </select>
           <select
             value={role}
@@ -98,12 +100,12 @@ export default function AdminUsersPage() {
               setPage(1);
             }}
             className={SELECT_CLASS}
-            aria-label="Role"
+            aria-label={t("admin.roleAria")}
           >
-            <option value="all">All roles</option>
-            <option value="user">User</option>
-            <option value="monitor">Monitor</option>
-            <option value="super_admin">Super Admin</option>
+            <option value="all">{t("admin.allRoles")}</option>
+            <option value="user">{t("admin.user")}</option>
+            <option value="monitor">{t("admin.monitor")}</option>
+            <option value="super_admin">{t("admin.superAdmin")}</option>
           </select>
         </div>
       </PageHeader>
@@ -112,10 +114,10 @@ export default function AdminUsersPage() {
         <ErrorState onRetry={() => setAttempt((n) => n + 1)} />
       ) : data === null ? (
         <div className={`${TABLE_WRAP} px-4 py-10 text-center text-sm text-muted`}>
-          Loading users...
+          {t("admin.loadingUsers")}
         </div>
       ) : data.items.length === 0 ? (
-        <EmptyState>No users match this filter.</EmptyState>
+        <EmptyState>{t("admin.noUsersMatch")}</EmptyState>
       ) : (
         <>
           <div className={TABLE_WRAP}>
@@ -134,16 +136,16 @@ export default function AdminUsersPage() {
               </colgroup>
               <thead>
                 <tr className="border-b border-line">
-                  <th className={TH + " whitespace-nowrap"}>User</th>
-                  <th className={TH + " whitespace-nowrap"}>Email</th>
-                  <th className={TH + " whitespace-nowrap"}>Sign-in</th>
-                  <th className={TH + " whitespace-nowrap"}>Joined</th>
-                  <th className={TH + " whitespace-nowrap"}>Posts</th>
-                  <th className={TH + " whitespace-nowrap"}>Collabs</th>
-                  <th className={TH + " whitespace-nowrap"}>Strikes</th>
-                  <th className={TH + " whitespace-nowrap"}>Role</th>
-                  <th className={TH + " whitespace-nowrap"}>Status</th>
-                  <th className={TH + " whitespace-nowrap"}>Actions</th>
+                  <th className={TH + " whitespace-nowrap"}>{t("admin.thUser")}</th>
+                  <th className={TH + " whitespace-nowrap"}>{t("admin.thEmail")}</th>
+                  <th className={TH + " whitespace-nowrap"}>{t("admin.thSignIn")}</th>
+                  <th className={TH + " whitespace-nowrap"}>{t("admin.thJoined")}</th>
+                  <th className={TH + " whitespace-nowrap"}>{t("admin.thPosts")}</th>
+                  <th className={TH + " whitespace-nowrap"}>{t("admin.thCollabs")}</th>
+                  <th className={TH + " whitespace-nowrap"}>{t("admin.thStrikes")}</th>
+                  <th className={TH + " whitespace-nowrap"}>{t("admin.thRole")}</th>
+                  <th className={TH + " whitespace-nowrap"}>{t("admin.thStatus")}</th>
+                  <th className={TH + " whitespace-nowrap"}>{t("admin.thActions")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -166,7 +168,7 @@ export default function AdminUsersPage() {
                     </td>
                     <td className={`${TD} truncate text-muted`}>{u.email}</td>
                     <td className={`${TD} whitespace-nowrap text-muted`}>
-                      {u.provider === "google" ? "Google" : "Password"}
+                      {u.provider === "google" ? "Google" : t("settings.account.password")}
                     </td>
                     <td className={`${TD} whitespace-nowrap text-muted`}>{fmtDate(u.created_at)}</td>
                     <td className={TD}>{u.post_count}</td>
@@ -207,8 +209,8 @@ export default function AdminUsersPage() {
                             style={{ color: "var(--color-error, #c9303a)" }}
                           >
                             {viewer.role === "super_admin"
-                              ? "Suspend"
-                              : "Propose suspension"}
+                              ? t("admin.suspend")
+                              : t("admin.proposeSuspension")}
                           </button>
                         )}
                       {u.account_status === "suspended" &&
@@ -225,7 +227,7 @@ export default function AdminUsersPage() {
                             }
                             className="cursor-pointer text-[13px] font-medium text-accent"
                           >
-                            Unsuspend
+                            {t("admin.unsuspend")}
                           </button>
                         )}
                     </td>

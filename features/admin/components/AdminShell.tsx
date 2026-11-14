@@ -15,6 +15,8 @@ import { Icon } from "@/components/ui/Icon";
 import { LogoMark } from "@/components/ui/LogoMark";
 import { ApiError } from "@/lib/api-client";
 import { getAdminOverview } from "../api";
+import { useLanguage } from "@/lib/i18n/LanguageProvider";
+import type { DictKey } from "@/lib/i18n/dictionary";
 import type { AdminOverview, AdminViewer } from "../types";
 
 /**
@@ -40,12 +42,12 @@ export function useAdmin(): AdminContextValue {
 }
 
 const NAV = [
-  { href: "/admin", label: "Overview", icon: "home", badge: null as null | "reports" | "requests" | "appeals", match: (p: string) => p === "/admin" },
-  { href: "/admin/users", label: "Users", icon: "group", badge: null as null | "reports" | "requests" | "appeals", match: (p: string) => p.startsWith("/admin/users") },
-  { href: "/admin/content", label: "Content", icon: "news", badge: null as null | "reports" | "requests" | "appeals", match: (p: string) => p.startsWith("/admin/content") },
-  { href: "/admin/reports", label: "Reports", icon: "flag", badge: "reports" as null | "reports" | "requests" | "appeals", match: (p: string) => p.startsWith("/admin/reports") },
-  { href: "/admin/approvals", label: "Approvals", icon: "check-square", badge: "requests" as null | "reports" | "requests" | "appeals", match: (p: string) => p.startsWith("/admin/approvals") },
-  { href: "/admin/appeals", label: "Appeals", icon: "undo", badge: "appeals" as null | "reports" | "requests" | "appeals", match: (p: string) => p.startsWith("/admin/appeals") },
+  { href: "/admin", labelKey: "admin.navOverview" as DictKey, icon: "home", badge: null as null | "reports" | "requests" | "appeals", match: (p: string) => p === "/admin" },
+  { href: "/admin/users", labelKey: "admin.navUsers" as DictKey, icon: "group", badge: null as null | "reports" | "requests" | "appeals", match: (p: string) => p.startsWith("/admin/users") },
+  { href: "/admin/content", labelKey: "admin.navContent" as DictKey, icon: "news", badge: null as null | "reports" | "requests" | "appeals", match: (p: string) => p.startsWith("/admin/content") },
+  { href: "/admin/reports", labelKey: "admin.navReports" as DictKey, icon: "flag", badge: "reports" as null | "reports" | "requests" | "appeals", match: (p: string) => p.startsWith("/admin/reports") },
+  { href: "/admin/approvals", labelKey: "admin.navApprovals" as DictKey, icon: "check-square", badge: "requests" as null | "reports" | "requests" | "appeals", match: (p: string) => p.startsWith("/admin/approvals") },
+  { href: "/admin/appeals", labelKey: "admin.navAppeals" as DictKey, icon: "undo", badge: "appeals" as null | "reports" | "requests" | "appeals", match: (p: string) => p.startsWith("/admin/appeals") },
 ];
 
 type GateState =
@@ -55,6 +57,7 @@ type GateState =
   | { kind: "ready"; overview: AdminOverview };
 
 export function AdminShell({ children }: { children: ReactNode }) {
+  const { t } = useLanguage();
   const pathname = usePathname() ?? "/admin";
   const [gate, setGate] = useState<GateState>({ kind: "loading" });
   const [attempt, setAttempt] = useState(0);
@@ -106,7 +109,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
   if (gate.kind === "loading") {
     return (
       <div className="flex h-dvh items-center justify-center bg-bg text-sm text-muted">
-        Loading admin...
+        {t("admin.loading")}
       </div>
     );
   }
@@ -115,16 +118,15 @@ export function AdminShell({ children }: { children: ReactNode }) {
     return (
       <div className="flex h-dvh flex-col items-center justify-center gap-3 bg-bg px-6 text-center">
         <Icon name="lock-alt" size={28} className="text-muted" />
-        <p className="text-base font-medium">Admin access only</p>
+        <p className="text-base font-medium">{t("admin.deniedTitle")}</p>
         <p className="max-w-sm text-sm text-muted">
-          Your account does not have an admin role. If you are on the
-          Underflow team, ask a Super Admin to check your role.
+          {t("admin.deniedBody")}
         </p>
         <a
           href="/"
           className="mt-2 rounded-full bg-accent px-4 py-1.5 text-sm font-medium text-on-accent"
         >
-          Back to app
+          {t("admin.backToApp")}
         </a>
       </div>
     );
@@ -132,13 +134,13 @@ export function AdminShell({ children }: { children: ReactNode }) {
 
   const retryScreen = (
     <div className="flex h-dvh flex-col items-center justify-center gap-3 bg-bg px-6 text-center">
-      <p className="text-sm text-muted">Couldn&apos;t reach the admin API.</p>
+      <p className="text-sm text-muted">{t("admin.apiError")}</p>
       <button
         type="button"
         onClick={() => setAttempt((n) => n + 1)}
         className="cursor-pointer rounded-full bg-accent px-4 py-1.5 text-sm font-medium text-on-accent"
       >
-        Retry
+        {t("common.retry")}
       </button>
     </div>
   );
@@ -193,7 +195,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
                   }`}
                 >
                   <Icon name={item.icon} size={18} />
-                  {item.label}
+                  {t(item.labelKey)}
                   {badgeCount(item.badge) > 0 && (
                     <span
                       className="ml-auto rounded-full px-1.5 py-0.5 text-[11px] font-semibold"
@@ -219,7 +221,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
                   {viewer.username}
                 </span>
                 <span className="text-xs text-muted">
-                  {viewer.role === "super_admin" ? "Super Admin" : "Monitor"}
+                  {viewer.role === "super_admin" ? t("admin.superAdmin") : t("admin.monitor")}
                 </span>
               </div>
             </div>
@@ -228,7 +230,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
               className="flex items-center gap-2 text-sm text-muted hover:text-ink"
             >
               <Icon name="arrow-back" size={16} />
-              Back to app
+              {t("admin.backToApp")}
             </a>
           </div>
         </aside>

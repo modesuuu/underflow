@@ -5,6 +5,8 @@ import { Icon } from "@/components/ui/Icon";
 import { ApiError } from "@/lib/api-client";
 import { dismissReport, postActionRequest, postAdminAction } from "../api";
 import type { AdminRole, ModerationTarget } from "../types";
+import { useLanguage } from "@/lib/i18n/LanguageProvider";
+import type { DictKey } from "@/lib/i18n/dictionary";
 
 /**
  * The shared moderation form (spec-admin.md §7): one form, two
@@ -14,14 +16,14 @@ import type { AdminRole, ModerationTarget } from "../types";
  * these labels just make it legible.
  */
 
-const TITLES: Record<string, { super: string; monitor: string; verb: string }> = {
-  remove_post: { super: "Remove post", monitor: "Propose post removal", verb: "Remove" },
-  remove_comment: { super: "Remove comment", monitor: "Propose comment removal", verb: "Remove" },
-  remove_collab: { super: "Remove collaboration", monitor: "Propose collaboration removal", verb: "Remove" },
-  suspend_user: { super: "Suspend account", monitor: "Propose account suspension", verb: "Suspend" },
-  unsuspend_user: { super: "Unsuspend account", monitor: "", verb: "Unsuspend" },
-  restore_content: { super: "Restore content", monitor: "", verb: "Restore" },
-  dismiss_report: { super: "Dismiss report", monitor: "Propose report dismissal", verb: "Dismiss" },
+const TITLES: Record<string, { super: DictKey; monitor: DictKey; verb: string }> = {
+  remove_post: { super: "admin.formRemovePostSuper", monitor: "admin.formRemovePostMonitor", verb: "Remove" },
+  remove_comment: { super: "admin.formRemoveCommentSuper", monitor: "admin.formRemoveCommentMonitor", verb: "Remove" },
+  remove_collab: { super: "admin.formRemoveCollabSuper", monitor: "admin.formRemoveCollabMonitor", verb: "Remove" },
+  suspend_user: { super: "admin.formSuspendSuper", monitor: "admin.formSuspendMonitor", verb: "Suspend" },
+  unsuspend_user: { super: "admin.formUnsuspendSuper", monitor: "admin.formUnsuspendSuper", verb: "Unsuspend" },
+  restore_content: { super: "admin.formRestoreSuper", monitor: "admin.formRestoreSuper", verb: "Restore" },
+  dismiss_report: { super: "admin.formDismissSuper", monitor: "admin.formDismissMonitor", verb: "Dismiss" },
 };
 
 const NEEDS_REASON = new Set([
@@ -44,6 +46,7 @@ export function ModerationForm({
   onClose: () => void;
   onDone: (message: string) => void;
 }) {
+  const { t } = useLanguage();
   const [reason, setReason] = useState("");
   const [withStrike, setWithStrike] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -63,7 +66,7 @@ export function ModerationForm({
   const isSuper = role === "super_admin";
   const needsReason = NEEDS_REASON.has(target.actionType);
   const canStrike = CAN_STRIKE.has(target.actionType);
-  const title = isSuper ? meta.super : meta.monitor;
+  const title = t(isSuper ? meta.super : meta.monitor);
   const reasonOk = !needsReason || reason.trim().length >= 3;
 
   async function submit() {
@@ -83,7 +86,7 @@ export function ModerationForm({
             with_strike: canStrike ? withStrike : undefined,
           });
         }
-        onDone(`${meta.super} done.`);
+        onDone(t("admin.formDone", { action: t(meta.super) }));
       } else {
         await postActionRequest({
           action_type: target.actionType,
@@ -91,13 +94,13 @@ export function ModerationForm({
           reason: reason.trim(),
           with_strike: canStrike ? withStrike : undefined,
         });
-        onDone("Proposal sent. A Super Admin will review it.");
+        onDone(t("admin.proposalSent"));
       }
     } catch (err) {
       setError(
         err instanceof ApiError
           ? err.message
-          : "Something went wrong. Please try again."
+          : t("admin.somethingWrong")
       );
       setSubmitting(false);
     }
@@ -123,7 +126,7 @@ export function ModerationForm({
           <button
             type="button"
             onClick={onClose}
-            aria-label="Close"
+            aria-label={t("common.close")}
             className="cursor-pointer text-muted hover:text-ink"
           >
             <Icon name="x" size={20} />
@@ -136,14 +139,13 @@ export function ModerationForm({
 
         {!isSuper && (
           <p className="mt-3 text-[13px] text-muted">
-            Monitors cannot execute actions directly. This proposal
-            runs only after a Super Admin approves it.
+            {t("admin.monitorNote")}
           </p>
         )}
 
         <label className="mt-4 block">
           <span className="text-sm font-medium">
-            Reason{needsReason ? "" : " (optional)"}
+            {t("admin.reasonField")}{needsReason ? "" : t("admin.optionalSuffix")}
           </span>
           <textarea
             value={reason}
@@ -152,8 +154,8 @@ export function ModerationForm({
             autoFocus
             placeholder={
               target.actionType === "dismiss_report"
-                ? "Why is this report not a violation?"
-                : "Why is this action being taken?"
+                ? t("admin.dismissReasonPlaceholder")
+                : t("admin.actionReasonPlaceholder")
             }
             className="mt-1.5 w-full resize-none rounded-lg border border-line bg-surface px-3 py-2 text-sm outline-none placeholder:text-subtle focus:border-accent"
           />
@@ -168,10 +170,9 @@ export function ModerationForm({
               className="mt-0.5 size-4 shrink-0 accent-[#35702b]"
             />
             <span>
-              Count as a strike for the owner
+              {t("admin.strikeLabel")}
               <span className="block text-[13px] text-muted">
-                Leave on for violations. Turn off for administrative
-                removals, such as duplicates.
+                {t("admin.strikeHint")}
               </span>
             </span>
           </label>
@@ -196,7 +197,7 @@ export function ModerationForm({
             onClick={onClose}
             className="cursor-pointer rounded-full border border-line bg-surface px-4 py-1.5 text-sm"
           >
-            Cancel
+            {t("common.cancel")}
           </button>
           <button
             type="button"
@@ -205,10 +206,10 @@ export function ModerationForm({
             className="cursor-pointer rounded-full bg-accent px-4 py-1.5 text-sm font-medium text-on-accent disabled:cursor-default disabled:opacity-40"
           >
             {submitting
-              ? "Working..."
+              ? t("admin.working")
               : isSuper
-                ? meta.super
-                : "Submit proposal"}
+                ? t(meta.super)
+                : t("admin.submitProposal")}
           </button>
         </div>
       </div>

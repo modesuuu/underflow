@@ -6,6 +6,8 @@ import { toast } from "sonner";
 import { useAdmin } from "@/features/admin/components/AdminShell";
 import { ModerationForm } from "@/features/admin/components/ModerationForm";
 import { fmtDateTime, getAdminReports } from "@/features/admin/api";
+import { useLanguage } from "@/lib/i18n/LanguageProvider";
+import type { DictKey } from "@/lib/i18n/dictionary";
 import type {
   ModerationTarget,
   ReportGroup,
@@ -26,11 +28,11 @@ import {
  * by proposal).
  */
 
-const TYPE_LABEL: Record<ReportGroup["target_type"], string> = {
-  post: "Post",
-  comment: "Comment",
-  collab: "Collaboration",
-  user: "User",
+const TYPE_LABEL: Record<ReportGroup["target_type"], DictKey> = {
+  post: "admin.typePost",
+  comment: "admin.typeComment",
+  collab: "admin.typeCollab",
+  user: "admin.typeUser",
 };
 
 const GROUP_ACTION: Record<ReportGroup["target_type"], string> = {
@@ -48,6 +50,7 @@ function viewHref(group: ReportGroup): string | null {
 }
 
 export default function AdminReportsPage() {
+  const { t } = useLanguage();
   const { viewer, refreshOverview } = useAdmin();
   const [groups, setGroups] = useState<ReportGroup[] | null>(null);
   const [error, setError] = useState(false);
@@ -75,16 +78,16 @@ export default function AdminReportsPage() {
   return (
     <div>
       <PageHeader
-        title="Reports"
-        subtitle="Open reports from users, grouped by target. Most reported first."
+        title={t("admin.reportsTitle")}
+        subtitle={t("admin.reportsSubtitle")}
       />
 
       {error ? (
         <ErrorState onRetry={() => setAttempt((n) => n + 1)} />
       ) : groups === null ? (
-        <p className="text-sm text-muted">Loading reports...</p>
+        <p className="text-sm text-muted">{t("admin.loadingReports")}</p>
       ) : groups.length === 0 ? (
-        <EmptyState>No open reports. The queue is clear.</EmptyState>
+        <EmptyState>{t("admin.noOpenReports")}</EmptyState>
       ) : (
         <div className="flex flex-col gap-3">
           {groups.map((group) => {
@@ -97,19 +100,21 @@ export default function AdminReportsPage() {
               >
                 <div className="flex flex-wrap items-center gap-2.5">
                   <Pill tone="neutral">
-                    {TYPE_LABEL[group.target_type]}
+                    {t(TYPE_LABEL[group.target_type])}
                   </Pill>
                   <span className="min-w-0 flex-1 truncate font-medium">
                     {group.target_label}
                   </span>
                   {group.owner_name && (
                     <span className="text-[13px] text-muted">
-                      by {group.owner_name}
+                      {t("admin.byOwner", { name: group.owner_name })}
                     </span>
                   )}
                   {removed && <ModerationPill state="removed" />}
                   <Pill tone="danger">
-                    {group.open_count} report{group.open_count === 1 ? "" : "s"}
+                    {group.open_count === 1
+                      ? t("admin.reportCountOne", { count: group.open_count })
+                      : t("admin.reportCountMany", { count: group.open_count })}
                   </Pill>
                 </div>
 
@@ -133,12 +138,12 @@ export default function AdminReportsPage() {
                             actionType: "dismiss_report",
                             targetType: "report",
                             targetId: r.id,
-                            targetLabel: `${TYPE_LABEL[group.target_type]}: ${group.target_label} — reported by ${r.reporter_name}`,
+                            targetLabel: t("admin.reportTargetLabel", { type: t(TYPE_LABEL[group.target_type]), label: group.target_label, name: r.reporter_name }),
                           })
                         }
                         className="shrink-0 cursor-pointer text-[13px] font-medium text-muted hover:text-ink"
                       >
-                        Dismiss
+                        {t("admin.dismiss")}
                       </button>
                     </div>
                   ))}
@@ -151,20 +156,20 @@ export default function AdminReportsPage() {
                         href={href}
                         className="rounded-full border border-line px-3 py-1 text-[13px] font-medium hover:text-ink"
                       >
-                        View target
+                        {t("admin.viewTarget")}
                       </Link>
                     ) : (
                       <a
                         href={href}
                         className="rounded-full border border-line px-3 py-1 text-[13px] font-medium hover:text-ink"
                       >
-                        View target
+                        {t("admin.viewTarget")}
                       </a>
                     )
                   ) : null}
                   {removed ? (
                     <span className="text-[13px] text-muted">
-                      Already removed by moderation.
+                      {t("admin.alreadyRemoved")}
                     </span>
                   ) : (
                     <button
@@ -181,11 +186,11 @@ export default function AdminReportsPage() {
                     >
                       {viewer.role === "super_admin"
                         ? group.target_type === "user"
-                          ? "Suspend owner"
-                          : "Remove target"
+                          ? t("admin.suspendOwner")
+                          : t("admin.removeTarget")
                         : group.target_type === "user"
-                          ? "Propose suspension"
-                          : "Propose removal"}
+                          ? t("admin.proposeSuspension")
+                          : t("admin.proposeRemoval")}
                     </button>
                   )}
                 </div>

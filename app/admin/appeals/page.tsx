@@ -9,6 +9,8 @@ import {
   fmtDateTime,
   getAdminAppeals,
 } from "@/features/admin/api";
+import { useLanguage } from "@/lib/i18n/LanguageProvider";
+import type { DictKey } from "@/lib/i18n/dictionary";
 import type { AdminAppealRow } from "@/features/admin/types";
 import {
   EmptyState,
@@ -25,36 +27,39 @@ import {
  * view the queue; only Super Admins decide.
  */
 
-const ACTION_LABEL: Record<string, string> = {
-  remove_post: "Remove post",
-  remove_comment: "Remove comment",
-  remove_collab: "Remove collaboration",
-  suspend_user: "Suspend account",
+const ACTION_LABEL: Record<string, DictKey> = {
+  remove_post: "admin.reqRemovePost",
+  remove_comment: "admin.reqRemoveComment",
+  remove_collab: "admin.reqRemoveCollab",
+  suspend_user: "admin.reqSuspend",
 };
 
 function AppealMeta({ row }: { row: AdminAppealRow }) {
+  const { t } = useLanguage();
   return (
     <div className="flex flex-col gap-3.5">
       <div className="flex flex-wrap items-center gap-2">
         <span className="text-[15px] font-semibold">{row.appellant_name}</span>
         {row.appellant_strikes > 0 ? (
           <Pill tone="danger">
-            {row.appellant_strikes} active strike
-            {row.appellant_strikes > 1 ? "s" : ""}
+            {row.appellant_strikes > 1
+              ? t("admin.strikesActiveMany", { count: row.appellant_strikes })
+              : t("admin.strikesActiveOne", { count: row.appellant_strikes })}
           </Pill>
         ) : null}
         <span className="text-[13px] text-muted">
-          {row.appellant_history} moderation action
-          {row.appellant_history === 1 ? "" : "s"} on record
+          {row.appellant_history === 1
+            ? t("admin.actionsOnRecordOne", { count: row.appellant_history })
+            : t("admin.actionsOnRecordMany", { count: row.appellant_history })}
         </span>
       </div>
 
       <dl className="flex flex-col gap-1.5 text-sm">
         <div className="flex gap-3">
-          <dt className="w-28 shrink-0 text-muted">Appeals</dt>
+          <dt className="w-28 shrink-0 text-muted">{t("admin.appealsWhat")}</dt>
           <dd className="min-w-0">
             <span className="font-medium">
-              {ACTION_LABEL[row.action.action_type] ?? row.action.action_type}
+              {ACTION_LABEL[row.action.action_type] ? t(ACTION_LABEL[row.action.action_type]) : row.action.action_type}
             </span>
             {row.action.label ? (
               <span className="text-muted"> · “{row.action.label}”</span>
@@ -62,17 +67,17 @@ function AppealMeta({ row }: { row: AdminAppealRow }) {
           </dd>
         </div>
         <div className="flex gap-3">
-          <dt className="w-28 shrink-0 text-muted">Original reason</dt>
+          <dt className="w-28 shrink-0 text-muted">{t("admin.originalReason")}</dt>
           <dd className="min-w-0">{row.action.reason}</dd>
         </div>
         <div className="flex gap-3">
-          <dt className="w-28 shrink-0 text-muted">Filed</dt>
+          <dt className="w-28 shrink-0 text-muted">{t("admin.filed")}</dt>
           <dd className="text-muted">{fmtDateTime(row.created_at)}</dd>
         </div>
       </dl>
 
       <div>
-        <p className="text-[13px] font-medium text-muted">Appeal message</p>
+        <p className="text-[13px] font-medium text-muted">{t("admin.appealMessage")}</p>
         <p className="mt-1.5 rounded-lg bg-bg px-3.5 py-2.5 text-sm whitespace-pre-wrap">
           {row.message}
         </p>
@@ -90,6 +95,7 @@ function PendingRow({
   isSuper: boolean;
   onDecided: () => void;
 }) {
+  const { t } = useLanguage();
   const [confirmGrant, setConfirmGrant] = useState(false);
   const [denyOpen, setDenyOpen] = useState(false);
   const [note, setNote] = useState("");
@@ -106,13 +112,13 @@ function PendingRow({
       );
       toast.success(
         decision === "granted"
-          ? "Appeal granted. The original action has been reversed."
-          : "Appeal denied.",
+          ? t("admin.grantedToast")
+          : t("admin.deniedToast"),
       );
       onDecided();
     } catch (err) {
       toast.error(
-        err instanceof ApiError ? err.message : "Could not save the decision.",
+        err instanceof ApiError ? err.message : t("admin.couldNotDecide"),
       );
     } finally {
       setBusy(false);
@@ -127,8 +133,7 @@ function PendingRow({
           {confirmGrant ? (
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-sm">
-                Granting restores the content or reactivates the account
-                right away.
+                {t("admin.grantConfirmText")}
               </span>
               <button
                 type="button"
@@ -136,14 +141,14 @@ function PendingRow({
                 disabled={busy}
                 className="rounded-full bg-accent px-3.5 py-1.5 text-[13px] font-medium text-on-accent disabled:opacity-50"
               >
-                {busy ? "Saving…" : "Confirm grant"}
+                {busy ? t("common.saving") : t("admin.confirmGrant")}
               </button>
               <button
                 type="button"
                 onClick={() => setConfirmGrant(false)}
                 className="px-2 py-1.5 text-[13px] font-medium text-muted transition-colors hover:text-ink"
               >
-                Cancel
+                {t("common.cancel")}
               </button>
             </div>
           ) : denyOpen ? (
@@ -152,7 +157,7 @@ function PendingRow({
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
                 rows={2}
-                placeholder="Decision note (required, the appellant will read this)"
+                placeholder={t("admin.denyPlaceholder")}
                 className="w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm outline-none placeholder:text-subtle focus:border-accent"
               />
               <div className="mt-2 flex items-center gap-2">
@@ -162,14 +167,14 @@ function PendingRow({
                   disabled={busy || note.trim().length < 3}
                   className="rounded-full bg-[#c9303a] px-3.5 py-1.5 text-[13px] font-medium text-white disabled:opacity-50"
                 >
-                  {busy ? "Saving…" : "Deny appeal"}
+                  {busy ? t("common.saving") : t("admin.denyAppeal")}
                 </button>
                 <button
                   type="button"
                   onClick={() => setDenyOpen(false)}
                   className="px-2 py-1.5 text-[13px] font-medium text-muted transition-colors hover:text-ink"
                 >
-                  Cancel
+                  {t("common.cancel")}
                 </button>
               </div>
             </div>
@@ -180,21 +185,21 @@ function PendingRow({
                 onClick={() => setConfirmGrant(true)}
                 className="rounded-full bg-accent px-3.5 py-1.5 text-[13px] font-medium text-on-accent"
               >
-                Grant appeal
+                {t("admin.grantAppeal")}
               </button>
               <button
                 type="button"
                 onClick={() => setDenyOpen(true)}
                 className="rounded-full border border-line px-3.5 py-1.5 text-[13px] font-medium transition-colors hover:text-ink"
               >
-                Deny appeal
+                {t("admin.denyAppeal")}
               </button>
             </div>
           )}
         </div>
       ) : (
         <p className="mt-4 border-t border-line pt-4 text-sm text-muted">
-          Waiting for a Super Admin to decide.
+          {t("admin.waitingSuper")}
         </p>
       )}
     </div>
@@ -202,6 +207,7 @@ function PendingRow({
 }
 
 export default function AdminAppealsPage() {
+  const { t } = useLanguage();
   const { viewer, refreshOverview } = useAdmin();
   const isSuper = viewer?.role === "super_admin";
   const [rows, setRows] = useState<AdminAppealRow[] | null>(null);
@@ -224,7 +230,7 @@ export default function AdminAppealsPage() {
       .catch((err) => {
         if (!live) return;
         setError(
-          err instanceof ApiError ? err.message : "Could not load appeals.",
+          err instanceof ApiError ? err.message : t("admin.couldNotLoadAppeals"),
         );
       });
     return () => {
@@ -238,21 +244,21 @@ export default function AdminAppealsPage() {
   return (
     <div>
       <PageHeader
-        title="Appeals"
-        subtitle="Users asking for a moderation action to be reversed. Granting restores the content or reactivates the account."
+        title={t("admin.appealsTitle")}
+        subtitle={t("admin.appealsSubtitle")}
       />
       {error ? (
         <ErrorState onRetry={reload} />
       ) : rows === null ? (
-        <p className="py-10 text-sm text-muted">Loading appeals…</p>
+        <p className="py-10 text-sm text-muted">{t("admin.loadingAppeals")}</p>
       ) : (
         <div className="flex flex-col gap-6">
           <section className="flex flex-col gap-3">
             <h2 className="text-sm font-semibold tracking-tight">
-              Pending ({pending.length})
+              {t("admin.pendingCount", { count: pending.length })}
             </h2>
             {pending.length === 0 ? (
-              <EmptyState>No appeals are waiting for a decision.</EmptyState>
+              <EmptyState>{t("admin.noAppealsWaiting")}</EmptyState>
             ) : (
               pending.map((row) => (
                 <PendingRow
@@ -266,7 +272,7 @@ export default function AdminAppealsPage() {
           </section>
           {history.length > 0 ? (
             <section className="flex flex-col gap-3">
-              <h2 className="text-sm font-semibold tracking-tight">History</h2>
+              <h2 className="text-sm font-semibold tracking-tight">{t("admin.historyTitle")}</h2>
               {history.map((row) => (
                 <div
                   key={row.id}
@@ -275,16 +281,16 @@ export default function AdminAppealsPage() {
                   <AppealMeta row={row} />
                   <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-line pt-3.5 text-[13px] text-muted">
                     {row.status === "granted" ? (
-                      <Pill tone="success">Granted</Pill>
+                      <Pill tone="success">{t("admin.grantedPill")}</Pill>
                     ) : (
-                      <Pill tone="danger">Denied</Pill>
+                      <Pill tone="danger">{t("admin.deniedPill")}</Pill>
                     )}
                     <span>
-                      decided {row.decided_at ? fmtDateTime(row.decided_at) : ""}
+                      {t("admin.decidedLine", { date: row.decided_at ? fmtDateTime(row.decided_at) : "" })}
                     </span>
                     {row.decision_note ? (
                       <span className="text-ink">
-                        Note: {row.decision_note}
+                        {t("admin.noteLine", { note: row.decision_note })}
                       </span>
                     ) : null}
                   </div>
