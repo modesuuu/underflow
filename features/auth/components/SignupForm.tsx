@@ -11,6 +11,7 @@ import { Button } from "@astryxdesign/core/Button";
 import { AuthField } from "./AuthField";
 import { AuthShell } from "./AuthShell";
 import { GoogleButton } from "./GoogleButton";
+import { VERIFY_WELCOME_KEY } from "./VerifyEmailWelcome";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import type { DictKey } from "@/lib/i18n/dictionary";
 
@@ -40,7 +41,17 @@ export function SignupForm() {
     }
     setSubmitting(true);
     try {
-      await register({ username, email, password });
+      const session = await register({ username, email, password });
+      // Flag the one-time verification notice: the app frame shows it
+      // as a modal on arrival, so the "check your inbox" step cannot
+      // be missed the way the slim banner alone was.
+      if (session.user.email && session.user.emailVerified !== true) {
+        try {
+          window.sessionStorage.setItem(VERIFY_WELCOME_KEY, "1");
+        } catch {
+          // Storage unavailable: the banner still reminds them.
+        }
+      }
       router.replace(next);
     } catch (err) {
       if (err instanceof ApiError && err.code === "username_taken") {
