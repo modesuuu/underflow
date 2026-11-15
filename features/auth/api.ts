@@ -113,7 +113,13 @@ export async function login(input: LoginInput): Promise<AuthSession> {
   return loginViaBackend(input);
 }
 
-export async function register(input: RegisterInput): Promise<AuthSession> {
+/** A registration waiting for its email link (pending scheme). */
+export interface PendingRegistration {
+  pendingId: string;
+  email: string;
+}
+
+export async function register(input: RegisterInput): Promise<PendingRegistration> {
   const errors = validateRegister(input);
   if (Object.keys(errors).length > 0) {
     throw new ApiError(
@@ -319,6 +325,14 @@ async function loginViaBackend(input: LoginInput): Promise<AuthSession> {
     email?: string | null;
   }>(res);
   throwIfSuspended(body.data);
+  if (
+    body.data &&
+    (body.data as { email_not_verified?: boolean }).email_not_verified
+  ) {
+    // Pending scheme: the registration is still waiting for its
+    // email link; the form shows the dedicated notice.
+    throw new ApiError(403, "email_not_verified", "Account not verified yet.");
+  }
   if (res.status === 429) {
     throw new ApiError(429, "rate_limited", "Too many attempts. Try again in a few minutes.");
   }
@@ -337,19 +351,28 @@ async function loginViaBackend(input: LoginInput): Promise<AuthSession> {
   return session;
 }
 
-async function registerViaBackend(input: RegisterInput): Promise<AuthSession> {
-  const res = await fetch(`${getApiBaseUrl()}/api/auth/register`, {
+async function registerViaBackend(input: RegisterInput): Promise<PendingRegistration> {
+  const payload: Record<string, string> = {};
+  payload.username = input.username.trim();
+  payload.email = input.email.trim();
+  payload.password = input.password;
+  const res = await fetch(getApiBaseUrl() + "/api/auth/register", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      username: input.username.trim(),
-      email: input.email.trim(),
-      password: input.password,
-    }),
+    body: JSON.stringify(payload),
   });
-  const body = await readBackendEnvelope<{ id: string; username: string }>(res);
+  const body = await readBackendEnvelope<{
+    pending?: boolean;
+    pending_id?: string;
+    email?: string;
+  }>(res);
   if (res.status === 429) {
     throw new ApiError(429, "rate_limited", "Too many attempts. Try again in a few minutes.");
+  }
+  if (res.status === 502) {
+    // Pending scheme: the verification email could not be sent, so
+    // the backend cancelled the registration and stored nothing.
+    throw new ApiError(502, "email_send_failed", body.message || "Could not send the verification email.");
   }
   if (!res.ok || !body.success) {
     // The backend answers 400 for every register failure, so the
@@ -368,7 +391,13 @@ async function registerViaBackend(input: RegisterInput): Promise<AuthSession> {
       message || "Could not create the account.",
     );
   }
-  return loginViaBackend({ username: input.username, password: input.password });
+  if (!body.data?.pending_id) {
+    throw new ApiError(res.status, "validation_error", "Could not start the sign-up.");
+  }
+  return {
+    pendingId: body.data.pending_id,
+    email: body.data.email ?? input.email.trim(),
+  };
 }
 
 /**
@@ -421,8 +450,9 @@ export async function resetPassword(
 }
 
 /**
- * POST /api/auth/verify-email. Exchanges the emailed token for the
- * verified flag; a 400 means the link is invalid, expired, or used.
+ * POST /api/auth/verify-email. Exchanges the emailed token for a
+ * real account (pending scheme); a 400 means the link is invalid,
+ * expired, or already used.
  */
 export async function verifyEmail(token: string): Promise<void> {
   const payload: Record<string, string> = {};
@@ -443,11 +473,29 @@ export async function verifyEmail(token: string): Promise<void> {
 }
 
 /**
- * POST /api/auth/resend-verification (signed in). Sends a fresh
- * verification link; the backend caps this at 3 per hour (429).
+ * POST /api/auth/resend-verification-pending. Resends the signup
+ * verification link for a pending registration (no account exists
+ * yet, so the pending id from the register response is the handle).
+ * The backend caps this at 3 per hour per registration (429); a
+ * 502 means the email could not be sent.
  */
-export async function resendVerification(): Promise<void> {
-  await apiFetch<ApiEnvelope<null>>("/api/auth/resend-verification", {
+export async function resendVerificationPending(pendingId: string): Promise<void> {
+  const payload: Record<string, string> = {};
+  payload.pending_id = pendingId;
+  const res = await fetch(getApiBaseUrl() + "/api/auth/resend-verification-pending", {
     method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
   });
+  const body = await readBackendEnvelope<null>(res);
+  if (res.status === 429) {
+    throw new ApiError(429, "rate_limited", "Too many attempts. Try again in a few minutes.");
+  }
+  if (!res.ok || !body.success) {
+    throw new ApiError(
+      res.status,
+      "resend_failed",
+      body.message || "Resend failed (HTTP " + res.status + ").",
+    );
+  }
 }

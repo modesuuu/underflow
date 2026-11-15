@@ -89,6 +89,11 @@ export function LoginForm() {
         toast.error(t("auth.errTooMany"));
         return;
       }
+      if (err instanceof ApiError && err.code === "email_not_verified") {
+        // The registration is still waiting for its email link.
+        toast.error(t("auth.errNotVerified"));
+        return;
+      }
       // Credential failures arrive pre-genericized from the api
       // layer ("Username/password salah"); anything else that is
       // not an ApiError is a network failure.

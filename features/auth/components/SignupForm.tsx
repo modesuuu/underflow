@@ -2,22 +2,21 @@
 
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { ApiError } from "@/lib/api-client";
-import { register } from "../api";
+import { register, type PendingRegistration } from "../api";
 import { firstError, validateRegister, type FieldErrors } from "../validation";
 import { Button } from "@astryxdesign/core/Button";
 import { AuthField } from "./AuthField";
 import { AuthShell } from "./AuthShell";
 import { GoogleButton } from "./GoogleButton";
-import { VERIFY_WELCOME_KEY } from "./VerifyEmailWelcome";
+import { VerifyPendingModal } from "./VerifyPendingModal";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import type { DictKey } from "@/lib/i18n/dictionary";
 
 export function SignupForm() {
   const { t } = useLanguage();
-  const router = useRouter();
   const searchParams = useSearchParams();
   const next = searchParams.get("next") || "/";
   const [username, setUsername] = useState("");
@@ -25,6 +24,7 @@ export function SignupForm() {
   const [password, setPassword] = useState("");
   const [errors, setErrors] = useState<FieldErrors>({});
   const [submitting, setSubmitting] = useState(false);
+  const [pending, setPending] = useState<PendingRegistration | null>(null);
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
@@ -41,18 +41,11 @@ export function SignupForm() {
     }
     setSubmitting(true);
     try {
-      const session = await register({ username, email, password });
-      // Flag the one-time verification notice: the app frame shows it
-      // as a modal on arrival, so the "check your inbox" step cannot
-      // be missed the way the slim banner alone was.
-      if (session.user.email && session.user.emailVerified !== true) {
-        try {
-          window.sessionStorage.setItem(VERIFY_WELCOME_KEY, "1");
-        } catch {
-          // Storage unavailable: the banner still reminds them.
-        }
-      }
-      router.replace(next);
+      const pendingResult = await register({ username, email, password });
+      // Pending scheme: no account and no session yet. The
+      // verification modal opens on this page; the account is
+      // created when the emailed link is clicked.
+      setPending(pendingResult);
     } catch (err) {
       if (err instanceof ApiError && err.code === "username_taken") {
         // Taken username/email: inline on the field AND a toast,
@@ -62,6 +55,10 @@ export function SignupForm() {
       } else if (err instanceof ApiError && err.code === "email_taken") {
         setErrors((prev) => ({ ...prev, email: err.message }));
         toast.error(err.message);
+      } else if (err instanceof ApiError && err.code === "email_send_failed") {
+        // The backend cancelled the registration because the
+        // verification email could not be sent; nothing was stored.
+        toast.error(t("auth.errEmailSend"));
       } else if (err instanceof ApiError && err.code === "rate_limited") {
         toast.error(t("auth.errTooMany"));
       } else {
@@ -77,6 +74,7 @@ export function SignupForm() {
   };
 
   return (
+    <>
     <AuthShell
       title={t("auth.createTitle")}
       subtitle={t("auth.createSubtitle")}
@@ -141,5 +139,13 @@ export function SignupForm() {
       </div>
       <GoogleButton next={next} disabled={submitting} />
     </AuthShell>
+    {pending ? (
+      <VerifyPendingModal
+        pendingId={pending.pendingId}
+        email={pending.email}
+        onClose={() => setPending(null)}
+      />
+    ) : null}
+    </>
   );
 }

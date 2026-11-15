@@ -6,8 +6,6 @@ import { setMobileNav, useMobileNavOpen } from "./mobile-nav";
 import { Sidebar } from "./Sidebar";
 import { LivePoller } from "@/features/dashboard/components/LivePoller";
 import { RedirectIfAuthed, RequireAuth } from "@/features/auth/components/AuthGate";
-import { VerifyEmailBanner } from "@/features/auth/components/VerifyEmailBanner";
-import { VerifyEmailWelcome } from "@/features/auth/components/VerifyEmailWelcome";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 
 /**
@@ -94,10 +92,7 @@ export function RootShell({ children }: { children: ReactNode }) {
   return (
     <RequireAuth>
       <LivePoller />
-      <div className="flex h-dvh w-full flex-col overflow-hidden">
-        <VerifyEmailBanner />
-        <VerifyEmailWelcome />
-        <div className="flex min-h-0 w-full flex-1 overflow-hidden">
+      <div className="flex h-dvh w-full overflow-hidden">
         <Sidebar />
         {mobileOpen && (
           <button
@@ -108,7 +103,6 @@ export function RootShell({ children }: { children: ReactNode }) {
           />
         )}
         {children}
-        </div>
       </div>
     </RequireAuth>
   );
