@@ -12,10 +12,12 @@ type State = "working" | "success" | "invalid";
 
 /**
  * Verify-email landing (pending scheme, 2026-11-16): exchanges the
- * ?token= from the signup email for a real account. Success sends
- * the user to log in; an invalid or expired link sends them back
- * to sign up again (re-registering with the same details refreshes
- * the pending registration and resends the link).
+ * ?token= from the signup email for a real account. The endpoint
+ * answers with a full login payload (the click is the identity
+ * proof), so success stores the session and lands the user on the
+ * feed; an invalid or expired link sends them back to sign up
+ * again (re-registering with the same details refreshes the
+ * pending registration and resends the link).
  */
 export function VerifyEmailForm() {
   const { t } = useLanguage();
@@ -36,11 +38,12 @@ export function VerifyEmailForm() {
       try {
         await verifyEmail(token);
         setState("success");
+        window.setTimeout(() => router.replace("/"), 900);
       } catch {
         setState("invalid");
       }
     })();
-  }, [token]);
+  }, [token, router]);
 
   const footer = (
     <Link
@@ -58,13 +61,7 @@ export function VerifyEmailForm() {
         subtitle={t("verify.successBody")}
         footer={footer}
       >
-        <Button
-          label={t("auth.logIn")}
-          variant="primary"
-          size="lg"
-          width="100%"
-          onClick={() => router.replace("/login")}
-        />
+        <p className="text-sm text-muted">{t("verify.redirecting")}</p>
       </AuthShell>
     );
   }

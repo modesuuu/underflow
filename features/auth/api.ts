@@ -454,7 +454,7 @@ export async function resetPassword(
  * real account (pending scheme); a 400 means the link is invalid,
  * expired, or already used.
  */
-export async function verifyEmail(token: string): Promise<void> {
+export async function verifyEmail(token: string): Promise<AuthSession> {
   const payload: Record<string, string> = {};
   payload.token = token;
   const res = await fetch(`${getApiBaseUrl()}/api/auth/verify-email`, {
@@ -462,14 +462,31 @@ export async function verifyEmail(token: string): Promise<void> {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
-  const body = await readBackendEnvelope<null>(res);
-  if (!res.ok || !body.success) {
+  const body = await readBackendEnvelope<{
+    id: string;
+    username: string;
+    token: string;
+    email?: string | null;
+    role?: string | null;
+    email_verified?: boolean | null;
+  }>(res);
+  if (!res.ok || !body.success || !body.data?.token) {
     throw new ApiError(
       res.status,
       "verify_failed",
       body.message || `Verify email failed (HTTP ${res.status}).`,
     );
   }
+  // The endpoint answers with a full login payload (the link
+  // click is the identity proof), so store the session exactly
+  // like a password login does; the caller routes to the feed.
+  const session: AuthSession = {
+    user: toAuthUser(body.data),
+    token: body.data.token,
+    expiresAt: Date.now() + TOKEN_TTL_MS,
+  };
+  setSession(session);
+  return session;
 }
 
 /**
