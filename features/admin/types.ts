@@ -23,6 +23,11 @@ export interface AdminActivity {
   owner_name: string | null;
 }
 
+export interface AdminPeriodStat {
+  total: number;
+  delta: number | null;
+}
+
 export interface AdminOverview {
   users_total: number;
   users_new_today: number;
@@ -37,6 +42,11 @@ export interface AdminOverview {
   appeals_pending: number;
   recent_activity: AdminActivity[];
   trends: AdminTrendDay[];
+  period: {
+    registrations: AdminPeriodStat;
+    posts: AdminPeriodStat;
+    collabs: AdminPeriodStat;
+  };
   viewer: AdminViewer | null;
 }
 
