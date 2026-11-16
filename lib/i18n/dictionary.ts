@@ -69,6 +69,7 @@ export const en = {
   "search.skills": "Skills",
   "search.noResults": "No results for \"{q}\"",
   "search.hint": "Type at least 2 characters.",
+  "search.title": "Search",
 
   // Settings index
   "settings.title": "Settings",
@@ -1011,6 +1012,7 @@ export const id: Record<DictKey, string> = {
   "search.skills": "Skill",
   "search.noResults": "Tidak ada hasil untuk \"{q}\"",
   "search.hint": "Ketik minimal 2 karakter.",
+  "search.title": "Pencarian",
 
   // Settings index
   "settings.title": "Pengaturan",

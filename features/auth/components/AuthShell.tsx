@@ -15,8 +15,12 @@ import { useLanguage } from "@/lib/i18n/LanguageProvider";
  * backdrop box, it floats straight on the forest panel. The survey
  * proof line was removed at the user's request (2026-11-06).
  * The form side scrolls internally only if a short screen ever needs
- * it. Mobile keeps the form first with a compact lockup and normal
- * page scroll.
+ * it. Centering uses my-auto on the inner wrapper, never
+ * justify-center on the scroll container: with justify-center an
+ * overflowing form spills past the top edge where scroll cannot
+ * reach it (the signup form was clipped exactly that way,
+ * 2026-11-16). Mobile keeps the form first with a compact lockup
+ * and normal page scroll.
  */
 export function AuthShell({
   title,
@@ -54,8 +58,8 @@ export function AuthShell({
           />
         </div>
       </aside>
-      <div className="flex flex-1 flex-col justify-center bg-surface px-6 py-10 sm:px-8 lg:overflow-y-auto">
-        <div className="mx-auto flex w-full max-w-[420px] flex-col gap-7">
+      <div className="flex flex-1 flex-col bg-surface px-6 py-10 sm:px-8 lg:overflow-y-auto">
+        <div className="mx-auto my-auto flex w-full max-w-[420px] flex-col gap-7">
           <div className="flex items-center gap-3 lg:hidden">
             <LogoMark className="size-8 text-ink" />
             <span className="text-base font-medium text-ink">Underflow</span>

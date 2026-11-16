@@ -395,6 +395,7 @@ function routeToNavId(pathname: string): string {
   if (pathname.startsWith("/circle")) return "circle";
   if (pathname.startsWith("/my-collaborations")) return "my-collab";
   if (pathname.startsWith("/collaborations")) return "collaborations";
+  if (pathname.startsWith("/search")) return "search";
   if (pathname.startsWith("/inbox")) return "inbox";
   if (pathname.startsWith("/settings")) return "settings";
   if (pathname === "/" || pathname.startsWith("/dashboard")) return "feeds";
