@@ -16,7 +16,7 @@ export function RouteLoading() {
   const { t } = useLanguage();
   return (
     <div
-      className="flex min-h-dvh flex-col items-center justify-center gap-3 bg-bg"
+      className="flex min-h-dvh min-w-0 flex-1 flex-col items-center justify-center gap-3 bg-bg"
       role="status"
       aria-label={t("common.loading")}
     >

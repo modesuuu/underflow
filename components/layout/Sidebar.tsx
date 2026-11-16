@@ -12,7 +12,6 @@ import Link from "next/link";
 import { createPortal } from "react-dom";
 import { usePathname } from "next/navigation";
 import { Avatar } from "@/components/ui/Avatar";
-import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { LogoutButton } from "@/features/auth/components/LogoutButton";
 import { LogoMark } from "@/components/ui/LogoMark";
 import { Badge } from "@/components/ui/Badge";
@@ -709,19 +708,6 @@ export function Sidebar() {
             ))}
           </div>
           <div className="h-px w-full bg-line" />
-
-          {/* Theme — light / system / dark, persisted per device */}
-          <div
-            className={clsx(
-              "flex items-center",
-              mini ? "justify-center" : "justify-between px-1"
-            )}
-          >
-            {!mini && (
-              <span className="text-xs font-medium text-muted">{t("nav.theme")}</span>
-            )}
-            <ThemeToggle variant={mini ? "rail" : "full"} />
-          </div>
 
           {/* Profile card — links to the current user's own profile,
               with the icon-only Log out button beside it (below it on
