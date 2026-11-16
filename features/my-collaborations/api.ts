@@ -39,10 +39,21 @@ export async function getMyCollabProjects(): Promise<MyCollabProject[]> {
   return [];
 }
 
-// No backend detail route yet — resolve from the list.
+// Detail route (audit P1 #15): GET /api/my-collaborations/:id,
+// with the list as a fallback for older backends.
 export async function getMyCollabProject(
   id: string
 ): Promise<MyCollabProject | undefined> {
+  if (isApiConfigured()) {
+    try {
+      const res = await apiFetch<ApiEnvelope<BackendMyCollab>>(
+        "/api/my-collaborations/" + id
+      );
+      return mapBackendMyCollab(res.data);
+    } catch {
+      // Fall through to the list resolution below.
+    }
+  }
   const projects = await getMyCollabProjects();
   return projects.find((p) => p.id === id);
 }

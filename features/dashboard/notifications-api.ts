@@ -11,7 +11,7 @@ import { formatRelativeAgoFine, tStatic } from "@/lib/i18n/format";
  */
 export interface BackendNotification {
   id: string;
-  type: "like" | "comment" | "comment_like" | "application" | "admin_action_request" | "admin_request_decided" | "admin_appeal";
+  type: "like" | "comment" | "comment_like" | "application" | "admin_action_request" | "admin_request_decided" | "admin_appeal" | "collab_completed" | "collab_reopened" | "member_status";
   title: string;
   is_read: boolean | number;
   created_at: string;
@@ -56,7 +56,10 @@ export function mapWireNotification(b: BackendNotification): NotificationItem {
             ? tStatic("notif.actionApplied")
             : b.type === "admin_action_request" ||
                 b.type === "admin_request_decided" ||
-                b.type === "admin_appeal"
+                b.type === "admin_appeal" ||
+                b.type === "collab_completed" ||
+                b.type === "collab_reopened" ||
+                b.type === "member_status"
               ? b.title
               : tStatic("notif.actionCommented"),
     openCollabId:
