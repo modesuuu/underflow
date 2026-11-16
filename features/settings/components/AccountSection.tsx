@@ -3,6 +3,7 @@
 import { useSessionUser } from "@/features/auth/store";
 import { LogoutButton } from "@/features/auth/components/LogoutButton";
 import { ChangePasswordForm } from "./ChangePasswordForm";
+import { DeleteAccountForm } from "./DeleteAccountForm";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import { SettingsSection } from "./SettingsSection";
 
@@ -58,6 +59,9 @@ export function AccountSection() {
             <ChangePasswordForm />
           </div>
           <LogoutButton />
+          <div className="border-t border-line pt-4">
+            <DeleteAccountForm />
+          </div>
         </>
       )}
     </SettingsSection>

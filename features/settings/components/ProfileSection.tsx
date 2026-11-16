@@ -23,6 +23,7 @@ import {
 import { SettingsSection } from "./SettingsSection";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import { updateProfilePhoto } from "../api";
+import { ProfileBasicsForm } from "./ProfileBasicsForm";
 
 const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
 
@@ -171,6 +172,10 @@ export function ProfileSection() {
       <p className="-mt-2 text-[13px] text-muted">
         {t("settings.profile.photoHint")}
       </p>
+
+      <div className="h-px w-full bg-line" />
+
+      <ProfileBasicsForm />
 
       <div className="h-px w-full bg-line" />
 

@@ -32,6 +32,12 @@ const CATEGORIES: SettingsCategory[] = [
     descKey: "settings.language.desc",
   },
   {
+    href: "/settings/notifications",
+    icon: "bell",
+    labelKey: "settings.notifications.label",
+    descKey: "settings.notifications.desc",
+  },
+  {
     href: "/settings/help",
     icon: "help-circle",
     labelKey: "settings.help.label",
