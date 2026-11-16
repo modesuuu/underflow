@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import type { Metadata } from "next";
 import { AppShell } from "@/components/layout/AppShell";
 import { SearchExplorer } from "@/features/search/components/SearchExplorer";
@@ -12,7 +13,9 @@ export default function SearchPage() {
   return (
     <AppShell breadcrumbRoot="Tools" breadcrumbLeaf="Search">
       <h1 className="sr-only">{tStatic("search.title")}</h1>
-      <SearchExplorer />
+      <Suspense fallback={null}>
+        <SearchExplorer />
+      </Suspense>
     </AppShell>
   );
 }

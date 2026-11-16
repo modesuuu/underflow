@@ -2,8 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { Avatar } from "@/components/ui/Avatar";
-import { Icon } from "@/components/ui/Icon";
 import { apiFetch } from "@/lib/api-client";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 
@@ -34,12 +34,14 @@ interface SearchResults {
 const EMPTY: SearchResults = { users: [], projects: [], skills: [] };
 
 /**
- * The global search page (user order 2026-11-16: a page of
- * its own instead of the TopBar dropdown). Same /api/search
- * endpoint, page-scale layout: people, projects, and system
- * skills; skill rows land on /collaborations pre-filtered.
- * A ?q= in the URL seeds the first search, so the page can
- * be deep-linked.
+ * The global search page's results body. The input itself
+ * lives in the TopBar (the GlobalSearch panel mounts only
+ * on this page; user revision 2026-11-16); this body shows
+ * the full results for the ?q= in the URL, which the
+ * panel's See-all footer and deep links set. Same
+ * /api/search endpoint, page-scale layout: people,
+ * projects, and system skills; skill rows land on
+ * /collaborations pre-filtered.
  */
 export function SearchExplorer() {
   const { t } = useLanguage();
@@ -48,10 +50,11 @@ export function SearchExplorer() {
   const [loading, setLoading] = useState(false);
   const seq = useRef(0);
 
+  const searchParams = useSearchParams();
+  const urlQ = searchParams.get("q") ?? "";
   useEffect(() => {
-    const q = new URLSearchParams(window.location.search).get("q");
-    if (q) setQuery(q);
-  }, []);
+    setQuery(urlQ);
+  }, [urlQ]);
 
   useEffect(() => {
     const q = query.trim();
@@ -89,24 +92,6 @@ export function SearchExplorer() {
 
   return (
     <div className="mx-auto w-full max-w-2xl px-4 pt-8 pb-16 sm:px-6">
-      <div className="relative">
-        <Icon
-          name="search"
-          size={20}
-          className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-subtle"
-        />
-        <input
-          type="text"
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder={t("search.placeholder")}
-          aria-label={t("search.placeholder")}
-          autoFocus
-          className="w-full rounded-full border border-line bg-surface py-3 pr-4 pl-12 text-base text-ink shadow-sm transition-colors outline-none placeholder:text-subtle focus:border-accent focus:ring-2 focus:ring-accent/30"
-        />
-      </div>
-
-      <div className="pt-6">
         {q.length < 2 ? (
           <p className="px-1 text-sm text-subtle">{t("search.hint")}</p>
         ) : loading ? (
@@ -189,7 +174,6 @@ export function SearchExplorer() {
             )}
           </div>
         )}
-      </div>
     </div>
   );
 }
