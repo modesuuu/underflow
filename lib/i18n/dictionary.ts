@@ -63,6 +63,12 @@ export const en = {
   "common.retry": "Retry",
   "common.loading": "Loading…",
   "common.skipToContent": "Skip to main content",
+  "search.placeholder": "Search people, projects, skills…",
+  "search.people": "People",
+  "search.projects": "Projects",
+  "search.skills": "Skills",
+  "search.noResults": "No results for \"{q}\"",
+  "search.hint": "Type at least 2 characters.",
 
   // Settings index
   "settings.title": "Settings",
@@ -999,6 +1005,12 @@ export const id: Record<DictKey, string> = {
   "common.retry": "Coba lagi",
   "common.loading": "Memuat…",
   "common.skipToContent": "Lewati ke konten utama",
+  "search.placeholder": "Cari orang, proyek, skill…",
+  "search.people": "Orang",
+  "search.projects": "Proyek",
+  "search.skills": "Skill",
+  "search.noResults": "Tidak ada hasil untuk \"{q}\"",
+  "search.hint": "Ketik minimal 2 karakter.",
 
   // Settings index
   "settings.title": "Pengaturan",
