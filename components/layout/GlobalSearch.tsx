@@ -166,7 +166,7 @@ export function GlobalSearch() {
 
   return (
     <div
-      className="absolute top-1/2 left-1/2 hidden -translate-x-1/2 -translate-y-1/2 lg:block"
+      className="relative min-w-0 flex-1 lg:absolute lg:top-1/2 lg:left-1/2 lg:-translate-x-1/2 lg:-translate-y-1/2"
       onBlur={(event) => {
         if (!event.currentTarget.contains(event.relatedTarget)) setOpen(false);
       }}
@@ -192,12 +192,12 @@ export function GlobalSearch() {
         }}
         placeholder={t("search.placeholder")}
         aria-label={t("search.placeholder")}
-        className="w-64 rounded-full border border-line bg-surface py-2 pr-4 pl-10 text-sm text-ink transition-all outline-none placeholder:text-subtle focus:w-80 focus:border-accent focus:ring-2 focus:ring-accent/30"
+        className="w-full rounded-full border border-line bg-surface py-2 pr-4 pl-10 text-sm text-ink transition-all outline-none placeholder:text-subtle focus:border-accent focus:ring-2 focus:ring-accent/30 lg:w-64 lg:focus:w-80"
       />
       {open && (
         <div
           className={
-            "absolute top-full left-1/2 z-30 mt-2 max-h-[70vh] w-[min(560px,calc(100vw-2rem))] -translate-x-1/2 overflow-y-auto rounded-2xl border border-line bg-surface shadow-xl transition-[opacity,transform] duration-150 ease-out " +
+            "absolute top-full right-0 z-30 mt-2 max-h-[70vh] w-[min(560px,calc(100vw-2rem))] overflow-y-auto rounded-2xl border border-line bg-surface shadow-xl transition-[opacity,transform] duration-150 ease-out max-lg:fixed max-lg:inset-x-3 max-lg:top-[76px] max-lg:w-auto lg:left-1/2 lg:right-auto lg:-translate-x-1/2 " +
             (entered ? "translate-y-0 opacity-100" : "-translate-y-1 opacity-0")
           }
         >
