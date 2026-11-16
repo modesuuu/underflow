@@ -52,7 +52,7 @@ export function AuthShell({
         </div>
         <div className="flex min-h-0 flex-1 items-center justify-center">
           <img
-            src="/auth-3d-illustration.png"
+            src="/auth-3d-illustration.webp"
             alt=""
             className="max-h-full max-w-full object-contain"
           />
