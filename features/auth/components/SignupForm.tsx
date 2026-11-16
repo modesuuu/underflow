@@ -50,11 +50,14 @@ export function SignupForm() {
       if (err instanceof ApiError && err.code === "username_taken") {
         // Taken username/email: inline on the field AND a toast,
         // so the reason is impossible to miss.
-        setErrors((prev) => ({ ...prev, username: err.message }));
-        toast.error(err.message);
+        setErrors((prev) => ({
+          ...prev,
+          username: t("auth.errUsernameTaken"),
+        }));
+        toast.error(t("auth.errUsernameTaken"));
       } else if (err instanceof ApiError && err.code === "email_taken") {
-        setErrors((prev) => ({ ...prev, email: err.message }));
-        toast.error(err.message);
+        setErrors((prev) => ({ ...prev, email: t("auth.errEmailTaken") }));
+        toast.error(t("auth.errEmailTaken"));
       } else if (err instanceof ApiError && err.code === "email_send_failed") {
         // The backend cancelled the registration because the
         // verification email could not be sent; nothing was stored.

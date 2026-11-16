@@ -124,6 +124,8 @@ export const en = {
   "settings.account.deleteUsernameLabel": "Type your username to confirm",
   "settings.account.deleteFinal": "Delete my account permanently",
   "settings.account.deletedToast": "Your account has been deleted",
+  "settings.account.deleteBlocked": "You still own {count} project(s) with other members. Delete those projects first, then you can delete your account.",
+  "settings.account.deleteWrongPassword": "Current password is wrong.",
   "settings.account.desc": "Sign-in method and log out",
 
   // Settings > Appearance
@@ -804,6 +806,9 @@ export const en = {
   "auth.errTooMany": "Too many attempts. Try again in a few minutes.",
   "auth.errNotVerified": "This account is not verified yet. Check your email to finish signing up.",
   "auth.errEmailSend": "We couldn't send the verification email, so the sign-up was cancelled. Check your connection and try again.",
+  "auth.errInvalidCredentials": "Wrong username or password.",
+  "auth.errUsernameTaken": "That username is already taken.",
+  "auth.errEmailTaken": "That email is already registered.",
   "auth.forgotPassword": "Forgot password?",
   "auth.forgotTitle": "Reset your password",
   "auth.forgotSubtitle": "Enter your account email and we will send you a reset link.",
@@ -1055,6 +1060,8 @@ export const id: Record<DictKey, string> = {
   "settings.account.deleteUsernameLabel": "Ketik username kamu untuk konfirmasi",
   "settings.account.deleteFinal": "Hapus akun saya selamanya",
   "settings.account.deletedToast": "Akun kamu sudah terhapus",
+  "settings.account.deleteBlocked": "Kamu masih pemilik {count} proyek yang punya member lain. Hapus proyeknya dulu, baru akun bisa dihapus.",
+  "settings.account.deleteWrongPassword": "Password saat ini salah.",
   "settings.account.desc": "Metode masuk dan keluar",
 
   // Settings > Appearance
@@ -1736,6 +1743,9 @@ export const id: Record<DictKey, string> = {
   "auth.errTooMany": "Terlalu banyak percobaan. Coba lagi dalam beberapa menit.",
   "auth.errNotVerified": "Akun ini belum diverifikasi. Cek email kamu untuk menyelesaikan pendaftaran.",
   "auth.errEmailSend": "Email verifikasi tidak bisa dikirim, jadi pendaftaran dibatalkan. Periksa koneksimu dan coba lagi.",
+  "auth.errInvalidCredentials": "Username atau password salah.",
+  "auth.errUsernameTaken": "Username itu sudah dipakai.",
+  "auth.errEmailTaken": "Email itu sudah terdaftar.",
   "auth.forgotPassword": "Lupa kata sandi?",
   "auth.forgotTitle": "Atur ulang kata sandi",
   "auth.forgotSubtitle": "Masukkan email akunmu dan kami akan mengirimkan link reset.",

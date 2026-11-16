@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { useSessionUser } from "@/features/auth/store";
 import { setSession } from "@/features/auth/session";
 import { backendErrorMessage } from "@/features/collaborations/api";
+import { ApiError } from "@/lib/api-client";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import { deleteAccount } from "../api";
 
@@ -48,7 +49,16 @@ export function DeleteAccountForm() {
       toast.success(t("settings.account.deletedToast"));
       router.replace("/login");
     } catch (err) {
-      setError(backendErrorMessage(err));
+      if (err instanceof ApiError && err.code === "account_delete_blocked") {
+        const count =
+          (err.data as { blocked_projects?: number } | undefined)
+            ?.blocked_projects ?? 0;
+        setError(t("settings.account.deleteBlocked", { count }));
+      } else if (err instanceof ApiError && err.code === "wrong_password") {
+        setError(t("settings.account.deleteWrongPassword"));
+      } else {
+        setError(backendErrorMessage(err));
+      }
       setDeleting(false);
     }
   }

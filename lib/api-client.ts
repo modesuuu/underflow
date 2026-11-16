@@ -94,12 +94,21 @@ export class ApiError extends Error {
   readonly status: number;
   /** Machine code from the error envelope, e.g. "unauthorized". */
   readonly code?: string;
+  /** The error envelope's data payload, when the backend sent one
+   *  (e.g. { blocked_projects: 2 } on a 409). */
+  readonly data?: unknown;
 
-  constructor(status: number, code: string | undefined, message: string) {
+  constructor(
+    status: number,
+    code: string | undefined,
+    message: string,
+    data?: unknown,
+  ) {
     super(message);
     this.name = "ApiError";
     this.status = status;
     this.code = code;
+    this.data = data;
   }
 }
 
@@ -146,17 +155,20 @@ export async function apiFetch<T>(
   if (!res.ok) {
     let code: string | undefined;
     let message = res.statusText;
+    let parsedData: unknown;
     try {
       const parsed = (await res.json()) as {
         error?: { code?: string; message?: string };
         success?: boolean;
         message?: string;
+        code?: string;
         data?: { suspended?: boolean } | null;
       };
       if (res.status === 403 && parsed.data?.suspended === true) {
         handleSuspendedKick(parsed.data);
       }
-      code = parsed.error?.code;
+      code = parsed.error?.code ?? parsed.code;
+      parsedData = parsed.data;
       // Backend error shape: { success: false, message, data: null }.
       message = parsed.error?.message ?? parsed.message ?? message;
     } catch {
@@ -165,7 +177,8 @@ export async function apiFetch<T>(
     throw new ApiError(
       res.status,
       code,
-      `API request failed: ${res.status} ${code ? `(${code}) ` : ""}${message} (${path})`
+      `API request failed: ${res.status} ${code ? `(${code}) ` : ""}${message} (${path})`,
+      parsedData,
     );
   }
 

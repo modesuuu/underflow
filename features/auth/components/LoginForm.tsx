@@ -89,6 +89,10 @@ export function LoginForm() {
         toast.error(t("auth.errTooMany"));
         return;
       }
+      if (err instanceof ApiError && err.code === "invalid_credentials") {
+        toast.error(t("auth.errInvalidCredentials"));
+        return;
+      }
       if (err instanceof ApiError && err.code === "email_not_verified") {
         // The registration is still waiting for its email link.
         toast.error(t("auth.errNotVerified"));

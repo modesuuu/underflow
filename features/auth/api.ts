@@ -302,6 +302,8 @@ interface BackendEnvelope<T> {
   success: boolean;
   message: string;
   data: T | null;
+  /** Machine error code (audit P1 #17); absent on old backends. */
+  code?: string;
 }
 
 async function readBackendEnvelope<T>(res: Response): Promise<BackendEnvelope<T>> {
@@ -326,8 +328,9 @@ async function loginViaBackend(input: LoginInput): Promise<AuthSession> {
   }>(res);
   throwIfSuspended(body.data);
   if (
-    body.data &&
-    (body.data as { email_not_verified?: boolean }).email_not_verified
+    body.code === "email_not_verified" ||
+    (body.data &&
+      (body.data as { email_not_verified?: boolean }).email_not_verified)
   ) {
     // Pending scheme: the registration is still waiting for its
     // email link; the form shows the dedicated notice.
@@ -375,9 +378,16 @@ async function registerViaBackend(input: RegisterInput): Promise<PendingRegistra
     throw new ApiError(502, "email_send_failed", body.message || "Could not send the verification email.");
   }
   if (!res.ok || !body.success) {
-    // The backend answers 400 for every register failure, so the
-    // duplicates are recognized by message and mapped to the field
-    // they belong to (the form renders them inline + as a toast).
+    // Duplicates arrive as 409 + a machine code (audit P1 #16/#17)
+    // and map to the field they belong to (the form renders them
+    // inline + as a toast). The message match below only remains
+    // as a fallback for older backends without codes.
+    if (body.code === "username_taken") {
+      throw new ApiError(res.status, "username_taken", "That username is already taken.");
+    }
+    if (body.code === "email_taken") {
+      throw new ApiError(res.status, "email_taken", "That email is already registered.");
+    }
     const message = body.message || "";
     if (message.includes("Username tersebut telah terdaftar")) {
       throw new ApiError(res.status, "username_taken", "That username is already taken.");
