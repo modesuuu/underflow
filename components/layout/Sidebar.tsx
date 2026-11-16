@@ -55,6 +55,7 @@ const NAV_LABEL_KEYS: Record<string, DictKey> = {
   circle: "nav.circle",
   inbox: "nav.inbox",
   "my-collab": "nav.myCollaborations",
+  applications: "nav.applications",
   admin: "nav.admin",
   settings: "nav.setting",
 };
@@ -394,6 +395,7 @@ function NavSectionBlock({
 function routeToNavId(pathname: string): string {
   if (pathname.startsWith("/circle")) return "circle";
   if (pathname.startsWith("/my-collaborations")) return "my-collab";
+  if (pathname.startsWith("/applications")) return "applications";
   if (pathname.startsWith("/collaborations")) return "collaborations";
   if (pathname.startsWith("/inbox")) return "inbox";
   if (pathname.startsWith("/settings")) return "settings";
