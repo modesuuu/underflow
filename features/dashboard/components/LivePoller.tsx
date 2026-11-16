@@ -4,9 +4,12 @@ import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import { useIsAuthenticated } from "@/features/auth/store";
 import { getSession, getSessionUser, setSession } from "@/features/auth/session";
-import { apiFetch, type ApiEnvelope } from "@/lib/api-client";
+import {
+  apiFetch,
+  refreshSessionToken,
+  type ApiEnvelope,
+} from "@/lib/api-client";
 import { getDashboardPosts } from "../api";
-import { TOKEN_TTL_MS } from "@/features/auth/api";
 import { syncLikeCount } from "../like-store";
 import { setCommentCount } from "../comment-count-store";
 import {
@@ -124,28 +127,17 @@ export function LivePoller() {
   }, [isAuthed]);
 
   // Token refresh (audit P0, 2026-11-14): when the session token
-  // is in its last day, swap it for a fresh one via POST
-  // /api/auth/refresh (the old token is revoked server-side).
-  // One shot per mount, best-effort like the other backfills.
+  // is in its last day, swap it for a fresh one. The rotation
+  // itself lives in lib/api-client (refreshSessionToken) because
+  // it must be single-flight: this poller used to rotate on its
+  // own while other requests were still carrying the old token,
+  // and a remount could rotate a second time — the revoked-token
+  // 401 wave fixed 2026-11-16. One shot per mount, best-effort.
   const tokenRefreshDone = useRef(false);
   useEffect(() => {
     if (!isAuthed || tokenRefreshDone.current) return;
-    const sess = getSession();
-    if (!sess) return;
     tokenRefreshDone.current = true;
-    if (sess.expiresAt - Date.now() > 24 * 60 * 60 * 1000) return;
-    (async () => {
-      try {
-        const res = await apiFetch<ApiEnvelope<{ token: string }>>("/api/auth/refresh", {
-          method: "POST",
-        });
-        const cur = getSession();
-        if (!res.data?.token || !cur) return;
-        setSession({ ...cur, token: res.data.token, expiresAt: Date.now() + TOKEN_TTL_MS });
-      } catch {
-        // Best-effort: the current token keeps working until it expires.
-      }
-    })();
+    void refreshSessionToken();
   }, [isAuthed]);
 
   // Role backfill: sessions saved before roles existed pick the
