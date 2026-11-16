@@ -129,12 +129,12 @@ export function SearchExplorer() {
                     >
                       <Avatar
                         src={user.photo ?? undefined}
-                        alt={user.full_name ?? user.username}
+                        alt={user.full_name || user.username}
                         size={36}
                       />
                       <span className="min-w-0">
                         <span className="block truncate text-sm font-medium text-ink">
-                          {user.full_name ?? user.username}
+                          {user.full_name || user.username}
                         </span>
                         <span className="block truncate text-xs text-subtle">
                           @{user.username}
