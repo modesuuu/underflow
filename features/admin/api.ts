@@ -1,4 +1,5 @@
-import { ApiEnvelope, apiFetch } from "@/lib/api-client";
+import { ApiEnvelope, apiFetch, getApiBaseUrl } from "@/lib/api-client";
+import { getSession } from "@/features/auth/session";
 import { localeTag } from "@/lib/i18n/format";
 import type {
   ActionRequestRow,
@@ -10,6 +11,7 @@ import type {
   AdminUserRow,
   ReportGroup,
   AdminAppealRow,
+  AdminAuditPage,
 } from "./types";
 
 /**
@@ -192,4 +194,45 @@ export async function decideAppeal(
     method: "POST",
     body: JSON.stringify({ decision, note }),
   });
+}
+
+export interface AdminAuditQuery {
+  actionType?: string;
+  targetType?: string;
+  actorId?: string;
+  page?: number;
+  limit?: number;
+}
+
+/** Audit log (spec 7.7, audit P1 #7): paginated moderation
+ * actions with actor / target-type / action-type filters. */
+export async function getAuditLog(query: AdminAuditQuery): Promise<AdminAuditPage> {
+  const params = new URLSearchParams();
+  if (query.actionType) params.set("action_type", query.actionType);
+  if (query.targetType) params.set("target_type", query.targetType);
+  if (query.actorId) params.set("actor_id", query.actorId);
+  params.set("page", String(query.page ?? 1));
+  params.set("limit", String(query.limit ?? 20));
+  const res = await apiFetch<ApiEnvelope<AdminAuditPage>>(
+    "/api/admin/audit-log?" + params.toString(),
+  );
+  return res.data;
+}
+
+/** Downloads the users CSV export (audit P1 #9) as a file. */
+export async function downloadUsersCsv(): Promise<void> {
+  const session = getSession();
+  const res = await fetch(getApiBaseUrl() + "/api/admin/users/export", {
+    headers: session?.token
+      ? { Authorization: "Bearer " + session.token }
+      : {},
+  });
+  if (!res.ok) throw new Error("CSV export failed (HTTP " + res.status + ").");
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "underflow-users.csv";
+  a.click();
+  URL.revokeObjectURL(url);
 }

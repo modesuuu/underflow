@@ -36,6 +36,7 @@ export interface AdminOverview {
   action_requests_pending: number;
   appeals_pending: number;
   recent_activity: AdminActivity[];
+  trends: AdminTrendDay[];
   viewer: AdminViewer | null;
 }
 
@@ -196,4 +197,38 @@ export interface AdminAppealRow {
   };
   appellant_strikes: number;
   appellant_history: number;
+}
+
+export interface AdminTrendDay {
+  date: string;
+  registrations: number;
+  posts: number;
+  collabs: number;
+}
+
+export interface AdminActor {
+  id: string;
+  username: string;
+}
+
+export interface AdminAuditEntry {
+  id: string;
+  action_type: string;
+  target_type: string;
+  target_id: string;
+  target_owner_id: string | null;
+  actor_id: string;
+  requested_by: string | null;
+  reason: string | null;
+  strike: number;
+  reverted_at: string | null;
+  created_at: string;
+  actor_name: string;
+  owner_name: string | null;
+  requested_by_name: string | null;
+  reverted_by_name: string | null;
+}
+
+export interface AdminAuditPage extends AdminPage<AdminAuditEntry> {
+  actors: AdminActor[];
 }

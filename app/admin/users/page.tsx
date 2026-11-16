@@ -7,7 +7,7 @@ import { Avatar } from "@/components/ui/Avatar";
 import { Icon } from "@/components/ui/Icon";
 import { useAdmin } from "@/features/admin/components/AdminShell";
 import { ModerationForm } from "@/features/admin/components/ModerationForm";
-import { fmtDate, getAdminUsers } from "@/features/admin/api";
+import { downloadUsersCsv, fmtDate, getAdminUsers } from "@/features/admin/api";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import type {
   AdminPage,
@@ -47,6 +47,7 @@ export default function AdminUsersPage() {
   const [error, setError] = useState(false);
   const [attempt, setAttempt] = useState(0);
   const [formTarget, setFormTarget] = useState<ModerationTarget | null>(null);
+  const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
     const t = setTimeout(() => {
@@ -71,6 +72,23 @@ export default function AdminUsersPage() {
     <div>
       <PageHeader title={t("admin.usersTitle")} subtitle={t("admin.usersSubtitle")}>
         <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            disabled={exporting}
+            onClick={async () => {
+              setExporting(true);
+              try {
+                await downloadUsersCsv();
+              } catch {
+                toast.error(t("admin.exportFailed"));
+              } finally {
+                setExporting(false);
+              }
+            }}
+            className="order-last ml-auto cursor-pointer rounded-full border border-line bg-surface px-3 py-1.5 text-sm text-ink disabled:opacity-50"
+          >
+            {t("admin.exportCsv")}
+          </button>
           <label className="flex items-center gap-2 rounded-full border border-line bg-surface px-3 py-1.5">
             <Icon name="search" size={16} className="text-muted" />
             <input

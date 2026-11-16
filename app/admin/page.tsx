@@ -57,6 +57,38 @@ const ACTION_LABEL: Record<string, DictKey> = {
   deny_appeal: "admin.actDenyAppeal",
 };
 
+function TrendRow({
+  label,
+  days,
+  pick,
+  barClass,
+}: {
+  label: string;
+  days: { date: string; registrations: number; posts: number; collabs: number }[];
+  pick: (d: { registrations: number; posts: number; collabs: number }) => number;
+  barClass: string;
+}) {
+  const values = days.map(pick);
+  const max = Math.max(1, ...values);
+  const total = values.reduce((a, b) => a + b, 0);
+  return (
+    <div className="flex items-center gap-3 py-2">
+      <span className="w-32 shrink-0 text-[13px] text-muted">{label}</span>
+      <div className="flex h-12 flex-1 items-end gap-1">
+        {days.map((d) => (
+          <div
+            key={d.date}
+            title={d.date + ": " + pick(d)}
+            className={"min-w-0 flex-1 rounded-sm " + barClass}
+            style={{ height: Math.max(6, Math.round((pick(d) / max) * 100)) + "%" }}
+          />
+        ))}
+      </div>
+      <span className="w-10 shrink-0 text-right text-sm font-medium">{total}</span>
+    </div>
+  );
+}
+
 export default function AdminOverviewPage() {
   const { t } = useLanguage();
   const { overview } = useAdmin();
@@ -80,6 +112,32 @@ export default function AdminOverviewPage() {
         />
         <Kpi label={t("admin.kpiAppealsWaiting")} value={overview.appeals_pending} tone="warning" />
         <Kpi label={t("admin.kpiSuspended")} value={overview.users_suspended} />
+      </div>
+
+      <h2 className="mt-8 mb-3 text-[15px] font-semibold">{t("admin.trendsTitle")}</h2>
+      <div className="rounded-lg border border-line bg-surface px-4 py-2">
+        <TrendRow
+          label={t("admin.trendRegistrations")}
+          days={overview.trends ?? []}
+          pick={(d) => d.registrations}
+          barClass="bg-accent"
+        />
+        <TrendRow
+          label={t("admin.trendPosts")}
+          days={overview.trends ?? []}
+          pick={(d) => d.posts}
+          barClass="bg-ink"
+        />
+        <TrendRow
+          label={t("admin.trendCollabs")}
+          days={overview.trends ?? []}
+          pick={(d) => d.collabs}
+          barClass="bg-accent opacity-40"
+        />
+        <div className="flex justify-between pb-1 pl-36 pr-14 text-[11px] text-subtle">
+          <span>{overview.trends?.[0]?.date ?? ""}</span>
+          <span>{overview.trends?.[overview.trends.length - 1]?.date ?? ""}</span>
+        </div>
       </div>
 
       <h2 className="mt-8 mb-3 text-[15px] font-semibold">{t("admin.recentActivity")}</h2>
