@@ -166,7 +166,7 @@ export function GlobalSearch() {
 
   return (
     <div
-      className="relative hidden lg:block"
+      className="absolute top-1/2 left-1/2 hidden -translate-x-1/2 -translate-y-1/2 lg:block"
       onBlur={(event) => {
         if (!event.currentTarget.contains(event.relatedTarget)) setOpen(false);
       }}
@@ -197,7 +197,7 @@ export function GlobalSearch() {
       {open && (
         <div
           className={
-            "absolute top-full right-0 z-30 mt-2 max-h-[70vh] w-[min(560px,calc(100vw-2rem))] overflow-y-auto rounded-2xl border border-line bg-surface shadow-xl transition-[opacity,transform] duration-150 ease-out " +
+            "absolute top-full left-1/2 z-30 mt-2 max-h-[70vh] w-[min(560px,calc(100vw-2rem))] -translate-x-1/2 overflow-y-auto rounded-2xl border border-line bg-surface shadow-xl transition-[opacity,transform] duration-150 ease-out " +
             (entered ? "translate-y-0 opacity-100" : "-translate-y-1 opacity-0")
           }
         >
