@@ -355,10 +355,11 @@ async function loginViaBackend(input: LoginInput): Promise<AuthSession> {
 }
 
 async function registerViaBackend(input: RegisterInput): Promise<PendingRegistration> {
-  const payload: Record<string, string> = {};
+  const payload: Record<string, string | boolean> = {};
   payload.username = input.username.trim();
   payload.email = input.email.trim();
   payload.password = input.password;
+  payload.terms_accepted = input.termsAccepted === true;
   const res = await fetch(getApiBaseUrl() + "/api/auth/register", {
     method: "POST",
     headers: { "Content-Type": "application/json" },

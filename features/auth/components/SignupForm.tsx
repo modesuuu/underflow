@@ -25,6 +25,7 @@ export function SignupForm() {
   const [errors, setErrors] = useState<FieldErrors>({});
   const [submitting, setSubmitting] = useState(false);
   const [pending, setPending] = useState<PendingRegistration | null>(null);
+  const [agreed, setAgreed] = useState(false);
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
@@ -39,9 +40,13 @@ export function SignupForm() {
       toast.error(firstError(localizedErrors) ?? t("auth.checkForm"));
       return;
     }
+    if (!agreed) {
+      toast.error(t("auth.errTerms"));
+      return;
+    }
     setSubmitting(true);
     try {
-      const pendingResult = await register({ username, email, password });
+      const pendingResult = await register({ username, email, password, termsAccepted: agreed });
       // Pending scheme: no account and no session yet. The
       // verification modal opens on this page; the account is
       // created when the emailed link is clicked.
@@ -62,6 +67,8 @@ export function SignupForm() {
         // The backend cancelled the registration because the
         // verification email could not be sent; nothing was stored.
         toast.error(t("auth.errEmailSend"));
+      } else if (err instanceof ApiError && err.code === "terms_not_accepted") {
+        toast.error(t("auth.errTerms"));
       } else if (err instanceof ApiError && err.code === "rate_limited") {
         toast.error(t("auth.errTooMany"));
       } else {
@@ -125,6 +132,26 @@ export function SignupForm() {
           onChange={(e) => setPassword(e.target.value)}
           error={errors.password}
         />
+        <label className="flex cursor-pointer items-start gap-2.5 text-sm text-muted">
+          <input
+            type="checkbox"
+            checked={agreed}
+            onChange={(e) => setAgreed(e.target.checked)}
+            className="mt-0.5 h-4 w-4 shrink-0"
+            style={{ accentColor: "#35702b" }}
+          />
+          <span>
+            {t("auth.agreePrefix")}{" "}
+            <Link href="/terms" className="font-medium text-ink underline underline-offset-2">
+              {t("auth.termsLink")}
+            </Link>{" "}
+            {t("auth.agreeAnd")}{" "}
+            <Link href="/privacy" className="font-medium text-ink underline underline-offset-2">
+              {t("auth.privacyLink")}
+            </Link>
+            .
+          </span>
+        </label>
         <Button
           type="submit"
           label={submitting ? t("auth.creatingAccount") : t("auth.createAccount")}
@@ -141,6 +168,17 @@ export function SignupForm() {
         <span className="h-px flex-1 bg-line" aria-hidden="true" />
       </div>
       <GoogleButton next={next} disabled={submitting} />
+      <p className="text-center text-xs text-subtle">
+        {t("auth.googleAgreePrefix")}{" "}
+        <Link href="/terms" className="underline underline-offset-2">
+          {t("auth.termsLink")}
+        </Link>{" "}
+        {t("auth.agreeAnd")}{" "}
+        <Link href="/privacy" className="underline underline-offset-2">
+          {t("auth.privacyLink")}
+        </Link>
+        .
+      </p>
     </AuthShell>
     {pending ? (
       <VerifyPendingModal

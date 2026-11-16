@@ -5,12 +5,28 @@ import { AppToaster } from "@/components/ui/AppToaster";
 import { ThemeInitScript } from "@/components/ui/ThemeInitScript";
 import { AstryxTheme } from "@/components/ui/AstryxTheme";
 import { LanguageProvider } from "@/lib/i18n/LanguageProvider";
+import { getSiteUrl } from "@/lib/site-url";
 import "./globals.css";
 
 export const metadata: Metadata = {
+  metadataBase: new URL(getSiteUrl()),
   title: "Underflow",
   description:
     "Student collaboration hub: find portfolio projects, apply, and build together.",
+  openGraph: {
+    type: "website",
+    siteName: "Underflow",
+    title: "Underflow",
+    description:
+      "Student collaboration hub: find portfolio projects, apply, and build together.",
+    locale: "en_US",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Underflow",
+    description:
+      "Student collaboration hub: find portfolio projects, apply, and build together.",
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

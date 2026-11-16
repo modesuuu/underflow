@@ -44,13 +44,20 @@ export function RootShell({ children }: { children: ReactNode }) {
     pathname === "/forgot-password" ||
     pathname === "/reset-password" ||
     pathname === "/verify-email";
+  // Public legal/info pages: no app frame, no auth gate,
+  // reachable signed in or out (linked from signup).
+  const isLegalRoute =
+    pathname === "/terms" ||
+    pathname === "/privacy" ||
+    pathname === "/about" ||
+    pathname === "/contact";
   // Framed routes (app + admin) own their scrolling through inner
   // containers; the document itself must never scroll, or a stray
   // window scroll leaves the whole frame shifted with a void below
   // it (the admin -> Open post report). Bare routes (auth, profile)
   // keep native document scrolling.
   const lockDocumentScroll =
-    !isAuthRoute && !(pathname?.startsWith("/profile") ?? false);
+    !isAuthRoute && !isLegalRoute && !(pathname?.startsWith("/profile") ?? false);
   useEffect(() => {
     if (!lockDocumentScroll) return;
     const html = document.documentElement;
@@ -72,6 +79,9 @@ export function RootShell({ children }: { children: ReactNode }) {
     if (pathname === "/reset-password" || pathname === "/verify-email")
       return <>{children}</>;
     return <RedirectIfAuthed>{children}</RedirectIfAuthed>;
+  }
+  if (isLegalRoute) {
+    return <>{children}</>;
   }
   if (pathname?.startsWith("/admin")) {
     return (
