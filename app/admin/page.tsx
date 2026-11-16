@@ -595,17 +595,17 @@ export default function AdminOverviewPage() {
         </div>
       </div>
 
-      <div className="mt-3 grid items-start gap-3 xl:grid-cols-3">
-        <div className="overflow-hidden rounded-lg border border-line bg-surface xl:col-span-2">
+      <div className="mt-3 grid gap-3 xl:grid-cols-3">
+        <div className="flex flex-col overflow-hidden rounded-lg border border-line bg-surface xl:col-span-2">
           <h2 className="px-4 pt-4 pb-1 text-[15px] font-semibold">
             {t("admin.recentActivity")}
           </h2>
           {overview.recent_activity.length === 0 ? (
-            <div className="px-4 py-8 text-center text-sm text-muted">
+            <div className="flex flex-1 items-center justify-center px-4 py-8 text-center text-sm text-muted">
               {t("admin.noActivity")}
             </div>
           ) : (
-            <div className="max-h-[372px] overflow-y-auto">
+            <div className="max-h-[372px] flex-1 overflow-y-auto">
               {overview.recent_activity.map((a) => (
                 <div
                   key={a.id}
@@ -665,7 +665,7 @@ export default function AdminOverviewPage() {
           )}
         </div>
 
-        <div className="rounded-lg border border-line bg-surface px-4 py-4">
+        <div className="flex flex-1 flex-col gap-3 rounded-lg border border-line bg-surface px-4 py-4">
           <div className="flex items-center gap-3">
             {sessionUser?.photo ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -688,7 +688,7 @@ export default function AdminOverviewPage() {
             </div>
             {viewer && <RoleLabel role={viewer.role} />}
           </div>
-          <div className="mt-3 border-t border-line pt-1">
+          <div className="mt-auto border-t border-line pt-1">
             {viewer && (
               <Link
                 href={"/profile/" + viewer.id}
