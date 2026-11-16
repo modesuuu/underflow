@@ -36,7 +36,6 @@ export const NAV_SECTIONS: NavSection[] = [
     items: [
       { id: "inbox", label: "Inbox", icon: "envelope", href: "/inbox" },
       { id: "my-collab", label: "My Collaborations", icon: "group", href: "/my-collaborations" },
-      { id: "applications", label: "Applications", icon: "send", href: "/applications" },
     ],
   },
 ];

@@ -31,7 +31,6 @@ const CRUMB_KEYS: Record<string, DictKey> = {
   Language: "crumb.language",
   Collaborations: "crumb.collaborations",
   "My Collaborations": "crumb.myCollaborations",
-  Applications: "nav.applications",
   Inbox: "crumb.inbox",
   Circle: "crumb.circle",
   Notifications: "crumb.notifications",
