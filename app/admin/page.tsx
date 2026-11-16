@@ -3,7 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useAdmin } from "@/features/admin/components/AdminShell";
-import { Pill } from "@/features/admin/components/ui";
+import { Pill, RoleLabel } from "@/features/admin/components/ui";
+import { useSessionUser } from "@/features/auth/store";
 import { Icon } from "@/components/ui/Icon";
 import { fmtDateTime } from "@/features/admin/api";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
@@ -431,6 +432,7 @@ function SplitDonut({
 export default function AdminOverviewPage() {
   const { t } = useLanguage();
   const { overview, viewer, refreshOverview } = useAdmin();
+  const sessionUser = useSessionUser();
   const [series, setSeries] = useState<SeriesKey>("posts");
   const days = overview.trends ?? [];
   const period = overview.period ?? {
@@ -638,6 +640,7 @@ export default function AdminOverviewPage() {
           )}
         </div>
 
+        <div className="flex flex-col gap-3">
         <div className="overflow-hidden rounded-lg border border-line bg-surface">
           <h2 className="px-4 pt-4 pb-1 text-[15px] font-semibold">
             {t("admin.attentionTitle")}
@@ -660,6 +663,52 @@ export default function AdminOverviewPage() {
               </Link>
             ))
           )}
+        </div>
+
+        <div className="rounded-lg border border-line bg-surface px-4 py-4">
+          <div className="flex items-center gap-3">
+            {sessionUser?.photo ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={sessionUser.photo}
+                alt=""
+                className="h-10 w-10 shrink-0 rounded-full object-cover"
+              />
+            ) : (
+              <span
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-line text-sm font-semibold"
+                style={{ background: "var(--uf-bg)" }}
+              >
+                {(viewer?.username ?? "?").slice(0, 1).toUpperCase()}
+              </span>
+            )}
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-semibold">{viewer?.username ?? ""}</p>
+              <p className="truncate text-[13px] text-muted">{sessionUser?.email ?? ""}</p>
+            </div>
+            {viewer && <RoleLabel role={viewer.role} />}
+          </div>
+          <div className="mt-3 border-t border-line pt-1">
+            {viewer && (
+              <Link
+                href={"/profile/" + viewer.id}
+                className="flex items-center gap-2.5 py-2 text-sm transition-colors hover:text-accent"
+              >
+                <Icon name="user" size={15} className="text-muted" />
+                <span className="flex-1">{t("admin.viewProfile")}</span>
+                <Icon name="chevron-right" size={14} className="text-subtle" />
+              </Link>
+            )}
+            <Link
+              href="/settings/account"
+              className="flex items-center gap-2.5 py-2 text-sm transition-colors hover:text-accent"
+            >
+              <Icon name="cog" size={15} className="text-muted" />
+              <span className="flex-1">{t("admin.accountSettings")}</span>
+              <Icon name="chevron-right" size={14} className="text-subtle" />
+            </Link>
+          </div>
+        </div>
         </div>
       </div>
     </div>
