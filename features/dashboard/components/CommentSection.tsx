@@ -1,5 +1,7 @@
 "use client";
 
+import { isImeConfirmingEnter } from "@/lib/keyboard";
+
 import { useEffect, useRef, useState } from "react";
 import { scrollWithinContainer } from "@/lib/scroll";
 import { toast } from "sonner";
@@ -139,7 +141,7 @@ export function CommentSection({ postId, initialComments, autoFocusComment = fal
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === "Enter") {
+              if (e.key === "Enter" && !isImeConfirmingEnter(e)) {
                 e.preventDefault();
                 submit();
               }

@@ -1,5 +1,7 @@
 "use client";
 
+import { isImeConfirmingEnter } from "@/lib/keyboard";
+
 import { TextInput } from "@astryxdesign/core/TextInput";
 import { Button } from "@astryxdesign/core/Button";
 import { Icon } from "@/components/ui/Icon";
@@ -31,7 +33,7 @@ export function MyCollabSearchBar({
         <div
           className="min-w-0 flex-1"
           onKeyDown={(e) => {
-            if (e.key === "Enter") onSearch();
+            if (e.key === "Enter" && !isImeConfirmingEnter(e)) onSearch();
           }}
         >
           <TextInput

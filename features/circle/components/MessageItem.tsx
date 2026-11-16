@@ -1,5 +1,7 @@
 "use client";
 
+import { isImeConfirmingEnter } from "@/lib/keyboard";
+
 import { useEffect, useRef, useState } from "react";
 import { Avatar } from "@/components/ui/Avatar";
 import { Icon } from "@/components/ui/Icon";
@@ -210,7 +212,7 @@ export function MessageItem({
               rows={Math.min(5, Math.max(1, draft.split("\n").length))}
               onChange={(e) => setDraft(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
+                if (e.key === "Enter" && !e.shiftKey && !isImeConfirmingEnter(e)) {
                   e.preventDefault();
                   saveEdit();
                 }

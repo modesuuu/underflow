@@ -1,5 +1,7 @@
 "use client";
 
+import { isImeConfirmingEnter } from "@/lib/keyboard";
+
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent, type KeyboardEvent } from "react";
 import clsx from "clsx";
 import { Icon } from "@/components/ui/Icon";
@@ -390,7 +392,7 @@ export function MakeCollabModal({
   };
 
   const handleSkillKey = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") {
+    if (e.key === "Enter" && !isImeConfirmingEnter(e)) {
       e.preventDefault();
       addSkill();
     } else if (e.key === "Escape") {
@@ -577,7 +579,7 @@ export function MakeCollabModal({
               <div
                 className="min-w-0 flex-1"
                 onKeyDown={(e) => {
-                  if (e.key === "Enter") {
+                  if (e.key === "Enter" && !isImeConfirmingEnter(e)) {
                     e.preventDefault();
                     addSkill();
                   } else if (e.key === "Escape") {

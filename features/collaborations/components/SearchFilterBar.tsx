@@ -1,5 +1,7 @@
 "use client";
 
+import { isImeConfirmingEnter } from "@/lib/keyboard";
+
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import clsx from "clsx";
 import { TextInput } from "@astryxdesign/core/TextInput";
@@ -116,7 +118,7 @@ export function SearchFilterBar({
       <div
         className="min-w-0 flex-1"
         onKeyDown={(e) => {
-          if (e.key === "Enter") onSearch();
+          if (e.key === "Enter" && !isImeConfirmingEnter(e)) onSearch();
         }}
       >
         <TextInput

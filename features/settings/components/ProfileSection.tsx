@@ -1,5 +1,7 @@
 "use client";
 
+import { isImeConfirmingEnter } from "@/lib/keyboard";
+
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@astryxdesign/core/Button";
@@ -260,7 +262,7 @@ export function ProfileSection() {
               <div
                 className="min-w-0 flex-1"
                 onKeyDown={(e) => {
-                  if (e.key === "Enter") {
+                  if (e.key === "Enter" && !isImeConfirmingEnter(e)) {
                     e.preventDefault();
                     void addSkill();
                   }

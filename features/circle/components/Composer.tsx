@@ -1,5 +1,7 @@
 "use client";
 
+import { isImeConfirmingEnter } from "@/lib/keyboard";
+
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Icon } from "@/components/ui/Icon";
 import { sendMessage } from "../store";
@@ -251,7 +253,7 @@ export function Composer({
                 );
                 return;
               }
-              if (e.key === "Enter" || e.key === "Tab") {
+              if ((e.key === "Enter" && !isImeConfirmingEnter(e)) || e.key === "Tab") {
                 e.preventDefault();
                 pickMention(mentionCandidates[mentionIndex]);
                 return;
@@ -262,7 +264,7 @@ export function Composer({
                 return;
               }
             }
-            if (e.key === "Enter" && !e.shiftKey) {
+            if (e.key === "Enter" && !e.shiftKey && !isImeConfirmingEnter(e)) {
               e.preventDefault();
               submit();
             }

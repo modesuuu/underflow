@@ -1,5 +1,7 @@
 "use client";
 
+import { isImeConfirmingEnter } from "@/lib/keyboard";
+
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Icon } from "@/components/ui/Icon";
@@ -150,7 +152,7 @@ export function MyCollabMobileSearchModal({
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === "Enter") requestClose();
+                if (e.key === "Enter" && !isImeConfirmingEnter(e)) requestClose();
               }}
               placeholder={t("collab.searchProjectsLabel")}
               aria-label={t("collab.searchProjectsLabel")}
