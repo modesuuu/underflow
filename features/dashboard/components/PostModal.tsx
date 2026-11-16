@@ -11,6 +11,7 @@ import { ApiError } from "@/lib/api-client";
 import { createPost, updatePost, uploadImage } from "../api";
 import type { Post } from "../types";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
+import { useFocusTrap } from "@/lib/use-focus-trap";
 
 /** A picked image file + its local preview URL (URL.createObjectURL). */
 interface ImageDraft {
@@ -61,6 +62,7 @@ export function PostModal({ open, onClose, editing, onUpdated }: PostModalProps)
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const imageInputRef = useRef<HTMLInputElement>(null);
+  const dialogRef = useFocusTrap<HTMLDivElement>(open);
   // Exit animation state — modal stays mounted until the CSS out-animation
   // finishes (same pattern as MakeCollabModal).
   const [closing, setClosing] = useState(false);
@@ -208,6 +210,7 @@ export function PostModal({ open, onClose, editing, onUpdated }: PostModalProps)
       onClick={requestClose}
     >
       <div
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="post-something-title"

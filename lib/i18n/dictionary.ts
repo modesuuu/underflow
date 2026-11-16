@@ -62,6 +62,7 @@ export const en = {
   "common.cancel": "Cancel",
   "common.retry": "Retry",
   "common.loading": "Loading…",
+  "common.skipToContent": "Skip to main content",
 
   // Settings index
   "settings.title": "Settings",
@@ -930,6 +931,7 @@ export const en = {
   "mycollab.daysLeft": "{days}d left",
   "mycollab.noDeadline": "No deadline",
   "common.closeMenu": "Close menu",
+  "common.openMenu": "Open menu",
   "circle.sendMessage": "Send message",
   "feed.couldntSaveLike": "Couldn't save your like. Try again.",
   "feed.postDeleted": "Post deleted",
@@ -996,6 +998,7 @@ export const id: Record<DictKey, string> = {
   "common.cancel": "Batal",
   "common.retry": "Coba lagi",
   "common.loading": "Memuat…",
+  "common.skipToContent": "Lewati ke konten utama",
 
   // Settings index
   "settings.title": "Pengaturan",
@@ -1865,6 +1868,7 @@ export const id: Record<DictKey, string> = {
   "mycollab.daysLeft": "{days} hari lagi",
   "mycollab.noDeadline": "Tanpa tenggat",
   "common.closeMenu": "Tutup menu",
+  "common.openMenu": "Buka menu",
   "circle.sendMessage": "Kirim pesan",
   "feed.couldntSaveLike": "Tidak dapat menyimpan suka-mu. Coba lagi.",
   "feed.postDeleted": "Postingan dihapus",

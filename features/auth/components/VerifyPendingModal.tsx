@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Button } from "@astryxdesign/core/Button";
 import { ApiError } from "@/lib/api-client";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
+import { useFocusTrap } from "@/lib/use-focus-trap";
 import { resendVerificationPending } from "../api";
 
 /**
@@ -26,6 +27,7 @@ export function VerifyPendingModal({
 }) {
   const { t } = useLanguage();
   const [sending, setSending] = useState(false);
+  const dialogRef = useFocusTrap<HTMLDivElement>(true);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -61,6 +63,7 @@ export function VerifyPendingModal({
       onClick={onClose}
     >
       <div
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-label={t("verify.pendingTitle")}

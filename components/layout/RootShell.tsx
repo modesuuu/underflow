@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, type ReactNode } from "react";
 import { setMobileNav, useMobileNavOpen } from "./mobile-nav";
 import { Sidebar } from "./Sidebar";
+import { SkipLink } from "@/components/ui/SkipLink";
 import { LivePoller } from "@/features/dashboard/components/LivePoller";
 import { RedirectIfAuthed, RequireAuth } from "@/features/auth/components/AuthGate";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
@@ -95,6 +96,7 @@ export function RootShell({ children }: { children: ReactNode }) {
     return (
       <RequireAuth>
         <LivePoller />
+        <SkipLink label={t("common.skipToContent")} />
         {children}
       </RequireAuth>
     );
@@ -103,6 +105,7 @@ export function RootShell({ children }: { children: ReactNode }) {
     <RequireAuth>
       <LivePoller />
       <div className="flex h-dvh w-full overflow-hidden">
+        <SkipLink label={t("common.skipToContent")} />
         <Sidebar />
         {mobileOpen && (
           <button

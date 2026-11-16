@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { LogoMark } from "@/components/ui/LogoMark";
+import { SkipLink } from "@/components/ui/SkipLink";
 
 /**
  * Frame for the public legal/info pages (Terms, Privacy,
@@ -28,6 +29,7 @@ export function LegalShell({
 }) {
   return (
     <div className="min-h-dvh bg-bg text-ink">
+      <SkipLink label="Skip to main content" />
       <header className="border-b border-line bg-surface">
         <div className="mx-auto flex max-w-3xl flex-wrap items-center justify-between gap-3 px-5 py-4">
           <Link href="/" className="flex items-center gap-2 font-semibold">
@@ -43,7 +45,7 @@ export function LegalShell({
           </nav>
         </div>
       </header>
-      <main className="mx-auto max-w-3xl px-5 py-10">
+      <main id="main-content" className="mx-auto max-w-3xl px-5 py-10">
         <h1 className="text-3xl font-bold tracking-tight">{title}</h1>
         {updated ? (
           <p className="mt-2 text-sm text-subtle">Last updated: {updated}</p>

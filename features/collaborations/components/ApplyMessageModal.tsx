@@ -6,6 +6,7 @@ import { TextArea } from "@astryxdesign/core/TextArea";
 import { Button } from "@astryxdesign/core/Button";
 import { Icon } from "@/components/ui/Icon";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
+import { useFocusTrap } from "@/lib/use-focus-trap";
 
 interface ApplyMessageModalProps {
   projectTitle: string;
@@ -32,6 +33,7 @@ export function ApplyMessageModal({
   onSend,
 }: ApplyMessageModalProps) {
   const { t } = useLanguage();
+  const dialogRef = useFocusTrap<HTMLDivElement>(true);
   const [message, setMessage] = useState(() =>
     t("collab.applyPrefill", { role: roleLabel, title: projectTitle }),
   );
@@ -50,6 +52,7 @@ export function ApplyMessageModal({
   // In the root context its z-50 covers the TopBar, as a modal must.
   return createPortal(
     <div
+      ref={dialogRef}
       role="dialog"
       aria-modal="true"
       aria-label={t("collab.applyToProject", { title: projectTitle })}

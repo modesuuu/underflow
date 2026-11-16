@@ -13,6 +13,7 @@ import { usePathname } from "next/navigation";
 import { Avatar } from "@/components/ui/Avatar";
 import { Icon } from "@/components/ui/Icon";
 import { LogoMark } from "@/components/ui/LogoMark";
+import { SkipLink } from "@/components/ui/SkipLink";
 import { ApiError } from "@/lib/api-client";
 import { getAdminOverview } from "../api";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
@@ -60,6 +61,11 @@ type GateState =
 export function AdminShell({ children }: { children: ReactNode }) {
   const { t } = useLanguage();
   const pathname = usePathname() ?? "/admin";
+  const [navOpen, setNavOpen] = useState(false);
+  // The mobile drawer never survives a navigation.
+  useEffect(() => {
+    setNavOpen(false);
+  }, [pathname]);
   const [gate, setGate] = useState<GateState>({ kind: "loading" });
   const [attempt, setAttempt] = useState(0);
 
@@ -169,7 +175,26 @@ export function AdminShell({ children }: { children: ReactNode }) {
   return (
     <AdminContext.Provider value={{ viewer, overview, refreshOverview }}>
       <div className="flex h-dvh w-full overflow-hidden bg-bg text-ink">
-        <aside className="flex w-[232px] shrink-0 flex-col border-r border-line bg-surface">
+        <SkipLink label={t("common.skipToContent")} />
+        <button
+          type="button"
+          aria-label={t("common.openMenu")}
+          onClick={() => setNavOpen(true)}
+          className="fixed top-4 left-4 z-40 flex size-10 cursor-pointer items-center justify-center rounded-full border border-line bg-surface text-ink shadow-sm focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none lg:hidden"
+        >
+          <Icon name="menu" size={20} />
+        </button>
+        {navOpen && (
+          <button
+            type="button"
+            aria-label={t("common.closeMenu")}
+            onClick={() => setNavOpen(false)}
+            className="fixed inset-0 z-40 cursor-pointer bg-ink/40 lg:hidden"
+          />
+        )}
+        <aside
+          className={`fixed inset-y-0 left-0 z-50 flex w-[232px] shrink-0 flex-col border-r border-line bg-surface transition-transform duration-200 lg:static lg:z-auto lg:translate-x-0 ${navOpen ? "translate-x-0" : "-translate-x-full"}`}
+        >
           <div className="flex items-center gap-2 px-4 pt-5 pb-4">
             <LogoMark className="h-[22px] w-[22px]" />
             <span className="text-[15px] font-semibold tracking-tight">Underflow</span>
@@ -235,7 +260,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
             </a>
           </div>
         </aside>
-        <main className="min-w-0 flex-1 overflow-y-auto px-8 py-6">{children}</main>
+        <main id="main-content" className="min-w-0 flex-1 overflow-y-auto px-4 pt-16 pb-6 sm:px-8 lg:py-6">{children}</main>
       </div>
     </AdminContext.Provider>
   );

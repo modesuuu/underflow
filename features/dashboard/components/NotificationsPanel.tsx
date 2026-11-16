@@ -217,7 +217,7 @@ export function NotificationsPanel({ className }: { className?: string }) {
               onClick={() => setTab(t.id)}
               aria-selected={tab === t.id}
               className={clsx(
-                "relative z-10 flex cursor-pointer items-center justify-center gap-1.5 rounded-full py-1.5 text-[13px] font-medium transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none",
+                "relative z-10 flex cursor-pointer items-center justify-center gap-1 rounded-full px-1 py-1.5 text-xs font-medium whitespace-nowrap transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none",
                 tab === t.id ? "text-ink" : "text-muted hover:text-ink",
               )}
             >

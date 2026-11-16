@@ -87,7 +87,10 @@
   --uf-ink: #ffffff;
   --uf-ink-30: rgba(255, 255, 255, 0.3);
   --uf-muted: #9e9e9e;
-  --uf-subtle: #767676;
+  /* Contrast fix (audit P2 #23): #767676 measured 3.33:1 on
+     the dark surface, under the 4.5:1 text floor. #949494
+     measures 4.97:1 on surface and 5.65:1 on bg. */
+  --uf-subtle: #949494;
   --uf-accent: #d8e9a8;
   --uf-badge: #ff705d;
   --uf-heart: #ff705d;
