@@ -41,16 +41,21 @@ export function ChatPane({
   const { t } = useLanguage();
   const [draft, setDraft] = useState("");
   const [confirm, setConfirm] = useState<"clear" | "delete" | null>(null);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    if (searchQuery.trim()) return;
     const el = scrollRef.current;
     if (el) el.scrollTop = el.scrollHeight;
-  }, [conversation?.id, conversation?.messages.length]);
+  }, [conversation?.id, conversation?.messages.length, searchQuery]);
 
   // The draft belongs to one thread: switching threads clears it.
   useEffect(() => {
     setDraft("");
+    setSearchOpen(false);
+    setSearchQuery("");
   }, [conversation?.id]);
 
   const [appeals, setAppeals] = useState<Record<string, MyAppeal>>({});
@@ -92,6 +97,16 @@ export function ChatPane({
   }
 
   const { application } = conversation;
+
+  // In-conversation search (audit P1 #13): while a query is
+  // active the pane renders only the matching messages and the
+  // application card steps aside.
+  const searching = searchQuery.trim().length > 0;
+  const visibleMessages = searching
+    ? conversation.messages.filter((m) =>
+        m.text.toLowerCase().includes(searchQuery.trim().toLowerCase()),
+      )
+    : conversation.messages;
   // Consecutive same-sender messages form one stack (6px apart in
   // the frame); stacks sit 24px apart. The application card is
   // pinned to the application MOMENT — right after the thread's
@@ -102,14 +117,14 @@ export function ChatPane({
     | { kind: "stack"; from: "me" | "them"; messages: typeof conversation.messages }
     | { kind: "card" };
   const blocks: Block[] = [];
-  conversation.messages.forEach((message, index) => {
+  visibleMessages.forEach((message, index) => {
     const lastBlock = blocks[blocks.length - 1];
     if (lastBlock?.kind === "stack" && lastBlock.from === message.from) {
       lastBlock.messages.push(message);
     } else {
       blocks.push({ kind: "stack", from: message.from, messages: [message] });
     }
-    if (index === 0 && application) blocks.push({ kind: "card" });
+    if (index === 0 && application && !searching) blocks.push({ kind: "card" });
   });
 
   const handleResolve = async (status: "accepted" | "declined") => {
@@ -170,13 +185,57 @@ export function ChatPane({
           Clear All / Delete Chat buttons floated here as labeled
           pills; the user found them intrusive, so they live in
           this menu now, same as on the rail rows). */}
-      {conversation.kind !== "system" && (
-        <div className="absolute top-4 right-4 z-10 sm:right-6">
+      <div className="absolute top-4 right-4 z-10 flex items-start gap-1 sm:right-6">
+        <button
+          type="button"
+          aria-label={t("inbox.searchInConversation")}
+          aria-pressed={searchOpen}
+          onClick={() => {
+            setSearchOpen((v) => !v);
+            if (searchOpen) setSearchQuery("");
+          }}
+          className="flex size-9 cursor-pointer items-center justify-center rounded-full text-muted transition-colors hover:bg-bg hover:text-ink"
+        >
+          <Icon name="search" size={20} />
+        </button>
+        {conversation.kind !== "system" && (
           <ThreadOptionsMenu
             thread={conversation}
             onClearRequest={() => setConfirm("clear")}
             onDeleteRequest={() => setConfirm("delete")}
           />
+        )}
+      </div>
+
+      {searchOpen && (
+        <div className="absolute top-[72px] left-1/2 z-10 flex w-[min(440px,92%)] -translate-x-1/2 items-center gap-2 rounded-full border border-line bg-surface px-3 py-1.5 shadow-lg">
+          <Icon name="search" size={16} className="shrink-0 text-muted" />
+          <input
+            autoFocus
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+            placeholder={t("inbox.searchInConversation")}
+            aria-label={t("inbox.searchInConversation")}
+            className="min-w-0 flex-1 bg-transparent text-sm text-ink outline-none placeholder:text-muted"
+          />
+          {searching && (
+            <span className="shrink-0 text-xs text-muted">
+              {visibleMessages.length === 1
+                ? t("inbox.messagesMatchOne")
+                : t("inbox.messagesMatch", { count: visibleMessages.length })}
+            </span>
+          )}
+          <button
+            type="button"
+            aria-label={t("common.close")}
+            onClick={() => {
+              setSearchOpen(false);
+              setSearchQuery("");
+            }}
+            className="flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-full text-muted transition-colors hover:bg-bg hover:text-ink"
+          >
+            <Icon name="x" size={14} />
+          </button>
         </div>
       )}
 
@@ -185,7 +244,12 @@ export function ChatPane({
         className="no-scrollbar flex-1 overflow-y-auto overscroll-contain px-4 pt-[104px] pb-6 sm:px-6"
       >
         <div className="flex flex-col gap-6">
-          {conversation.messages.length === 0 &&
+          {searching && visibleMessages.length === 0 && (
+            <p className="py-10 text-center text-sm text-muted">
+              {t("inbox.noMessagesMatchSearch")}
+            </p>
+          )}
+          {conversation.messages.length === 0 && !searching &&
             (application ? (
               <div
                 className={`flex ${

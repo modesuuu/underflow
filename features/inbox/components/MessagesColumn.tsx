@@ -45,8 +45,18 @@ export function MessagesColumn({
 }: MessagesColumnProps) {
   const { t } = useLanguage();
   const [confirm, setConfirm] = useState<ConfirmState>(null);
+  const [tab, setTab] = useState<"all" | "unread" | "applications" | "archived">("all");
 
-  const sorted = [...conversations].sort(
+  // Filter tabs (audit P1 #13): archived threads live only
+  // under their own tab; the other tabs never show them.
+  const visible = conversations.filter((thread) => {
+    if (tab === "archived") return !!thread.archived;
+    if (thread.archived) return false;
+    if (tab === "unread") return unreadCount(thread) > 0;
+    if (tab === "applications") return !!thread.application;
+    return true;
+  });
+  const sorted = [...visible].sort(
     (a, b) => Number(b.pinned ?? false) - Number(a.pinned ?? false),
   );
 
@@ -78,6 +88,32 @@ export function MessagesColumn({
             className="h-[42px] w-full rounded-lg border border-line bg-active pr-3 pl-9 text-sm text-ink outline-none placeholder:text-muted focus-visible:ring-2 focus-visible:ring-accent"
           />
         </label>
+
+        <div className="flex flex-wrap gap-1.5" role="tablist" aria-label={t("inbox.conversations")}>
+          {(
+            [
+              { id: "all", label: t("inbox.tabAll") },
+              { id: "unread", label: t("inbox.tabUnread") },
+              { id: "applications", label: t("inbox.tabApplications") },
+              { id: "archived", label: t("inbox.tabArchived") },
+            ] as const
+          ).map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              role="tab"
+              aria-selected={tab === item.id}
+              onClick={() => setTab(item.id)}
+              className={`cursor-pointer rounded-full border px-3 py-1 text-[13px] font-medium transition-colors ${
+                tab === item.id
+                  ? "border-accent bg-accent text-on-accent"
+                  : "border-line bg-surface text-muted hover:text-ink"
+              }`}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       <ul className="no-scrollbar flex flex-1 flex-col gap-1 overflow-y-auto overscroll-contain px-4 pt-4 pb-2">
@@ -157,9 +193,17 @@ export function MessagesColumn({
             </li>
           );
         })}
-        {conversations.length === 0 && (
+        {visible.length === 0 && (
           <li className="px-2 text-sm text-muted">
-            {t("inbox.noConversationsMatch")}
+            {query
+              ? t("inbox.noConversationsMatch")
+              : tab === "archived"
+                ? t("inbox.noArchivedThreads")
+                : tab === "unread"
+                  ? t("inbox.noUnreadThreads")
+                  : tab === "applications"
+                    ? t("inbox.noApplicationThreads")
+                    : t("inbox.noConversationsMatch")}
           </li>
         )}
       </ul>

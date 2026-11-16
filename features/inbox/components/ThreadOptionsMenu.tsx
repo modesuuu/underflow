@@ -7,6 +7,7 @@ import { Icon } from "@/components/ui/Icon";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import {
   markThreadUnread,
+  toggleArchiveThread,
   toggleMuteThread,
   togglePinThread,
   unreadCount,
@@ -46,7 +47,7 @@ export function ThreadOptionsMenu({
   const rootRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  const itemCount = unreadCount(thread) === 0 ? 5 : 4;
+  const itemCount = unreadCount(thread) === 0 ? 6 : 5;
 
   const openMenu = () => {
     const rect = rootRef.current?.getBoundingClientRect();
@@ -163,6 +164,21 @@ export function ThreadOptionsMenu({
             >
               <Icon name={thread.muted ? "bell" : "bell-off"} size={18} />
               {thread.muted ? t("inbox.unmuteNotifications") : t("inbox.muteNotifications")}
+            </button>
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => {
+                setOpen(false);
+                toggleArchiveThread(thread.id);
+                toast(thread.archived ? t("inbox.chatUnarchived") : t("inbox.chatArchived"), {
+                  description: thread.name,
+                });
+              }}
+              className={itemClass}
+            >
+              <Icon name="archive" size={18} />
+              {thread.archived ? t("inbox.unarchiveChat") : t("inbox.archiveChat")}
             </button>
             <button
               type="button"

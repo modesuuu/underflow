@@ -14,10 +14,12 @@ import {
   fetchMessages,
   hideConversation as apiHideConversation,
   markConversationRead,
+  markConversationUnread as apiMarkConversationUnread,
   postMessage,
   restoreConversation as apiRestoreConversation,
   toggleConversationMute,
   toggleConversationPin,
+  toggleConversationArchive as apiToggleConversationArchive,
   type BackendConversation,
   type BackendInboxMessage,
 } from "./api";
@@ -69,7 +71,12 @@ export function useConversations(): Conversation[] {
 
 export function unreadCount(thread: Conversation): number {
   if (loadedMessages.has(thread.id)) {
-    return thread.messages.filter((m) => m.from === "them" && !m.read).length;
+    const fromMessages = thread.messages.filter(
+      (m) => m.from === "them" && !m.read,
+    ).length;
+    // A server-side mark-as-unread (audit P1 #13) keeps the badge
+    // lit even though every loaded message is technically read.
+    return thread.markedUnread ? Math.max(1, fromMessages) : fromMessages;
   }
   return thread.serverUnread ?? 0;
 }
@@ -144,6 +151,8 @@ function mapConversation(
     messages: hasLoaded ? prev.messages : [],
     muted: b.is_muted || undefined,
     pinned: b.is_pinned || undefined,
+    archived: b.is_archived || undefined,
+    markedUnread: b.marked_unread || undefined,
     serverUnread: hasLoaded ? 0 : b.unread_count,
     updatedAt: b.updated_at,
     preview:
@@ -248,6 +257,7 @@ export async function openThread(id: string): Promise<void> {
   replaceThread(id, (t) => ({
     ...t,
     serverUnread: 0,
+    markedUnread: undefined,
     messages: t.messages.map((m) => (m.read ? m : { ...m, read: true })),
   }));
 }
@@ -259,6 +269,7 @@ export function markThreadRead(id: string) {
   replaceThread(id, (t) => ({
     ...t,
     serverUnread: 0,
+    markedUnread: undefined,
     messages: t.messages.map((m) => (m.read ? m : { ...m, read: true })),
   }));
 }
@@ -313,24 +324,26 @@ export function togglePinThread(id: string) {
   });
 }
 
+/** Archive / unarchive (audit P1 #13): server flag, local-first. */
+export function toggleArchiveThread(id: string) {
+  replaceThread(id, (t) => ({ ...t, archived: !t.archived }));
+  void apiToggleConversationArchive(id).catch(() => {
+    void refreshConversations();
+  });
+}
+
 /**
- * Mark-as-unread is a local affordance only (the server has no
- * "unread by me" flag): it re-lights this session's badges.
+ * Mark-as-unread (audit P1 #13): a server-side per-participant
+ * flag (dm_participants.marked_unread) folded into the unread
+ * count until the thread is opened again — it survives reloads
+ * and other devices. Local state flips first, API follows.
  */
 export function markThreadUnread(id: string) {
-  replaceThread(id, (t) => {
-    if (unreadCount(t) > 0) return t;
-    if (loadedMessages.has(id)) {
-      const lastIncoming = t.messages.map((m) => m.from).lastIndexOf("them");
-      if (lastIncoming === -1) return t;
-      return {
-        ...t,
-        messages: t.messages.map((m, i) =>
-          i === lastIncoming ? { ...m, read: false } : m,
-        ),
-      };
-    }
-    return { ...t, serverUnread: 1 };
+  const thread = conversations.find((t) => t.id === id);
+  if (!thread || unreadCount(thread) > 0) return;
+  replaceThread(id, (t) => ({ ...t, markedUnread: true }));
+  void apiMarkConversationUnread(id).catch(() => {
+    void refreshConversations();
   });
 }
 
