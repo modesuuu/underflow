@@ -70,10 +70,6 @@ export const en = {
   "search.noResults": "No results for \"{q}\"",
   "search.hint": "Type at least 2 characters.",
   "search.title": "Search",
-  "search.recent": "Recent",
-  "search.clearAll": "Clear all",
-  "search.seeAll": "See all results for \"{q}\"",
-  "search.removeRecent": "Remove from recent",
 
   // Settings index
   "settings.title": "Settings",
@@ -1017,10 +1013,6 @@ export const id: Record<DictKey, string> = {
   "search.noResults": "Tidak ada hasil untuk \"{q}\"",
   "search.hint": "Ketik minimal 2 karakter.",
   "search.title": "Pencarian",
-  "search.recent": "Terakhir dicari",
-  "search.clearAll": "Hapus semua",
-  "search.seeAll": "Lihat semua hasil untuk \"{q}\"",
-  "search.removeRecent": "Hapus dari riwayat",
 
   // Settings index
   "settings.title": "Pengaturan",

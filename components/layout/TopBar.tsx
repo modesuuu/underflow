@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { Icon } from "@/components/ui/Icon";
 import { setMobileNav } from "./mobile-nav";
 import { NotificationsBell } from "./NotificationsBell";
-import { GlobalSearch } from "./GlobalSearch";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import type { DictKey } from "@/lib/i18n/dictionary";
 
@@ -91,7 +90,6 @@ export function TopBar({
       </div>
 
       <div className="flex flex-1 items-center justify-end gap-3 sm:gap-6">
-        <GlobalSearch />
         {actions}
         <NotificationsBell />
       </div>
