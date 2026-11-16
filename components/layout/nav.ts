@@ -26,6 +26,7 @@ export const NAV_SECTIONS: NavSection[] = [
     items: [
       { id: "feeds", label: "Feeds", icon: "grid-alt", href: "/" },
       { id: "collaborations", label: "Collaborations", icon: "group", href: "/collaborations" },
+      { id: "my-collab", label: "My Collaborations", icon: "group", href: "/my-collaborations" },
       { id: "circle", label: "Circle", icon: "conversation", href: "/circle" },
     ],
   },
@@ -35,7 +36,6 @@ export const NAV_SECTIONS: NavSection[] = [
     items: [
       { id: "search", label: "Search", icon: "search", href: "/search" },
       { id: "inbox", label: "Inbox", icon: "envelope", href: "/inbox" },
-      { id: "my-collab", label: "My Collaborations", icon: "group", href: "/my-collaborations" },
     ],
   },
 ];
