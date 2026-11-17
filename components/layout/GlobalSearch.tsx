@@ -249,12 +249,12 @@ export function GlobalSearch() {
                 ))}
               </div>
             ) : (
-              <p className="px-5 py-4 text-sm text-subtle">{t("search.hint")}</p>
+              <p className="px-5 py-4 text-center text-sm text-subtle">{t("search.hint")}</p>
             )
           ) : loading ? (
-            <p className="px-5 py-4 text-sm text-subtle">{t("common.loading")}</p>
+            <p className="px-5 py-4 text-center text-sm text-subtle">{t("common.loading")}</p>
           ) : !hasResults ? (
-            <p className="px-5 py-4 text-sm text-subtle">{t("search.noResults", { q })}</p>
+            <p className="px-5 py-4 text-center text-sm text-subtle">{t("search.noResults", { q })}</p>
           ) : (
             <>
               <div className="p-2">

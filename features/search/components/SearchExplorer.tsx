@@ -93,11 +93,11 @@ export function SearchExplorer() {
   return (
     <div className="mx-auto w-full max-w-2xl px-4 pt-8 pb-16 sm:px-6">
         {q.length < 2 ? (
-          <p className="px-1 text-sm text-subtle">{t("search.hint")}</p>
+          <p className="px-1 text-center text-sm text-subtle">{t("search.hint")}</p>
         ) : loading ? (
-          <p className="px-1 text-sm text-subtle">{t("common.loading")}</p>
+          <p className="px-1 text-center text-sm text-subtle">{t("common.loading")}</p>
         ) : !hasResults ? (
-          <p className="px-1 text-sm text-subtle">{t("search.noResults", { q })}</p>
+          <p className="px-1 text-center text-sm text-subtle">{t("search.noResults", { q })}</p>
         ) : (
           <div className="flex flex-col gap-8">
             {results.users.length > 0 && (
