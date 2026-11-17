@@ -727,7 +727,7 @@ export function Sidebar() {
               )}
             >
             <div className="flex items-center gap-1">
-              <Avatar size={28} rounded="sm" alt={CURRENT_USER.name} />
+              <Avatar size={28} rounded="sm" src={CURRENT_USER.photo} alt={CURRENT_USER.name} />
               <div
                 className={clsx(
                   "flex flex-col gap-0.5 overflow-hidden",
