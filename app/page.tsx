@@ -17,7 +17,7 @@ function FeedColumnSkeleton() {
   return (
     <div className="mx-auto flex w-full max-w-(--uf-content-w) flex-col gap-5 px-4 py-3 lg:mx-auto lg:px-0">
       {Array.from({ length: 3 }).map((_, i) => (
-        <div key={i} className="px-1 py-2">
+        <div key={i} className="collab-card rounded-2xl border border-line p-4 sm:p-5">
           <div className="flex items-center gap-3">
             <div className="size-8 rounded-full bg-placeholder" />
             <div className="flex flex-col gap-1.5">
@@ -64,7 +64,7 @@ export default function Home() {
       {/* P1-C #20: one real h1 per page — visually hidden so the
           breadcrumb in the TopBar stays the visual heading. */}
       <h1 className="sr-only">{tStatic("crumb.feed")}</h1>
-      <div className="pb-24 sm:pb-0">
+      <div className="collab-ground min-h-full pb-24 sm:pb-0">
         <Suspense fallback={<FeedColumnSkeleton />}>
           <FeedColumnAsync />
         </Suspense>

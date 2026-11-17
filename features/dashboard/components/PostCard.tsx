@@ -23,12 +23,15 @@ import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import { formatRelativeAgo } from "@/lib/i18n/format";
 
 /**
- * Feed post: flat on the page surface — no card border (the
- * user pulled the bordered treatment back out). Rhythm and the
- * internal hairline above the comment entry separate posts.
- * Body text reads in Book, not Medium.
+ * Feed post: a surface card on the page ground (the collab
+ * recipe: collab-card + hairline border), so a post and its
+ * comment entry read as one unit, separated from the next post
+ * (user order 2026-11-17: flat posts on the white surface looked
+ * merged into one stream). The internal hairline above the
+ * comment entry divides inside the card. Body text reads in
+ * Book, not Medium.
  */
-const CARD_CHROME = "px-1 py-2";
+const CARD_CHROME = "collab-card rounded-2xl border border-line p-4 sm:p-5";
 
 export function PostCard({ post }: { post: Post }) {
   const { t, lang } = useLanguage();

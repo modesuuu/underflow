@@ -9,8 +9,8 @@ import { PostCard } from "./PostCard";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 
 /**
- * The feed river: flat posts separated by rhythm, not boxes —
- * the page background is the surface. Entrance is the
+ * The feed river: one surface card per post on the page ground.
+ * Entrance is the
  * codebase's card-stagger cascade (uf-card-in, --stagger-i),
  * capped so the tail lands inside the motion budget. Posting
  * lives in the TopBar's Post button; there is no composer here.
