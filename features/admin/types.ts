@@ -9,6 +9,7 @@ export interface AdminViewer {
   id: string;
   username: string;
   role: AdminRole;
+  photo: string | null;
 }
 
 export interface AdminActivity {

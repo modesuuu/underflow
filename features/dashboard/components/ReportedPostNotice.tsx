@@ -23,7 +23,7 @@ export function ReportedPostNotice({
       <p className="flex-1 text-sm text-muted">
         <span className="font-medium text-ink">
           {t("feed.reportedNotice", {
-            noun: noun === "comment" ? t("feed.commentNoun") : t("feed.postNoun"),
+            noun: noun === "comment" ? t("feed.commentNoun") : noun === "collab" ? t("feed.collabNoun") : t("feed.postNoun"),
           })}
         </span>{" "}
         {t("feed.reportedReview")}

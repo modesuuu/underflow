@@ -219,6 +219,8 @@ export const en = {
   "feed.reportedNotice": "You reported this {noun}.",
   "feed.postNoun": "post",
   "feed.commentNoun": "comment",
+  "feed.collabNoun": "collaboration",
+  "feed.reportCollab": "Report collaboration",
 
   // Auth
   "auth.headline1": "Find your team.",
@@ -1206,6 +1208,8 @@ export const id: Record<DictKey, string> = {
   "feed.reportedNotice": "Kamu melaporkan {noun} ini.",
   "feed.postNoun": "postingan",
   "feed.commentNoun": "komentar",
+  "feed.collabNoun": "kolaborasi",
+  "feed.reportCollab": "Laporkan kolaborasi",
 
   // Auth
   "auth.headline1": "Temukan timmu.",

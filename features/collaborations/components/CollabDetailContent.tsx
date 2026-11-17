@@ -8,6 +8,9 @@ import { Avatar } from "@/components/ui/Avatar";
 import { PhotoGrid } from "@/components/ui/PhotoGrid";
 import { PhotoLightbox } from "@/components/ui/PhotoLightbox";
 import { ApplyCta } from "./ApplyCta";
+import { ReportForm } from "@/features/dashboard/components/ReportForm";
+import { ReportedPostNotice } from "@/features/dashboard/components/ReportedPostNotice";
+import { reportCollab, withdrawReport } from "@/features/dashboard/api";
 import { MakeCollabModal } from "./MakeCollabModal";
 import { ConfirmDialog } from "@/features/inbox/components/ConfirmDialog";
 import { formatDueDate } from "../sort";
@@ -67,6 +70,31 @@ export function CollabDetailContent({ project }: CollabDetailContentProps) {
   const router = useRouter();
   const [editOpen, setEditOpen] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  // Report flow (non-owners): the same shared treatment as posts —
+  // ReportForm first, then ReportedPostNotice; Undo withdraws the
+  // report at the backend.
+  const [reportFormOpen, setReportFormOpen] = useState(false);
+  const [reported, setReported] = useState(false);
+  const [reportedId, setReportedId] = useState<string | null>(null);
+
+  const handleReportSubmit = async (reason: string) => {
+    const report = await reportCollab(project.id, reason);
+    setReportedId(report.id);
+    setReportFormOpen(false);
+    setReported(true);
+  };
+
+  const handleUndoReport = async () => {
+    if (reportedId) {
+      try {
+        await withdrawReport(reportedId);
+      } catch {
+        // A failed withdrawal must not trap the UI state.
+      }
+      setReportedId(null);
+    }
+    setReported(false);
+  };
 
   const handleDeleteProject = async () => {
     try {
@@ -130,6 +158,16 @@ export function CollabDetailContent({ project }: CollabDetailContentProps) {
             <Icon name={STATUS_ICONS[project.status]} size={14} />
             {t(STATUS_LABEL[project.status])}
           </span>
+          {!isOwnProject && sessionUser !== null && (
+            <button
+              type="button"
+              onClick={() => setReportFormOpen(true)}
+              className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full border border-line bg-surface px-3 py-1.5 text-xs font-medium text-ink transition-colors hover:bg-bg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            >
+              <Icon name="flag" size={14} />
+              {t("feed.reportCollab")}
+            </button>
+          )}
           {isOwnProject && (
             <div className="flex shrink-0 items-center gap-2">
               <button
@@ -190,6 +228,18 @@ export function CollabDetailContent({ project }: CollabDetailContentProps) {
           />
         )}
       </div>
+
+      {/* Report form / reported notice (non-owners) */}
+      {reportFormOpen && (
+        <ReportForm
+          noun="collab"
+          onCancel={() => setReportFormOpen(false)}
+          onSubmit={handleReportSubmit}
+        />
+      )}
+      {reported && (
+        <ReportedPostNotice noun="collab" onUndo={handleUndoReport} />
+      )}
 
       {/* 2. Owner card (light gray, large rounded) */}
       <div className="flex flex-col gap-4 rounded-lg bg-bg p-4 sm:p-6">

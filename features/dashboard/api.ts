@@ -378,6 +378,30 @@ export async function reportComment(
   return res.data.report;
 }
 
+/**
+ * POST /api/reports (auth required) — report a collaboration to the
+ * admin moderation queue. Same contract as reportPost; the backend
+ * has accepted target_type "collab" all along, this is the first UI
+ * that sends it. Undo withdraws it again through withdrawReport.
+ */
+export async function reportCollab(
+  collabId: string,
+  reason: string
+): Promise<{ id: string }> {
+  const res = await apiFetch<ApiEnvelope<{ report: { id: string } }>>(
+    "/api/reports",
+    {
+      method: "POST",
+      body: JSON.stringify({
+        target_type: "collab",
+        target_id: collabId,
+        reason,
+      }),
+    }
+  );
+  return res.data.report;
+}
+
 /** DELETE /api/reports/:id (auth required) — withdraw my open report. */
 export async function withdrawReport(reportId: string): Promise<void> {
   await apiFetch("/api/reports/" + reportId, { method: "DELETE" });

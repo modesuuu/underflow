@@ -242,7 +242,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
           <div className="mt-auto flex flex-col gap-3 px-4 pb-5">
             <div className="h-px w-full bg-line" />
             <div className="flex items-center gap-2.5">
-              <Avatar size={30} alt={viewer.username} />
+              <Avatar size={30} src={viewer.photo ?? undefined} alt={viewer.username} />
               <div className="flex min-w-0 flex-col">
                 <span className="truncate text-sm font-medium">
                   {viewer.username}

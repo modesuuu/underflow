@@ -44,7 +44,7 @@ export function ReportForm({
       <div className="flex items-center gap-3">
         <Icon name="flag" size={20} className="shrink-0 text-muted" />
         <p className="text-sm text-muted">
-          <span className="font-medium text-ink">{t("report.reportThis", { noun: noun === "comment" ? t("feed.commentNoun") : t("feed.postNoun") })}</span>{" "}
+          <span className="font-medium text-ink">{t("report.reportThis", { noun: noun === "comment" ? t("feed.commentNoun") : noun === "collab" ? t("feed.collabNoun") : t("feed.postNoun") })}</span>{" "}
           Tell the team what is wrong with it.
         </p>
       </div>
