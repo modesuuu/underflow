@@ -163,8 +163,7 @@ export function PostCard({ post }: { post: Post }) {
         </button>
       </div>
 
-      {/* Comment entry — divided from the post, goes to the detail */}
-      <div className="h-px w-full bg-placeholder" aria-hidden="true" />
+      {/* Comment entry — goes to the detail page */}
       <div className="flex items-center gap-2.5">
         <Avatar size={28} src={CURRENT_USER.photo} alt={CURRENT_USER.name} />
         <button
