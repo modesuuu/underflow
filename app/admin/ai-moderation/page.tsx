@@ -63,6 +63,7 @@ const CATEGORY_LABEL: Record<string, DictKey> = {
   kekerasan: "admin.aiCatKekerasan",
   miras: "admin.aiCatMiras",
   berbahaya: "admin.aiCatBerbahaya",
+  kata_kasar: "admin.aiCatKataKasar",
 };
 
 function ScoreSummary({ row }: { row: AiVerdictRow }) {

@@ -270,6 +270,7 @@ export interface AiScores {
   kekerasan: number;
   miras: number;
   berbahaya: number;
+  kata_kasar: number;
   alasan?: string;
   [key: string]: number | string | undefined;
 }
