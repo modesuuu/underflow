@@ -50,6 +50,7 @@ const NAV = [
   { href: "/admin/approvals", labelKey: "admin.navApprovals" as DictKey, icon: "check-square", badge: "requests" as null | "reports" | "requests" | "appeals", match: (p: string) => p.startsWith("/admin/approvals") },
   { href: "/admin/appeals", labelKey: "admin.navAppeals" as DictKey, icon: "undo", badge: "appeals" as null | "reports" | "requests" | "appeals", match: (p: string) => p.startsWith("/admin/appeals") },
   { href: "/admin/audit-log", labelKey: "admin.navAuditLog" as DictKey, icon: "history", badge: null as null | "reports" | "requests" | "appeals", match: (p: string) => p.startsWith("/admin/audit-log") },
+  { href: "/admin/ai-moderation", labelKey: "admin.navAiMod" as DictKey, icon: "bot", badge: null as null | "reports" | "requests" | "appeals", match: (p: string) => p.startsWith("/admin/ai-moderation") },
 ];
 
 type GateState =

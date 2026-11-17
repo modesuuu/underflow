@@ -242,3 +242,53 @@ export interface AdminAuditEntry {
 export interface AdminAuditPage extends AdminPage<AdminAuditEntry> {
   actors: AdminActor[];
 }
+
+// ── AI Moderation (spec-ai-moderator.md §4.6) ──────────────────────
+
+export interface AiFailedJob {
+  id: string;
+  target_type: string;
+  target_id: string;
+  attempts: number;
+  last_error: string | null;
+  created_at: string;
+}
+
+export interface AiModOverview {
+  enabled: boolean;
+  jobs: { pending: number; processing: number; done: number; failed: number };
+  verdicts_today: Record<string, number>;
+  flags_open: number;
+  model_calls_today: number;
+  estimated_cost_today_usd: number;
+  failed_jobs: AiFailedJob[];
+}
+
+export interface AiScores {
+  judol: number;
+  seksual: number;
+  kekerasan: number;
+  miras: number;
+  berbahaya: number;
+  alasan?: string;
+  [key: string]: number | string | undefined;
+}
+
+export interface AiVerdictRow {
+  id: string;
+  job_id: string | null;
+  target_type: string;
+  target_id: string;
+  target_label: string;
+  target_state: string | null;
+  owner_username: string | null;
+  model: string | null;
+  prompt_version: string;
+  scores: AiScores | null;
+  decision: "remove" | "flag" | "clean" | "gone" | "error";
+  reason: string | null;
+  moderation_action_id: string | null;
+  flag_state: string;
+  latency_ms: number | null;
+  created_at: string;
+}

@@ -12,6 +12,8 @@ import type {
   ReportGroup,
   AdminAppealRow,
   AdminAuditPage,
+  AiModOverview,
+  AiVerdictRow,
 } from "./types";
 
 /**
@@ -235,4 +237,60 @@ export async function downloadUsersCsv(): Promise<void> {
   a.download = "underflow-users.csv";
   a.click();
   URL.revokeObjectURL(url);
+}
+
+// ── AI Moderation (spec-ai-moderator.md §4.6) ──────────────────────
+
+export async function getAiModOverview(): Promise<AiModOverview> {
+  const res = await apiFetch<ApiEnvelope<AiModOverview>>(
+    "/api/admin/ai-moderation/overview",
+  );
+  return res.data;
+}
+
+export interface AiVerdictsQuery {
+  decision?: string;
+  targetType?: string;
+  page?: number;
+  limit?: number;
+}
+
+export async function getAiVerdicts(
+  query: AiVerdictsQuery,
+): Promise<AdminPage<AiVerdictRow>> {
+  const params = new URLSearchParams();
+  if (query.decision) params.set("decision", query.decision);
+  if (query.targetType) params.set("target_type", query.targetType);
+  params.set("page", String(query.page ?? 1));
+  params.set("limit", String(query.limit ?? 20));
+  const res = await apiFetch<ApiEnvelope<AdminPage<AiVerdictRow>>>(
+    "/api/admin/ai-moderation/verdicts?" + params.toString(),
+  );
+  return res.data;
+}
+
+export async function getAiFlags(): Promise<AiVerdictRow[]> {
+  const res = await apiFetch<ApiEnvelope<{ items: AiVerdictRow[] }>>(
+    "/api/admin/ai-moderation/flags",
+  );
+  return res.data?.items ?? [];
+}
+
+/** Requeue a failed AI job — Super Admin only (backend enforces). */
+export async function retryAiJob(id: string): Promise<void> {
+  await apiFetch("/api/admin/ai-moderation/jobs/" + id + "/retry", {
+    method: "POST",
+    body: JSON.stringify({}),
+  });
+}
+
+/** Decide a grey-zone flag — Super Admin only (backend enforces). */
+export async function resolveAiFlag(
+  id: string,
+  outcome: "removed" | "cleared",
+): Promise<void> {
+  await apiFetch("/api/admin/ai-moderation/flags/" + id + "/resolve", {
+    method: "POST",
+    body: JSON.stringify({ outcome }),
+  });
 }
