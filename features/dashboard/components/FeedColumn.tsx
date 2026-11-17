@@ -60,8 +60,8 @@ export function FeedColumn({
     <div
       className={
         centered
-          ? "mx-auto flex w-full max-w-(--uf-content-w) flex-col gap-5 px-4 py-3 lg:mx-auto lg:px-0"
-          : "mx-auto flex w-full max-w-(--uf-content-w) flex-col gap-5 px-4 py-3 lg:mx-0 lg:ml-[28px] lg:px-0"
+          ? "mx-auto flex w-full max-w-(--uf-content-w) flex-col gap-8 px-4 py-3 lg:mx-auto lg:px-0"
+          : "mx-auto flex w-full max-w-(--uf-content-w) flex-col gap-8 px-4 py-3 lg:mx-0 lg:ml-[28px] lg:px-0"
       }
     >
       <LikeHydrator />

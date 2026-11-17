@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Avatar } from "@/components/ui/Avatar";
+import { CURRENT_USER } from "@/components/layout/nav";
 import { useSessionUser } from "@/features/auth/store";
 import { Icon } from "@/components/ui/Icon";
 import { formatCount } from "@/lib/format";
@@ -24,10 +25,9 @@ import { formatRelativeAgo } from "@/lib/i18n/format";
 /**
  * Feed post: flat on the page surface. One bottom border per
  * post separates the river (user order 2026-11-17; a card
- * treatment was tried and reverted the same day). There is no
- * comment entry under a post: commenting happens on the detail
- * page via the counter button. Body text reads in Book, not
- * Medium.
+ * treatment was tried and reverted the same day). The comment
+ * entry sits inside the post, above that bottom border.
+ * Body text reads in Book, not Medium.
  */
 const CARD_CHROME = "border-b border-line px-1 pt-2 pb-5";
 
@@ -41,8 +41,9 @@ export function PostCard({ post }: { post: Post }) {
   const [deleted, setDeleted] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [editedText, setEditedText] = useState<string | null>(null);
-  // Subscribe to the session (owner checks read from it, and the
-  // card re-renders when the session lands or changes).
+  // Subscribe to the session so this re-renders when the photo is
+  // backfilled (CURRENT_USER is a plain getter — it only re-reads
+  // on re-render, and this hook is what triggers it).
   const sessionUser = useSessionUser();
   // Live comment count: seeded from the server prop, then kept fresh
   // by the LivePoller (other people's comments tick it up).
@@ -162,6 +163,19 @@ export function PostCard({ post }: { post: Post }) {
         </button>
       </div>
 
+      {/* Comment entry — divided from the post, goes to the detail */}
+      <div className="h-px w-full bg-placeholder" aria-hidden="true" />
+      <div className="flex items-center gap-2.5">
+        <Avatar size={28} src={CURRENT_USER.photo} alt={CURRENT_USER.name} />
+        <button
+          type="button"
+          onClick={openDetailAtComment}
+          className="flex flex-1 cursor-text items-center justify-between rounded-full bg-bg px-4 py-2 text-left transition-colors hover:text-ink focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+        >
+          <span className="text-sm text-muted">{t("feed.writeComment")}</span>
+          <Icon name="send" size={18} className="text-muted" />
+        </button>
+      </div>
       {confirmingDelete && (
         <ConfirmDialog
           title={t("feed.deletePostTitle")}
