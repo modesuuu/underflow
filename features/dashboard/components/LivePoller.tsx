@@ -186,32 +186,47 @@ export function LivePoller() {
   const themeSyncDone = useRef(false);
   useEffect(() => {
     if (!isAuthed || themeSyncDone.current) return;
-    themeSyncDone.current = true;
+    let cancelled = false;
     (async () => {
-      try {
-        const res = await apiFetch<ApiEnvelope<{ theme_mode?: string | null }>>(
-          "/api/profiles/me"
-        );
-        const accountMode = res.data?.theme_mode;
-        const local = localStorage.getItem("uf-theme-mode");
-        const isMode = (v: string | null | undefined): v is ThemeMode =>
-          v === "light" || v === "dark" || v === "system";
-        if (isMode(accountMode)) {
-          if (local !== accountMode) {
-            localStorage.setItem("uf-theme-mode", accountMode);
-            applyThemeMode(accountMode);
-          }
-        } else if (isMode(local)) {
-          await apiFetch("/api/profiles/me", {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ theme_mode: local }),
-          });
+      // Retry while the backend is unreachable (e.g. the page
+      // loaded during a server restart): one failed attempt must
+      // not leave the account theme unapplied for the whole
+      // session. Success marks it done; the local theme keeps
+      // working in the meantime.
+      for (let attempt = 0; attempt < 5 && !cancelled; attempt++) {
+        if (attempt > 0) {
+          await new Promise((r) => setTimeout(r, attempt * 2000));
         }
-      } catch {
-        // Best-effort: the local theme keeps working either way.
+        try {
+          const res = await apiFetch<ApiEnvelope<{ theme_mode?: string | null }>>(
+            "/api/profiles/me"
+          );
+          const accountMode = res.data?.theme_mode;
+          const local = localStorage.getItem("uf-theme-mode");
+          const isMode = (v: string | null | undefined): v is ThemeMode =>
+            v === "light" || v === "dark" || v === "system";
+          if (isMode(accountMode)) {
+            if (local !== accountMode) {
+              localStorage.setItem("uf-theme-mode", accountMode);
+              applyThemeMode(accountMode);
+            }
+          } else if (isMode(local)) {
+            await apiFetch("/api/profiles/me", {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ theme_mode: local }),
+            });
+          }
+          themeSyncDone.current = true;
+          return;
+        } catch {
+          // Backend not answering yet: back off and retry.
+        }
       }
     })();
+    return () => {
+      cancelled = true;
+    };
   }, [isAuthed]);
   useEffect(() => {
     if (!isAuthed) return;

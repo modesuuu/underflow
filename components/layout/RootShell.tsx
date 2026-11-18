@@ -8,6 +8,7 @@ import { SkipLink } from "@/components/ui/SkipLink";
 import { LivePoller } from "@/features/dashboard/components/LivePoller";
 import { RedirectIfAuthed, RequireAuth } from "@/features/auth/components/AuthGate";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
+import { applyThemeMode } from "@/components/ui/ThemeToggle";
 
 /**
  * The persistent app frame, mounted once by the root layout.
@@ -31,6 +32,16 @@ export function RootShell({ children }: { children: ReactNode }) {
   useEffect(() => {
     setMobileNav(false);
   }, [pathname]);
+  // Theme safety net: re-apply the saved mode once on mount. The
+  // pre-paint init script normally stamps it, but if that stamp is
+  // ever missed (a dev-server restart reload, a restored tab), the
+  // app must still come up in the saved theme, not the default.
+  useEffect(() => {
+    const m = localStorage.getItem("uf-theme-mode");
+    if (m === "light" || m === "dark" || m === "system") {
+      applyThemeMode(m);
+    }
+  }, []);
   useEffect(() => {
     if (!mobileOpen) return;
     const onKey = (event: KeyboardEvent) => {
