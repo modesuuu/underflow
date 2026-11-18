@@ -4,7 +4,7 @@ import { useLanguage } from "@/lib/i18n/LanguageProvider";
 
 /**
  * The NEW divider in a zone timeline, styled after the day
- * dividers: a centered label between two hairlines, in the error
+ * dividers: a centered label between two hairlines, in the accent
  * colour, carrying how many messages were unread when the reader
  * opened the zone (the frozen snapshot count). Purely
  * presentational; the timeline decides where it sits.
@@ -21,11 +21,11 @@ export function NewMessagesDivider({ count }: { count: number }) {
       role="separator"
       aria-label={label}
     >
-      <span className="h-px flex-1 bg-error/50" />
-      <span className="text-xs font-bold tracking-wide text-error">
+      <span className="h-px flex-1 bg-accent/50" />
+      <span className="text-xs font-bold tracking-wide text-accent">
         {label}
       </span>
-      <span className="h-px flex-1 bg-error/50" />
+      <span className="h-px flex-1 bg-accent/50" />
     </div>
   );
 }

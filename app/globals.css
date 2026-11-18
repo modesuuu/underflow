@@ -22,6 +22,7 @@
   --color-subtle: var(--uf-subtle);
   --color-accent: var(--uf-accent);
   --color-badge: var(--uf-badge);
+--color-error: var(--uf-badge);
   --color-heart: var(--uf-heart);
   --color-placeholder: var(--uf-placeholder);
   --color-line: var(--uf-line);
