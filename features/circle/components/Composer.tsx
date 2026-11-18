@@ -24,7 +24,8 @@ const COUNT_FROM = 1800;
 /**
  * The zone composer, styled after the Inbox composer: a floating
  * pill input on the chat background with a separate round send
- * button. Enter submits the form and sends. A character counter
+ * button. Enter sends; Shift+Enter starts a new line (the field
+ * is a textarea that grows with the draft). A character counter
  * appears near the 2000 limit (the backend enforces the same cap).
  * Zones the member cannot post in (announcements for non-owners)
  * get the read-only bar instead, mirroring the backend's 403.
@@ -55,7 +56,7 @@ export function Composer({
   const [uploadFailed, setUploadFailed] = useState(false);
   const [files, setFiles] = useState<File[]>([]);
   const [fileError, setFileError] = useState<string | null>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Pending attachments: validated on pick (type, 5 MB, max 3) and
@@ -87,6 +88,16 @@ export function Composer({
   useEffect(() => {
     if (replyingTo) inputRef.current?.focus();
   }, [replyingTo]);
+
+  // Auto-grow the textarea with the draft (capped, then it
+  // scrolls internally). Runs on every value change, so clearing
+  // the draft after a send shrinks it back to one line.
+  useEffect(() => {
+    const el = inputRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${Math.min(el.scrollHeight, 160)}px`;
+  }, [value]);
 
   // @-mention autocomplete (Discord-style): while the caret sits
   // right after an @word, offer the circle members it matches,
@@ -296,8 +307,8 @@ export function Composer({
           e.target.value = "";
         }}
       />
-      <div className="flex items-center gap-3">
-        <div className="flex min-w-0 flex-1 items-center gap-1 rounded-full bg-bg px-4 py-2 transition-shadow focus-within:ring-2 focus-within:ring-accent">
+      <div className="flex items-end gap-3">
+        <div className="flex min-w-0 flex-1 items-end gap-1 rounded-3xl bg-bg px-4 py-2 transition-shadow focus-within:ring-2 focus-within:ring-accent">
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
@@ -310,9 +321,9 @@ export function Composer({
           <label className="sr-only" htmlFor={`circle-composer-${zone.id}`}>
             {t("circle.messageChannelLabel", { channel: zone.title })}
           </label>
-          <input
+          <textarea
             id={`circle-composer-${zone.id}`}
-            type="text"
+            rows={1}
             value={value}
             maxLength={MAX_LENGTH}
             ref={inputRef}
@@ -324,7 +335,7 @@ export function Composer({
               );
             }}
             onSelect={(e) => {
-              const el = e.target as HTMLInputElement;
+              const el = e.target as HTMLTextAreaElement;
               detectMention(el.value, el.selectionStart ?? el.value.length);
             }}
             onKeyDown={(e) => {
@@ -352,6 +363,17 @@ export function Composer({
                   return;
                 }
               }
+              // Enter sends; Shift+Enter falls through to the
+              // textarea default and starts a new line.
+              if (
+                e.key === "Enter" &&
+                !e.shiftKey &&
+                !e.nativeEvent.isComposing
+              ) {
+                e.preventDefault();
+                void submit();
+                return;
+              }
               if (e.key === "Escape" && replyingTo) onCancelReply?.();
             }}
             placeholder={
@@ -359,7 +381,7 @@ export function Composer({
                 ? t("circle.announcementPlaceholder")
                 : t("circle.messageChannelLabel", { channel: zone.title })
             }
-            className="h-8 min-w-0 flex-1 bg-transparent text-base text-ink outline-none placeholder:text-muted"
+            className="max-h-40 min-w-0 flex-1 resize-none overflow-y-auto bg-transparent py-1.5 text-base leading-snug text-ink outline-none placeholder:text-muted"
           />
           {value.length >= COUNT_FROM && (
             <span className="shrink-0 text-xs text-subtle">

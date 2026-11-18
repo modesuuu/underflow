@@ -44,12 +44,22 @@ export function ChatPane({
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
+  const composerRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     if (searchQuery.trim()) return;
     const el = scrollRef.current;
     if (el) el.scrollTop = el.scrollHeight;
   }, [conversation?.id, conversation?.messages.length, searchQuery]);
+
+  // Auto-grow the composer with the draft (capped, then it
+  // scrolls internally). Clearing the draft shrinks it back.
+  useEffect(() => {
+    const el = composerRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${Math.min(el.scrollHeight, 160)}px`;
+  }, [draft]);
 
   // The draft belongs to one thread: switching threads clears it.
   useEffect(() => {
@@ -339,18 +349,31 @@ export function ChatPane({
         </div>
       ) : (
         <form onSubmit={handleSend} className="shrink-0 px-4 pt-2 pb-4 sm:px-6 sm:pb-6">
-        <div className="flex items-center gap-3">
-          <div className="flex min-w-0 flex-1 items-center gap-1 rounded-full bg-bg px-4 py-2 transition-shadow focus-within:ring-2 focus-within:ring-accent">
+        <div className="flex items-end gap-3">
+          <div className="flex min-w-0 flex-1 items-end gap-1 rounded-3xl bg-bg px-4 py-2 transition-shadow focus-within:ring-2 focus-within:ring-accent">
             <label className="sr-only" htmlFor={`composer-${conversation.id}`}>
               {t("inbox.messageTo", { name: conversation.name })}
             </label>
-            <input
+            <textarea
               id={`composer-${conversation.id}`}
-              type="text"
+              ref={composerRef}
+              rows={1}
               value={draft}
               onChange={(event) => setDraft(event.target.value)}
+              onKeyDown={(event) => {
+                // Enter sends; Shift+Enter falls through to the
+                // textarea default and starts a new line.
+                if (
+                  event.key === "Enter" &&
+                  !event.shiftKey &&
+                  !event.nativeEvent.isComposing
+                ) {
+                  event.preventDefault();
+                  event.currentTarget.form?.requestSubmit();
+                }
+              }}
               placeholder="Aa"
-              className="h-8 min-w-0 flex-1 bg-transparent text-base text-ink outline-none placeholder:text-muted"
+              className="max-h-40 min-w-0 flex-1 resize-none overflow-y-auto bg-transparent py-1.5 text-base leading-snug text-ink outline-none placeholder:text-muted"
             />
           </div>
           <button
