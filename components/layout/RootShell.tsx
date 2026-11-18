@@ -112,7 +112,7 @@ export function RootShell({ children }: { children: ReactNode }) {
             type="button"
             aria-label={t("common.closeMenu")}
             onClick={() => setMobileNav(false)}
-            className="fixed inset-0 z-40 cursor-pointer bg-ink/40 lg:hidden"
+            className="fixed inset-0 z-40 cursor-pointer bg-black/40 lg:hidden"
           />
         )}
         {children}

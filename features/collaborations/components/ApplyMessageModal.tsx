@@ -56,7 +56,7 @@ export function ApplyMessageModal({
       role="dialog"
       aria-modal="true"
       aria-label={t("collab.applyToProject", { title: projectTitle })}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
       onClick={onClose}
     >
       <div

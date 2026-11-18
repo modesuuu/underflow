@@ -204,7 +204,7 @@ export function PostModal({ open, onClose, editing, onUpdated }: PostModalProps)
   return createPortal(
     <div
       className={clsx(
-        "fixed inset-0 z-50 flex items-center justify-center bg-ink/60 p-4 backdrop-blur-sm",
+        "fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm",
         closing ? "modal-overlay-out" : "modal-overlay-in",
       )}
       onClick={requestClose}

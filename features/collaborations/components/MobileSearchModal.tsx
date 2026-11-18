@@ -139,7 +139,7 @@ export function MobileSearchModal({ open, onClose }: MobileSearchModalProps) {
       aria-label={t("common.search")}
     >
       <div
-        className={`absolute inset-0 bg-ink/40 backdrop-blur-sm ${
+        className={`absolute inset-0 bg-black/40 backdrop-blur-sm ${
           closing ? "modal-overlay-out" : "modal-overlay-in"
         }`}
         onClick={requestClose}

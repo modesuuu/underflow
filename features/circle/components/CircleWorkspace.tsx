@@ -473,7 +473,7 @@ export function CircleWorkspace({
                     type="button"
                     aria-label={t("circle.closePanel")}
                     onClick={() => setPanelOpen(false)}
-                    className="absolute inset-0 z-20 cursor-default bg-ink/40 xl:hidden"
+                    className="absolute inset-0 z-20 cursor-default bg-black/40 xl:hidden"
                   />
                 )}
                 <CirclePanel members={detail.members} shown={panelShown} />
