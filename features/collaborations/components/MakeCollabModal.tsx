@@ -27,7 +27,7 @@ import {
   SYSTEM_SKILL_ORDER,
   type Skill,
 } from "../skills-api";
-import type { CollabProject } from "../types";
+import type { CollabProject, GroupMode } from "../types";
 import { ApiError } from "@/lib/api-client";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 
@@ -92,6 +92,11 @@ export function MakeCollabModal({
   const [photos, setPhotos] = useState<PhotoDraft[]>([]);
   const [photoError, setPhotoError] = useState<string | null>(null);
   const [dueDate, setDueDate] = useState("");
+  // Group-space choice (create only, Circle Phase 1): defaults to a
+  // built-in Circle; the link field appears for the external option.
+  const [groupMode, setGroupMode] = useState<GroupMode>("circle");
+  const [groupLink, setGroupLink] = useState("");
+  const [groupLinkError, setGroupLinkError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<{
     title?: string;
     description?: string;
@@ -412,6 +417,23 @@ export function MakeCollabModal({
       return;
     }
 
+    // External group link: format-checked here so a bad link blocks
+    // the submit with an inline error instead of failing server-side.
+    if (!editing && groupMode === "external") {
+      let linkOk = false;
+      try {
+        const parsed = new URL(groupLink.trim());
+        linkOk = parsed.protocol === "https:" || parsed.protocol === "http:";
+      } catch {
+        linkOk = false;
+      }
+      if (!linkOk) {
+        setGroupLinkError(t("modal.groupLinkInvalid"));
+        return;
+      }
+      setGroupLinkError(null);
+    }
+
     setSubmitting(true);
     setSubmitError(null);
     // Photos are uploaded inside the api functions (POST /api/upload);
@@ -439,6 +461,8 @@ export function MakeCollabModal({
           skillIds: [...selectedSkills],
           slotsTotal: roleCount,
           dueDate,
+          groupMode,
+          groupLink: groupLink.trim(),
           photos: newFiles,
         });
       }
@@ -781,6 +805,91 @@ export function MakeCollabModal({
               )}
             </div>
           </div>
+
+          {/* Team communication (create only): the owner picks the
+              project's group space up front — a built-in Circle, an
+              external group link, or decide later (Circle Phase 1). */}
+          {!editing && (
+            <div className="flex flex-col gap-3 mt-3">
+              <span className="text-base font-medium">
+                {t("modal.groupLabel")}
+              </span>
+              <div
+                className="flex flex-col gap-2"
+                role="radiogroup"
+                aria-label={t("modal.groupLabel")}
+              >
+                {(
+                  [
+                    {
+                      id: "circle",
+                      title: t("modal.groupCircle"),
+                      hint: t("modal.groupCircleHint"),
+                    },
+                    {
+                      id: "external",
+                      title: t("modal.groupExternal"),
+                      hint: t("modal.groupExternalHint"),
+                    },
+                    {
+                      id: "none",
+                      title: t("modal.groupNone"),
+                      hint: t("modal.groupNoneHint"),
+                    },
+                  ] as { id: GroupMode; title: string; hint: string }[]
+                ).map((option) => {
+                  const selected = groupMode === option.id;
+                  return (
+                    <button
+                      key={option.id}
+                      type="button"
+                      role="radio"
+                      aria-checked={selected}
+                      onClick={() => setGroupMode(option.id)}
+                      className={`flex cursor-pointer items-start gap-3 rounded-xl border px-3.5 py-3 text-left transition-colors focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none ${
+                        selected
+                          ? "border-accent bg-bg"
+                          : "border-line hover:border-subtle"
+                      }`}
+                    >
+                      <span
+                        className={`mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full border ${
+                          selected ? "border-accent" : "border-subtle"
+                        }`}
+                      >
+                        {selected && (
+                          <span className="size-2 rounded-full bg-accent" />
+                        )}
+                      </span>
+                      <span className="flex min-w-0 flex-col gap-0.5">
+                        <span className="text-sm font-medium text-ink">
+                          {option.title}
+                        </span>
+                        <span className="text-xs text-muted">{option.hint}</span>
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+              {groupMode === "external" && (
+                <TextInput
+                  id="make-collab-group-link"
+                  label={t("modal.groupLinkLabel")}
+                  value={groupLink}
+                  onChange={(value) => {
+                    setGroupLink(value);
+                    if (groupLinkError) setGroupLinkError(null);
+                  }}
+                  placeholder={t("modal.groupLinkPlaceholder")}
+                  status={
+                    groupLinkError
+                      ? { type: "error", message: groupLinkError }
+                      : undefined
+                  }
+                />
+              )}
+            </div>
+          )}
 
           {/* Photo / File attachments */}
           <div className="flex items-center gap-4">

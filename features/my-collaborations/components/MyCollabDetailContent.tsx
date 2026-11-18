@@ -15,6 +15,7 @@ import type {
   ProjectStatus,
 } from "@/features/collaborations/types";
 import { MakeCollabModal } from "@/features/collaborations/components/MakeCollabModal";
+import { createCircle } from "@/features/circle/api";
 import { ConfirmDialog } from "@/features/inbox/components/ConfirmDialog";
 import {
   backendErrorMessage,
@@ -29,6 +30,19 @@ import type { MyCollabProject } from "../types";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import type { DictKey } from "@/lib/i18n/dictionary";
 import { formatRelativeAgo } from "@/lib/i18n/format";
+
+/** Display name for an external group link's platform, from its host. */
+function groupPlatformName(url: string): string | null {
+  try {
+    const host = new URL(url).hostname.toLowerCase();
+    if (host.includes("whatsapp") || host === "wa.me") return "WhatsApp";
+    if (host === "t.me" || host.includes("telegram")) return "Telegram";
+    if (host.includes("discord")) return "Discord";
+  } catch {
+    // Not a parseable URL: the generic label applies.
+  }
+  return null;
+}
 
 const STATUS_LABEL: Record<ProjectStatus, DictKey> = {
   open: "collab.statusOpen",
@@ -98,6 +112,19 @@ export function MyCollabDetailContent({
   const [memberMenuId, setMemberMenuId] = useState<string | null>(null);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const isOwner = sessionUser !== null && sessionUser.id === project.owner.id;
+  // Create-later Circle (Phase 1): owners who skipped the group-space
+  // choice at creation can still open the Circle from here.
+  const [creatingCircle, setCreatingCircle] = useState(false);
+  const handleCreateCircle = async () => {
+    setCreatingCircle(true);
+    try {
+      const detail = await createCircle(project.id);
+      router.push(`/circle/${detail.id}`);
+    } catch (err) {
+      toast.error(backendErrorMessage(err));
+      setCreatingCircle(false);
+    }
+  };
 
   const handleDeleteProject = async () => {
     try {
@@ -483,15 +510,48 @@ export function MyCollabDetailContent({
         {/* Circle entry (spec-circle-v1 §2.2): only for projects the user
             is actually in. A pending application has no circle yet, so the
             button is not rendered instead of shown disabled. */}
-        {project.myStatus !== "pending" && (
-          <Link
-            href={`/circle/${project.id}`}
-            className="flex w-full items-center justify-center gap-1.5 rounded-md bg-accent py-3.5 text-base font-semibold text-on-accent transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
-          >
-            <Icon name="conversation" size={18} />
-            {t("mycollab.openCircle")}
-          </Link>
-        )}
+        {project.myStatus !== "pending" &&
+          (project.circleId ? (
+            <Link
+              href={`/circle/${project.circleId}`}
+              className="flex w-full items-center justify-center gap-1.5 rounded-md bg-accent py-3.5 text-base font-semibold text-on-accent transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+            >
+              <Icon name="conversation" size={18} />
+              {t("mycollab.openCircle")}
+            </Link>
+          ) : project.communicationUrl ? (
+            <a
+              href={project.communicationUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex w-full items-center justify-center gap-1.5 rounded-md bg-accent py-3.5 text-base font-semibold text-on-accent transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+            >
+              <Icon name="link" size={18} />
+              {groupPlatformName(project.communicationUrl)
+                ? t("mycollab.joinGroupPlatform", {
+                    platform: groupPlatformName(
+                      project.communicationUrl
+                    ) as string,
+                  })
+                : t("mycollab.joinGroupGeneric")}
+            </a>
+          ) : isOwner ? (
+            <button
+              type="button"
+              disabled={creatingCircle}
+              onClick={handleCreateCircle}
+              className="flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-md bg-accent py-3.5 text-base font-semibold text-on-accent transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <Icon name="conversation" size={18} />
+              {creatingCircle
+                ? t("mycollab.creatingCircle")
+                : t("mycollab.createCircle")}
+            </button>
+          ) : (
+            <div className="flex w-full items-center justify-center rounded-md bg-bg px-4 py-3.5 text-center text-sm font-medium text-muted">
+              {t("mycollab.noGroupYet")}
+            </div>
+          ))}
         {/* 5. Bottom bar — status-aware (audit 2026-11-12). The old
                always-on disabled "Closed" button sat under live
                projects too, a dead control. Now a pending application

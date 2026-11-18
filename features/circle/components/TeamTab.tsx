@@ -1,44 +1,38 @@
 "use client";
 
 import { Avatar } from "@/components/ui/Avatar";
-import type { CircleMember, Presence } from "../types";
+import { useSessionUser } from "@/features/auth/store";
+import type { CircleMember } from "../types";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 
 /**
- * Presence colors use existing tokens only (spec §6): online = accent,
- * idle = subtle, offline = line. No new hex values.
+ * Team list (Circle Phase 1): real members from the backend, owner
+ * first. No presence dots — presence arrives with the realtime phase.
  */
-const PRESENCE_CLASS: Record<Presence, string> = {
-  online: "bg-accent",
-  idle: "bg-subtle",
-  offline: "bg-line",
-};
-
-const PRESENCE_LABEL: Record<Presence, string> = {
-  online: "Online",
-  idle: "Idle",
-  offline: "Offline",
-};
-
-function MemberRow({ member }: { member: CircleMember }) {
+function MemberRow({
+  member,
+  isMe,
+}: {
+  member: CircleMember;
+  isMe: boolean;
+}) {
+  const { t } = useLanguage();
   return (
     <div className="flex items-center gap-2.5 px-4 py-1.5">
-      <span className="relative shrink-0">
-        <Avatar alt={member.name} size={32} />
-        <span
-          className={`absolute -right-0.5 -bottom-0.5 size-2.5 rounded-full ring-2 ring-surface ${PRESENCE_CLASS[member.presence]}`}
-          role="img"
-          aria-label={PRESENCE_LABEL[member.presence]}
-        />
-      </span>
+      <Avatar alt={member.name} size={32} src={member.avatarUrl} />
       <div className="flex min-w-0 flex-col">
         <span className="truncate text-sm font-medium text-ink">
           {member.name}
-          {member.userId === "me" && (
-            <span className="font-normal text-subtle"> (You)</span>
+          {isMe && (
+            <span className="font-normal text-subtle">
+              {" "}
+              {t("circle.you")}
+            </span>
           )}
         </span>
-        <span className="truncate text-xs text-muted">{member.role}</span>
+        <span className="truncate text-xs text-muted">
+          {member.isOwner ? t("circle.roleOwner") : t("circle.roleMember")}
+        </span>
       </div>
     </div>
   );
@@ -46,20 +40,35 @@ function MemberRow({ member }: { member: CircleMember }) {
 
 export function TeamTab({ members }: { members: CircleMember[] }) {
   const { t } = useLanguage();
+  const sessionUser = useSessionUser();
   const owner = members.filter((m) => m.isOwner);
   const rest = members.filter((m) => !m.isOwner);
   return (
     <div className="flex flex-col py-3">
-      <span className="px-4 pb-1 text-xs font-semibold text-subtle">{t("admin.ownerPill")}</span>
-      {owner.map((member) => (
-        <MemberRow key={member.userId} member={member} />
-      ))}
-      <span className="px-4 pt-4 pb-1 text-xs font-semibold text-subtle">
-        {t("admin.thMembers")}
+      <span className="px-4 pb-1 text-xs font-semibold text-subtle">
+        {t("admin.ownerPill")}
       </span>
-      {rest.map((member) => (
-        <MemberRow key={member.userId} member={member} />
+      {owner.map((member) => (
+        <MemberRow
+          key={member.userId}
+          member={member}
+          isMe={sessionUser?.id === member.userId}
+        />
       ))}
+      {rest.length > 0 && (
+        <>
+          <span className="px-4 pt-4 pb-1 text-xs font-semibold text-subtle">
+            {t("admin.thMembers")}
+          </span>
+          {rest.map((member) => (
+            <MemberRow
+              key={member.userId}
+              member={member}
+              isMe={sessionUser?.id === member.userId}
+            />
+          ))}
+        </>
+      )}
     </div>
   );
 }

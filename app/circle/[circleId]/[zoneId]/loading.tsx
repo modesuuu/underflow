@@ -1,8 +1,14 @@
 import { AppShell } from "@/components/layout/AppShell";
 
-export default function CircleChannelLoading() {
+export default function CircleZoneLoading() {
   return (
-    <AppShell fill breadcrumbRoot="Dashboard / Circle" backLabel="Circles" backHref="/circle" variant="detail">
+    <AppShell
+      fill
+      breadcrumbRoot="Dashboard / Circle"
+      backLabel="Circles"
+      backHref="/circle"
+      variant="detail"
+    >
       <div className="flex min-h-0 flex-1">
         <div className="hidden w-[260px] shrink-0 flex-col gap-3 border-r border-line p-4 lg:flex">
           <div className="h-5 w-3/4 rounded bg-placeholder" />
@@ -16,19 +22,12 @@ export default function CircleChannelLoading() {
           <div className="flex h-[52px] items-center border-b border-line px-4">
             <div className="h-5 w-32 rounded bg-placeholder" />
           </div>
-          <div className="flex flex-1 flex-col gap-5 overflow-hidden p-4">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="flex gap-3">
-                <div className="size-9 shrink-0 rounded-full bg-placeholder" />
-                <div className="flex flex-1 flex-col gap-2">
-                  <div className="h-3.5 w-28 rounded bg-placeholder" />
-                  <div className="h-3.5 w-2/3 rounded bg-placeholder" />
-                </div>
-              </div>
-            ))}
-          </div>
-          <div className="p-4 pt-0">
-            <div className="h-11 rounded-full bg-placeholder" />
+          <div className="flex flex-1 items-center justify-center p-4">
+            <div className="flex flex-col items-center gap-3">
+              <div className="size-12 rounded-full bg-placeholder" />
+              <div className="h-4 w-48 rounded bg-placeholder" />
+              <div className="h-3.5 w-64 rounded bg-placeholder" />
+            </div>
           </div>
         </div>
         <div className="hidden w-[308px] shrink-0 flex-col gap-3 border-l border-line p-4 xl:flex">

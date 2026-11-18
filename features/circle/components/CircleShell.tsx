@@ -1,36 +1,33 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { setPanelOpen, useCircle, usePanelState } from "../store";
-import { ChannelHeader } from "./ChannelHeader";
-import { ChannelSidebar, ChannelSwitcher } from "./ChannelSidebar";
+import { Icon } from "@/components/ui/Icon";
+import { setPanelOpen, usePanelState } from "../store";
+import { ZoneHeader } from "./ZoneHeader";
+import { ZoneSidebar, ZoneSwitcher } from "./ZoneSidebar";
 import { CirclePanel } from "./CirclePanel";
-import { Composer } from "./Composer";
-import { MessageTimeline } from "./MessageTimeline";
-import type { ChannelId, CircleMessage } from "../types";
+import type { CircleDetail } from "../types";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 
 /**
- * The Circle shell (spec §3): channel rail, timeline column,
+ * The Circle shell (Circle Phase 1): zone rail, zone column,
  * collapsible right panel. Below 1280px the panel becomes an overlay
- * from the right; below lg the channel rail becomes a switcher row.
- * Panel visibility: the store override wins, otherwise open at >=1280px.
+ * from the right; below lg the zone rail becomes a switcher row.
+ * Panel visibility: the store override wins, otherwise open at
+ * >=1280px. The zone body is an empty state — messaging endpoints
+ * land in Phase 2, so there is no timeline and no composer yet.
  */
 export function CircleShell({
-  projectId,
-  channelId,
-  title,
+  detail,
+  zoneId,
   statusLabel,
 }: {
-  projectId: string;
-  channelId: ChannelId;
-  title: string;
+  detail: CircleDetail;
+  zoneId: string;
   statusLabel: string;
 }) {
   const { t } = useLanguage();
-  const data = useCircle(projectId);
   const panel = usePanelState();
-  const [replyTo, setReplyTo] = useState<CircleMessage | null>(null);
   const [isWide, setIsWide] = useState(false);
   const [renderPanel, setRenderPanel] = useState(false);
   const [panelShown, setPanelShown] = useState(false);
@@ -60,47 +57,37 @@ export function CircleShell({
     };
   }, [panelVisible]);
 
-  if (!data) return null;
-
-  const me = data.members.find((m) => m.userId === "me");
-  const canPost = channelId === "general" || Boolean(me?.isOwner);
-  const replyAuthor = replyTo
-    ? data.members.find((m) => m.userId === replyTo.authorId)
-    : undefined;
+  const zone = detail.zones.find((z) => z.id === zoneId) ?? detail.zones[0];
 
   return (
     <div className="relative flex min-h-0 flex-1">
-      <ChannelSidebar
-        projectId={projectId}
-        title={title}
-        statusLabel={statusLabel}
-        channelId={channelId}
-        data={data}
-      />
+      <ZoneSidebar detail={detail} zoneId={zone.id} statusLabel={statusLabel} />
       <div className="flex min-w-0 flex-1 flex-col">
-        <ChannelHeader
-          channelId={channelId}
-          memberCount={data.members.length}
+        <ZoneHeader
+          zoneTitle={zone.title}
+          memberCount={detail.members.length}
           panelVisible={panelVisible}
         />
-        <ChannelSwitcher projectId={projectId} channelId={channelId} data={data} />
-        <MessageTimeline
-          key={channelId}
-          projectId={projectId}
-          channelId={channelId}
-          data={data}
-          meIsOwner={Boolean(me?.isOwner)}
-          onReply={setReplyTo}
-        />
-        <Composer
-          projectId={projectId}
-          channelId={channelId}
-          canPost={canPost}
-          members={data.members}
-          replyTo={replyTo}
-          replyAuthor={replyAuthor}
-          onClearReply={() => setReplyTo(null)}
-        />
+        <ZoneSwitcher detail={detail} zoneId={zone.id} />
+        <div className="flex flex-1 flex-col items-center justify-center gap-2 px-6 py-16 text-center">
+          <span className="flex size-12 items-center justify-center rounded-full bg-bg text-subtle">
+            <Icon name="conversation" size={22} />
+          </span>
+          <p className="text-base font-medium text-ink">
+            {t("circle.zoneEmptyTitle", { zone: zone.title })}
+          </p>
+          <p className="max-w-sm text-sm text-muted">
+            {zone.title === "announcements"
+              ? t("circle.zoneEmptyAnnouncements")
+              : t("circle.zoneEmptyGeneral")}
+          </p>
+          {!zone.memberCanPost && (
+            <p className="flex items-center gap-1.5 text-xs text-subtle">
+              <Icon name="lock" size={12} />
+              {t("circle.zoneReadOnly")}
+            </p>
+          )}
+        </div>
       </div>
       {renderPanel && (
         <>
@@ -112,7 +99,7 @@ export function CircleShell({
               className="absolute inset-0 z-20 cursor-default bg-ink/40 xl:hidden"
             />
           )}
-          <CirclePanel projectId={projectId} data={data} shown={panelShown} />
+          <CirclePanel members={detail.members} shown={panelShown} />
         </>
       )}
     </div>

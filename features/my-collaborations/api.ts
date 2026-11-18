@@ -19,6 +19,9 @@ interface BackendMyCollab {
   media_urls?: string[];
   media_public_ids?: (string | null)[];
   owner: { id: string; username: string; photo_profile_url: string };
+  /** Circle + external link, same wire fields as BackendCollab. */
+  circle?: { id: string } | null;
+  communication_url?: string | null;
   created_at?: string;
 }
 

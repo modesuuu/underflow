@@ -1,76 +1,44 @@
 // features/circle/types.ts
-// Shapes for the Circle V1 mock (spec-circle-v1 §4). Field names follow
-// the repo's conventions; the backend contract delta is a separate
-// deliverable (spec §12) — nothing here changes docs/api-contract.md.
+// Shapes for Circle Phase 1 (backend foundation, 2026-11-18): a Circle
+// belongs to one collaboration, holds Zones, and is reachable only by
+// the owner + accepted members. The owner opts in — at collab creation
+// or later — so a collaboration may have no Circle at all. Messaging
+// types arrive with the Phase 2 endpoints; nothing here invents them.
 
-export type ChannelId = "announcements" | "general";
-export type Presence = "online" | "idle" | "offline";
+export interface CircleZone {
+  id: string;
+  title: string;
+  /** Resolved by the backend for the requesting user. */
+  memberCanPost: boolean;
+  /** Last-read message id; null until messaging lands (Phase 2). */
+  lastRead: string | null;
+}
 
 export interface CircleMember {
   userId: string;
   name: string;
-  /** Slot role in the project; the owner reads "Project Owner". */
-  role: string;
-  isOwner: boolean;
   avatarUrl?: string;
-  /** Static from the mock in V1; realtime presence is a backend phase. */
-  presence: Presence;
+  isOwner: boolean;
 }
 
-export interface CircleReaction {
-  emoji: string;
-  count: number;
-  reactedByMe: boolean;
-}
-
-export interface CircleAttachment {
-  name: string;
-  sizeBytes: number;
-}
-
-export interface CircleMessage {
+export interface CircleDetail {
   id: string;
-  channelId: ChannelId;
-  /** "system" for system messages (kind carries the distinction too). */
-  authorId: string;
-  kind: "user" | "system";
-  body: string;
-  /** ISO 8601. */
-  createdAt: string;
-  editedAt?: string;
-  replyToId?: string;
-  reactions: CircleReaction[];
-  pinned: boolean;
-  attachments: CircleAttachment[];
-}
-
-export interface CircleResource {
-  id: string;
-  kind: "figma" | "github" | "drive" | "link" | "deadline";
-  label: string;
-  /** Deadlines have no url. */
-  url?: string;
-  /** e.g. the date for a deadline. */
-  note?: string;
-  /** Set when the resource came from promoting a pinned message. */
-  sourceMessageId?: string;
-}
-
-export interface CircleData {
-  projectId: string;
-  members: CircleMember[];
-  /** All channels in one list; filter by channelId. */
-  messages: CircleMessage[];
-  resources: CircleResource[];
-  /** Last-read message id per channel; null = nothing read yet. */
-  lastRead: Record<ChannelId, string | null>;
-}
-
-/** One row of the /circle index (server-derived project facts). */
-export interface CircleProjectSummary {
   projectId: string;
   title: string;
-  /** My Collaborations status label, e.g. "Active". */
-  statusLabel: string;
-  members: { userId: string; name: string }[];
+  photoUrl: string | null;
+  /** Raw collaboration status key from the backend ("open", ...). */
+  status: string;
+  zones: CircleZone[];
+  members: CircleMember[];
+}
+
+/** One row of GET /api/circles (the /circle index). */
+export interface CircleSummary {
+  id: string;
+  projectId: string;
+  title: string;
+  status: string;
+  isOwner: boolean;
+  memberNames: string[];
+  memberCount: number;
 }

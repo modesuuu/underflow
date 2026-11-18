@@ -3,6 +3,13 @@
 export type ProjectStatus = "open" | "in-progress" | "completed";
 export type ProjectType = "coursework" | "portfolio" | "product";
 
+/**
+ * The owner's group-space choice, made in the create form (Circle
+ * Phase 1, 2026-11-18): a built-in Circle, an external group link, or
+ * decide later (the Circle can still be created from the project).
+ */
+export type GroupMode = "circle" | "external" | "none";
+
 export interface CollabMember {
   id: string;
   name: string;
@@ -60,6 +67,12 @@ export interface CollabProject {
    *  the URLs, as the update endpoint requires. */
   photoPublicIds: (string | null)[];
   owner: CollabMember;
+  /** Circle id when the owner created one for this project. Absent on
+   *  payloads that do not carry it (e.g. the server-rendered list). */
+  circleId?: string | null;
+  /** External group link. The backend sends it only to the owner and
+   *  accepted members; everyone else gets null. */
+  communicationUrl?: string | null;
 }
 
 export type CollabFilterType = ProjectType | "all";
