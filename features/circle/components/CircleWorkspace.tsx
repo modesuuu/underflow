@@ -12,7 +12,7 @@ import { backendErrorMessage } from "@/features/collaborations/api";
 import { getMyCollabProjects } from "@/features/my-collaborations/api";
 import type { MyCollabProject } from "@/features/my-collaborations/types";
 import { createCircle, getCircleDetail, getCircles, markZoneRead } from "../api";
-import { setPanelOpen, usePanelState } from "../store";
+import { setPanelOpen, subscribeZoneMessages, usePanelState } from "../store";
 import type { CircleDetail, CircleSummary, CircleZone } from "../types";
 import { CirclePanel } from "./CirclePanel";
 import { CircleRail } from "./CircleRail";
@@ -72,6 +72,52 @@ export function CircleWorkspace({
   useEffect(() => {
     selectedZoneRef.current = selectedZoneId;
   }, [selectedZoneId]);
+  const detailRef = useRef<CircleDetail | null>(null);
+  useEffect(() => {
+    detailRef.current = detail;
+  }, [detail]);
+
+  // Live unread counts: the realtime socket pushes every zone
+  // message to all circle members and LivePoller forwards it here,
+  // so the badges bump in place instead of waiting for the next
+  // fetch. The open zone is excluded (its conversation marks
+  // itself read) and own messages never count.
+  useEffect(() => {
+    return subscribeZoneMessages((event) => {
+      if (sessionUser && event.message.authorId === sessionUser.id) return;
+      const open = detailRef.current;
+      if (
+        open &&
+        event.circleId === open.id &&
+        event.zoneId === selectedZoneRef.current
+      ) {
+        return;
+      }
+      if (open && event.circleId === open.id) {
+        setDetail((prev) =>
+          prev && prev.id === event.circleId
+            ? {
+                ...prev,
+                zones: prev.zones.map((z) =>
+                  z.id === event.zoneId
+                    ? { ...z, unreadCount: z.unreadCount + 1 }
+                    : z
+                ),
+              }
+            : prev
+        );
+      }
+      setCircles((prev) =>
+        prev
+          ? prev.map((c) =>
+              c.id === event.circleId
+                ? { ...c, unreadCount: c.unreadCount + 1 }
+                : c
+            )
+          : prev
+      );
+    });
+  }, [sessionUser]);
 
   // The circles the user can access; preselect the deep-linked one or
   // the first in the list.

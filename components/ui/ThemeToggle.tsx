@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { Icon } from "@/components/ui/Icon";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import type { DictKey } from "@/lib/i18n/dictionary";
+import { apiFetch } from "@/lib/api-client";
+import { getSession } from "@/features/auth/session";
 
 export type ThemeMode = "light" | "system" | "dark";
 
@@ -24,7 +26,7 @@ function resolveMode(mode: ThemeMode): "light" | "dark" {
   return mode;
 }
 
-function applyMode(mode: ThemeMode) {
+export function applyThemeMode(mode: ThemeMode) {
   const root = document.documentElement;
   // Cross-fade the whole app into the new palette (globals.css
   // scopes the transitions to .theme-anim), then clean up.
@@ -68,7 +70,7 @@ export function ThemeToggle({
   useEffect(() => {
     if (mode !== "system") return;
     const mq = window.matchMedia("(prefers-color-scheme: dark)");
-    const onChange = () => applyMode("system");
+    const onChange = () => applyThemeMode("system");
     mq.addEventListener("change", onChange);
     return () => mq.removeEventListener("change", onChange);
   }, [mode]);
@@ -76,7 +78,18 @@ export function ThemeToggle({
   const choose = (next: ThemeMode) => {
     setMode(next);
     localStorage.setItem(STORAGE_KEY, next);
-    applyMode(next);
+    applyThemeMode(next);
+    // Persist to the account too: localStorage is per-origin, so
+    // without this the choice appears lost whenever the app is
+    // opened from another origin, browser, or device. Best-effort;
+    // the local value above already applied.
+    if (getSession()?.token) {
+      void apiFetch("/api/profiles/me", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ theme_mode: next }),
+      }).catch(() => {});
+    }
   };
 
   if (variant === "rail") {

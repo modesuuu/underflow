@@ -28,6 +28,10 @@ import {
   refreshConversations,
 } from "@/features/inbox/store";
 import { applyRealtimeZoneMessage } from "@/features/circle/store";
+import {
+  applyThemeMode,
+  type ThemeMode,
+} from "@/components/ui/ThemeToggle";
 import type { ZoneMessage } from "@/features/circle/types";
 import type { BackendInboxMessage } from "@/features/inbox/api";
 
@@ -174,6 +178,41 @@ export function LivePoller() {
     })();
   }, [isAuthed]);
 
+  // Theme sync (2026-11-18): the account carries the theme mode so
+  // it follows the user across origins, browsers, and devices
+  // (localStorage alone is per-origin and looked like the choice
+  // was never saved). Account value wins when present; a local-only
+  // choice is pushed up once. One shot per mount, best-effort.
+  const themeSyncDone = useRef(false);
+  useEffect(() => {
+    if (!isAuthed || themeSyncDone.current) return;
+    themeSyncDone.current = true;
+    (async () => {
+      try {
+        const res = await apiFetch<ApiEnvelope<{ theme_mode?: string | null }>>(
+          "/api/profiles/me"
+        );
+        const accountMode = res.data?.theme_mode;
+        const local = localStorage.getItem("uf-theme-mode");
+        const isMode = (v: string | null | undefined): v is ThemeMode =>
+          v === "light" || v === "dark" || v === "system";
+        if (isMode(accountMode)) {
+          if (local !== accountMode) {
+            localStorage.setItem("uf-theme-mode", accountMode);
+            applyThemeMode(accountMode);
+          }
+        } else if (isMode(local)) {
+          await apiFetch("/api/profiles/me", {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ theme_mode: local }),
+          });
+        }
+      } catch {
+        // Best-effort: the local theme keeps working either way.
+      }
+    })();
+  }, [isAuthed]);
   useEffect(() => {
     if (!isAuthed) return;
     let stopped = false;
