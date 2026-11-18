@@ -11,12 +11,13 @@ import { useSessionUser } from "@/features/auth/store";
 import { backendErrorMessage } from "@/features/collaborations/api";
 import { getMyCollabProjects } from "@/features/my-collaborations/api";
 import type { MyCollabProject } from "@/features/my-collaborations/types";
-import { createCircle, getCircleDetail, getCircles } from "../api";
+import { createCircle, getCircleDetail, getCircles, markZoneRead } from "../api";
 import { setPanelOpen, usePanelState } from "../store";
 import type { CircleDetail, CircleSummary, CircleZone } from "../types";
 import { CirclePanel } from "./CirclePanel";
 import { CircleRail } from "./CircleRail";
 import { CircleSettingsModal } from "./CircleSettingsModal";
+import { CreateCircleModal } from "./CreateCircleModal";
 import { CreateZoneModal } from "./CreateZoneModal";
 import { ZoneSettingsModal } from "./ZoneSettingsModal";
 import { CreateCircleRows } from "./CreateCircleRows";
@@ -59,6 +60,7 @@ export function CircleWorkspace({
   const [withoutCircle, setWithoutCircle] = useState<MyCollabProject[]>([]);
   const [creatingId, setCreatingId] = useState<string | null>(null);
   const [showCreateZone, setShowCreateZone] = useState(false);
+  const [showCreateCircle, setShowCreateCircle] = useState(false);
   const [settingsZone, setSettingsZone] = useState<CircleZone | null>(null);
   const [showCircleSettings, setShowCircleSettings] = useState(false);
   const deepLink = useRef(
@@ -185,6 +187,7 @@ export function CircleWorkspace({
                 projectId: created.projectId,
                 title: created.title,
                 photoProfileUrl: created.photoUrl,
+                unreadCount: 0,
                 status: created.status,
                 isOwner: true,
                 memberNames: created.members.map((m) => m.name),
@@ -195,8 +198,10 @@ export function CircleWorkspace({
       );
       setWithoutCircle((prev) => prev.filter((p) => p.id !== project.id));
       setSelectedCircleId(created.id);
+      return true;
     } catch (err) {
       toast.error(backendErrorMessage(err));
+      return false;
     } finally {
       setCreatingId(null);
     }
@@ -287,6 +292,37 @@ export function CircleWorkspace({
           // The create affordance simply stays as it was.
         });
     }
+  };
+
+  const markCurrentZoneRead = () => {
+    if (!detail || !selectedZoneId) return;
+    const zone = detail.zones.find((z) => z.id === selectedZoneId);
+    if (!zone || zone.unreadCount === 0) return;
+    const circleId = detail.id;
+    const zoneId = zone.id;
+    const count = zone.unreadCount;
+    setDetail((prev) =>
+      prev
+        ? {
+            ...prev,
+            zones: prev.zones.map((z) =>
+              z.id === zoneId ? { ...z, unreadCount: 0 } : z
+            ),
+          }
+        : prev
+    );
+    setCircles((prev) =>
+      prev
+        ? prev.map((c) =>
+            c.id === circleId
+              ? { ...c, unreadCount: Math.max(0, c.unreadCount - count) }
+              : c
+          )
+        : prev
+    );
+    void markZoneRead(circleId, zoneId).catch(() => {
+      // Best-effort: counts refresh on the next fetch.
+    });
   };
 
   // Right-panel visibility + mount animation (Phase 1 shell logic).
@@ -393,8 +429,7 @@ export function CircleWorkspace({
           selectedId={selectedCircleId}
           onSelect={setSelectedCircleId}
           withoutCircle={withoutCircle}
-          creatingId={creatingId}
-          onCreate={handleCreate}
+          onOpenCreateModal={() => setShowCreateCircle(true)}
         />
         {detail && zone ? (
           <>
@@ -428,6 +463,7 @@ export function CircleWorkspace({
                 key={`${detail.id}:${zone.id}`}
                 detail={detail}
                 zone={zone}
+                onSeenNewest={markCurrentZoneRead}
               />
             </div>
             {renderPanel && (
@@ -451,6 +487,18 @@ export function CircleWorkspace({
               : t("circle.loadingCircles")}
           </div>
         )}
+        {showCreateCircle && withoutCircle.length > 0 ? (
+          <CreateCircleModal
+            projects={withoutCircle}
+            creatingId={creatingId}
+            onClose={() => setShowCreateCircle(false)}
+            onCreate={(project) => {
+              void handleCreate(project).then((ok) => {
+                if (ok) setShowCreateCircle(false);
+              });
+            }}
+          />
+        ) : null}
         {showCreateZone && detail ? (
           <CreateZoneModal
             circleId={detail.id}

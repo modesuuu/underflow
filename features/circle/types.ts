@@ -12,6 +12,8 @@ export interface CircleZone {
   memberCanPost: boolean;
   /** Raw zone permission from the backend (settings UI). */
   allowPublicMessage: boolean;
+  /** Messages from others the user has not read yet. */
+  unreadCount: number;
   /** Last-read message id; read state is a later phase, still null. */
   lastRead: string | null;
 }
@@ -40,6 +42,7 @@ export interface CircleSummary {
   projectId: string;
   title: string;
   photoProfileUrl: string | null;
+  unreadCount: number;
   status: string;
   isOwner: boolean;
   memberNames: string[];

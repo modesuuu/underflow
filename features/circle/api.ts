@@ -145,3 +145,13 @@ export async function deleteCircle(circleId: string): Promise<void> {
     method: "DELETE",
   });
 }
+/** Mark a zone as read for the session user (unread indicators). */
+export async function markZoneRead(
+  circleId: string,
+  zoneId: string
+): Promise<void> {
+  await apiFetch<ApiEnvelope<unknown>>(
+    `/api/circles/${circleId}/zones/${zoneId}/read`,
+    { method: "POST" }
+  );
+}

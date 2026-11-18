@@ -89,8 +89,19 @@ export function ZoneSidebar({
                     : "text-muted hover:bg-bg hover:text-ink"
                 }`}
               >
+                {zone.unreadCount > 0 && !active ? (
+                  <span className="size-1.5 shrink-0 rounded-full bg-accent" />
+                ) : null}
                 <span className="text-base leading-none text-subtle">#</span>
-                <span className="min-w-0 flex-1 truncate">{zone.title}</span>
+                <span
+                  className={`min-w-0 flex-1 truncate ${
+                    zone.unreadCount > 0 && !active
+                      ? "font-semibold text-ink"
+                      : ""
+                  }`}
+                >
+                  {zone.title}
+                </span>
                 {!zone.memberCanPost && (
                   <Icon
                     name="lock"
@@ -153,7 +164,16 @@ export function ZoneSwitcher({
             }`}
           >
             <span className="leading-none">#</span>
-            {zone.title}
+            {zone.unreadCount > 0 && !active ? (
+              <span className="size-1.5 shrink-0 rounded-full bg-accent" />
+            ) : null}
+            <span
+              className={
+                zone.unreadCount > 0 && !active ? "font-semibold text-ink" : ""
+              }
+            >
+              {zone.title}
+            </span>
           </button>
         );
       })}

@@ -53,9 +53,11 @@ function mergeMessages(
 export function ZoneConversation({
   detail,
   zone,
+  onSeenNewest,
 }: {
   detail: CircleDetail;
   zone: CircleZone;
+  onSeenNewest?: () => void;
 }) {
   const { t } = useLanguage();
   const [messages, setMessages] = useState<ZoneMessage[]>([]);
@@ -83,6 +85,16 @@ export function ZoneConversation({
   useEffect(() => {
     void loadInitial();
   }, [loadInitial]);
+
+  // Mark-as-read hook: whenever the newest message on screen changes,
+  // the workspace clears this zone's unread counters (Discord-style).
+  const seenRef = useRef<string | null>(null);
+  useEffect(() => {
+    const newest = messages[messages.length - 1];
+    if (!newest || seenRef.current === newest.id) return;
+    seenRef.current = newest.id;
+    onSeenNewest?.();
+  }, [messages, onSeenNewest]);
 
   // Live pushes for this zone.
   useEffect(() => {
