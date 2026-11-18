@@ -13,9 +13,12 @@ import { getMyCollabProjects } from "@/features/my-collaborations/api";
 import type { MyCollabProject } from "@/features/my-collaborations/types";
 import { createCircle, getCircleDetail, getCircles } from "../api";
 import { setPanelOpen, usePanelState } from "../store";
-import type { CircleDetail, CircleSummary } from "../types";
+import type { CircleDetail, CircleSummary, CircleZone } from "../types";
 import { CirclePanel } from "./CirclePanel";
 import { CircleRail } from "./CircleRail";
+import { CircleSettingsModal } from "./CircleSettingsModal";
+import { CreateZoneModal } from "./CreateZoneModal";
+import { ZoneSettingsModal } from "./ZoneSettingsModal";
 import { CreateCircleRows } from "./CreateCircleRows";
 import { circleStatusKey } from "./statusLabel";
 import { ZoneConversation } from "./ZoneConversation";
@@ -55,6 +58,9 @@ export function CircleWorkspace({
   const [detailError, setDetailError] = useState(false);
   const [withoutCircle, setWithoutCircle] = useState<MyCollabProject[]>([]);
   const [creatingId, setCreatingId] = useState<string | null>(null);
+  const [showCreateZone, setShowCreateZone] = useState(false);
+  const [settingsZone, setSettingsZone] = useState<CircleZone | null>(null);
+  const [showCircleSettings, setShowCircleSettings] = useState(false);
   const deepLink = useRef(
     Boolean(initialCircleId && initialZoneId)
   );
@@ -195,6 +201,87 @@ export function CircleWorkspace({
     }
   };
 
+  const selectedSummary = (circles ?? []).find(
+    (c) => c.id === selectedCircleId
+  );
+  const isOwner =
+    selectedSummary?.isOwner ??
+    detail?.members.some(
+      (m) => m.userId === sessionUser?.id && m.isOwner
+    ) ??
+    false;
+
+  const refreshDetail = async (circleId: string, preferZoneId?: string) => {
+    const data = await getCircleDetail(circleId);
+    setDetail(data);
+    loadedCircleId.current = data.id;
+    if (preferZoneId && data.zones.some((z) => z.id === preferZoneId)) {
+      setSelectedZoneId(preferZoneId);
+    } else if (!data.zones.some((z) => z.id === selectedZoneRef.current)) {
+      setSelectedZoneId(data.zones[0]?.id ?? null);
+    }
+  };
+
+  const handleZoneCreated = async (zone: CircleZone) => {
+    setShowCreateZone(false);
+    toast.success(t("circle.zoneCreated"));
+    if (detail) await refreshDetail(detail.id, zone.id);
+  };
+
+  const handleZoneSaved = async (zone: CircleZone) => {
+    setSettingsZone(null);
+    toast.success(t("circle.changesSaved"));
+    if (detail) await refreshDetail(detail.id, zone.id);
+  };
+
+  const handleZoneDeleted = async () => {
+    setSettingsZone(null);
+    toast.success(t("circle.zoneDeleted"));
+    if (detail) await refreshDetail(detail.id);
+  };
+
+  const handleCircleSaved = (fresh: CircleDetail) => {
+    setDetail(fresh);
+    setCircles((prev) =>
+      prev
+        ? prev.map((c) =>
+            c.id === fresh.id ? { ...c, title: fresh.title } : c
+          )
+        : prev
+    );
+    setShowCircleSettings(false);
+    toast.success(t("circle.changesSaved"));
+  };
+
+  const handleCircleDeleted = () => {
+    if (!detail) return;
+    const deletedId = detail.id;
+    const remaining = (circles ?? []).filter((c) => c.id !== deletedId);
+    setShowCircleSettings(false);
+    setDetail(null);
+    setCircles(remaining);
+    setSelectedCircleId(remaining[0]?.id ?? null);
+    toast.success(t("circle.circleDeleted"));
+    // The project can pick a group space again: refresh the
+    // without-circle list so its create affordance comes back.
+    if (sessionUser) {
+      getMyCollabProjects()
+        .then((projects) => {
+          setWithoutCircle(
+            projects.filter(
+              (p) =>
+                p.owner.id === sessionUser.id &&
+                !p.circleId &&
+                p.myStatus !== "pending"
+            )
+          );
+        })
+        .catch(() => {
+          // The create affordance simply stays as it was.
+        });
+    }
+  };
+
   // Right-panel visibility + mount animation (Phase 1 shell logic).
   const panel = usePanelState();
   const [isWide, setIsWide] = useState(false);
@@ -309,17 +396,26 @@ export function CircleWorkspace({
               zoneId={zone.id}
               statusLabel={t(circleStatusKey(detail.status))}
               onSelectZone={setSelectedZoneId}
+              isOwner={isOwner}
+              onCreateZone={() => setShowCreateZone(true)}
+              onZoneSettings={setSettingsZone}
+              onOpenCircleSettings={() => setShowCircleSettings(true)}
             />
             <div className="flex min-w-0 flex-1 flex-col">
               <ZoneHeader
                 zoneTitle={zone.title}
                 memberCount={detail.members.length}
                 panelVisible={panelVisible}
+                isOwner={isOwner}
+                onZoneSettings={() => setSettingsZone(zone)}
+                onOpenCircleSettings={() => setShowCircleSettings(true)}
               />
               <ZoneSwitcher
                 detail={detail}
                 zoneId={zone.id}
                 onSelectZone={setSelectedZoneId}
+                isOwner={isOwner}
+                onCreateZone={() => setShowCreateZone(true)}
               />
               <ZoneConversation
                 key={`${detail.id}:${zone.id}`}
@@ -348,6 +444,31 @@ export function CircleWorkspace({
               : t("circle.loadingCircles")}
           </div>
         )}
+        {showCreateZone && detail ? (
+          <CreateZoneModal
+            circleId={detail.id}
+            onClose={() => setShowCreateZone(false)}
+            onCreated={(zone) => void handleZoneCreated(zone)}
+          />
+        ) : null}
+        {settingsZone && detail ? (
+          <ZoneSettingsModal
+            circleId={detail.id}
+            zone={settingsZone}
+            canDelete={detail.zones.length > 1}
+            onClose={() => setSettingsZone(null)}
+            onSaved={(zone) => void handleZoneSaved(zone)}
+            onDeleted={() => void handleZoneDeleted()}
+          />
+        ) : null}
+        {showCircleSettings && detail ? (
+          <CircleSettingsModal
+            detail={detail}
+            onClose={() => setShowCircleSettings(false)}
+            onSaved={handleCircleSaved}
+            onDeleted={handleCircleDeleted}
+          />
+        ) : null}
       </div>
     </AppShell>
   );

@@ -10,6 +10,8 @@ export interface CircleZone {
   title: string;
   /** Resolved by the backend for the requesting user. */
   memberCanPost: boolean;
+  /** Raw zone permission from the backend (settings UI). */
+  allowPublicMessage: boolean;
   /** Last-read message id; read state is a later phase, still null. */
   lastRead: string | null;
 }

@@ -13,11 +13,17 @@ export function ZoneHeader({
   zoneTitle,
   memberCount,
   panelVisible,
+  isOwner,
+  onZoneSettings,
+  onOpenCircleSettings,
 }: {
   zoneTitle: string;
   memberCount: number;
   /** Effective panel visibility (store override or viewport default). */
   panelVisible: boolean;
+  isOwner?: boolean;
+  onZoneSettings?: () => void;
+  onOpenCircleSettings?: () => void;
 }) {
   const { t } = useLanguage();
   const panel = usePanelState();
@@ -32,6 +38,28 @@ export function ZoneHeader({
         {t("circle.membersCount", { count: memberCount })}
       </span>
       <div className="flex-1" />
+      {isOwner && (
+        <>
+          <button
+            type="button"
+            aria-label={t("circle.openZoneSettings")}
+            title={t("circle.openZoneSettings")}
+            onClick={onZoneSettings}
+            className="flex size-9 cursor-pointer items-center justify-center rounded-lg text-muted transition-colors hover:bg-bg hover:text-ink focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+          >
+            <Icon name="cog" size={18} />
+          </button>
+          <button
+            type="button"
+            aria-label={t("circle.openCircleSettings")}
+            title={t("circle.openCircleSettings")}
+            onClick={onOpenCircleSettings}
+            className="flex size-9 cursor-pointer items-center justify-center rounded-lg text-muted transition-colors hover:bg-bg hover:text-ink focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+          >
+            <Icon name="slider" size={18} />
+          </button>
+        </>
+      )}
       <button
         type="button"
         aria-label={

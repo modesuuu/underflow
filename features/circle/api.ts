@@ -3,6 +3,7 @@ import { ApiEnvelope, apiFetch, isApiConfigured } from "@/lib/api-client";
 import type {
   CircleDetail,
   CircleSummary,
+  CircleZone,
   ZoneMessage,
   ZoneMessagePage,
 } from "./types";
@@ -88,4 +89,59 @@ export async function sendZoneMessage(
     }
   );
   return res.data;
+}
+
+/** Create a zone in a circle (owner only; the backend enforces). */
+export async function createZone(
+  circleId: string,
+  input: { title: string; allowPublicMessage: boolean }
+): Promise<CircleZone> {
+  const res = await apiFetch<ApiEnvelope<CircleZone>>(
+    `/api/circles/${circleId}/zones`,
+    { method: "POST", body: JSON.stringify(input) }
+  );
+  return res.data;
+}
+
+/** Update a zone's title and/or posting permission (owner only). */
+export async function updateZone(
+  circleId: string,
+  zoneId: string,
+  input: { title?: string; allowPublicMessage?: boolean }
+): Promise<CircleZone> {
+  const res = await apiFetch<ApiEnvelope<CircleZone>>(
+    `/api/circles/${circleId}/zones/${zoneId}`,
+    { method: "PUT", body: JSON.stringify(input) }
+  );
+  return res.data;
+}
+
+/** Delete a zone and all its messages (owner only, never the last zone). */
+export async function deleteZone(
+  circleId: string,
+  zoneId: string
+): Promise<void> {
+  await apiFetch<ApiEnvelope<unknown>>(
+    `/api/circles/${circleId}/zones/${zoneId}`,
+    { method: "DELETE" }
+  );
+}
+
+/** Update a circle's title and/or photo (owner only). Returns the fresh detail. */
+export async function updateCircle(
+  circleId: string,
+  input: { title?: string; photoUrl?: string | null }
+): Promise<CircleDetail> {
+  const res = await apiFetch<ApiEnvelope<CircleDetail>>(
+    `/api/circles/${circleId}`,
+    { method: "PUT", body: JSON.stringify(input) }
+  );
+  return res.data;
+}
+
+/** Delete a circle with all its zones and messages (owner only). */
+export async function deleteCircle(circleId: string): Promise<void> {
+  await apiFetch<ApiEnvelope<unknown>>(`/api/circles/${circleId}`, {
+    method: "DELETE",
+  });
 }
