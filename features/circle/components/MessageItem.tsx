@@ -5,6 +5,13 @@ import { Icon } from "@/components/ui/Icon";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import type { ZoneMessage } from "../types";
 
+/** "812 B" / "24.1 KB" / "3.2 MB" for attachment chips and cards. */
+export function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 /** "19:04" from a backend DATETIME string (parsed as local time). */
 export function formatTime(iso: string): string {
   return new Date(iso).toLocaleTimeString("en-GB", {
@@ -210,11 +217,55 @@ export function MessageItem({
             </span>
           </div>
         )}
-        <MessageBody
-          body={message.content}
-          memberNames={memberNames}
-          mentionsEveryone={message.mentionsEveryone}
-        />
+        {message.content !== "" && (
+          <MessageBody
+            body={message.content}
+            memberNames={memberNames}
+            mentionsEveryone={message.mentionsEveryone}
+          />
+        )}
+        {message.attachments.length > 0 && (
+          <div className="mt-1.5 flex flex-col items-start gap-1.5 pb-1">
+            {message.attachments.map((a) =>
+              a.kind === "image" ? (
+                <a
+                  key={a.id}
+                  href={a.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block overflow-hidden rounded-lg border border-line focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={a.url}
+                    alt={a.fileName}
+                    loading="lazy"
+                    className="max-h-64 w-auto max-w-full object-contain"
+                  />
+                </a>
+              ) : (
+                <a
+                  key={a.id}
+                  href={a.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex max-w-full items-center gap-2.5 rounded-lg border border-line bg-surface px-3 py-2 transition-colors hover:bg-bg focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+                >
+                  <Icon name="file" size={20} className="shrink-0 text-muted" />
+                  <span className="min-w-0">
+                    <span className="block max-w-64 truncate text-sm font-medium text-ink">
+                      {a.fileName}
+                    </span>
+                    <span className="block text-xs text-subtle">
+                      {formatFileSize(a.sizeBytes)} · {t("circle.downloadFile")}
+                    </span>
+                  </span>
+                  <Icon name="download" size={16} className="shrink-0 text-muted" />
+                </a>
+              )
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

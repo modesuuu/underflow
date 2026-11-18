@@ -64,6 +64,23 @@ export interface ZoneReplyPreview {
   content: string;
 }
 
+/**
+ * One file attached to a zone message. The file itself lives on
+ * the project Cloudinary account (folder assets/messageCircle);
+ * images render inline, documents render as a download card.
+ */
+export interface ZoneMessageAttachment {
+  id: string;
+  url: string;
+  publicId: string;
+  fileName: string;
+  kind: "image" | "document";
+  sizeBytes: number;
+}
+
+/** An uploaded file ready to attach (no id until the message is saved). */
+export type ZoneAttachmentInput = Omit<ZoneMessageAttachment, "id">;
+
 /** One zone message (GET/POST /api/circles/:id/zones/:zoneId/messages). */
 export interface ZoneMessage {
   id: string;
@@ -83,6 +100,8 @@ export interface ZoneMessage {
       author is the circle owner. A member typing @everyone just
       sends plain text (Discord rule). */
   mentionsEveryone: boolean;
+  /** Files attached to this message (empty for plain text). */
+  attachments: ZoneMessageAttachment[];
 }
 
 /** One page of zone history: chronological order + older-page flag. */

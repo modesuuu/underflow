@@ -5,7 +5,12 @@ import { getZoneMessages, sendZoneMessage } from "../api";
 import { subscribeZoneMessages } from "../store";
 import { Composer } from "./Composer";
 import { MessageTimeline } from "./MessageTimeline";
-import type { CircleDetail, CircleZone, ZoneMessage } from "../types";
+import type {
+  CircleDetail,
+  CircleZone,
+  ZoneAttachmentInput,
+  ZoneMessage,
+} from "../types";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import { useSessionUser } from "@/features/auth/store";
 
@@ -230,12 +235,17 @@ export function ZoneConversation({
     }
   };
 
-  const handleSend = async (content: string, replyToId?: string | null) => {
+  const handleSend = async (
+    content: string,
+    replyToId?: string | null,
+    attachments?: ZoneAttachmentInput[]
+  ) => {
     const saved = await sendZoneMessage(
       circleId,
       zoneId,
       content,
-      replyToId ?? undefined
+      replyToId ?? undefined,
+      attachments
     );
     setMessages((current) => mergeMessages(current, [saved]));
     setReplyingTo(null);

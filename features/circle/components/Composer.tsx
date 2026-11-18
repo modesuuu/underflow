@@ -3,7 +3,19 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Icon } from "@/components/ui/Icon";
 import { Avatar } from "@/components/ui/Avatar";
-import type { CircleMember, CircleZone, ZoneMessage } from "../types";
+import type {
+  CircleMember,
+  CircleZone,
+  ZoneAttachmentInput,
+  ZoneMessage,
+} from "../types";
+import {
+  MAX_ATTACHMENT_BYTES,
+  MAX_ATTACHMENTS,
+  attachmentKindForFile,
+  uploadZoneAttachment,
+} from "../api";
+import { formatFileSize } from "./MessageItem";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 
 const MAX_LENGTH = 2000;
@@ -26,7 +38,11 @@ export function Composer({
   canEveryone = false,
 }: {
   zone: CircleZone;
-  onSend: (content: string, replyToId?: string | null) => Promise<void>;
+  onSend: (
+    content: string,
+    replyToId?: string | null,
+    attachments?: ZoneAttachmentInput[]
+  ) => Promise<void>;
   replyingTo?: ZoneMessage | null;
   onCancelReply?: () => void;
   members?: CircleMember[];
@@ -36,7 +52,36 @@ export function Composer({
   const [value, setValue] = useState("");
   const [sending, setSending] = useState(false);
   const [failed, setFailed] = useState(false);
+  const [uploadFailed, setUploadFailed] = useState(false);
+  const [files, setFiles] = useState<File[]>([]);
+  const [fileError, setFileError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Pending attachments: validated on pick (type, 5 MB, max 3) and
+  // uploaded only when the message is sent, so an abandoned draft
+  // never leaves files behind on the project account.
+  const addFiles = (picked: FileList | null) => {
+    if (!picked) return;
+    setFileError(null);
+    const next = [...files];
+    for (const f of Array.from(picked)) {
+      if (next.length >= MAX_ATTACHMENTS) {
+        setFileError(t("circle.attachmentMaxReached"));
+        continue;
+      }
+      if (!attachmentKindForFile(f)) {
+        setFileError(t("circle.attachmentTypeNotAllowed"));
+        continue;
+      }
+      if (f.size > MAX_ATTACHMENT_BYTES) {
+        setFileError(t("circle.attachmentTooLarge"));
+        continue;
+      }
+      next.push(f);
+    }
+    setFiles(next);
+  };
 
   // Reply mode pulls the keyboard straight back to the composer.
   useEffect(() => {
@@ -115,12 +160,26 @@ export function Composer({
 
   const submit = async () => {
     const content = value.trim();
-    if (!content || sending) return;
+    if ((!content && files.length === 0) || sending) return;
     setSending(true);
     setFailed(false);
+    setUploadFailed(false);
     try {
-      await onSend(content, replyingTo?.id ?? null);
+      let attachments: ZoneAttachmentInput[] = [];
+      if (files.length > 0) {
+        try {
+          for (const f of files) {
+            attachments.push(await uploadZoneAttachment(f));
+          }
+        } catch {
+          // Keep the draft and the picked files so the user can retry.
+          setUploadFailed(true);
+          return;
+        }
+      }
+      await onSend(content, replyingTo?.id ?? null, attachments);
       setValue("");
+      setFiles([]);
       setMention(null);
     } catch {
       // Keep the draft so the user can retry without retyping.
@@ -195,8 +254,59 @@ export function Composer({
           </button>
         </div>
       )}
+      {files.length > 0 && (
+        <div className="mb-2">
+          <ul className="flex flex-wrap gap-1.5">
+            {files.map((f, i) => (
+              <li
+                key={`${f.name}-${f.size}-${f.lastModified}`}
+                className="flex max-w-full items-center gap-2 rounded-lg bg-bg py-1.5 pr-1.5 pl-2.5 text-xs text-ink"
+              >
+                <Icon name="file" size={14} className="shrink-0 text-muted" />
+                <span className="max-w-44 truncate font-medium">{f.name}</span>
+                <span className="shrink-0 text-subtle">
+                  {formatFileSize(f.size)}
+                </span>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setFiles(files.filter((_, j) => j !== i))
+                  }
+                  aria-label={t("circle.removeFile")}
+                  className="flex size-5 shrink-0 cursor-pointer items-center justify-center rounded-full text-muted transition-colors hover:bg-line/40 hover:text-ink focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+                >
+                  <Icon name="x" size={12} />
+                </button>
+              </li>
+            ))}
+          </ul>
+          <p className="pt-1.5 text-[11px] text-subtle">
+            {t("circle.filesHint")}
+          </p>
+        </div>
+      )}
+      <input
+        ref={fileInputRef}
+        type="file"
+        multiple
+        accept=".png,.jpg,.jpeg,.pdf,.doc,.docx,.xls,.xlsx"
+        className="hidden"
+        onChange={(e) => {
+          addFiles(e.target.files);
+          e.target.value = "";
+        }}
+      />
       <div className="flex items-center gap-3">
         <div className="flex min-w-0 flex-1 items-center gap-1 rounded-full bg-bg px-4 py-2 transition-shadow focus-within:ring-2 focus-within:ring-accent">
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            aria-label={t("circle.attachFiles")}
+            title={t("circle.attachFiles")}
+            className="flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-full text-muted transition-colors hover:bg-line/40 hover:text-ink focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+          >
+            <Icon name="paperclip" size={17} />
+          </button>
           <label className="sr-only" htmlFor={`circle-composer-${zone.id}`}>
             {t("circle.messageChannelLabel", { channel: zone.title })}
           </label>
@@ -260,12 +370,23 @@ export function Composer({
         <button
           type="submit"
           aria-label={t("circle.sendMessage")}
-          disabled={!value.trim() || sending}
+          disabled={(!value.trim() && files.length === 0) || sending}
           className="flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-full bg-accent text-on-accent transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40"
         >
           <Icon name="send" size={20} />
         </button>
       </div>
+      {fileError && (
+        <p className="pt-2 text-xs text-badge">{fileError}</p>
+      )}
+      {sending && files.length > 0 && (
+        <p className="pt-2 text-xs text-subtle">{t("circle.uploading")}</p>
+      )}
+      {uploadFailed && (
+        <p className="pt-2 text-xs text-badge">
+          {t("circle.attachmentUploadFailed")}
+        </p>
+      )}
       {failed && (
         <p className="pt-2 text-xs text-badge">{t("circle.sendFailed")}</p>
       )}

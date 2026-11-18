@@ -4,9 +4,26 @@ import type {
   CircleDetail,
   CircleSummary,
   CircleZone,
+  ZoneAttachmentInput,
   ZoneMessage,
   ZoneMessagePage,
 } from "./types";
+
+/** Attachment rules, mirrored by the backend at send time. */
+export const MAX_ATTACHMENTS = 3;
+export const MAX_ATTACHMENT_BYTES = 5 * 1024 * 1024;
+const IMAGE_EXTENSIONS = ["png", "jpg", "jpeg"];
+const DOCUMENT_EXTENSIONS = ["pdf", "doc", "docx", "xls", "xlsx"];
+
+/** "image" / "document" for an attachable file, null when unsupported. */
+export function attachmentKindForFile(
+  file: File
+): "image" | "document" | null {
+  const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
+  if (IMAGE_EXTENSIONS.includes(ext)) return "image";
+  if (DOCUMENT_EXTENSIONS.includes(ext)) return "document";
+  return null;
+}
 
 /** GET /api/circles — circles the session user owns or is a member of. */
 export async function getCircles(): Promise<CircleSummary[]> {
@@ -80,16 +97,84 @@ export async function sendZoneMessage(
   circleId: string,
   zoneId: string,
   content: string,
-  replyToId?: string
+  replyToId?: string,
+  attachments?: ZoneAttachmentInput[]
 ): Promise<ZoneMessage> {
   const res = await apiFetch<ApiEnvelope<ZoneMessage>>(
     `/api/circles/${circleId}/zones/${zoneId}/messages`,
     {
       method: "POST",
-      body: JSON.stringify(replyToId ? { content, replyToId } : { content }),
+      body: JSON.stringify({
+        content,
+        ...(replyToId ? { replyToId } : {}),
+        ...(attachments && attachments.length > 0 ? { attachments } : {}),
+      }),
     }
   );
   return res.data;
+}
+
+/**
+ * Upload one attachment straight to the project Cloudinary account:
+ * (1) ask the backend for an attachment signature
+ * (POST /api/upload/attachment-signature, auth required,
+ * rate-limited), (2) upload the file directly to Cloudinary —
+ * images to the image endpoint, documents to the raw endpoint —
+ * (3) return the reference the send call attaches to the message.
+ * Mirrors uploadImage() for posts, on the separate account.
+ */
+export async function uploadZoneAttachment(
+  file: File
+): Promise<ZoneAttachmentInput> {
+  const kind = attachmentKindForFile(file);
+  if (!kind) {
+    throw new Error("Unsupported file type");
+  }
+
+  const sigRes = await apiFetch<
+    ApiEnvelope<{
+      cloud_name: string;
+      api_key: string;
+      timestamp: number;
+      signature: string;
+      folder: string;
+      tags: string;
+    }>
+  >("/api/upload/attachment-signature", {
+    method: "POST",
+    body: JSON.stringify({}),
+  });
+  const s = sigRes.data;
+
+  const form = new FormData();
+  form.append("file", file);
+  form.append("api_key", s.api_key);
+  form.append("timestamp", String(s.timestamp));
+  form.append("signature", s.signature);
+  form.append("folder", s.folder);
+  form.append("tags", s.tags);
+
+  const res = await fetch(
+    `https://api.cloudinary.com/v1_1/${s.cloud_name}/${kind === "image" ? "image" : "raw"}/upload`,
+    { method: "POST", body: form }
+  );
+  const data = (await res.json().catch(() => null)) as {
+    secure_url?: string;
+    public_id?: string;
+    error?: { message?: string };
+  } | null;
+
+  if (!res.ok || !data?.secure_url || !data?.public_id) {
+    throw new Error(data?.error?.message ?? "Attachment upload failed");
+  }
+
+  return {
+    url: data.secure_url,
+    publicId: data.public_id,
+    fileName: file.name,
+    kind,
+    sizeBytes: file.size,
+  };
 }
 
 /** Create a zone in a circle (owner only; the backend enforces). */
