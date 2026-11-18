@@ -226,6 +226,7 @@ export function ZoneConversation({
           zone.memberCanPost ? (m) => setReplyingTo(m) : undefined
         }
         firstUnreadId={firstUnreadId}
+        unreadCount={readSnapshot.unreadCount}
       />
       <Composer
         zone={zone}

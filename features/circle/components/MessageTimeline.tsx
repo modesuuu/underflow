@@ -39,6 +39,7 @@ export function MessageTimeline({
   onLoadOlder,
   onReply,
   firstUnreadId = null,
+  unreadCount = 0,
 }: {
   messages: ZoneMessage[];
   memberNames: string[];
@@ -48,6 +49,7 @@ export function MessageTimeline({
   onLoadOlder: () => void;
   onReply?: (message: ZoneMessage) => void;
   firstUnreadId?: string | null;
+  unreadCount?: number;
 }) {
   const { t } = useLanguage();
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -148,7 +150,7 @@ export function MessageTimeline({
                 <span className="h-px flex-1 bg-line" />
               </div>
             )}
-            {isFirstUnread && <NewMessagesDivider />}
+            {isFirstUnread && <NewMessagesDivider count={unreadCount} />}
             <MessageItem
               message={message}
               memberNames={memberNames}

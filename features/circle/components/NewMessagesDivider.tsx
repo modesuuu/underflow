@@ -3,23 +3,29 @@
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 
 /**
- * The Discord-style NEW divider in a zone timeline: a red tag and
- * hairline marking where the messages the reader had not seen yet
- * begin. Purely presentational; the timeline decides where it sits
- * (from the read-state snapshot taken when the zone was opened).
+ * The NEW divider in a zone timeline, styled after the day
+ * dividers: a centered label between two hairlines, in the error
+ * colour, carrying how many messages were unread when the reader
+ * opened the zone (the frozen snapshot count). Purely
+ * presentational; the timeline decides where it sits.
  */
-export function NewMessagesDivider() {
+export function NewMessagesDivider({ count }: { count: number }) {
   const { t } = useLanguage();
+  const label =
+    count === 1
+      ? t("circle.newMessageOne")
+      : t("circle.newMessagesMany", { count });
   return (
     <div
-      className="flex items-center gap-3 px-4 pt-3 pb-1"
+      className="flex items-center gap-3 px-4 pt-3 pb-2"
       role="separator"
-      aria-label={t("circle.newDivider")}
+      aria-label={label}
     >
-      <span className="rounded-sm bg-error px-1.5 py-px text-[10px] font-bold tracking-wide text-white">
-        {t("circle.newDivider")}
+      <span className="h-px flex-1 bg-error/50" />
+      <span className="text-xs font-bold tracking-wide text-error">
+        {label}
       </span>
-      <span className="h-px flex-1 bg-error/60" />
+      <span className="h-px flex-1 bg-error/50" />
     </div>
   );
 }

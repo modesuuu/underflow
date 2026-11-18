@@ -891,6 +891,8 @@ export const en = {
   "circle.messageActions": "Message actions",
   "circle.closeMenu": "Close menu",
   "circle.newDivider": "NEW",
+    "circle.newMessageOne": "1 NEW MESSAGE",
+    "circle.newMessagesMany": "{count} NEW MESSAGES",
   "circle.unreadBelow": "Unread messages below",
   "circle.noPinned": "No pinned messages.",
 
@@ -1967,6 +1969,8 @@ export const id: Record<DictKey, string> = {
   "circle.messageActions": "Tindakan pesan",
   "circle.closeMenu": "Tutup menu",
   "circle.newDivider": "BARU",
+    "circle.newMessageOne": "1 PESAN BARU",
+    "circle.newMessagesMany": "{count} PESAN BARU",
   "circle.unreadBelow": "Pesan belum dibaca di bawah",
   "circle.noPinned": "Tidak ada pesan yang disematkan.",
 
