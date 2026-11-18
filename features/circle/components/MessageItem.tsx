@@ -349,11 +349,13 @@ export function MessageItem({
                   <DocumentCardInner a={a} />
                 </button>
               ) : (
+                // No target="_blank": the fl_attachment response makes
+                // the browser download in place and stay on this page.
+                // A new tab would flash open on the Cloudinary URL and
+                // close itself once the download starts.
                 <a
                   key={a.id}
                   href={attachmentHref(a)}
-                  target="_blank"
-                  rel="noopener noreferrer"
                   className={DOC_CARD_CLASSES}
                 >
                   <DocumentCardInner a={a} />
@@ -463,11 +465,13 @@ export function MessageItem({
                 <button
                   type="button"
                   onClick={() => {
-                    window.open(
-                      attachmentHref(warnTarget),
-                      "_blank",
-                      "noopener,noreferrer"
-                    );
+                    // Same-tab trigger so the attachment response
+                    // downloads in place (no flashing new tab).
+                    const link = document.createElement("a");
+                    link.href = attachmentHref(warnTarget);
+                    document.body.appendChild(link);
+                    link.click();
+                    link.remove();
                     setWarnTarget(null);
                   }}
                   className="w-full cursor-pointer rounded-full px-4 py-2.5 text-sm font-semibold text-ink transition-colors hover:bg-bg focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
