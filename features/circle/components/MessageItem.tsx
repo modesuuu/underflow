@@ -49,8 +49,16 @@ function needsDownloadWarning(a: ZoneMessageAttachment): boolean {
 const DOC_CARD_CLASSES =
   "flex max-w-full cursor-pointer items-center gap-2.5 rounded-lg border border-line bg-surface px-3 py-2 text-left transition-colors hover:bg-bg focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none";
 
-/** Shared inside of a document attachment card (link or button). */
-function DocumentCardInner({ a }: { a: ZoneMessageAttachment }) {
+/** Shared inside of a document attachment card. While the file is
+    being fetched, the download icon becomes a spinner and the
+    label says so. */
+function DocumentCardInner({
+  a,
+  starting,
+}: {
+  a: ZoneMessageAttachment;
+  starting?: boolean;
+}) {
   const { t } = useLanguage();
   return (
     <>
@@ -60,10 +68,19 @@ function DocumentCardInner({ a }: { a: ZoneMessageAttachment }) {
           {a.fileName}
         </span>
         <span className="block text-xs text-subtle">
-          {formatFileSize(a.sizeBytes)} · {t("circle.downloadFile")}
+          {formatFileSize(a.sizeBytes)} ·{" "}
+          {starting ? t("circle.downloading") : t("circle.downloadFile")}
         </span>
       </span>
-      <Icon name="download" size={16} className="shrink-0 text-muted" />
+      {starting ? (
+        <Icon
+          name="loader-alt"
+          size={16}
+          className="shrink-0 animate-spin text-muted"
+        />
+      ) : (
+        <Icon name="download" size={16} className="shrink-0 text-muted" />
+      )}
     </>
   );
 }
@@ -219,6 +236,42 @@ export function MessageItem({
   const [previewIdx, setPreviewIdx] = useState<number | null>(null);
   const [warnTarget, setWarnTarget] =
     useState<ZoneMessageAttachment | null>(null);
+  const [startingId, setStartingId] = useState<string | null>(null);
+
+  // In-app download: fetch the file first (Cloudinary answers with
+  // CORS *) so the card can show a real waiting state while the
+  // bytes come in, then hand the blob to the browser under the
+  // original file name. Any failure falls back to a plain same-tab
+  // trigger of the attachment URL.
+  const startDownload = async (a: ZoneMessageAttachment) => {
+    if (startingId) return;
+    setStartingId(a.id);
+    const startedAt = Date.now();
+    try {
+      const res = await fetch(attachmentHref(a));
+      if (!res.ok) throw new Error("download failed");
+      const blob = await res.blob();
+      const objUrl = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = objUrl;
+      link.download = a.fileName;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(objUrl), 4000);
+    } catch {
+      const link = document.createElement("a");
+      link.href = attachmentHref(a);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } finally {
+      // Keep the spinner up at least ~600 ms so even an instant
+      // download reads as feedback instead of a flicker.
+      const wait = Math.max(0, 600 - (Date.now() - startedAt));
+      setTimeout(() => setStartingId(null), wait);
+    }
+  };
 
   // Download-warning sheet: Escape dismisses it.
   useEffect(() => {
@@ -339,27 +392,22 @@ export function MessageItem({
                     className="max-h-64 w-auto max-w-full object-contain"
                   />
                 </button>
-              ) : needsDownloadWarning(a) ? (
+              ) : (
                 <button
                   key={a.id}
                   type="button"
-                  onClick={() => setWarnTarget(a)}
+                  disabled={startingId === a.id}
+                  onClick={() => {
+                    if (needsDownloadWarning(a)) setWarnTarget(a);
+                    else void startDownload(a);
+                  }}
                   className={DOC_CARD_CLASSES}
                 >
-                  <DocumentCardInner a={a} />
+                  <DocumentCardInner
+                    a={a}
+                    starting={startingId === a.id}
+                  />
                 </button>
-              ) : (
-                // No target="_blank": the fl_attachment response makes
-                // the browser download in place and stay on this page.
-                // A new tab would flash open on the Cloudinary URL and
-                // close itself once the download starts.
-                <a
-                  key={a.id}
-                  href={attachmentHref(a)}
-                  className={DOC_CARD_CLASSES}
-                >
-                  <DocumentCardInner a={a} />
-                </a>
               )
             )}
           </div>
@@ -465,13 +513,7 @@ export function MessageItem({
                 <button
                   type="button"
                   onClick={() => {
-                    // Same-tab trigger so the attachment response
-                    // downloads in place (no flashing new tab).
-                    const link = document.createElement("a");
-                    link.href = attachmentHref(warnTarget);
-                    document.body.appendChild(link);
-                    link.click();
-                    link.remove();
+                    void startDownload(warnTarget);
                     setWarnTarget(null);
                   }}
                   className="w-full cursor-pointer rounded-full px-4 py-2.5 text-sm font-semibold text-ink transition-colors hover:bg-bg focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
