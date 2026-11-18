@@ -36,7 +36,7 @@ export function ZoneSidebar({
     <div className="hidden w-[260px] shrink-0 flex-col border-r border-line bg-surface lg:flex">
       <div className="flex items-start justify-between gap-2 border-b border-line px-4 py-3.5">
         <div className="flex min-w-0 flex-col gap-0.5">
-          <span className="line-clamp-2 text-base leading-snug font-semibold text-ink">
+          <span className="line-clamp-2 text-lg leading-snug font-semibold text-ink">
             {detail.title}
           </span>
           <span className="text-xs text-muted">{statusLabel}</span>
