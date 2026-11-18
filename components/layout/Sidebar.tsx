@@ -463,6 +463,50 @@ export function Sidebar() {
     return () => window.cancelAnimationFrame(frame);
   }, []);
 
+  // Rail-toggle tooltip, portaled to <body> like the NavRow
+  // tooltips. The old in-flow span lived inside this button, whose
+  // z-10 stacking context loses to the sticky TopBar (z-20): the
+  // TopBar painted over the tooltip's right half (user report:
+  // "hover text ketutup top bar"). The native title is gone too,
+  // so the OS tooltip never stacks on top of this one.
+  const [toggleTipPos, setToggleTipPos] = useState<{
+    x: number;
+    y: number;
+  } | null>(null);
+  const [toggleTipOpen, setToggleTipOpen] = useState(false);
+  const toggleTipTimer = useRef<number | undefined>(undefined);
+  const toggleTipExitTimer = useRef<number | undefined>(undefined);
+  const showToggleTip = (el: HTMLElement) => {
+    window.clearTimeout(toggleTipTimer.current);
+    window.clearTimeout(toggleTipExitTimer.current);
+    toggleTipTimer.current = window.setTimeout(() => {
+      const r = el.getBoundingClientRect();
+      setToggleTipPos({ x: r.right + 12, y: r.top + r.height / 2 });
+    }, 300);
+  };
+  const hideToggleTip = () => {
+    window.clearTimeout(toggleTipTimer.current);
+    setToggleTipOpen(false);
+    window.clearTimeout(toggleTipExitTimer.current);
+    toggleTipExitTimer.current = window.setTimeout(
+      () => setToggleTipPos(null),
+      155,
+    );
+  };
+  // Flip to the open style one frame after mount (see NavRow).
+  useEffect(() => {
+    if (!toggleTipPos) return;
+    const raf = requestAnimationFrame(() => setToggleTipOpen(true));
+    return () => cancelAnimationFrame(raf);
+  }, [toggleTipPos]);
+  useEffect(
+    () => () => {
+      window.clearTimeout(toggleTipTimer.current);
+      window.clearTimeout(toggleTipExitTimer.current);
+    },
+    [],
+  );
+
   const toggleMini = () => {
     setMiniPref((value) => {
       const next = !value;
@@ -637,25 +681,37 @@ export function Sidebar() {
             </div>
             <button
               type="button"
-              onClick={toggleMini}
+              onClick={() => {
+                hideToggleTip();
+                toggleMini();
+              }}
+              onMouseEnter={(e) => showToggleTip(e.currentTarget)}
+              onMouseLeave={hideToggleTip}
+              onFocus={(e) => showToggleTip(e.currentTarget)}
+              onBlur={hideToggleTip}
               aria-expanded={!mini}
               aria-label={mini ? t("nav.expandSidebar") : t("nav.collapseSidebar")}
-              title={(mini ? t("nav.expandSidebar") : t("nav.collapseSidebar")) + " (Ctrl+B)"}
               className={clsx(
-                "group nav-row-hoverable relative z-10 flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-lg text-muted transition-colors hover:text-ink",
+                "nav-row-hoverable relative z-10 flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-lg text-muted transition-colors hover:text-ink",
                 !mini && "ml-auto"
               )}
             >
               <SidebarPanelIcon />
-              {mini && (
+            </button>
+            {toggleTipPos &&
+              createPortal(
                 <span
                   aria-hidden="true"
-                  className="pointer-events-none absolute top-1/2 left-full z-50 ml-3 -translate-y-1/2 translate-x-[-4px] rounded-lg bg-ink px-2.5 py-1.5 text-xs font-medium whitespace-nowrap text-surface opacity-0 shadow-lg transition-all duration-150 group-hover:translate-x-0 group-hover:opacity-100 group-hover:delay-300 group-focus-visible:translate-x-0 group-focus-visible:opacity-100"
+                  data-open={toggleTipOpen}
+                  style={{ left: toggleTipPos.x, top: toggleTipPos.y }}
+                  className="uf-tip pointer-events-none fixed z-[100] -translate-y-1/2 rounded-lg bg-ink px-2.5 py-1.5 text-xs font-medium whitespace-nowrap text-surface shadow-lg"
                 >
-                  {t("nav.expandSidebar")}
-                </span>
+                  {mini
+                    ? t("nav.expandSidebar")
+                    : t("nav.collapseSidebar")}
+                </span>,
+                document.body,
               )}
-            </button>
           </div>
 
           {/* Nav sections */}
