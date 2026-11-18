@@ -11,7 +11,50 @@ export function formatTime(iso: string): string {
   });
 }
 
-/** Render message text with @mentions of members highlighted. */
+/** Trailing characters that belong to the sentence, not the link. */
+function splitTrailingPunct(token: string): [string, string] {
+  let end = token.length;
+  while (end > 0 && ".,!?;:".includes(token[end - 1])) end--;
+  if (end > 0 && token[end - 1] === ")" && !token.slice(0, end).includes("(")) {
+    end--;
+  }
+  return [token.slice(0, end), token.slice(end)];
+}
+
+/**
+ * Clickable links in chat text: full http(s) URLs, www. addresses,
+ * and bare domains on common TLDs (github.com, figma.com/x, ...).
+ */
+const URL_PATTERN =
+  /((?:https?:\/\/|www\.)[^\s<]+|(?:[a-z0-9-]+\.)+(?:com|net|org|io|id|dev|app|gg|me|edu|info|xyz)(?:\/[^\s<]*)?)/gi;
+
+/** Render one plain-text segment, highlighting @mentions. */
+function renderTextSegment(
+  text: string,
+  memberNames: string[],
+  keyPrefix: string
+) {
+  const parts = text.split(/(\s+)/);
+  return parts.map((part, i) => {
+    if (part.startsWith("@")) {
+      const name = part.slice(1).replace(/[.,!?;:]+$/, "");
+      if (memberNames.includes(name)) {
+        return (
+          <span key={`${keyPrefix}-${i}`} className="font-semibold text-accent">
+            {part}
+          </span>
+        );
+      }
+    }
+    return <span key={`${keyPrefix}-${i}`}>{part}</span>;
+  });
+}
+
+/**
+ * Render message text with @mentions of members highlighted and
+ * links made clickable (new tab, noopener). A domain glued to a
+ * word or an @ (an email address) is left as plain text.
+ */
 export function MessageBody({
   body,
   memberNames,
@@ -19,21 +62,36 @@ export function MessageBody({
   body: string;
   memberNames: string[];
 }) {
-  const parts = body.split(/(\s+)/);
+  const segments = body.split(URL_PATTERN);
   return (
     <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-ink">
-      {parts.map((part, i) => {
-        if (part.startsWith("@")) {
-          const name = part.slice(1).replace(/[.,!?;:]+$/, "");
-          if (memberNames.includes(name)) {
+      {segments.map((segment, i) => {
+        if (i % 2 === 1) {
+          const prev = segments[i - 1] ?? "";
+          if (/[@a-z0-9]$/i.test(prev)) {
             return (
-              <span key={i} className="font-semibold text-accent">
-                {part}
-              </span>
+              <span key={i}>{renderTextSegment(segment, memberNames, `s${i}`)}</span>
             );
           }
+          const [link, trailing] = splitTrailingPunct(segment);
+          const href = link.startsWith("http") ? link : `https://${link}`;
+          return (
+            <span key={i}>
+              <a
+                href={href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-medium break-all text-accent underline decoration-accent/40 underline-offset-2 transition-colors hover:decoration-accent"
+              >
+                {link}
+              </a>
+              {trailing}
+            </span>
+          );
         }
-        return <span key={i}>{part}</span>;
+        return (
+          <span key={i}>{renderTextSegment(segment, memberNames, `s${i}`)}</span>
+        );
       })}
     </p>
   );
