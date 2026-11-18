@@ -49,13 +49,17 @@ export function MessageItem({
   message,
   memberNames,
   isContinuation,
+  groupStart = false,
 }: {
   message: ZoneMessage;
   memberNames: string[];
   isContinuation: boolean;
+  groupStart?: boolean;
 }) {
   return (
-    <div className="group relative flex gap-3 px-4 py-0.5 transition-colors hover:bg-bg">
+    <div
+      className={`group relative flex gap-3 px-4 py-0.5 transition-colors hover:bg-bg ${groupStart ? "mt-4" : ""}`}
+    >
       <div className="flex w-9 shrink-0 justify-center">
         {isContinuation ? (
           <span className="pt-1 text-[10px] leading-none text-subtle opacity-0 transition-opacity group-hover:opacity-100">

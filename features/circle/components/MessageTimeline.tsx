@@ -141,6 +141,7 @@ export function MessageTimeline({
               message={message}
               memberNames={memberNames}
               isContinuation={!!prev && !newDay && isContinuation(prev, message)}
+              groupStart={!!prev && !newDay && !isContinuation(prev, message)}
             />
           </div>
         );
