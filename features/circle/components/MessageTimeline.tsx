@@ -203,7 +203,7 @@ export function MessageTimeline({
           onClick={jumpToBottom}
           aria-label={t("circle.jumpToBottom")}
           title={t("circle.jumpToBottom")}
-          className="absolute right-4 bottom-4 flex size-10 cursor-pointer items-center justify-center rounded-full bg-accent text-on-accent shadow-lg transition-transform hover:scale-105 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+          className="absolute right-4 bottom-4 z-20 flex size-10 cursor-pointer items-center justify-center rounded-full bg-accent text-on-accent shadow-lg transition-transform hover:scale-105 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
         >
           <Icon name="chevron-down" size={20} />
         </button>
