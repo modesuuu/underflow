@@ -59,3 +59,61 @@ export function subscribeZoneMessages(
 export function applyRealtimeZoneMessage(event: ZoneMessageEvent): void {
   zoneMessageListeners.forEach((listener) => listener(event));
 }
+
+/**
+ * Zone-message edit bridge: "zone-message-updated" pushes carry
+ * the full updated message; the open conversation replaces its
+ * loaded copy by id.
+ */
+export interface ZoneMessageUpdatedEvent {
+  circleId: string;
+  zoneId: string;
+  message: ZoneMessage;
+}
+
+const zoneMessageUpdatedListeners =
+  new Set<(event: ZoneMessageUpdatedEvent) => void>();
+
+export function subscribeZoneMessageUpdates(
+  listener: (event: ZoneMessageUpdatedEvent) => void
+): () => void {
+  zoneMessageUpdatedListeners.add(listener);
+  return () => {
+    zoneMessageUpdatedListeners.delete(listener);
+  };
+}
+
+export function applyRealtimeZoneMessageUpdated(
+  event: ZoneMessageUpdatedEvent
+): void {
+  zoneMessageUpdatedListeners.forEach((listener) => listener(event));
+}
+
+/**
+ * Zone-message delete bridge: "zone-message-deleted" pushes carry
+ * only the id; the open conversation drops the message and clears
+ * quotes that pointed at it.
+ */
+export interface ZoneMessageDeletedEvent {
+  circleId: string;
+  zoneId: string;
+  messageId: string;
+}
+
+const zoneMessageDeletedListeners =
+  new Set<(event: ZoneMessageDeletedEvent) => void>();
+
+export function subscribeZoneMessageDeletions(
+  listener: (event: ZoneMessageDeletedEvent) => void
+): () => void {
+  zoneMessageDeletedListeners.add(listener);
+  return () => {
+    zoneMessageDeletedListeners.delete(listener);
+  };
+}
+
+export function applyRealtimeZoneMessageDeleted(
+  event: ZoneMessageDeletedEvent
+): void {
+  zoneMessageDeletedListeners.forEach((listener) => listener(event));
+}

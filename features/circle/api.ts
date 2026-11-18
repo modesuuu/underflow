@@ -127,6 +127,42 @@ export async function sendZoneMessage(
 }
 
 /**
+ * PUT /api/circles/:circleId/zones/:zoneId/messages/:messageId —
+ * edit one message's text (author only; attachments unchanged).
+ * Returns the updated message in the same shape the realtime push
+ * carries. Throws ApiError: 403 for someone else's message, 400
+ * for empty text on a message without attachments.
+ */
+export async function editZoneMessage(
+  circleId: string,
+  zoneId: string,
+  messageId: string,
+  content: string
+): Promise<ZoneMessage> {
+  const res = await apiFetch<ApiEnvelope<ZoneMessage>>(
+    `/api/circles/${circleId}/zones/${zoneId}/messages/${messageId}`,
+    { method: "PUT", body: JSON.stringify({ content }) }
+  );
+  return res.data;
+}
+
+/**
+ * DELETE /api/circles/:circleId/zones/:zoneId/messages/:messageId —
+ * soft-delete one message (its author, or the circle owner
+ * moderating). Throws ApiError 403 for anyone else.
+ */
+export async function deleteZoneMessage(
+  circleId: string,
+  zoneId: string,
+  messageId: string
+): Promise<void> {
+  await apiFetch<ApiEnvelope<unknown>>(
+    `/api/circles/${circleId}/zones/${zoneId}/messages/${messageId}`,
+    { method: "DELETE" }
+  );
+}
+
+/**
  * Upload one attachment straight to the project Cloudinary account:
  * (1) ask the backend for an attachment signature
  * (POST /api/upload/attachment-signature, auth required,

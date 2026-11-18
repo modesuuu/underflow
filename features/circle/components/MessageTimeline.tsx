@@ -44,6 +44,10 @@ export function MessageTimeline({
   onReply,
   firstUnreadId = null,
   unreadCount = 0,
+  currentUserId = null,
+  canModerate = false,
+  onEdit,
+  onDelete,
 }: {
   messages: ZoneMessage[];
   memberNames: string[];
@@ -54,6 +58,10 @@ export function MessageTimeline({
   onReply?: (message: ZoneMessage) => void;
   firstUnreadId?: string | null;
   unreadCount?: number;
+  currentUserId?: string | null;
+  canModerate?: boolean;
+  onEdit?: (message: ZoneMessage, content: string) => Promise<void>;
+  onDelete?: (message: ZoneMessage) => Promise<void>;
 }) {
   const { t } = useLanguage();
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -192,6 +200,10 @@ export function MessageTimeline({
               isContinuation={continuation}
               groupStart={!!prev && !newDay && !continuation && !isFirstUnread}
               onReply={onReply}
+              currentUserId={currentUserId}
+              canModerate={canModerate}
+              onEdit={onEdit}
+              onDelete={onDelete}
             />
           </div>
         );

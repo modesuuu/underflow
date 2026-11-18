@@ -27,7 +27,11 @@ import {
   applyRealtimeInboxUpdate,
   refreshConversations,
 } from "@/features/inbox/store";
-import { applyRealtimeZoneMessage } from "@/features/circle/store";
+import {
+  applyRealtimeZoneMessage,
+  applyRealtimeZoneMessageDeleted,
+  applyRealtimeZoneMessageUpdated,
+} from "@/features/circle/store";
 import {
   applyThemeMode,
   type ThemeMode,
@@ -403,6 +407,36 @@ export function LivePoller() {
               zoneId,
               message: message as unknown as ZoneMessage,
             });
+          }
+          return;
+        }
+        if (msg.type === "zone-message-updated") {
+          const circleId = msg.payload?.circleId;
+          const zoneId = msg.payload?.zoneId;
+          const message = msg.payload?.message;
+          if (
+            typeof circleId === "string" &&
+            typeof zoneId === "string" &&
+            message
+          ) {
+            applyRealtimeZoneMessageUpdated({
+              circleId,
+              zoneId,
+              message: message as unknown as ZoneMessage,
+            });
+          }
+          return;
+        }
+        if (msg.type === "zone-message-deleted") {
+          const circleId = msg.payload?.circleId;
+          const zoneId = msg.payload?.zoneId;
+          const messageId = msg.payload?.messageId;
+          if (
+            typeof circleId === "string" &&
+            typeof zoneId === "string" &&
+            typeof messageId === "string"
+          ) {
+            applyRealtimeZoneMessageDeleted({ circleId, zoneId, messageId });
           }
           return;
         }

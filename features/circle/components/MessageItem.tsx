@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { Avatar } from "@/components/ui/Avatar";
 import { Icon } from "@/components/ui/Icon";
@@ -47,7 +47,7 @@ function needsDownloadWarning(a: ZoneMessageAttachment): boolean {
 }
 
 const DOC_CARD_CLASSES =
-  "flex max-w-full cursor-pointer items-center gap-2.5 rounded-lg border border-line bg-surface px-3 py-2 text-left transition-colors hover:bg-bg focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none";
+  "flex max-w-full cursor-pointer items-center gap-2.5 rounded-lg border border-line bg-bg px-3 py-2 text-left transition-colors hover:bg-line/40 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none";
 
 /** Shared inside of a document attachment card. While the file is
     being fetched, the download icon becomes a spinner and the
@@ -156,10 +156,12 @@ export function MessageBody({
   body,
   memberNames,
   mentionsEveryone = false,
+  trailing,
 }: {
   body: string;
   memberNames: string[];
   mentionsEveryone?: boolean;
+  trailing?: ReactNode;
 }) {
   const segments = body.split(URL_PATTERN);
   return (
@@ -196,6 +198,7 @@ export function MessageBody({
           </span>
         );
       })}
+      {trailing}
     </p>
   );
 }
@@ -204,7 +207,9 @@ export function MessageBody({
  * One message row (Circle Phase 2). A continuation row (same author,
  * same day, < 5 minutes after the previous message) drops the
  * avatar + name header and shows the time on hover instead.
- * Reactions / pin / reply / edit land in Phase 3.
+ * The hover toolbar carries reply, edit (author only, inline) and
+ * delete (author, or the circle owner moderating); reactions and
+ * pin are still to come.
  */
 /** Scroll to a message in the loaded history and flash it. */
 function jumpToOriginal(id: string) {
@@ -223,12 +228,21 @@ export function MessageItem({
   isContinuation,
   groupStart = false,
   onReply,
+  currentUserId = null,
+  canModerate = false,
+  onEdit,
+  onDelete,
 }: {
   message: ZoneMessage;
   memberNames: string[];
   isContinuation: boolean;
   groupStart?: boolean;
   onReply?: (message: ZoneMessage) => void;
+  currentUserId?: string | null;
+  /** The viewer owns the circle: may delete anyone's message. */
+  canModerate?: boolean;
+  onEdit?: (message: ZoneMessage, content: string) => Promise<void>;
+  onDelete?: (message: ZoneMessage) => Promise<void>;
 }) {
   const { t } = useLanguage();
   const reply = message.replyTo;
@@ -237,6 +251,60 @@ export function MessageItem({
   const [warnTarget, setWarnTarget] =
     useState<ZoneMessageAttachment | null>(null);
   const [startingId, setStartingId] = useState<string | null>(null);
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState("");
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  const isOwn = currentUserId !== null && message.authorId === currentUserId;
+  const canEdit = isOwn && !!onEdit && message.content !== "";
+  const canDelete = (isOwn || canModerate) && !!onDelete;
+
+  const saveEdit = async () => {
+    if (!onEdit || savingEdit) return;
+    const next = draft.trim();
+    if (next === message.content) {
+      setEditing(false);
+      return;
+    }
+    setSavingEdit(true);
+    setEditError(null);
+    try {
+      await onEdit(message, next);
+      setEditing(false);
+    } catch {
+      setEditError(t("circle.editFailed"));
+    } finally {
+      setSavingEdit(false);
+    }
+  };
+
+  const confirmDelete = async () => {
+    if (!onDelete || deleting) return;
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      await onDelete(message);
+      setConfirmingDelete(false);
+    } catch {
+      setDeleteError(t("circle.deleteFailed"));
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  // Delete confirmation: Escape dismisses it.
+  useEffect(() => {
+    if (!confirmingDelete) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setConfirmingDelete(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [confirmingDelete]);
 
   // In-app download: fetch the file first (Cloudinary answers with
   // CORS *) so the card can show a real waiting state while the
@@ -306,17 +374,48 @@ export function MessageItem({
       id={`zone-msg-${message.id}`}
       className={`group relative flex gap-3 px-4 py-0.5 transition-colors ${message.mentionsEveryone ? "bg-accent/10" : "hover:bg-bg"} ${groupStart ? "mt-4" : ""}`}
     >
-      {onReply && (
-        <div className="absolute -top-3 right-4 z-10 opacity-0 transition-opacity group-hover:opacity-100">
-          <button
-            type="button"
-            onClick={() => onReply(message)}
-            aria-label={t("circle.reply")}
-            title={t("circle.reply")}
-            className="flex size-7 cursor-pointer items-center justify-center rounded-md border border-line bg-surface text-muted shadow-sm transition-colors hover:text-accent focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
-          >
-            <Icon name="reply" size={15} />
-          </button>
+      {(onReply || canEdit || canDelete) && (
+        <div className="absolute -top-3 right-4 z-10 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+          {onReply && (
+            <button
+              type="button"
+              onClick={() => onReply(message)}
+              aria-label={t("circle.reply")}
+              title={t("circle.reply")}
+              className="flex size-7 cursor-pointer items-center justify-center rounded-md border border-line bg-surface text-muted shadow-sm transition-colors hover:text-accent focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+            >
+              <Icon name="reply" size={15} />
+            </button>
+          )}
+          {canEdit && (
+            <button
+              type="button"
+              onClick={() => {
+                setDraft(message.content);
+                setEditError(null);
+                setEditing(true);
+              }}
+              aria-label={t("circle.editMessage")}
+              title={t("circle.editMessage")}
+              className="flex size-7 cursor-pointer items-center justify-center rounded-md border border-line bg-surface text-muted shadow-sm transition-colors hover:text-accent focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+            >
+              <Icon name="pencil" size={15} />
+            </button>
+          )}
+          {canDelete && (
+            <button
+              type="button"
+              onClick={() => {
+                setDeleteError(null);
+                setConfirmingDelete(true);
+              }}
+              aria-label={t("circle.deleteMessage")}
+              title={t("circle.deleteMessage")}
+              className="flex size-7 cursor-pointer items-center justify-center rounded-md border border-line bg-surface text-muted shadow-sm transition-colors hover:text-badge focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+            >
+              <Icon name="trash" size={15} />
+            </button>
+          )}
         </div>
       )}
       <div className="flex w-9 shrink-0 justify-center">
@@ -366,12 +465,61 @@ export function MessageItem({
             </span>
           </div>
         )}
-        {message.content !== "" && (
-          <MessageBody
-            body={message.content}
-            memberNames={memberNames}
-            mentionsEveryone={message.mentionsEveryone}
-          />
+        {editing ? (
+          <div>
+            <textarea
+              autoFocus
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  void saveEdit();
+                } else if (e.key === "Escape") {
+                  setEditing(false);
+                }
+              }}
+              rows={Math.min(6, Math.max(1, draft.split("\n").length))}
+              maxLength={2000}
+              aria-label={t("circle.editMessage")}
+              className="w-full resize-none rounded-xl border border-line bg-surface px-3 py-2 text-sm leading-relaxed text-ink focus:border-accent focus:outline-none"
+            />
+            <div className="flex flex-wrap items-center gap-2 pt-1 text-xs text-subtle">
+              <span>{t("circle.editHint")}</span>
+              <span className="flex-1" />
+              {editError && <span className="text-badge">{editError}</span>}
+              <button
+                type="button"
+                onClick={() => setEditing(false)}
+                className="cursor-pointer rounded-full px-2.5 py-1 font-medium text-muted transition-colors hover:bg-bg hover:text-ink focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+              >
+                {t("common.cancel")}
+              </button>
+              <button
+                type="button"
+                disabled={savingEdit || draft.trim() === message.content}
+                onClick={() => void saveEdit()}
+                className="cursor-pointer rounded-full bg-accent px-3 py-1 font-medium text-on-accent transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {t("common.save")}
+              </button>
+            </div>
+          </div>
+        ) : (
+          message.content !== "" && (
+            <MessageBody
+              body={message.content}
+              memberNames={memberNames}
+              mentionsEveryone={message.mentionsEveryone}
+              trailing={
+                message.editedAt ? (
+                  <span className="ml-1.5 text-[11px] text-subtle">
+                    {t("circle.edited")}
+                  </span>
+                ) : undefined
+              }
+            />
+          )
         )}
         {message.attachments.length > 0 && (
           <div className="mt-1.5 flex flex-col items-start gap-1.5 pb-1">
@@ -411,6 +559,11 @@ export function MessageItem({
               )
             )}
           </div>
+        )}
+        {message.editedAt && message.content === "" && (
+          <span className="block pt-0.5 text-[11px] text-subtle">
+            {t("circle.edited")}
+          </span>
         )}
       </div>
       {previewIdx !== null &&
@@ -519,6 +672,60 @@ export function MessageItem({
                   className="w-full cursor-pointer rounded-full px-4 py-2.5 text-sm font-semibold text-ink transition-colors hover:bg-bg focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
                 >
                   {t("circle.downloadWarningContinue")}
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
+      {confirmingDelete &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4"
+            role="alertdialog"
+            aria-modal="true"
+            aria-label={t("circle.deleteMessageTitle")}
+            onClick={() => setConfirmingDelete(false)}
+          >
+            <div
+              className="w-full max-w-sm rounded-2xl border border-line bg-surface p-5 shadow-xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h2 className="text-base font-semibold text-ink">
+                {t("circle.deleteMessageTitle")}
+              </h2>
+              <p className="pt-1.5 text-sm leading-relaxed text-muted">
+                {t("circle.deleteMessageBody")}
+              </p>
+              <div className="mt-3 rounded-xl bg-bg px-3 py-2">
+                <p className="truncate text-sm font-medium text-ink">
+                  {message.authorName}
+                </p>
+                <p className="line-clamp-3 text-sm whitespace-pre-wrap text-muted">
+                  {message.content !== ""
+                    ? message.content
+                    : (message.attachments[0]?.fileName ?? "")}
+                </p>
+              </div>
+              {deleteError && (
+                <p className="pt-2 text-xs text-badge">{deleteError}</p>
+              )}
+              <div className="flex items-center justify-end gap-2 pt-4">
+                <button
+                  type="button"
+                  disabled={deleting}
+                  onClick={() => setConfirmingDelete(false)}
+                  className="cursor-pointer rounded-full bg-accent px-4 py-2 text-sm font-semibold text-on-accent transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none disabled:opacity-50"
+                >
+                  {t("common.cancel")}
+                </button>
+                <button
+                  type="button"
+                  disabled={deleting}
+                  onClick={() => void confirmDelete()}
+                  className="cursor-pointer rounded-full px-4 py-2 text-sm font-semibold text-badge transition-colors hover:bg-badge/10 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none disabled:opacity-50"
+                >
+                  {t("common.delete")}
                 </button>
               </div>
             </div>

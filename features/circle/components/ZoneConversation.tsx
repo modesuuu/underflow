@@ -1,8 +1,17 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { getZoneMessages, sendZoneMessage } from "../api";
-import { subscribeZoneMessages } from "../store";
+import {
+  deleteZoneMessage,
+  editZoneMessage,
+  getZoneMessages,
+  sendZoneMessage,
+} from "../api";
+import {
+  subscribeZoneMessageDeletions,
+  subscribeZoneMessageUpdates,
+  subscribeZoneMessages,
+} from "../store";
 import { Composer } from "./Composer";
 import { MessageTimeline } from "./MessageTimeline";
 import type {
@@ -18,11 +27,26 @@ const PAGE_SIZE = 50;
 /** Fallback refresh cadence (the LivePoller pattern: WS first). */
 const POLL_MS = 5000;
 
+/** Whether two copies of the same message differ in anything the
+    reader can see (an edit, a lost quote, an attachment change). */
+function sameMessage(a: ZoneMessage, b: ZoneMessage): boolean {
+  return (
+    a.content === b.content &&
+    a.editedAt === b.editedAt &&
+    a.mentionsEveryone === b.mentionsEveryone &&
+    a.attachments.length === b.attachments.length &&
+    (a.replyTo?.id ?? null) === (b.replyTo?.id ?? null) &&
+    (a.replyTo?.content ?? null) === (b.replyTo?.content ?? null)
+  );
+}
+
 /**
  * Merge incoming messages into the current list by id, keeping the
  * backend's chronological order (createdAt, then id — the same
- * ordering the pagination cursor uses). Returns the current array
- * untouched when nothing is new, so renders stay cheap.
+ * ordering the pagination cursor uses). An incoming copy that
+ * differs from the loaded one replaces it (edits arrive this way).
+ * Returns the current array untouched when nothing changed, so
+ * renders stay cheap.
  */
 function mergeMessages(
   current: ZoneMessage[],
@@ -32,7 +56,8 @@ function mergeMessages(
   const byId = new Map(current.map((m) => [m.id, m]));
   let changed = false;
   for (const m of incoming) {
-    if (!byId.has(m.id)) {
+    const existing = byId.get(m.id);
+    if (!existing || !sameMessage(existing, m)) {
       byId.set(m.id, m);
       changed = true;
     }
@@ -47,6 +72,22 @@ function mergeMessages(
         ? -1
         : 1
   );
+}
+
+/**
+ * Drop one message locally (after a delete, own or live) and clear
+ * the quote on any loaded reply that pointed at it — the backend
+ * presents a deleted original as replyTo null too.
+ */
+function removeMessage(
+  current: ZoneMessage[],
+  messageId: string
+): ZoneMessage[] {
+  return current
+    .filter((m) => m.id !== messageId)
+    .map((m) =>
+      m.replyToId === messageId && m.replyTo ? { ...m, replyTo: null } : m
+    );
 }
 
 /**
@@ -189,6 +230,22 @@ export function ZoneConversation({
     });
   }, [circleId, zoneId]);
 
+  // Live edits for this zone (the updated copy replaces by id).
+  useEffect(() => {
+    return subscribeZoneMessageUpdates((event) => {
+      if (event.circleId !== circleId || event.zoneId !== zoneId) return;
+      setMessages((current) => mergeMessages(current, [event.message]));
+    });
+  }, [circleId, zoneId]);
+
+  // Live deletions for this zone.
+  useEffect(() => {
+    return subscribeZoneMessageDeletions((event) => {
+      if (event.circleId !== circleId || event.zoneId !== zoneId) return;
+      setMessages((current) => removeMessage(current, event.messageId));
+    });
+  }, [circleId, zoneId]);
+
   // Polling fallback: merge the newest page every few seconds.
   // LivePoller's socket makes this redundant while it is up, and
   // merging by id makes the overlap harmless.
@@ -200,7 +257,21 @@ export function ZoneConversation({
         try {
           const page = await getZoneMessages(circleId, zoneId, { limit: PAGE_SIZE });
           setMessages((current) => {
-            const merged = mergeMessages(current, page.messages);
+            let merged = mergeMessages(current, page.messages);
+            // A merge cannot express deletions: drop loaded
+            // messages inside the polled window (at or newer than
+            // the page's oldest message) that the page no longer
+            // returns — they were deleted since the last poll.
+            const windowStart = page.messages[0]?.createdAt;
+            if (windowStart) {
+              const pageIds = new Set(page.messages.map((m) => m.id));
+              merged = merged.filter(
+                (m) => m.createdAt < windowStart || pageIds.has(m.id)
+              );
+            } else if (page.messages.length === 0 && merged.length > 0) {
+              // The newest page is empty: the zone has no messages.
+              merged = [];
+            }
             // The poll page reaches the top of the loaded history:
             // its hasMore is the truth. Deeper (paginated) history
             // keeps the flag the last load-older call established.
@@ -251,6 +322,20 @@ export function ZoneConversation({
     setReplyingTo(null);
   };
 
+  const handleEdit = async (message: ZoneMessage, content: string) => {
+    const saved = await editZoneMessage(circleId, zoneId, message.id, content);
+    setMessages((current) => mergeMessages(current, [saved]));
+  };
+
+  const handleDelete = async (message: ZoneMessage) => {
+    await deleteZoneMessage(circleId, zoneId, message.id);
+    setMessages((current) => removeMessage(current, message.id));
+    if (replyingTo?.id === message.id) setReplyingTo(null);
+  };
+
+  const canModerate =
+    detail.members.find((m) => m.userId === myId)?.isOwner ?? false;
+
   if (phase === "loading") {
     return (
       <div className="flex flex-1 flex-col">
@@ -296,6 +381,10 @@ export function ZoneConversation({
         }
         firstUnreadId={firstUnreadId}
         unreadCount={readSnapshot.unreadCount}
+        currentUserId={myId}
+        canModerate={canModerate}
+        onEdit={handleEdit}
+        onDelete={handleDelete}
       />
       <Composer
         zone={zone}

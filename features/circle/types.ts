@@ -91,6 +91,8 @@ export interface ZoneMessage {
   content: string;
   /** Backend DATETIME string ("YYYY-MM-DD HH:mm:ss", server time). */
   createdAt: string;
+  /** When the text was last edited (null = never edited). */
+  editedAt: string | null;
   /** Id of the quoted message when this message is a reply. */
   replyToId: string | null;
   /** The quoted original (null when this is not a reply, or the
