@@ -21,6 +21,7 @@ export function ZoneSidebar({
   onCreateZone,
   onZoneSettings,
   onOpenCircleSettings,
+  onJumpToMention,
 }: {
   detail: CircleDetail;
   zoneId: string;
@@ -30,6 +31,7 @@ export function ZoneSidebar({
   onCreateZone: () => void;
   onZoneSettings: (zone: CircleZone) => void;
   onOpenCircleSettings: () => void;
+  onJumpToMention?: (zone: CircleZone) => void;
 }) {
   const { t } = useLanguage();
   return (
@@ -109,6 +111,24 @@ export function ZoneSidebar({
                     className="shrink-0 text-subtle"
                   />
                 )}
+                {zone.mentionCount > 0 && (
+                  <span
+                    role="button"
+                    aria-label={t("circle.mentionJump", {
+                      count: zone.mentionCount,
+                    })}
+                    title={t("circle.mentionJump", {
+                      count: zone.mentionCount,
+                    })}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onJumpToMention?.(zone);
+                    }}
+                    className="shrink-0 cursor-pointer rounded-full bg-badge px-1.5 py-0.5 text-[10px] leading-none font-bold text-white"
+                  >
+                    @{zone.mentionCount}
+                  </span>
+                )}
               </button>
               {isOwner && (
                 <button
@@ -135,12 +155,14 @@ export function ZoneSwitcher({
   onSelectZone,
   isOwner,
   onCreateZone,
+  onJumpToMention,
 }: {
   detail: CircleDetail;
   zoneId: string;
   onSelectZone: (zoneId: string) => void;
   isOwner: boolean;
   onCreateZone: () => void;
+  onJumpToMention?: (zone: CircleZone) => void;
 }) {
   const { t } = useLanguage();
   return (
@@ -174,6 +196,23 @@ export function ZoneSwitcher({
             >
               {zone.title}
             </span>
+            {zone.mentionCount > 0 && (
+              <span
+                role="button"
+                aria-label={t("circle.mentionJump", {
+                  count: zone.mentionCount,
+                })}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onJumpToMention?.(zone);
+                }}
+                className={`shrink-0 cursor-pointer rounded-full px-1.5 py-0.5 text-[10px] leading-none font-bold ${
+                  active ? "bg-white/25 text-on-accent" : "bg-badge text-white"
+                }`}
+              >
+                @{zone.mentionCount}
+              </span>
+            )}
           </button>
         );
       })}

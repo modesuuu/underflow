@@ -93,6 +93,13 @@ export function CircleWorkspace({
       ) {
         return;
       }
+      const myName = sessionUser?.username ?? "";
+      const mentionsMe =
+        event.message.mentionsEveryone ||
+        (myName !== "" &&
+          new RegExp(
+            `(^|\\s)@${myName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?=$|[\\s.,!?;:])`
+          ).test(event.message.content));
       if (open && event.circleId === open.id) {
         setDetail((prev) =>
           prev && prev.id === event.circleId
@@ -100,7 +107,16 @@ export function CircleWorkspace({
                 ...prev,
                 zones: prev.zones.map((z) =>
                   z.id === event.zoneId
-                    ? { ...z, unreadCount: z.unreadCount + 1 }
+                    ? {
+                        ...z,
+                        unreadCount: z.unreadCount + 1,
+                        ...(mentionsMe
+                          ? {
+                              mentionCount: z.mentionCount + 1,
+                              firstMentionId: z.firstMentionId ?? event.message.id,
+                            }
+                          : {}),
+                      }
                     : z
                 ),
               }
@@ -111,7 +127,11 @@ export function CircleWorkspace({
         prev
           ? prev.map((c) =>
               c.id === event.circleId
-                ? { ...c, unreadCount: c.unreadCount + 1 }
+                ? {
+                    ...c,
+                    unreadCount: c.unreadCount + 1,
+                    mentionCount: c.mentionCount + (mentionsMe ? 1 : 0),
+                  }
                 : c
             )
           : prev
@@ -234,6 +254,7 @@ export function CircleWorkspace({
                 title: created.title,
                 photoProfileUrl: created.photoUrl,
                 unreadCount: 0,
+                mentionCount: 0,
                 status: created.status,
                 isOwner: true,
                 memberNames: created.members.map((m) => m.name),
@@ -340,6 +361,24 @@ export function CircleWorkspace({
     }
   };
 
+  // Mention jump: the zone rows carry a pill with the mention
+  // count; activating it selects the zone and asks its
+  // conversation to scroll to the first mentioning message.
+  const [jumpRequest, setJumpRequest] = useState<{
+    zoneId: string;
+    messageId: string;
+    nonce: number;
+  } | null>(null);
+  const handleJumpToMention = (z: CircleZone) => {
+    if (!z.firstMentionId) return;
+    setSelectedZoneId(z.id);
+    setJumpRequest({
+      zoneId: z.id,
+      messageId: z.firstMentionId,
+      nonce: Date.now(),
+    });
+  };
+
   const markCurrentZoneRead = (newestCreatedAt?: string) => {
     if (!detail || !selectedZoneId) return;
     const zone = detail.zones.find((z) => z.id === selectedZoneId);
@@ -347,6 +386,7 @@ export function CircleWorkspace({
     const circleId = detail.id;
     const zoneId = zone.id;
     const count = zone.unreadCount;
+    const mentions = zone.mentionCount;
     setDetail((prev) =>
       prev
         ? {
@@ -357,6 +397,8 @@ export function CircleWorkspace({
                     ...z,
                     unreadCount: 0,
                     lastRead: newestCreatedAt ?? z.lastRead,
+                    mentionCount: 0,
+                    firstMentionId: null,
                   }
                 : z
             ),
@@ -367,7 +409,11 @@ export function CircleWorkspace({
       prev
         ? prev.map((c) =>
             c.id === circleId
-              ? { ...c, unreadCount: Math.max(0, c.unreadCount - count) }
+              ? {
+                  ...c,
+                  unreadCount: Math.max(0, c.unreadCount - count),
+                  mentionCount: Math.max(0, c.mentionCount - mentions),
+                }
               : c
           )
         : prev
@@ -494,6 +540,7 @@ export function CircleWorkspace({
               onCreateZone={() => setShowCreateZone(true)}
               onZoneSettings={setSettingsZone}
               onOpenCircleSettings={() => setShowCircleSettings(true)}
+              onJumpToMention={handleJumpToMention}
             />
             <div className="flex min-w-0 flex-1 flex-col">
               <ZoneHeader
@@ -510,12 +557,18 @@ export function CircleWorkspace({
                 onSelectZone={setSelectedZoneId}
                 isOwner={isOwner}
                 onCreateZone={() => setShowCreateZone(true)}
+                onJumpToMention={handleJumpToMention}
               />
               <ZoneConversation
                 key={`${detail.id}:${zone.id}`}
                 detail={detail}
                 zone={zone}
                 onSeenNewest={markCurrentZoneRead}
+                jumpTo={
+                  jumpRequest && jumpRequest.zoneId === zone.id
+                    ? jumpRequest
+                    : null
+                }
               />
             </div>
             {renderPanel && (

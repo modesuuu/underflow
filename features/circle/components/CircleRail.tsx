@@ -92,6 +92,14 @@ export function CircleRail({
                     {circle.unreadCount > 99 ? "99+" : circle.unreadCount}
                   </span>
                 )}
+                {circle.mentionCount > 0 && (
+                  <span
+                    aria-hidden="true"
+                    className="absolute -top-1.5 -right-1.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full border-2 border-bg bg-badge px-1 text-[10px] leading-none font-bold text-white"
+                  >
+                    @
+                  </span>
+                )}
               </span>
             </button>
           );

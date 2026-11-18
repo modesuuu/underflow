@@ -1,6 +1,6 @@
 "use client";
 
-import { useLayoutEffect, useRef } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { Icon } from "@/components/ui/Icon";
 import { MessageItem } from "./MessageItem";
 import { NewMessagesDivider } from "./NewMessagesDivider";
@@ -26,9 +26,13 @@ function isContinuation(prev: ZoneMessage, next: ZoneMessage): boolean {
  * says more history exists, and the welcome empty state while the
  * zone has no messages at all.
  *
- * Scroll behaviour: the first load lands at the bottom; new messages
- * keep the view pinned only when the reader is already near the
+ * Scroll behaviour: the first load lands on the first unread
+ * message when the zone was opened with unreads (Discord opens at
+ * the NEW divider), otherwise at the bottom; new messages keep
+ * the view pinned only when the reader is already near the
  * bottom; loading older messages preserves the reading position.
+ * A floating button offers the jump back to the newest message
+ * whenever the reader has scrolled away from the bottom.
  */
 export function MessageTimeline({
   messages,
@@ -53,6 +57,19 @@ export function MessageTimeline({
 }) {
   const { t } = useLanguage();
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [showJump, setShowJump] = useState(false);
+
+  const handleScroll = () => {
+    const el = scrollRef.current;
+    if (!el) return;
+    setShowJump(el.scrollHeight - el.scrollTop - el.clientHeight > 240);
+  };
+
+  const jumpToBottom = () => {
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+  };
   const prevRef = useRef<{ count: number; firstId: string | null; height: number; top: number }>({
     count: 0,
     firstId: null,
@@ -66,8 +83,21 @@ export function MessageTimeline({
     const prev = prevRef.current;
     const firstId = messages[0]?.id ?? null;
     if (prev.count === 0 && messages.length > 0) {
-      // First load: land at the newest message.
-      el.scrollTop = el.scrollHeight;
+      // First load: land on the first unread message when there
+      // is one (Discord opens at the NEW divider), else at the
+      // newest message.
+      const target = firstUnreadId
+        ? el.querySelector<HTMLElement>(`[id="zone-msg-${firstUnreadId}"]`)
+        : null;
+      if (target) {
+        el.scrollTop =
+          target.getBoundingClientRect().top -
+          el.getBoundingClientRect().top +
+          el.scrollTop -
+          44;
+      } else {
+        el.scrollTop = el.scrollHeight;
+      }
     } else if (firstId !== prev.firstId && messages.length > prev.count) {
       // Older page prepended: keep the same messages in view.
       el.scrollTop = prev.top + (el.scrollHeight - prev.height);
@@ -82,7 +112,7 @@ export function MessageTimeline({
       height: el.scrollHeight,
       top: el.scrollTop,
     };
-  }, [messages]);
+  }, [messages, firstUnreadId]);
 
   const dayLabel = (iso: string): string => {
     const d = new Date(iso);
@@ -117,7 +147,12 @@ export function MessageTimeline({
   }
 
   return (
-    <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto py-4">
+    <div className="relative flex min-h-0 flex-1 flex-col">
+      <div
+        ref={scrollRef}
+        onScroll={handleScroll}
+        className="min-h-0 flex-1 overflow-y-auto py-4"
+      >
       {hasMore && (
         <div className="flex justify-center pb-3">
           <button
@@ -161,6 +196,18 @@ export function MessageTimeline({
           </div>
         );
       })}
+      </div>
+      {showJump && (
+        <button
+          type="button"
+          onClick={jumpToBottom}
+          aria-label={t("circle.jumpToBottom")}
+          title={t("circle.jumpToBottom")}
+          className="absolute right-4 bottom-4 flex size-10 cursor-pointer items-center justify-center rounded-full bg-accent text-on-accent shadow-lg transition-transform hover:scale-105 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+        >
+          <Icon name="chevron-down" size={20} />
+        </button>
+      )}
     </div>
   );
 }

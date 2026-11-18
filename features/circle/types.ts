@@ -16,6 +16,11 @@ export interface CircleZone {
   unreadCount: number;
   /** Read up to this timestamp (zone_reads); null if never read. */
   lastRead: string | null;
+  /** Unread messages that mention the user (@username, or a
+      certified @everyone from the owner). */
+  mentionCount: number;
+  /** Earliest unread mentioning message (jump target). */
+  firstMentionId: string | null;
 }
 
 export interface CircleMember {
@@ -43,6 +48,7 @@ export interface CircleSummary {
   title: string;
   photoProfileUrl: string | null;
   unreadCount: number;
+  mentionCount: number;
   status: string;
   isOwner: boolean;
   memberNames: string[];

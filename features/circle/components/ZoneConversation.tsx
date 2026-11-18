@@ -55,10 +55,12 @@ export function ZoneConversation({
   detail,
   zone,
   onSeenNewest,
+  jumpTo = null,
 }: {
   detail: CircleDetail;
   zone: CircleZone;
   onSeenNewest?: (newestCreatedAt: string) => void;
+  jumpTo?: { messageId: string; nonce: number } | null;
 }) {
   const { t } = useLanguage();
   const [messages, setMessages] = useState<ZoneMessage[]>([]);
@@ -94,9 +96,34 @@ export function ZoneConversation({
   const loadInitial = useCallback(async () => {
     setPhase("loading");
     try {
-      const page = await getZoneMessages(circleId, zoneId, { limit: PAGE_SIZE });
-      setMessages(page.messages);
-      setHasMore(page.hasMore);
+      let page = await getZoneMessages(circleId, zoneId, { limit: PAGE_SIZE });
+      let all = page.messages;
+      let more = page.hasMore;
+      // Discord opens a zone at its first unread message, so when
+      // this zone was opened with unreads, pull older pages until
+      // the loaded window crosses the read boundary (bounded, so
+      // a huge backlog cannot stall the open). The zone object is
+      // the entry snapshot: this closure keeps the first render's.
+      const since = zone.lastRead;
+      let guard = 0;
+      while (
+        zone.unreadCount > 0 &&
+        more &&
+        guard < 10 &&
+        (since === null || !all.some((m) => m.createdAt <= since))
+      ) {
+        const oldest = all[0];
+        if (!oldest) break;
+        guard++;
+        page = await getZoneMessages(circleId, zoneId, {
+          limit: PAGE_SIZE,
+          before: oldest,
+        });
+        all = mergeMessages(all, page.messages);
+        more = page.hasMore;
+      }
+      setMessages(all);
+      setHasMore(more);
       setPhase("ready");
     } catch {
       setPhase("error");
@@ -116,6 +143,38 @@ export function ZoneConversation({
     seenRef.current = newest.id;
     onSeenNewest?.(newest.createdAt);
   }, [messages, onSeenNewest]);
+
+  // Mention jump: when the workspace asks (zone-row pill), make
+  // sure the target message is inside the loaded window, then
+  // scroll to it and flash it, like the reply jump.
+  useEffect(() => {
+    if (!jumpTo || phase !== "ready") return;
+    let cancelled = false;
+    void (async () => {
+      let guard = 0;
+      while (
+        !cancelled &&
+        guard < 20 &&
+        !stateRef.current.messages.some((m) => m.id === jumpTo.messageId) &&
+        stateRef.current.hasMore
+      ) {
+        guard++;
+        await loadOlder();
+        await new Promise((r) => window.setTimeout(r, 60));
+      }
+      if (cancelled) return;
+      const el = document.getElementById(`zone-msg-${jumpTo.messageId}`);
+      if (!el) return;
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      el.style.backgroundColor = "var(--uf-active)";
+      window.setTimeout(() => {
+        el.style.backgroundColor = "";
+      }, 1500);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [jumpTo, phase]);
 
   // Live pushes for this zone.
   useEffect(() => {
