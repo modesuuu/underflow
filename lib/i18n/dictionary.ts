@@ -807,9 +807,6 @@ export const en = {
 
   // Circle
   "circle.channels": "Channels",
-    "circle.reply": "Reply",
-    "circle.replyingTo": "Replying to {name}",
-    "circle.cancelReply": "Cancel reply",
     "circle.replyUnavailable": "Original message is unavailable",
     "circle.addZone": "Add zone",
     "circle.createZone": "Create Zone",
@@ -1045,7 +1042,7 @@ export const en = {
   "mycollab.revisionRequestedBar": "Revision requested by the owner",
   "mycollab.closedBar": "Closed",
   "mycollab.dueLabel": "Due {date}",
-  "circle.replyingTo": "Replying to",
+  "circle.replyingTo": "Replying to {name}",
   "circle.unknown": "Unknown",
   "circle.messageChannelLabel": "Message #{channel}",
   "circle.announcementPlaceholder": "Post an announcement",
@@ -1886,9 +1883,6 @@ export const id: Record<DictKey, string> = {
 
   // Circle
   "circle.channels": "Saluran",
-    "circle.reply": "Balas",
-    "circle.replyingTo": "Membalas {name}",
-    "circle.cancelReply": "Batalkan balasan",
     "circle.replyUnavailable": "Pesan asli tidak tersedia",
     "circle.addZone": "Tambah zone",
     "circle.createZone": "Buat Zone",
@@ -2124,7 +2118,7 @@ export const id: Record<DictKey, string> = {
   "mycollab.revisionRequestedBar": "Revisi diminta oleh pemilik",
   "mycollab.closedBar": "Ditutup",
   "mycollab.dueLabel": "Tenggat {date}",
-  "circle.replyingTo": "Membalas",
+  "circle.replyingTo": "Membalas {name}",
   "circle.unknown": "Tidak dikenal",
   "circle.messageChannelLabel": "Pesan #{channel}",
   "circle.announcementPlaceholder": "Posting pengumuman",
