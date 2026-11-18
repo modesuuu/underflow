@@ -27,6 +27,8 @@ import {
   applyRealtimeInboxUpdate,
   refreshConversations,
 } from "@/features/inbox/store";
+import { applyRealtimeZoneMessage } from "@/features/circle/store";
+import type { ZoneMessage } from "@/features/circle/types";
 import type { BackendInboxMessage } from "@/features/inbox/api";
 
 /**
@@ -330,6 +332,23 @@ export function LivePoller() {
           const conversationId = msg.payload?.conversationId;
           if (typeof conversationId === "string") {
             applyRealtimeInboxUpdate(conversationId);
+          }
+          return;
+        }
+        if (msg.type === "zone-message") {
+          const circleId = msg.payload?.circleId;
+          const zoneId = msg.payload?.zoneId;
+          const message = msg.payload?.message;
+          if (
+            typeof circleId === "string" &&
+            typeof zoneId === "string" &&
+            message
+          ) {
+            applyRealtimeZoneMessage({
+              circleId,
+              zoneId,
+              message: message as unknown as ZoneMessage,
+            });
           }
           return;
         }

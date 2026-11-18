@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Icon } from "@/components/ui/Icon";
 import { setPanelOpen, usePanelState } from "../store";
 import { ZoneHeader } from "./ZoneHeader";
 import { ZoneSidebar, ZoneSwitcher } from "./ZoneSidebar";
 import { CirclePanel } from "./CirclePanel";
+import { ZoneConversation } from "./ZoneConversation";
 import type { CircleDetail } from "../types";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 
@@ -14,8 +14,8 @@ import { useLanguage } from "@/lib/i18n/LanguageProvider";
  * collapsible right panel. Below 1280px the panel becomes an overlay
  * from the right; below lg the zone rail becomes a switcher row.
  * Panel visibility: the store override wins, otherwise open at
- * >=1280px. The zone body is an empty state — messaging endpoints
- * land in Phase 2, so there is no timeline and no composer yet.
+ * >=1280px. The zone body is the Phase 2 conversation (timeline +
+ * composer), keyed by zone so switching zones remounts it fresh.
  */
 export function CircleShell({
   detail,
@@ -69,25 +69,7 @@ export function CircleShell({
           panelVisible={panelVisible}
         />
         <ZoneSwitcher detail={detail} zoneId={zone.id} />
-        <div className="flex flex-1 flex-col items-center justify-center gap-2 px-6 py-16 text-center">
-          <span className="flex size-12 items-center justify-center rounded-full bg-bg text-subtle">
-            <Icon name="conversation" size={22} />
-          </span>
-          <p className="text-base font-medium text-ink">
-            {t("circle.zoneEmptyTitle", { zone: zone.title })}
-          </p>
-          <p className="max-w-sm text-sm text-muted">
-            {zone.title === "announcements"
-              ? t("circle.zoneEmptyAnnouncements")
-              : t("circle.zoneEmptyGeneral")}
-          </p>
-          {!zone.memberCanPost && (
-            <p className="flex items-center gap-1.5 text-xs text-subtle">
-              <Icon name="lock" size={12} />
-              {t("circle.zoneReadOnly")}
-            </p>
-          )}
-        </div>
+        <ZoneConversation key={zone.id} detail={detail} zone={zone} />
       </div>
       {renderPanel && (
         <>

@@ -3,14 +3,14 @@
 // belongs to one collaboration, holds Zones, and is reachable only by
 // the owner + accepted members. The owner opts in — at collab creation
 // or later — so a collaboration may have no Circle at all. Messaging
-// types arrive with the Phase 2 endpoints; nothing here invents them.
+// types arrived with the Phase 2 endpoints (ZoneMessage below).
 
 export interface CircleZone {
   id: string;
   title: string;
   /** Resolved by the backend for the requesting user. */
   memberCanPost: boolean;
-  /** Last-read message id; null until messaging lands (Phase 2). */
+  /** Last-read message id; read state is a later phase, still null. */
   lastRead: string | null;
 }
 
@@ -41,4 +41,22 @@ export interface CircleSummary {
   isOwner: boolean;
   memberNames: string[];
   memberCount: number;
+}
+
+/** One zone message (GET/POST /api/circles/:id/zones/:zoneId/messages). */
+export interface ZoneMessage {
+  id: string;
+  zoneId: string;
+  authorId: string;
+  authorName: string;
+  authorAvatarUrl: string | null;
+  content: string;
+  /** Backend DATETIME string ("YYYY-MM-DD HH:mm:ss", server time). */
+  createdAt: string;
+}
+
+/** One page of zone history: chronological order + older-page flag. */
+export interface ZoneMessagePage {
+  messages: ZoneMessage[];
+  hasMore: boolean;
 }
