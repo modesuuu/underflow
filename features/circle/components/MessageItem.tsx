@@ -1,9 +1,38 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { Avatar } from "@/components/ui/Avatar";
 import { Icon } from "@/components/ui/Icon";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
-import type { ZoneMessage } from "../types";
+import type { ZoneMessage, ZoneMessageAttachment } from "../types";
+
+/**
+ * Where a document card points. Office documents get Cloudinary's
+ * fl_attachment flag (file name WITHOUT its extension — Cloudinary
+ * appends the real one) so the browser saves the file under its
+ * original name instead of the random public_id. PDFs keep the
+ * plain URL so they open in the browser's built-in viewer.
+ */
+function attachmentHref(a: ZoneMessageAttachment): string {
+  if (a.kind !== "document") return a.url;
+  const ext = a.fileName.split(".").pop()?.toLowerCase() ?? "";
+  if (ext === "pdf") return a.url;
+  const marker = "/upload/";
+  const at = a.url.indexOf(marker);
+  if (at === -1) return a.url;
+  const base =
+    a.fileName
+      .slice(0, a.fileName.length - ext.length - 1)
+      .replace(/[^\w\-]+/g, "_") || "file";
+  return (
+    a.url.slice(0, at + marker.length) +
+    "fl_attachment:" +
+    base +
+    "/" +
+    a.url.slice(at + marker.length)
+  );
+}
 
 /** "812 B" / "24.1 KB" / "3.2 MB" for attachment chips and cards. */
 export function formatFileSize(bytes: number): string {
@@ -152,6 +181,27 @@ export function MessageItem({
 }) {
   const { t } = useLanguage();
   const reply = message.replyTo;
+  const images = message.attachments.filter((a) => a.kind === "image");
+  const [previewIdx, setPreviewIdx] = useState<number | null>(null);
+
+  // Lightbox keys: Escape closes, arrows walk this message's images.
+  useEffect(() => {
+    if (previewIdx === null) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setPreviewIdx(null);
+      if (e.key === "ArrowLeft") {
+        setPreviewIdx((i) =>
+          i === null ? i : (i - 1 + images.length) % images.length
+        );
+      }
+      if (e.key === "ArrowRight") {
+        setPreviewIdx((i) => (i === null ? i : (i + 1) % images.length));
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [previewIdx, images.length]);
+
   return (
     <div
       id={`zone-msg-${message.id}`}
@@ -228,12 +278,12 @@ export function MessageItem({
           <div className="mt-1.5 flex flex-col items-start gap-1.5 pb-1">
             {message.attachments.map((a) =>
               a.kind === "image" ? (
-                <a
+                <button
                   key={a.id}
-                  href={a.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="block overflow-hidden rounded-lg border border-line focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+                  type="button"
+                  onClick={() => setPreviewIdx(images.indexOf(a))}
+                  aria-label={a.fileName}
+                  className="block cursor-pointer overflow-hidden rounded-lg border border-line focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
@@ -242,11 +292,11 @@ export function MessageItem({
                     loading="lazy"
                     className="max-h-64 w-auto max-w-full object-contain"
                   />
-                </a>
+                </button>
               ) : (
                 <a
                   key={a.id}
-                  href={a.url}
+                  href={attachmentHref(a)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex max-w-full items-center gap-2.5 rounded-lg border border-line bg-surface px-3 py-2 transition-colors hover:bg-bg focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
@@ -267,6 +317,70 @@ export function MessageItem({
           </div>
         )}
       </div>
+      {previewIdx !== null &&
+        images[previewIdx] &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/85 p-4 sm:p-8"
+            role="dialog"
+            aria-modal="true"
+            aria-label={images[previewIdx].fileName}
+            onClick={() => setPreviewIdx(null)}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={images[previewIdx].url}
+              alt={images[previewIdx].fileName}
+              className="max-h-full max-w-full rounded-lg object-contain"
+              onClick={(e) => e.stopPropagation()}
+            />
+            <div className="absolute inset-x-0 top-0 flex items-center justify-between gap-3 p-4">
+              <span className="min-w-0 truncate text-sm font-medium text-white/90">
+                {images[previewIdx].fileName}
+              </span>
+              <button
+                type="button"
+                aria-label={t("circle.closePreview")}
+                onClick={() => setPreviewIdx(null)}
+                className="flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20 focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none"
+              >
+                <Icon name="x" size={18} />
+              </button>
+            </div>
+            {images.length > 1 && (
+              <>
+                <button
+                  type="button"
+                  aria-label={t("circle.previousImage")}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setPreviewIdx(
+                      (previewIdx - 1 + images.length) % images.length
+                    );
+                  }}
+                  className="absolute top-1/2 left-3 flex size-10 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20 focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none"
+                >
+                  <Icon name="chevron-left" size={22} />
+                </button>
+                <button
+                  type="button"
+                  aria-label={t("circle.nextImage")}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setPreviewIdx((previewIdx + 1) % images.length);
+                  }}
+                  className="absolute top-1/2 right-3 flex size-10 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20 focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none"
+                >
+                  <Icon name="chevron-right" size={22} />
+                </button>
+                <span className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full bg-white/10 px-2.5 py-1 text-xs text-white">
+                  {previewIdx + 1} / {images.length}
+                </span>
+              </>
+            )}
+          </div>,
+          document.body
+        )}
     </div>
   );
 }
