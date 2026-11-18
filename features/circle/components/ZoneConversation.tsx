@@ -1,12 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getZoneMessages, sendZoneMessage } from "../api";
 import { subscribeZoneMessages } from "../store";
 import { Composer } from "./Composer";
 import { MessageTimeline } from "./MessageTimeline";
 import type { CircleDetail, CircleZone, ZoneMessage } from "../types";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
+import { useSessionUser } from "@/features/auth/store";
 
 const PAGE_SIZE = 50;
 /** Fallback refresh cadence (the LivePoller pattern: WS first). */
@@ -57,7 +58,7 @@ export function ZoneConversation({
 }: {
   detail: CircleDetail;
   zone: CircleZone;
-  onSeenNewest?: () => void;
+  onSeenNewest?: (newestCreatedAt: string) => void;
 }) {
   const { t } = useLanguage();
   const [messages, setMessages] = useState<ZoneMessage[]>([]);
@@ -65,6 +66,25 @@ export function ZoneConversation({
   const [phase, setPhase] = useState<"loading" | "ready" | "error">("loading");
   const [loadingOlder, setLoadingOlder] = useState(false);
   const [replyingTo, setReplyingTo] = useState<ZoneMessage | null>(null);
+  const sessionUser = useSessionUser();
+  const myId = sessionUser?.id ?? null;
+  // Read-state snapshot, frozen when this zone view opens. The
+  // workspace marks the zone read as soon as messages render, which
+  // advances the live zone values; the NEW divider must keep
+  // pointing at the boundary as it was on entry (Discord behaviour),
+  // so it is computed from this frozen copy, never the live props.
+  const [readSnapshot] = useState(() => ({
+    lastRead: zone.lastRead,
+    unreadCount: zone.unreadCount,
+  }));
+  const firstUnreadId = useMemo(() => {
+    if (readSnapshot.unreadCount <= 0 || !myId) return null;
+    const since = readSnapshot.lastRead;
+    const hit = messages.find(
+      (m) => m.authorId !== myId && (since === null || m.createdAt > since)
+    );
+    return hit?.id ?? null;
+  }, [messages, readSnapshot, myId]);
   const circleId = detail.id;
   const zoneId = zone.id;
   const memberNames = detail.members.map((m) => m.name);
@@ -94,7 +114,7 @@ export function ZoneConversation({
     const newest = messages[messages.length - 1];
     if (!newest || seenRef.current === newest.id) return;
     seenRef.current = newest.id;
-    onSeenNewest?.();
+    onSeenNewest?.(newest.createdAt);
   }, [messages, onSeenNewest]);
 
   // Live pushes for this zone.
@@ -205,6 +225,7 @@ export function ZoneConversation({
         onReply={
           zone.memberCanPost ? (m) => setReplyingTo(m) : undefined
         }
+        firstUnreadId={firstUnreadId}
       />
       <Composer
         zone={zone}

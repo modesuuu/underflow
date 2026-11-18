@@ -340,7 +340,7 @@ export function CircleWorkspace({
     }
   };
 
-  const markCurrentZoneRead = () => {
+  const markCurrentZoneRead = (newestCreatedAt?: string) => {
     if (!detail || !selectedZoneId) return;
     const zone = detail.zones.find((z) => z.id === selectedZoneId);
     if (!zone || zone.unreadCount === 0) return;
@@ -352,7 +352,13 @@ export function CircleWorkspace({
         ? {
             ...prev,
             zones: prev.zones.map((z) =>
-              z.id === zoneId ? { ...z, unreadCount: 0 } : z
+              z.id === zoneId
+                ? {
+                    ...z,
+                    unreadCount: 0,
+                    lastRead: newestCreatedAt ?? z.lastRead,
+                  }
+                : z
             ),
           }
         : prev

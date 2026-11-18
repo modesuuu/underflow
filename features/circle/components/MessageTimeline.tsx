@@ -3,6 +3,7 @@
 import { useLayoutEffect, useRef } from "react";
 import { Icon } from "@/components/ui/Icon";
 import { MessageItem } from "./MessageItem";
+import { NewMessagesDivider } from "./NewMessagesDivider";
 import type { CircleZone, ZoneMessage } from "../types";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 
@@ -37,6 +38,7 @@ export function MessageTimeline({
   loadingOlder,
   onLoadOlder,
   onReply,
+  firstUnreadId = null,
 }: {
   messages: ZoneMessage[];
   memberNames: string[];
@@ -45,6 +47,7 @@ export function MessageTimeline({
   loadingOlder: boolean;
   onLoadOlder: () => void;
   onReply?: (message: ZoneMessage) => void;
+  firstUnreadId?: string | null;
 }) {
   const { t } = useLanguage();
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -132,6 +135,8 @@ export function MessageTimeline({
         // quote needs the author header under it.
         const continuation =
           !!prev && !newDay && !message.replyToId && isContinuation(prev, message);
+        const isFirstUnread =
+          firstUnreadId !== null && message.id === firstUnreadId;
         return (
           <div key={message.id}>
             {newDay && (
@@ -143,11 +148,12 @@ export function MessageTimeline({
                 <span className="h-px flex-1 bg-line" />
               </div>
             )}
+            {isFirstUnread && <NewMessagesDivider />}
             <MessageItem
               message={message}
               memberNames={memberNames}
               isContinuation={continuation}
-              groupStart={!!prev && !newDay && !continuation}
+              groupStart={!!prev && !newDay && !continuation && !isFirstUnread}
               onReply={onReply}
             />
           </div>

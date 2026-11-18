@@ -14,7 +14,7 @@ export interface CircleZone {
   allowPublicMessage: boolean;
   /** Messages from others the user has not read yet. */
   unreadCount: number;
-  /** Last-read message id; read state is a later phase, still null. */
+  /** Read up to this timestamp (zone_reads); null if never read. */
   lastRead: string | null;
 }
 
