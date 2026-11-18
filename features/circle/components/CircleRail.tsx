@@ -76,7 +76,16 @@ export function CircleRail({
                     : "border border-line bg-surface text-ink group-hover:border-accent group-hover:text-accent"
                 }`}
               >
-                {initialsOf(circle.title)}
+                {circle.photoProfileUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={circle.photoProfileUrl}
+                    alt=""
+                    className="size-11 rounded-[14px] object-cover"
+                  />
+                ) : (
+                  initialsOf(circle.title)
+                )}
               </span>
             </button>
           );

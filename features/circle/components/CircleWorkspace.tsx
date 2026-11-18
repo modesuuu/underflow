@@ -184,6 +184,7 @@ export function CircleWorkspace({
                 id: created.id,
                 projectId: created.projectId,
                 title: created.title,
+                photoProfileUrl: created.photoUrl,
                 status: created.status,
                 isOwner: true,
                 memberNames: created.members.map((m) => m.name),
@@ -245,7 +246,13 @@ export function CircleWorkspace({
     setCircles((prev) =>
       prev
         ? prev.map((c) =>
-            c.id === fresh.id ? { ...c, title: fresh.title } : c
+            c.id === fresh.id
+              ? {
+                  ...c,
+                  title: fresh.title,
+                  photoProfileUrl: fresh.photoUrl,
+                }
+              : c
           )
         : prev
     );

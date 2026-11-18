@@ -39,6 +39,7 @@ export interface CircleSummary {
   id: string;
   projectId: string;
   title: string;
+  photoProfileUrl: string | null;
   status: string;
   isOwner: boolean;
   memberNames: string[];
