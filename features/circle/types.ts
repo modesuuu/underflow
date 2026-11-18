@@ -73,6 +73,10 @@ export interface ZoneMessage {
   /** The quoted original (null when this is not a reply, or the
       original no longer exists). */
   replyTo: ZoneReplyPreview | null;
+  /** Certified by the backend: content tags @everyone AND the
+      author is the circle owner. A member typing @everyone just
+      sends plain text (Discord rule). */
+  mentionsEveryone: boolean;
 }
 
 /** One page of zone history: chronological order + older-page flag. */

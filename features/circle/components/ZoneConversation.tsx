@@ -233,6 +233,10 @@ export function ZoneConversation({
         onSend={handleSend}
         replyingTo={replyingTo}
         onCancelReply={() => setReplyingTo(null)}
+        members={detail.members}
+        canEveryone={
+          detail.members.find((m) => m.userId === myId)?.isOwner ?? false
+        }
       />
     </div>
   );

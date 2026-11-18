@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Icon } from "@/components/ui/Icon";
-import type { CircleZone, ZoneMessage } from "../types";
+import { Avatar } from "@/components/ui/Avatar";
+import type { CircleMember, CircleZone, ZoneMessage } from "../types";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 
 const MAX_LENGTH = 2000;
@@ -21,11 +22,15 @@ export function Composer({
   onSend,
   replyingTo = null,
   onCancelReply,
+  members = [],
+  canEveryone = false,
 }: {
   zone: CircleZone;
   onSend: (content: string, replyToId?: string | null) => Promise<void>;
   replyingTo?: ZoneMessage | null;
   onCancelReply?: () => void;
+  members?: CircleMember[];
+  canEveryone?: boolean;
 }) {
   const { t } = useLanguage();
   const [value, setValue] = useState("");
@@ -37,6 +42,65 @@ export function Composer({
   useEffect(() => {
     if (replyingTo) inputRef.current?.focus();
   }, [replyingTo]);
+
+  // @-mention autocomplete (Discord-style): while the caret sits
+  // right after an @word, offer the circle members it matches,
+  // plus @everyone when the user is the owner. Enter, Tab or a
+  // click inserts the tag; Escape dismisses the menu first.
+  type MentionCandidate =
+    | { kind: "everyone" }
+    | { kind: "user"; name: string; avatarUrl?: string };
+  const [mention, setMention] = useState<{
+    start: number;
+    query: string;
+  } | null>(null);
+  const [mentionIndex, setMentionIndex] = useState(0);
+  const candidates: MentionCandidate[] = useMemo(() => {
+    if (!mention) return [];
+    const q = mention.query.toLowerCase();
+    const out: MentionCandidate[] = [];
+    if (canEveryone && "everyone".startsWith(q)) {
+      out.push({ kind: "everyone" });
+    }
+    for (const m of members) {
+      if (out.length >= 8) break;
+      if (m.name.toLowerCase().includes(q)) {
+        out.push({ kind: "user", name: m.name, avatarUrl: m.avatarUrl });
+      }
+    }
+    return out;
+  }, [mention, members, canEveryone]);
+
+  const detectMention = (text: string, caret: number) => {
+    const upto = text.slice(0, caret);
+    const match = /(?:^|\s)@([^\s@]*)$/.exec(upto);
+    const next = match
+      ? { start: caret - match[1].length - 1, query: match[1] }
+      : null;
+    if (next?.start !== mention?.start || next?.query !== mention?.query) {
+      setMention(next);
+      if (next) setMentionIndex(0);
+    }
+  };
+
+  const pickMention = (c: MentionCandidate) => {
+    if (!mention) return;
+    const insert = c.kind === "everyone" ? "@everyone " : `@${c.name} `;
+    const next = (
+      value.slice(0, mention.start) +
+      insert +
+      value.slice(mention.start + mention.query.length + 1)
+    ).slice(0, MAX_LENGTH);
+    setValue(next);
+    setMention(null);
+    const pos = mention.start + insert.length;
+    requestAnimationFrame(() => {
+      const el = inputRef.current;
+      if (!el) return;
+      el.focus();
+      el.setSelectionRange(pos, pos);
+    });
+  };
 
   if (!zone.memberCanPost) {
     return (
@@ -57,6 +121,7 @@ export function Composer({
     try {
       await onSend(content, replyingTo?.id ?? null);
       setValue("");
+      setMention(null);
     } catch {
       // Keep the draft so the user can retry without retyping.
       setFailed(true);
@@ -67,12 +132,52 @@ export function Composer({
 
   return (
     <form
-      className="shrink-0 px-4 pt-2 pb-4 sm:px-6 sm:pb-6"
+      className="relative shrink-0 px-4 pt-2 pb-4 sm:px-6 sm:pb-6"
       onSubmit={(e) => {
         e.preventDefault();
         void submit();
       }}
     >
+      {mention && candidates.length > 0 && (
+        <ul
+          role="listbox"
+          aria-label={t("circle.mentionLabel")}
+          className="absolute inset-x-4 bottom-full z-20 mb-1 overflow-hidden rounded-lg border border-line bg-surface shadow-lg sm:inset-x-6"
+        >
+          {candidates.map((c, i) => (
+            <li key={c.kind === "everyone" ? "everyone" : c.name}>
+              <button
+                type="button"
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  pickMention(c);
+                }}
+                onMouseEnter={() => setMentionIndex(i)}
+                className={`flex w-full cursor-pointer items-center gap-2.5 px-3 py-2 text-left text-sm ${
+                  i === mentionIndex ? "bg-bg" : ""
+                }`}
+              >
+                {c.kind === "everyone" ? (
+                  <>
+                    <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-accent text-[11px] font-bold text-on-accent">
+                      @
+                    </span>
+                    <span className="font-semibold text-ink">everyone</span>
+                    <span className="truncate text-xs text-subtle">
+                      {t("circle.mentionEveryoneHint")}
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <Avatar src={c.avatarUrl} alt={c.name} size={24} />
+                    <span className="font-medium text-ink">{c.name}</span>
+                  </>
+                )}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
       {replyingTo && (
         <div className="mb-2 flex items-center gap-2 rounded-lg bg-bg px-3 py-2">
           <Icon name="reply" size={14} className="shrink-0 text-subtle" />
@@ -101,8 +206,42 @@ export function Composer({
             value={value}
             maxLength={MAX_LENGTH}
             ref={inputRef}
-            onChange={(e) => setValue(e.target.value)}
+            onChange={(e) => {
+              setValue(e.target.value);
+              detectMention(
+                e.target.value,
+                e.target.selectionStart ?? e.target.value.length
+              );
+            }}
+            onSelect={(e) => {
+              const el = e.target as HTMLInputElement;
+              detectMention(el.value, el.selectionStart ?? el.value.length);
+            }}
             onKeyDown={(e) => {
+              if (mention && candidates.length > 0) {
+                if (e.key === "ArrowDown") {
+                  e.preventDefault();
+                  setMentionIndex((i) => (i + 1) % candidates.length);
+                  return;
+                }
+                if (e.key === "ArrowUp") {
+                  e.preventDefault();
+                  setMentionIndex(
+                    (i) => (i - 1 + candidates.length) % candidates.length
+                  );
+                  return;
+                }
+                if (e.key === "Enter" || e.key === "Tab") {
+                  e.preventDefault();
+                  pickMention(candidates[mentionIndex]);
+                  return;
+                }
+                if (e.key === "Escape") {
+                  e.preventDefault();
+                  setMention(null);
+                  return;
+                }
+              }
               if (e.key === "Escape" && replyingTo) onCancelReply?.();
             }}
             placeholder={

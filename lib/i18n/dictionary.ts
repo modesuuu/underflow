@@ -893,6 +893,8 @@ export const en = {
   "circle.newDivider": "NEW",
     "circle.newMessageOne": "1 NEW MESSAGE",
     "circle.newMessagesMany": "{count} NEW MESSAGES",
+    "circle.mentionLabel": "Mention",
+    "circle.mentionEveryoneHint": "Notify everyone in this circle",
   "circle.unreadBelow": "Unread messages below",
   "circle.noPinned": "No pinned messages.",
 
@@ -1971,6 +1973,8 @@ export const id: Record<DictKey, string> = {
   "circle.newDivider": "BARU",
     "circle.newMessageOne": "1 PESAN BARU",
     "circle.newMessagesMany": "{count} PESAN BARU",
+    "circle.mentionLabel": "Sebut",
+    "circle.mentionEveryoneHint": "Beri tahu semua orang di circle ini",
   "circle.unreadBelow": "Pesan belum dibaca di bawah",
   "circle.noPinned": "Tidak ada pesan yang disematkan.",
 

@@ -34,16 +34,24 @@ const URL_PATTERN =
 function renderTextSegment(
   text: string,
   memberNames: string[],
-  keyPrefix: string
+  keyPrefix: string,
+  mentionsEveryone: boolean
 ) {
   const parts = text.split(/(\s+)/);
   return parts.map((part, i) => {
     if (part.startsWith("@")) {
       const name = part.slice(1).replace(/[.,!?;:]+$/, "");
-      if (memberNames.includes(name)) {
+      const isMention =
+        memberNames.includes(name) ||
+        (mentionsEveryone && name === "everyone");
+      if (isMention) {
+        const trailing = part.slice(1 + name.length);
         return (
-          <span key={`${keyPrefix}-${i}`} className="font-semibold text-accent">
-            {part}
+          <span key={`${keyPrefix}-${i}`}>
+            <span className="rounded-md bg-accent/15 px-1 font-semibold text-accent">
+              @{name}
+            </span>
+            {trailing}
           </span>
         );
       }
@@ -60,9 +68,11 @@ function renderTextSegment(
 export function MessageBody({
   body,
   memberNames,
+  mentionsEveryone = false,
 }: {
   body: string;
   memberNames: string[];
+  mentionsEveryone?: boolean;
 }) {
   const segments = body.split(URL_PATTERN);
   return (
@@ -72,7 +82,9 @@ export function MessageBody({
           const prev = segments[i - 1] ?? "";
           if (/[@a-z0-9]$/i.test(prev)) {
             return (
-              <span key={i}>{renderTextSegment(segment, memberNames, `s${i}`)}</span>
+              <span key={i}>
+                {renderTextSegment(segment, memberNames, `s${i}`, mentionsEveryone)}
+              </span>
             );
           }
           const [link, trailing] = splitTrailingPunct(segment);
@@ -92,7 +104,9 @@ export function MessageBody({
           );
         }
         return (
-          <span key={i}>{renderTextSegment(segment, memberNames, `s${i}`)}</span>
+          <span key={i}>
+            {renderTextSegment(segment, memberNames, `s${i}`, mentionsEveryone)}
+          </span>
         );
       })}
     </p>
@@ -134,7 +148,7 @@ export function MessageItem({
   return (
     <div
       id={`zone-msg-${message.id}`}
-      className={`group relative flex gap-3 px-4 py-0.5 transition-colors hover:bg-bg ${groupStart ? "mt-4" : ""}`}
+      className={`group relative flex gap-3 px-4 py-0.5 transition-colors ${message.mentionsEveryone ? "bg-accent/10" : "hover:bg-bg"} ${groupStart ? "mt-4" : ""}`}
     >
       {onReply && (
         <div className="absolute -top-3 right-4 z-10 opacity-0 transition-opacity group-hover:opacity-100">
@@ -196,7 +210,11 @@ export function MessageItem({
             </span>
           </div>
         )}
-        <MessageBody body={message.content} memberNames={memberNames} />
+        <MessageBody
+          body={message.content}
+          memberNames={memberNames}
+          mentionsEveryone={message.mentionsEveryone}
+        />
       </div>
     </div>
   );
