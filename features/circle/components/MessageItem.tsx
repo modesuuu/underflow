@@ -1,6 +1,8 @@
 "use client";
 
 import { Avatar } from "@/components/ui/Avatar";
+import { Icon } from "@/components/ui/Icon";
+import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import type { ZoneMessage } from "../types";
 
 /** "19:04" from a backend DATETIME string (parsed as local time). */
@@ -103,21 +105,50 @@ export function MessageBody({
  * avatar + name header and shows the time on hover instead.
  * Reactions / pin / reply / edit land in Phase 3.
  */
+/** Scroll to a message in the loaded history and flash it. */
+function jumpToOriginal(id: string) {
+  const el = document.getElementById(`zone-msg-${id}`);
+  if (!el) return;
+  el.scrollIntoView({ behavior: "smooth", block: "center" });
+  el.style.backgroundColor = "var(--uf-active)";
+  window.setTimeout(() => {
+    el.style.backgroundColor = "";
+  }, 1200);
+}
+
 export function MessageItem({
   message,
   memberNames,
   isContinuation,
   groupStart = false,
+  onReply,
 }: {
   message: ZoneMessage;
   memberNames: string[];
   isContinuation: boolean;
   groupStart?: boolean;
+  onReply?: (message: ZoneMessage) => void;
 }) {
+  const { t } = useLanguage();
+  const reply = message.replyTo;
   return (
     <div
+      id={`zone-msg-${message.id}`}
       className={`group relative flex gap-3 px-4 py-0.5 transition-colors hover:bg-bg ${groupStart ? "mt-4" : ""}`}
     >
+      {onReply && (
+        <div className="absolute -top-3 right-4 z-10 opacity-0 transition-opacity group-hover:opacity-100">
+          <button
+            type="button"
+            onClick={() => onReply(message)}
+            aria-label={t("circle.reply")}
+            title={t("circle.reply")}
+            className="flex size-7 cursor-pointer items-center justify-center rounded-md border border-line bg-surface text-muted shadow-sm transition-colors hover:text-accent focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+          >
+            <Icon name="reply" size={15} />
+          </button>
+        </div>
+      )}
       <div className="flex w-9 shrink-0 justify-center">
         {isContinuation ? (
           <span className="pt-1 text-[10px] leading-none text-subtle opacity-0 transition-opacity group-hover:opacity-100">
@@ -132,6 +163,29 @@ export function MessageItem({
         )}
       </div>
       <div className="min-w-0 flex-1">
+        {reply ? (
+          <button
+            type="button"
+            onClick={() => jumpToOriginal(reply.id)}
+            className="mb-0.5 flex max-w-full cursor-pointer items-center gap-1.5 rounded-sm text-left focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+          >
+            <Avatar
+              src={reply.authorAvatarUrl ?? undefined}
+              alt={reply.authorName}
+              size={16}
+            />
+            <span className="shrink-0 text-xs font-semibold text-muted">
+              {reply.authorName}
+            </span>
+            <span className="truncate text-xs text-subtle">
+              {reply.content}
+            </span>
+          </button>
+        ) : message.replyToId ? (
+          <p className="mb-0.5 text-xs text-subtle italic">
+            {t("circle.replyUnavailable")}
+          </p>
+        ) : null}
         {!isContinuation && (
           <div className="flex items-baseline gap-2">
             <span className="text-sm font-semibold text-ink">

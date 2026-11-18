@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Icon } from "@/components/ui/Icon";
-import type { CircleZone } from "../types";
+import type { CircleZone, ZoneMessage } from "../types";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 
 const MAX_LENGTH = 2000;
@@ -19,14 +19,24 @@ const COUNT_FROM = 1800;
 export function Composer({
   zone,
   onSend,
+  replyingTo = null,
+  onCancelReply,
 }: {
   zone: CircleZone;
-  onSend: (content: string) => Promise<void>;
+  onSend: (content: string, replyToId?: string | null) => Promise<void>;
+  replyingTo?: ZoneMessage | null;
+  onCancelReply?: () => void;
 }) {
   const { t } = useLanguage();
   const [value, setValue] = useState("");
   const [sending, setSending] = useState(false);
   const [failed, setFailed] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Reply mode pulls the keyboard straight back to the composer.
+  useEffect(() => {
+    if (replyingTo) inputRef.current?.focus();
+  }, [replyingTo]);
 
   if (!zone.memberCanPost) {
     return (
@@ -45,7 +55,7 @@ export function Composer({
     setSending(true);
     setFailed(false);
     try {
-      await onSend(content);
+      await onSend(content, replyingTo?.id ?? null);
       setValue("");
     } catch {
       // Keep the draft so the user can retry without retyping.
@@ -63,6 +73,23 @@ export function Composer({
         void submit();
       }}
     >
+      {replyingTo && (
+        <div className="mb-2 flex items-center gap-2 rounded-lg bg-bg px-3 py-2">
+          <Icon name="reply" size={14} className="shrink-0 text-subtle" />
+          <p className="min-w-0 flex-1 truncate text-xs text-muted">
+            {t("circle.replyingTo", { name: replyingTo.authorName })}
+            <span className="text-subtle"> Â· {replyingTo.content}</span>
+          </p>
+          <button
+            type="button"
+            onClick={onCancelReply}
+            aria-label={t("circle.cancelReply")}
+            className="flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-full text-muted transition-colors hover:bg-line/40 hover:text-ink focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+          >
+            <Icon name="x" size={13} />
+          </button>
+        </div>
+      )}
       <div className="flex items-center gap-3">
         <div className="flex min-w-0 flex-1 items-center gap-1 rounded-full bg-bg px-4 py-2 transition-shadow focus-within:ring-2 focus-within:ring-accent">
           <label className="sr-only" htmlFor={`circle-composer-${zone.id}`}>
@@ -73,7 +100,11 @@ export function Composer({
             type="text"
             value={value}
             maxLength={MAX_LENGTH}
+            ref={inputRef}
             onChange={(e) => setValue(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Escape" && replyingTo) onCancelReply?.();
+            }}
             placeholder={
               zone.title === "announcements"
                 ? t("circle.announcementPlaceholder")

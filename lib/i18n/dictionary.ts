@@ -807,6 +807,10 @@ export const en = {
 
   // Circle
   "circle.channels": "Channels",
+    "circle.reply": "Reply",
+    "circle.replyingTo": "Replying to {name}",
+    "circle.cancelReply": "Cancel reply",
+    "circle.replyUnavailable": "Original message is unavailable",
     "circle.addZone": "Add zone",
     "circle.createZone": "Create Zone",
     "circle.createZoneHint": "A zone is a channel inside this circle.",
@@ -1882,6 +1886,10 @@ export const id: Record<DictKey, string> = {
 
   // Circle
   "circle.channels": "Saluran",
+    "circle.reply": "Balas",
+    "circle.replyingTo": "Membalas {name}",
+    "circle.cancelReply": "Batalkan balasan",
+    "circle.replyUnavailable": "Pesan asli tidak tersedia",
     "circle.addZone": "Tambah zone",
     "circle.createZone": "Buat Zone",
     "circle.createZoneHint": "Zone adalah saluran di dalam circle ini.",

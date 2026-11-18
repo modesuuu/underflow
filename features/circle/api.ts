@@ -79,13 +79,14 @@ export async function getZoneMessages(
 export async function sendZoneMessage(
   circleId: string,
   zoneId: string,
-  content: string
+  content: string,
+  replyToId?: string
 ): Promise<ZoneMessage> {
   const res = await apiFetch<ApiEnvelope<ZoneMessage>>(
     `/api/circles/${circleId}/zones/${zoneId}/messages`,
     {
       method: "POST",
-      body: JSON.stringify({ content }),
+      body: JSON.stringify(replyToId ? { content, replyToId } : { content }),
     }
   );
   return res.data;

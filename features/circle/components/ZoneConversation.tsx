@@ -64,6 +64,7 @@ export function ZoneConversation({
   const [hasMore, setHasMore] = useState(false);
   const [phase, setPhase] = useState<"loading" | "ready" | "error">("loading");
   const [loadingOlder, setLoadingOlder] = useState(false);
+  const [replyingTo, setReplyingTo] = useState<ZoneMessage | null>(null);
   const circleId = detail.id;
   const zoneId = zone.id;
   const memberNames = detail.members.map((m) => m.name);
@@ -150,9 +151,15 @@ export function ZoneConversation({
     }
   };
 
-  const handleSend = async (content: string) => {
-    const saved = await sendZoneMessage(circleId, zoneId, content);
+  const handleSend = async (content: string, replyToId?: string | null) => {
+    const saved = await sendZoneMessage(
+      circleId,
+      zoneId,
+      content,
+      replyToId ?? undefined
+    );
     setMessages((current) => mergeMessages(current, [saved]));
+    setReplyingTo(null);
   };
 
   if (phase === "loading") {
@@ -195,8 +202,16 @@ export function ZoneConversation({
         hasMore={hasMore}
         loadingOlder={loadingOlder}
         onLoadOlder={() => void loadOlder()}
+        onReply={
+          zone.memberCanPost ? (m) => setReplyingTo(m) : undefined
+        }
       />
-      <Composer zone={zone} onSend={handleSend} />
+      <Composer
+        zone={zone}
+        onSend={handleSend}
+        replyingTo={replyingTo}
+        onCancelReply={() => setReplyingTo(null)}
+      />
     </div>
   );
 }

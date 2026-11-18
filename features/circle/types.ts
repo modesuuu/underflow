@@ -49,6 +49,15 @@ export interface CircleSummary {
   memberCount: number;
 }
 
+/** The quoted original attached to a reply message. */
+export interface ZoneReplyPreview {
+  id: string;
+  authorId: string;
+  authorName: string;
+  authorAvatarUrl: string | null;
+  content: string;
+}
+
 /** One zone message (GET/POST /api/circles/:id/zones/:zoneId/messages). */
 export interface ZoneMessage {
   id: string;
@@ -59,6 +68,11 @@ export interface ZoneMessage {
   content: string;
   /** Backend DATETIME string ("YYYY-MM-DD HH:mm:ss", server time). */
   createdAt: string;
+  /** Id of the quoted message when this message is a reply. */
+  replyToId: string | null;
+  /** The quoted original (null when this is not a reply, or the
+      original no longer exists). */
+  replyTo: ZoneReplyPreview | null;
 }
 
 /** One page of zone history: chronological order + older-page flag. */

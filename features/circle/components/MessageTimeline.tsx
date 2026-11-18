@@ -36,6 +36,7 @@ export function MessageTimeline({
   hasMore,
   loadingOlder,
   onLoadOlder,
+  onReply,
 }: {
   messages: ZoneMessage[];
   memberNames: string[];
@@ -43,6 +44,7 @@ export function MessageTimeline({
   hasMore: boolean;
   loadingOlder: boolean;
   onLoadOlder: () => void;
+  onReply?: (message: ZoneMessage) => void;
 }) {
   const { t } = useLanguage();
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -126,6 +128,10 @@ export function MessageTimeline({
       {messages.map((message, i) => {
         const prev = i > 0 ? messages[i - 1] : null;
         const newDay = !prev || dayKey(prev.createdAt) !== dayKey(message.createdAt);
+        // A reply always opens a new group (Discord-style): the
+        // quote needs the author header under it.
+        const continuation =
+          !!prev && !newDay && !message.replyToId && isContinuation(prev, message);
         return (
           <div key={message.id}>
             {newDay && (
@@ -140,8 +146,9 @@ export function MessageTimeline({
             <MessageItem
               message={message}
               memberNames={memberNames}
-              isContinuation={!!prev && !newDay && isContinuation(prev, message)}
-              groupStart={!!prev && !newDay && !isContinuation(prev, message)}
+              isContinuation={continuation}
+              groupStart={!!prev && !newDay && !continuation}
+              onReply={onReply}
             />
           </div>
         );
