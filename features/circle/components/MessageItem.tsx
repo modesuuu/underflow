@@ -8,16 +8,16 @@ import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import type { ZoneMessage, ZoneMessageAttachment } from "../types";
 
 /**
- * Where a document card points. Office documents get Cloudinary's
+ * Where a document card points. Every document gets Cloudinary's
  * fl_attachment flag (file name WITHOUT its extension — Cloudinary
- * appends the real one) so the browser saves the file under its
- * original name instead of the random public_id. PDFs keep the
- * plain URL so they open in the browser's built-in viewer.
+ * appends the real one) so the browser downloads the file in place,
+ * under its original name, instead of navigating away to the
+ * Cloudinary page (PDFs included: without the flag the browser
+ * opens them in its viewer tab).
  */
 function attachmentHref(a: ZoneMessageAttachment): string {
   if (a.kind !== "document") return a.url;
   const ext = a.fileName.split(".").pop()?.toLowerCase() ?? "";
-  if (ext === "pdf") return a.url;
   const marker = "/upload/";
   const at = a.url.indexOf(marker);
   if (at === -1) return a.url;
