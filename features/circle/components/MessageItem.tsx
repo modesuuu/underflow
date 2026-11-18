@@ -34,6 +34,40 @@ function attachmentHref(a: ZoneMessageAttachment): string {
   );
 }
 
+/**
+ * Extensions whose contents cannot be inspected before download
+ * (archives): clicking asks first, like Discord's
+ * dangerous-download sheet.
+ */
+const WARNING_EXTENSIONS = ["zip"];
+function needsDownloadWarning(a: ZoneMessageAttachment): boolean {
+  if (a.kind !== "document") return false;
+  const ext = a.fileName.split(".").pop()?.toLowerCase() ?? "";
+  return WARNING_EXTENSIONS.includes(ext);
+}
+
+const DOC_CARD_CLASSES =
+  "flex max-w-full cursor-pointer items-center gap-2.5 rounded-lg border border-line bg-surface px-3 py-2 text-left transition-colors hover:bg-bg focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none";
+
+/** Shared inside of a document attachment card (link or button). */
+function DocumentCardInner({ a }: { a: ZoneMessageAttachment }) {
+  const { t } = useLanguage();
+  return (
+    <>
+      <Icon name="file" size={20} className="shrink-0 text-muted" />
+      <span className="min-w-0">
+        <span className="block max-w-64 truncate text-sm font-medium text-ink">
+          {a.fileName}
+        </span>
+        <span className="block text-xs text-subtle">
+          {formatFileSize(a.sizeBytes)} · {t("circle.downloadFile")}
+        </span>
+      </span>
+      <Icon name="download" size={16} className="shrink-0 text-muted" />
+    </>
+  );
+}
+
 /** "812 B" / "24.1 KB" / "3.2 MB" for attachment chips and cards. */
 export function formatFileSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
@@ -183,6 +217,18 @@ export function MessageItem({
   const reply = message.replyTo;
   const images = message.attachments.filter((a) => a.kind === "image");
   const [previewIdx, setPreviewIdx] = useState<number | null>(null);
+  const [warnTarget, setWarnTarget] =
+    useState<ZoneMessageAttachment | null>(null);
+
+  // Download-warning sheet: Escape dismisses it.
+  useEffect(() => {
+    if (!warnTarget) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setWarnTarget(null);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [warnTarget]);
 
   // Lightbox keys: Escape closes, arrows walk this message's images.
   useEffect(() => {
@@ -293,24 +339,24 @@ export function MessageItem({
                     className="max-h-64 w-auto max-w-full object-contain"
                   />
                 </button>
+              ) : needsDownloadWarning(a) ? (
+                <button
+                  key={a.id}
+                  type="button"
+                  onClick={() => setWarnTarget(a)}
+                  className={DOC_CARD_CLASSES}
+                >
+                  <DocumentCardInner a={a} />
+                </button>
               ) : (
                 <a
                   key={a.id}
                   href={attachmentHref(a)}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex max-w-full items-center gap-2.5 rounded-lg border border-line bg-surface px-3 py-2 transition-colors hover:bg-bg focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+                  className={DOC_CARD_CLASSES}
                 >
-                  <Icon name="file" size={20} className="shrink-0 text-muted" />
-                  <span className="min-w-0">
-                    <span className="block max-w-64 truncate text-sm font-medium text-ink">
-                      {a.fileName}
-                    </span>
-                    <span className="block text-xs text-subtle">
-                      {formatFileSize(a.sizeBytes)} · {t("circle.downloadFile")}
-                    </span>
-                  </span>
-                  <Icon name="download" size={16} className="shrink-0 text-muted" />
+                  <DocumentCardInner a={a} />
                 </a>
               )
             )}
@@ -378,6 +424,58 @@ export function MessageItem({
                 </span>
               </>
             )}
+          </div>,
+          document.body
+        )}
+      {warnTarget &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4"
+            role="alertdialog"
+            aria-modal="true"
+            aria-label={t("circle.downloadWarningTitle")}
+            onClick={() => setWarnTarget(null)}
+          >
+            <div
+              className="w-full max-w-sm rounded-2xl border border-line bg-surface p-5 shadow-xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex size-11 items-center justify-center rounded-full bg-badge/15 text-badge">
+                <Icon name="shield" size={22} />
+              </div>
+              <h2 className="pt-3 text-base font-semibold text-ink">
+                {t("circle.downloadWarningTitle")}
+              </h2>
+              <p className="truncate pt-1 text-sm font-medium text-muted">
+                {warnTarget.fileName} · {formatFileSize(warnTarget.sizeBytes)}
+              </p>
+              <p className="pt-2 text-sm leading-relaxed text-muted">
+                {t("circle.downloadWarningBody")}
+              </p>
+              <div className="flex flex-col gap-2 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setWarnTarget(null)}
+                  className="w-full cursor-pointer rounded-full bg-accent px-4 py-2.5 text-sm font-semibold text-on-accent transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+                >
+                  {t("circle.downloadWarningCancel")}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    window.open(
+                      attachmentHref(warnTarget),
+                      "_blank",
+                      "noopener,noreferrer"
+                    );
+                    setWarnTarget(null);
+                  }}
+                  className="w-full cursor-pointer rounded-full px-4 py-2.5 text-sm font-semibold text-ink transition-colors hover:bg-bg focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+                >
+                  {t("circle.downloadWarningContinue")}
+                </button>
+              </div>
+            </div>
           </div>,
           document.body
         )}

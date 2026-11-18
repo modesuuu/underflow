@@ -289,7 +289,7 @@ export function Composer({
         ref={fileInputRef}
         type="file"
         multiple
-        accept=".png,.jpg,.jpeg,.pdf,.doc,.docx,.xls,.xlsx"
+        accept=".png,.jpg,.jpeg,.gif,.webp,.pdf,.doc,.docx,.xls,.xlsx,.md,.txt,.csv,.ppt,.pptx,.zip"
         className="hidden"
         onChange={(e) => {
           addFiles(e.target.files);

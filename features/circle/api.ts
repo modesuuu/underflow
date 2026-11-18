@@ -12,8 +12,20 @@ import type {
 /** Attachment rules, mirrored by the backend at send time. */
 export const MAX_ATTACHMENTS = 3;
 export const MAX_ATTACHMENT_BYTES = 5 * 1024 * 1024;
-const IMAGE_EXTENSIONS = ["png", "jpg", "jpeg"];
-const DOCUMENT_EXTENSIONS = ["pdf", "doc", "docx", "xls", "xlsx"];
+const IMAGE_EXTENSIONS = ["png", "jpg", "jpeg", "gif", "webp"];
+const DOCUMENT_EXTENSIONS = [
+  "pdf",
+  "doc",
+  "docx",
+  "xls",
+  "xlsx",
+  "md",
+  "txt",
+  "csv",
+  "ppt",
+  "pptx",
+  "zip",
+];
 
 /** "image" / "document" for an attachable file, null when unsupported. */
 export function attachmentKindForFile(
