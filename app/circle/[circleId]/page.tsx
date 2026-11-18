@@ -1,33 +1,14 @@
-"use client";
-
-import { useEffect } from "react";
-import { notFound, useParams, useRouter } from "next/navigation";
-import { getCircleDetail } from "@/features/circle/api";
+import { CircleWorkspace } from "@/features/circle/components/CircleWorkspace";
 
 /**
- * /circle/:circleId lands on the circle's first zone (announcements —
- * the backend orders it first). Unknown ids and circles the user
- * cannot access render the not-found page.
+ * /circle/:circleId renders the one-page workspace with that circle
+ * preselected (deep links and the "Open Circle" actions land here).
  */
-export default function CircleHomePage() {
-  const params = useParams<{ circleId: string }>();
-  const router = useRouter();
-
-  useEffect(() => {
-    let cancelled = false;
-    getCircleDetail(params.circleId)
-      .then((detail) => {
-        if (cancelled) return;
-        const first = detail.zones[0];
-        if (first) router.replace(`/circle/${detail.id}/${first.id}`);
-      })
-      .catch(() => {
-        if (!cancelled) notFound();
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [params.circleId, router]);
-
-  return null;
+export default async function CircleHomePage({
+  params,
+}: {
+  params: Promise<{ circleId: string }>;
+}) {
+  const { circleId } = await params;
+  return <CircleWorkspace initialCircleId={circleId} />;
 }

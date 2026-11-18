@@ -1,0 +1,354 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+import { notFound } from "next/navigation";
+import { toast } from "sonner";
+import { AppShell } from "@/components/layout/AppShell";
+import { Icon } from "@/components/ui/Icon";
+import { ApiError } from "@/lib/api-client";
+import { useLanguage } from "@/lib/i18n/LanguageProvider";
+import { useSessionUser } from "@/features/auth/store";
+import { backendErrorMessage } from "@/features/collaborations/api";
+import { getMyCollabProjects } from "@/features/my-collaborations/api";
+import type { MyCollabProject } from "@/features/my-collaborations/types";
+import { createCircle, getCircleDetail, getCircles } from "../api";
+import { setPanelOpen, usePanelState } from "../store";
+import type { CircleDetail, CircleSummary } from "../types";
+import { CirclePanel } from "./CirclePanel";
+import { CircleRail } from "./CircleRail";
+import { CreateCircleRows } from "./CreateCircleRows";
+import { circleStatusKey } from "./statusLabel";
+import { ZoneConversation } from "./ZoneConversation";
+import { ZoneHeader } from "./ZoneHeader";
+import { ZoneSidebar, ZoneSwitcher } from "./ZoneSidebar";
+
+/**
+ * The Circle workspace (one-page redesign): a single page for every
+ * circle the user can access. The far-left rail switches circles, the
+ * zone column switches zones, and the conversation sits in the middle
+ * with the collapsible team panel on the right. Switching is client
+ * state; the URL is kept in sync with history.replaceState so a link
+ * still points at the open circle + zone, and the deep-link routes
+ * (/circle/:circleId/:zoneId) render this same workspace pre-selected.
+ *
+ * Panel visibility follows the Phase 1 rule: the store override wins,
+ * otherwise open at >=1280px; below that it becomes a right overlay.
+ */
+export function CircleWorkspace({
+  initialCircleId,
+  initialZoneId,
+}: {
+  initialCircleId?: string;
+  initialZoneId?: string;
+}) {
+  const { t } = useLanguage();
+  const sessionUser = useSessionUser();
+  const [circles, setCircles] = useState<CircleSummary[] | null>(null);
+  const [selectedCircleId, setSelectedCircleId] = useState<string | null>(
+    initialCircleId ?? null
+  );
+  const [detail, setDetail] = useState<CircleDetail | null>(null);
+  const [selectedZoneId, setSelectedZoneId] = useState<string | null>(
+    initialZoneId ?? null
+  );
+  const [missing, setMissing] = useState(false);
+  const [detailError, setDetailError] = useState(false);
+  const [withoutCircle, setWithoutCircle] = useState<MyCollabProject[]>([]);
+  const [creatingId, setCreatingId] = useState<string | null>(null);
+  const deepLink = useRef(
+    Boolean(initialCircleId && initialZoneId)
+  );
+  const loadedCircleId = useRef<string | null>(null);
+  const selectedZoneRef = useRef<string | null>(initialZoneId ?? null);
+
+  useEffect(() => {
+    selectedZoneRef.current = selectedZoneId;
+  }, [selectedZoneId]);
+
+  // The circles the user can access; preselect the deep-linked one or
+  // the first in the list.
+  useEffect(() => {
+    let cancelled = false;
+    getCircles()
+      .then((rows) => {
+        if (cancelled) return;
+        setCircles(rows);
+        setSelectedCircleId((prev) => prev ?? rows[0]?.id ?? null);
+      })
+      .catch(() => {
+        if (!cancelled) setCircles([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Owned projects that still have no Circle (create affordance).
+  useEffect(() => {
+    if (!sessionUser) return;
+    let cancelled = false;
+    getMyCollabProjects()
+      .then((projects) => {
+        if (cancelled) return;
+        setWithoutCircle(
+          projects.filter(
+            (p) =>
+              p.owner.id === sessionUser.id &&
+              !p.circleId &&
+              p.myStatus !== "pending"
+          )
+        );
+      })
+      .catch(() => {
+        // The create affordance simply stays hidden.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [sessionUser]);
+
+  // Load the selected circle's detail (zones + members).
+  useEffect(() => {
+    if (!selectedCircleId) return;
+    let cancelled = false;
+    setDetail(null);
+    setDetailError(false);
+    getCircleDetail(selectedCircleId)
+      .then((data) => {
+        if (cancelled) return;
+        setDetail(data);
+        if (deepLink.current && data.id === initialCircleId) {
+          deepLink.current = false;
+          if (
+            initialZoneId &&
+            !data.zones.some((z) => z.id === initialZoneId)
+          ) {
+            setMissing(true);
+            return;
+          }
+          setSelectedZoneId(initialZoneId ?? data.zones[0]?.id ?? null);
+        } else if (loadedCircleId.current !== data.id) {
+          // A different circle: land on its first zone.
+          setSelectedZoneId(data.zones[0]?.id ?? null);
+        } else if (
+          !data.zones.some((z) => z.id === selectedZoneRef.current)
+        ) {
+          setSelectedZoneId(data.zones[0]?.id ?? null);
+        }
+        loadedCircleId.current = data.id;
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        if (
+          initialCircleId &&
+          selectedCircleId === initialCircleId &&
+          err instanceof ApiError &&
+          (err.status === 403 || err.status === 404)
+        ) {
+          // A deep link to a circle the user cannot open.
+          setMissing(true);
+        } else {
+          setDetailError(true);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedCircleId, initialCircleId, initialZoneId]);
+
+  // Keep the shareable URL pointed at the open circle + zone without
+  // a route change (the workspace itself never remounts on a switch).
+  useEffect(() => {
+    if (!detail || !selectedZoneId) return;
+    const url = `/circle/${detail.id}/${selectedZoneId}`;
+    if (window.location.pathname !== url) {
+      window.history.replaceState(window.history.state, "", url);
+    }
+  }, [detail, selectedZoneId]);
+
+  const handleCreate = async (project: MyCollabProject) => {
+    setCreatingId(project.id);
+    try {
+      const created = await createCircle(project.id);
+      setCircles((prev) =>
+        prev
+          ? [
+              ...prev.filter((c) => c.id !== created.id),
+              {
+                id: created.id,
+                projectId: created.projectId,
+                title: created.title,
+                status: created.status,
+                isOwner: true,
+                memberNames: created.members.map((m) => m.name),
+                memberCount: created.members.length,
+              },
+            ]
+          : prev
+      );
+      setWithoutCircle((prev) => prev.filter((p) => p.id !== project.id));
+      setSelectedCircleId(created.id);
+    } catch (err) {
+      toast.error(backendErrorMessage(err));
+    } finally {
+      setCreatingId(null);
+    }
+  };
+
+  // Right-panel visibility + mount animation (Phase 1 shell logic).
+  const panel = usePanelState();
+  const [isWide, setIsWide] = useState(false);
+  const [renderPanel, setRenderPanel] = useState(false);
+  const [panelShown, setPanelShown] = useState(false);
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    const query = window.matchMedia("(min-width: 1280px)");
+    const apply = () => setIsWide(query.matches);
+    apply();
+    query.addEventListener("change", apply);
+    return () => query.removeEventListener("change", apply);
+  }, []);
+
+  const panelVisible = panel.open ?? isWide;
+
+  useEffect(() => {
+    if (panelVisible) {
+      if (closeTimer.current) clearTimeout(closeTimer.current);
+      setRenderPanel(true);
+      const raf = requestAnimationFrame(() => setPanelShown(true));
+      return () => cancelAnimationFrame(raf);
+    }
+    setPanelShown(false);
+    closeTimer.current = setTimeout(() => setRenderPanel(false), 230);
+    return () => {
+      if (closeTimer.current) clearTimeout(closeTimer.current);
+    };
+  }, [panelVisible]);
+
+  if (missing) notFound();
+
+  if (circles === null) {
+    return (
+      <AppShell
+        fill
+        breadcrumbRoot="Dashboard / Circle"
+        breadcrumbLeaf={t("circle.title")}
+        variant="detail"
+      >
+        <div className="flex flex-1 items-center justify-center px-6 py-16 text-center text-sm text-muted">
+          {t("circle.loadingCircles")}
+        </div>
+      </AppShell>
+    );
+  }
+
+  if (circles.length === 0 && !initialCircleId) {
+    return (
+      <AppShell breadcrumbRoot="Dashboard" breadcrumbLeaf="Circle">
+        <div className="mx-auto flex w-full max-w-(--uf-content-w) flex-col gap-5 px-4 py-6 lg:mx-0 lg:ml-[28px] lg:px-0">
+          <div className="flex flex-col gap-2">
+            <h1 className="text-3xl font-semibold tracking-tight text-ink">
+              {t("circle.title")}
+            </h1>
+            <p className="text-base text-muted">
+              {t("circle.indexSubtitle")}
+            </p>
+          </div>
+          <div className="flex flex-col items-center gap-1.5 py-14 text-center">
+            <span className="flex size-12 items-center justify-center rounded-full bg-bg text-subtle">
+              <Icon name="conversation" size={22} />
+            </span>
+            <p className="text-base font-medium text-ink">
+              {t("circle.indexEmpty")}
+            </p>
+            <p className="max-w-sm text-sm text-muted">
+              {t("circle.indexEmptyHint")}
+            </p>
+          </div>
+          {withoutCircle.length > 0 && (
+            <div className="flex flex-col gap-1 pt-2">
+              <h2 className="pb-1 text-base font-semibold text-ink">
+                {t("circle.withoutCircleTitle")}
+              </h2>
+              <CreateCircleRows
+                projects={withoutCircle}
+                creatingId={creatingId}
+                onCreate={handleCreate}
+              />
+            </div>
+          )}
+        </div>
+      </AppShell>
+    );
+  }
+
+  const zone =
+    detail?.zones.find((z) => z.id === selectedZoneId) ?? detail?.zones[0];
+
+  return (
+    <AppShell
+      fill
+      breadcrumbRoot="Dashboard / Circle"
+      breadcrumbLeaf={detail?.title ?? t("circle.title")}
+      variant="detail"
+    >
+      <div className="relative flex min-h-0 flex-1">
+        <CircleRail
+          circles={circles}
+          selectedId={selectedCircleId}
+          onSelect={setSelectedCircleId}
+          withoutCircle={withoutCircle}
+          creatingId={creatingId}
+          onCreate={handleCreate}
+        />
+        {detail && zone ? (
+          <>
+            <ZoneSidebar
+              detail={detail}
+              zoneId={zone.id}
+              statusLabel={t(circleStatusKey(detail.status))}
+              onSelectZone={setSelectedZoneId}
+            />
+            <div className="flex min-w-0 flex-1 flex-col">
+              <ZoneHeader
+                zoneTitle={zone.title}
+                memberCount={detail.members.length}
+                panelVisible={panelVisible}
+              />
+              <ZoneSwitcher
+                detail={detail}
+                zoneId={zone.id}
+                onSelectZone={setSelectedZoneId}
+              />
+              <ZoneConversation
+                key={`${detail.id}:${zone.id}`}
+                detail={detail}
+                zone={zone}
+              />
+            </div>
+            {renderPanel && (
+              <>
+                {!isWide && (
+                  <button
+                    type="button"
+                    aria-label={t("circle.closePanel")}
+                    onClick={() => setPanelOpen(false)}
+                    className="absolute inset-0 z-20 cursor-default bg-ink/40 xl:hidden"
+                  />
+                )}
+                <CirclePanel members={detail.members} shown={panelShown} />
+              </>
+            )}
+          </>
+        ) : (
+          <div className="flex flex-1 items-center justify-center px-6 py-16 text-center text-sm text-muted">
+            {detailError
+              ? t("circle.loadError")
+              : t("circle.loadingCircles")}
+          </div>
+        )}
+      </div>
+    </AppShell>
+  );
+}

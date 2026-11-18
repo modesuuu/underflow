@@ -1,24 +1,27 @@
 "use client";
 
-import Link from "next/link";
 import { Icon } from "@/components/ui/Icon";
 import type { CircleDetail } from "../types";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 
 /**
- * Zone rail (Circle Phase 1): project title + status on top, then the
- * zones as data rows from the backend. A lock marks zones the current
- * user cannot post in (announcements for members). Below lg the rail
- * collapses into the ZoneSwitcher pill row.
+ * Zone column (Circle Phase 1, one-page redesign): project title +
+ * status on top, then the zones as data rows from the backend. A lock
+ * marks zones the current user cannot post in (announcements for
+ * members). Switching zones is in-page state via onSelectZone, not a
+ * route change. Below lg the column collapses into the ZoneSwitcher
+ * pill row.
  */
 export function ZoneSidebar({
   detail,
   zoneId,
   statusLabel,
+  onSelectZone,
 }: {
   detail: CircleDetail;
   zoneId: string;
   statusLabel: string;
+  onSelectZone: (zoneId: string) => void;
 }) {
   const { t } = useLanguage();
   return (
@@ -39,11 +42,12 @@ export function ZoneSidebar({
         {detail.zones.map((zone) => {
           const active = zone.id === zoneId;
           return (
-            <Link
+            <button
               key={zone.id}
-              href={`/circle/${detail.id}/${zone.id}`}
+              type="button"
+              onClick={() => onSelectZone(zone.id)}
               aria-current={active ? "page" : undefined}
-              className={`flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-sm transition-colors focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none ${
+              className={`flex w-full cursor-pointer items-center gap-1.5 rounded-lg px-2.5 py-2 text-left text-sm transition-colors focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none ${
                 active
                   ? "bg-bg font-medium text-ink"
                   : "text-muted hover:bg-bg hover:text-ink"
@@ -58,7 +62,7 @@ export function ZoneSidebar({
                   className="shrink-0 text-subtle"
                 />
               )}
-            </Link>
+            </button>
           );
         })}
       </nav>
@@ -69,9 +73,11 @@ export function ZoneSidebar({
 export function ZoneSwitcher({
   detail,
   zoneId,
+  onSelectZone,
 }: {
   detail: CircleDetail;
   zoneId: string;
+  onSelectZone: (zoneId: string) => void;
 }) {
   const { t } = useLanguage();
   return (
@@ -83,11 +89,12 @@ export function ZoneSwitcher({
       {detail.zones.map((zone) => {
         const active = zone.id === zoneId;
         return (
-          <Link
+          <button
             key={zone.id}
-            href={`/circle/${detail.id}/${zone.id}`}
+            type="button"
+            onClick={() => onSelectZone(zone.id)}
             aria-current={active ? "page" : undefined}
-            className={`flex shrink-0 items-center gap-1 rounded-full px-3 py-1.5 text-sm whitespace-nowrap transition-colors focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none ${
+            className={`flex shrink-0 cursor-pointer items-center gap-1 rounded-full px-3 py-1.5 text-sm whitespace-nowrap transition-colors focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none ${
               active
                 ? "bg-accent font-medium text-on-accent"
                 : "bg-bg text-muted hover:text-ink"
@@ -95,7 +102,7 @@ export function ZoneSwitcher({
           >
             <span className="leading-none">#</span>
             {zone.title}
-          </Link>
+          </button>
         );
       })}
     </div>

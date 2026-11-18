@@ -808,6 +808,7 @@ export const en = {
   // Circle
   "circle.channels": "Channels",
   "circle.title": "Circle",
+  "circle.switcherLabel": "Switch circle",
   "circle.indexSubtitle": "Group spaces for your projects.",
   "circle.zones": "Zones",
   "circle.teamTitle": "Team",
@@ -1839,6 +1840,7 @@ export const id: Record<DictKey, string> = {
   // Circle
   "circle.channels": "Saluran",
   "circle.title": "Circle",
+  "circle.switcherLabel": "Ganti circle",
   "circle.indexSubtitle": "Ruang grup untuk proyek-proyekmu.",
   "circle.zones": "Zone",
   "circle.teamTitle": "Tim",

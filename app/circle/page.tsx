@@ -1,5 +1,5 @@
-import { CircleIndexLoader } from "@/features/circle/components/CircleIndexLoader";
+import { CircleWorkspace } from "@/features/circle/components/CircleWorkspace";
 
 export default function CirclePage() {
-  return <CircleIndexLoader />;
+  return <CircleWorkspace />;
 }
