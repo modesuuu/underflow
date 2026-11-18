@@ -116,7 +116,7 @@ export function PhotoLightbox({ photos, startIndex, onClose }: PhotoLightboxProp
       tabIndex={-1}
       onClick={close}
       className={
-        "fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-8 focus:outline-none " +
+        "fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-8 backdrop-blur-sm focus:outline-none " +
         (closing ? "modal-overlay-out" : "modal-overlay-in")
       }
     >

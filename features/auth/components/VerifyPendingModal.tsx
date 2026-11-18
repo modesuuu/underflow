@@ -58,7 +58,7 @@ export function VerifyPendingModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center p-4 sm:items-center"
+      className="fixed inset-0 z-50 flex items-end justify-center p-4 backdrop-blur-sm sm:items-center"
       style={{ background: "rgba(10, 12, 10, 0.44)" }}
       onClick={onClose}
     >

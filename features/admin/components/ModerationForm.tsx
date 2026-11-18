@@ -108,7 +108,7 @@ export function ModerationForm({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center px-4"
+      className="fixed inset-0 z-50 flex items-center justify-center px-4 backdrop-blur-sm"
       style={{ backgroundColor: "rgba(0, 0, 0, 0.4)" }}
       onClick={onClose}
       role="presentation"

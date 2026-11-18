@@ -128,7 +128,7 @@ export function CircleSettingsModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-ink/50 sm:items-center sm:p-6"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-ink/50 backdrop-blur-sm sm:items-center sm:p-6"
       role="dialog"
       aria-modal="true"
       aria-label={t("circle.circleSettings")}
@@ -137,7 +137,7 @@ export function CircleSettingsModal({
       }}
     >
       <div
-        className="flex max-h-[92vh] w-full max-w-2xl flex-col overflow-hidden rounded-t-3xl border border-line bg-surface shadow-2xl sm:rounded-3xl"
+        className="flex max-h-[92vh] w-full max-w-2xl flex-col overflow-hidden rounded-t-lg border border-line bg-surface shadow-2xl sm:rounded-lg"
         onClick={(event) => event.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-3 border-b border-line px-5 py-4">
@@ -154,7 +154,7 @@ export function CircleSettingsModal({
             onClick={onClose}
             disabled={busy}
             aria-label={t("common.close")}
-            className="cursor-pointer rounded-full p-1.5 text-muted transition-colors hover:bg-bg hover:text-ink disabled:opacity-50"
+            className="flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-full text-muted transition-colors hover:bg-bg hover:text-ink disabled:opacity-50"
           >
             <Icon name="x" size={20} />
           </button>
@@ -238,7 +238,7 @@ export function CircleSettingsModal({
                     value={name}
                     onChange={(event) => setName(event.target.value)}
                     maxLength={255}
-                    className="mt-2 w-full rounded-xl border border-line bg-bg px-3 py-2.5 text-sm text-ink transition-colors outline-none placeholder:text-subtle focus:border-accent"
+                    className="mt-2 w-full rounded-lg border border-line bg-bg px-3 py-2.5 text-sm text-ink transition-colors outline-none placeholder:text-subtle focus:border-accent"
                   />
                   {!nameValid ? (
                     <p className="mt-2 text-sm text-error">

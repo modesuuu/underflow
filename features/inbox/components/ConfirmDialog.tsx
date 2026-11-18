@@ -43,7 +43,7 @@ export function ConfirmDialog({
       aria-modal="true"
       aria-label={title}
       onClick={onCancel}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 p-4 backdrop-blur-sm"
     >
       <div
         onClick={(event) => event.stopPropagation()}

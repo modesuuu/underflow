@@ -499,7 +499,7 @@ export function MakeCollabModal({
       ref={overlayRef}
       onClick={requestClose}
       className={clsx(
-        "fixed inset-0 z-50 bg-ink/60",
+        "fixed inset-0 z-50 bg-ink/60 backdrop-blur-sm",
         closing ? "modal-overlay-out" : "modal-overlay-in"
       )}
     >
