@@ -1,6 +1,9 @@
 // features/profile/api.ts
 import { ApiEnvelope, apiFetch, ApiError, isApiConfigured } from "@/lib/api-client";
-import { getCollabProjects } from "@/features/collaborations/api";
+import {
+  getCollabProject,
+  getCollabProjects,
+} from "@/features/collaborations/api";
 import { getDashboardPosts } from "@/features/dashboard/api";
 import { getMyCollabProjects } from "@/features/my-collaborations/api";
 import type { CollabProject } from "@/features/collaborations/types";
@@ -106,10 +109,26 @@ export async function getPersonCompletedJoinedProjects(
   person: PersonDetail,
 ): Promise<CollabProject[]> {
   const projects = await getCollabProjects();
-  return projects.filter(
+  const completed = projects.filter(
     (project) =>
       project.status === "completed" &&
-      !person.aliases.includes(project.owner.id) &&
+      !person.aliases.includes(project.owner.id),
+  );
+  // The list payload carries no members (only the detail endpoint
+  // sends them), so membership is confirmed per completed project.
+  // The completed set is small, which keeps the extra fetches bounded.
+  const detailed = await Promise.all(
+    completed.map(async (project) => {
+      try {
+        return await getCollabProject(project.id);
+      } catch {
+        return null;
+      }
+    }),
+  );
+  return detailed.filter(
+    (project): project is CollabProject =>
+      project !== null &&
       project.members.some(
         (member) => !member.isOpenSlot && person.aliases.includes(member.id),
       ),
