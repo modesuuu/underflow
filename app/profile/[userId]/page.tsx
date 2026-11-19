@@ -8,9 +8,7 @@ import {
   getProfileStats,
   getUserActivity,
 } from "@/features/profile/api";
-import { AchievementsCard } from "@/features/profile/components/AchievementsCard";
 import { ActivityHeatmap } from "@/features/profile/components/ActivityHeatmap";
-import { ProfileAboutCard } from "@/features/profile/components/ProfileAboutCard";
 import { ProfileLoader } from "@/features/profile/components/ProfileLoader";
 import { ProfileRail } from "@/features/profile/components/ProfileRail";
 import { ProjectsHighlight } from "@/features/profile/components/ProjectsHighlight";
@@ -43,7 +41,7 @@ function ProfileSkeleton() {
         </div>
       </div>
       <div className="flex min-w-0 flex-1 flex-col gap-6">
-        {Array.from({ length: 3 }).map((_, i) => (
+        {Array.from({ length: 2 }).map((_, i) => (
           <div key={i} className="flex flex-col gap-3 rounded-3xl bg-bg p-5">
             <div className="h-5 w-44 rounded bg-placeholder" />
             <div className="h-4 w-72 max-w-full rounded bg-placeholder/60" />
@@ -67,9 +65,7 @@ async function ProfileBody({ userId }: { userId: string }) {
     <div className="flex min-h-0 flex-1 flex-col gap-6 lg:flex-row">
       <ProfileRail person={person} stats={stats} activeTab="overview" />
       <div className="flex min-w-0 flex-1 flex-col gap-6">
-        <ProfileAboutCard person={person} />
         {activity && <ActivityHeatmap activity={activity} />}
-        <AchievementsCard person={person} stats={stats} activity={activity} />
         <ProjectsHighlight person={person} projects={projects} />
       </div>
     </div>
