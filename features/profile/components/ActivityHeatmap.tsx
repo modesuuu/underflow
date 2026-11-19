@@ -37,6 +37,10 @@ function dayKey(d: Date): string {
 const BLOCK_MARGIN = 3;
 const MIN_BLOCK = 10;
 const MAX_BLOCK = 30;
+// The vendored graph's label band height (its default fontSize 14
+// + 8 margin) — the hover tooltip anchors to block coordinates in
+// the same unit space.
+const LABEL_HEIGHT = 22;
 
 // useLayoutEffect without the SSR warning (this component still
 // server-renders its shell).
@@ -77,7 +81,8 @@ function useBlockSize(weekCount: number) {
  * one block per day over the last 365 days, weeks as columns starting
  * Sunday, month labels on top, intensity in the accent green, total
  * count and the Less/More legend in the footer. The block size is
- * fluid so the graph always spans the full card width. Counts come
+ * fluid so the graph always spans the full card width, and hovering
+ * a block shows a GitHub-style animated tooltip above it. Counts come
  * from GET /api/users/:id/activity (posts, comments, projects
  * created and joined) — the Kibo example's generated sample data is
  * NOT used.
@@ -109,6 +114,15 @@ export function ActivityHeatmap({ activity }: { activity: UserActivity }) {
   }, [data]);
   const { ref: graphRef, blockSize } = useBlockSize(weekCount);
 
+  // GitHub-style hover: one tooltip that appears above the hovered
+  // block and glides from cell to cell while the pointer moves.
+  const [hover, setHover] = useState<{
+    weekIndex: number;
+    dayIndex: number;
+    count: number;
+    date: string;
+  } | null>(null);
+
   const monthLabels = useMemo(
     () =>
       Array.from({ length: 12 }, (_, m) =>
@@ -135,7 +149,11 @@ export function ActivityHeatmap({ activity }: { activity: UserActivity }) {
         {t("profile.activityHeading")}
       </h3>
 
-      <div ref={graphRef}>
+      <div
+        ref={graphRef}
+        className="relative"
+        onMouseLeave={() => setHover(null)}
+      >
         <ContributionGraph
           blockMargin={BLOCK_MARGIN}
           blockSize={blockSize}
@@ -152,17 +170,26 @@ export function ActivityHeatmap({ activity }: { activity: UserActivity }) {
         >
           <ContributionGraphCalendar>
             {({ activity: day, dayIndex, weekIndex }) => (
-              <g>
-                <title>
-                  {t("profile.activityOnDay", {
+              <g
+                onMouseEnter={() =>
+                  setHover({
+                    weekIndex,
+                    dayIndex,
                     count: day.count,
-                    date: formatDay(day.date),
-                  })}
-                </title>
+                    date: day.date,
+                  })
+                }
+              >
                 <ContributionGraphBlock
                   activity={day}
                   dayIndex={dayIndex}
                   weekIndex={weekIndex}
+                  className={
+                    hover?.weekIndex === weekIndex &&
+                    hover?.dayIndex === dayIndex
+                      ? "stroke-ink/60 [stroke-width:1.5px]"
+                      : undefined
+                  }
                 />
               </g>
             )}
@@ -178,6 +205,24 @@ export function ActivityHeatmap({ activity }: { activity: UserActivity }) {
             <ContributionGraphLegend />
           </ContributionGraphFooter>
         </ContributionGraph>
+        {hover && (
+          <div
+            aria-hidden="true"
+            className="uf-graph-tip pointer-events-none absolute z-10 rounded-md bg-ink px-2 py-1 text-xs whitespace-nowrap text-bg shadow-lg"
+            style={{
+              left: `clamp(86px, ${
+                (blockSize + BLOCK_MARGIN) * hover.weekIndex + blockSize / 2
+              }px, calc(100% - 86px))`,
+              top:
+                LABEL_HEIGHT + (blockSize + BLOCK_MARGIN) * hover.dayIndex,
+            }}
+          >
+            {t("profile.activityOnDay", {
+              count: hover.count,
+              date: formatDay(hover.date),
+            })}
+          </div>
+        )}
       </div>
     </section>
   );
