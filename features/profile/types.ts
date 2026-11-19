@@ -51,7 +51,7 @@ export interface ProfileStats {
 /**
  * Per-day collaboration activity from GET /api/users/:id/activity:
  * posts + visible comments + projects created + projects joined,
- * merged per calendar day over the last 182 days.
+ * merged per calendar day over the last 365 days.
  */
 export interface UserActivity {
   days: Record<string, number>;

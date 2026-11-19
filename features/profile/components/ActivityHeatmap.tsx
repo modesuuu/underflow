@@ -35,7 +35,7 @@ function dayKey(d: Date): string {
 }
 
 const BLOCK_MARGIN = 3;
-const MIN_BLOCK = 11;
+const MIN_BLOCK = 10;
 const MAX_BLOCK = 30;
 
 // useLayoutEffect without the SSR warning (this component still
@@ -74,7 +74,7 @@ function useBlockSize(weekCount: number) {
 /**
  * GitHub-style contribution graph for the profile Overview, rendered
  * with the vendored Kibo UI contribution-graph (user pick 2026-11-19):
- * one block per day over the last 182 days, weeks as columns starting
+ * one block per day over the last 365 days, weeks as columns starting
  * Sunday, month labels on top, intensity in the accent green, total
  * count and the Less/More legend in the footer. The block size is
  * fluid so the graph always spans the full card width. Counts come
