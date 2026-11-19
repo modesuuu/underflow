@@ -109,6 +109,14 @@ export const en = {
   "settings.profile.basicsSaved": "Profile updated",
   "settings.profile.basicsFailed": "Couldn't save your profile",
   "settings.profile.basicsLoadFailed": "Couldn't load your name and bio.",
+  "settings.profile.detailLabel": "Profile Detail",
+  "settings.profile.detailHint":
+    "Shown at the top of your profile page. Markdown works here: headings, bold, lists, links, images.",
+  "settings.profile.detailPlaceholder":
+    "Who are you, what do you build, what kind of project are you looking for…",
+  "settings.profile.writeTab": "Write",
+  "settings.profile.previewTab": "Preview",
+  "settings.profile.previewEmpty": "Nothing to preview yet.",
   "settings.account.deleteTitle": "Delete account",
   "settings.account.deleteDesc": "This permanently deletes your account, your posts, and your comments. Projects you own that still have other members must be deleted first.",
   "settings.account.deleteButton": "Delete account",
@@ -1240,6 +1248,14 @@ export const id: Record<DictKey, string> = {
   "settings.profile.basicsSaved": "Profil diperbarui",
   "settings.profile.basicsFailed": "Profilnya belum bisa disimpan",
   "settings.profile.basicsLoadFailed": "Nama dan biomu belum bisa dimuat.",
+  "settings.profile.detailLabel": "Detail Profil",
+  "settings.profile.detailHint":
+    "Tampil di bagian atas halaman profilmu. Markdown bisa dipakai di sini: judul, tebal, daftar, tautan, gambar.",
+  "settings.profile.detailPlaceholder":
+    "Kamu siapa, bikin apa, lagi cari proyek seperti apa…",
+  "settings.profile.writeTab": "Tulis",
+  "settings.profile.previewTab": "Pratinjau",
+  "settings.profile.previewEmpty": "Belum ada yang bisa dipratinjau.",
   "settings.account.deleteTitle": "Hapus akun",
   "settings.account.deleteDesc": "Ini menghapus akun, postingan, dan komentarmu secara permanen. Proyek milikmu yang masih punya member lain harus dihapus dulu.",
   "settings.account.deleteButton": "Hapus akun",

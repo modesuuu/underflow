@@ -20,15 +20,17 @@ export async function updateProfilePhoto(
   });
 }
 
-/** Current name + bio for the Settings profile form (audit P1 #14). */
+/** Current name + bio + profile detail for the Settings form. */
 export interface ProfileBasics {
   fullName: string;
   bio: string;
+  profileDetail: string;
 }
 
 interface BackendMe {
   full_name?: string;
   bio?: string;
+  profile_detail?: string;
 }
 
 export async function getProfileBasics(): Promise<ProfileBasics> {
@@ -36,16 +38,22 @@ export async function getProfileBasics(): Promise<ProfileBasics> {
   return {
     fullName: res.data?.full_name ?? "",
     bio: res.data?.bio ?? "",
+    profileDetail: res.data?.profile_detail ?? "",
   };
 }
 
 export async function updateProfileBasics(
   fullName: string,
   bio: string,
+  profileDetail: string,
 ): Promise<void> {
   await apiFetch<ApiEnvelope<unknown>>("/api/profiles/me", {
     method: "PUT",
-    body: JSON.stringify({ full_name: fullName, bio }),
+    body: JSON.stringify({
+      full_name: fullName,
+      bio,
+      profile_detail: profileDetail,
+    }),
   });
 }
 

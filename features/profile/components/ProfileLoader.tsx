@@ -14,6 +14,7 @@ import type {
 } from "@/features/profile/types";
 import type { CollabProject } from "@/features/collaborations/types";
 import { ActivityHeatmap } from "@/features/profile/components/ActivityHeatmap";
+import { ProfileDetailCard } from "@/features/profile/components/ProfileDetailCard";
 import { ProfileRail } from "@/features/profile/components/ProfileRail";
 import { ProjectsHighlight } from "@/features/profile/components/ProjectsHighlight";
 
@@ -96,6 +97,7 @@ export function ProfileLoader({ userId }: { userId: string }) {
     <div className="flex min-h-0 flex-1 flex-col gap-6 lg:flex-row">
       <ProfileRail person={person} stats={stats} activeTab="overview" />
       <div className="flex min-w-0 flex-1 flex-col gap-6">
+        <ProfileDetailCard person={person} />
         {activity && <ActivityHeatmap activity={activity} />}
         <ProjectsHighlight person={person} projects={projects} />
       </div>

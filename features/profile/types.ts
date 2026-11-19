@@ -34,6 +34,8 @@ export interface PersonDetail {
   /** Role line from the collab member pool, e.g. "Owner • Fullstack". */
   role?: string;
   bio?: string;
+  /** Long-form markdown text for the Profile Detail card. */
+  profileDetail?: string | null;
   email?: string;
   socials?: PersonSocial[];
   skills?: SkillTag[];
