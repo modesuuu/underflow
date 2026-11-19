@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import {
   getPerson,
+  getPersonCompletedJoinedProjects,
   getPersonProjects,
   getProfileStats,
   getUserActivity,
@@ -14,6 +15,7 @@ import type {
 } from "@/features/profile/types";
 import type { CollabProject } from "@/features/collaborations/types";
 import { ActivityHeatmap } from "@/features/profile/components/ActivityHeatmap";
+import { CompletedJoinedProjects } from "@/features/profile/components/CompletedJoinedProjects";
 import { ProfileDetailCard } from "@/features/profile/components/ProfileDetailCard";
 import { ProfileRail } from "@/features/profile/components/ProfileRail";
 import { ProfileSkills } from "@/features/profile/components/ProfileSkills";
@@ -30,6 +32,7 @@ export function ProfileLoader({ userId }: { userId: string }) {
   const [stats, setStats] = useState<ProfileStats | null>(null);
   const [activity, setActivity] = useState<UserActivity | null>(null);
   const [projects, setProjects] = useState<CollabProject[]>([]);
+  const [completedJoined, setCompletedJoined] = useState<CollabProject[]>([]);
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
@@ -41,16 +44,18 @@ export function ProfileLoader({ userId }: { userId: string }) {
           if (!cancelled) setFailed(true);
           return;
         }
-        const [s, a, pr] = await Promise.all([
+        const [s, a, pr, cj] = await Promise.all([
           getProfileStats(p),
           getUserActivity(p.id),
           getPersonProjects(p),
+          getPersonCompletedJoinedProjects(p),
         ]);
         if (!cancelled) {
           setPerson(p);
           setStats(s);
           setActivity(a);
           setProjects(pr);
+          setCompletedJoined(cj);
         }
       } catch {
         if (!cancelled) setFailed(true);
@@ -102,6 +107,7 @@ export function ProfileLoader({ userId }: { userId: string }) {
         <ProfileSkills person={person} />
         {activity && <ActivityHeatmap activity={activity} />}
         <ProjectsHighlight person={person} projects={projects} />
+        <CompletedJoinedProjects projects={completedJoined} />
       </div>
     </div>
   );

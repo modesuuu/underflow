@@ -96,6 +96,26 @@ export async function getUserActivity(id: string): Promise<UserActivity | null> 
   }
 }
 
+/**
+ * Projects the person JOINED (owned by someone else) that are already
+ * completed — the profile's finished-teamwork list. Own projects are
+ * excluded by the owner check; active joined projects are already
+ * covered by getPersonProjects.
+ */
+export async function getPersonCompletedJoinedProjects(
+  person: PersonDetail,
+): Promise<CollabProject[]> {
+  const projects = await getCollabProjects();
+  return projects.filter(
+    (project) =>
+      project.status === "completed" &&
+      !person.aliases.includes(project.owner.id) &&
+      project.members.some(
+        (member) => !member.isOpenSlot && person.aliases.includes(member.id),
+      ),
+  );
+}
+
 /** Posts authored by the person (any alias) — feeds /profile/[userId]/posts. */
 export async function getPersonPosts(person: PersonDetail): Promise<Post[]> {
   const posts = await getDashboardPosts();

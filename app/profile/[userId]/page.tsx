@@ -4,11 +4,13 @@ import { notFound } from "next/navigation";
 import { AppShell } from "@/components/layout/AppShell";
 import {
   getPerson,
+  getPersonCompletedJoinedProjects,
   getPersonProjects,
   getProfileStats,
   getUserActivity,
 } from "@/features/profile/api";
 import { ActivityHeatmap } from "@/features/profile/components/ActivityHeatmap";
+import { CompletedJoinedProjects } from "@/features/profile/components/CompletedJoinedProjects";
 import { ProfileDetailCard } from "@/features/profile/components/ProfileDetailCard";
 import { ProfileLoader } from "@/features/profile/components/ProfileLoader";
 import { ProfileRail } from "@/features/profile/components/ProfileRail";
@@ -58,10 +60,11 @@ function ProfileSkeleton() {
 async function ProfileBody({ userId }: { userId: string }) {
   const person = await getPerson(userId);
   if (!person) notFound();
-  const [stats, activity, projects] = await Promise.all([
+  const [stats, activity, projects, completedJoined] = await Promise.all([
     getProfileStats(person),
     getUserActivity(person.id),
     getPersonProjects(person),
+    getPersonCompletedJoinedProjects(person),
   ]);
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto lg:flex-row lg:overflow-visible">
@@ -71,6 +74,7 @@ async function ProfileBody({ userId }: { userId: string }) {
         <ProfileSkills person={person} />
         {activity && <ActivityHeatmap activity={activity} />}
         <ProjectsHighlight person={person} projects={projects} />
+        <CompletedJoinedProjects projects={completedJoined} />
       </div>
     </div>
   );
