@@ -12,6 +12,7 @@ import { ActivityHeatmap } from "@/features/profile/components/ActivityHeatmap";
 import { ProfileDetailCard } from "@/features/profile/components/ProfileDetailCard";
 import { ProfileLoader } from "@/features/profile/components/ProfileLoader";
 import { ProfileRail } from "@/features/profile/components/ProfileRail";
+import { ProfileSkills } from "@/features/profile/components/ProfileSkills";
 import { ProjectsHighlight } from "@/features/profile/components/ProjectsHighlight";
 
 interface ProfilePageProps {
@@ -67,6 +68,7 @@ async function ProfileBody({ userId }: { userId: string }) {
       <ProfileRail person={person} stats={stats} activeTab="overview" />
       <div className="no-scrollbar flex min-w-0 flex-1 flex-col gap-6 lg:min-h-0 lg:overflow-y-auto">
         <ProfileDetailCard person={person} />
+        <ProfileSkills person={person} />
         {activity && <ActivityHeatmap activity={activity} />}
         <ProjectsHighlight person={person} projects={projects} />
       </div>
