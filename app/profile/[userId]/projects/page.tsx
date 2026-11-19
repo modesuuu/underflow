@@ -3,8 +3,12 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { AppShell } from "@/components/layout/AppShell";
 import { CollabGrid } from "@/features/collaborations/components/CollabGrid";
-import { getPerson, getPersonProjects } from "@/features/profile/api";
-import { ProfileHeader } from "@/features/profile/components/ProfileHeader";
+import {
+  getPerson,
+  getPersonProjects,
+  getProfileStats,
+} from "@/features/profile/api";
+import { ProfileRail } from "@/features/profile/components/ProfileRail";
 
 interface ProfileProjectsPageProps {
   params: Promise<{ userId: string }>;
@@ -78,6 +82,7 @@ export default async function ProfileProjectsPage({
   const { userId } = await params;
   const person = await getPerson(userId);
   if (!person) notFound();
+  const stats = await getProfileStats(person);
 
   return (
     <AppShell
@@ -88,12 +93,14 @@ export default async function ProfileProjectsPage({
       backHref={`/profile/${person.id}`}
     >
       <h1 className="sr-only">{`${person.name}'s projects`}</h1>
-      <div className="flex flex-col gap-6 px-4 py-6 sm:px-6 sm:py-8">
-        <ProfileHeader person={person} activeTab="projects" />
+      <div className="flex flex-col gap-6 px-4 py-6 sm:px-6 sm:py-8 lg:flex-row">
+        <ProfileRail person={person} stats={stats} activeTab="projects" />
 
-        <Suspense fallback={<ProjectsGridSkeleton />}>
-          <ProjectsBody userId={userId} />
-        </Suspense>
+        <div className="min-w-0 flex-1">
+          <Suspense fallback={<ProjectsGridSkeleton />}>
+            <ProjectsBody userId={userId} />
+          </Suspense>
+        </div>
       </div>
     </AppShell>
   );

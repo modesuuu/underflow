@@ -2,11 +2,18 @@ import { Suspense } from "react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { AppShell } from "@/components/layout/AppShell";
-import { getPerson, getProfileStats } from "@/features/profile/api";
-import { PerformanceSummary } from "@/features/profile/components/PerformanceSummary";
+import {
+  getPerson,
+  getPersonProjects,
+  getProfileStats,
+  getUserActivity,
+} from "@/features/profile/api";
+import { AchievementsCard } from "@/features/profile/components/AchievementsCard";
+import { ActivityHeatmap } from "@/features/profile/components/ActivityHeatmap";
 import { ProfileAboutCard } from "@/features/profile/components/ProfileAboutCard";
-import { ProfileHeader } from "@/features/profile/components/ProfileHeader";
 import { ProfileLoader } from "@/features/profile/components/ProfileLoader";
+import { ProfileRail } from "@/features/profile/components/ProfileRail";
+import { ProjectsHighlight } from "@/features/profile/components/ProjectsHighlight";
 
 interface ProfilePageProps {
   params: Promise<{ userId: string }>;
@@ -21,33 +28,28 @@ export async function generateMetadata({
   return { title: `${person.name} — Underflow`, description: person.bio };
 }
 
-/** Mirrors the built page: header row, tab bar, stats band, About card. */
+/** Mirrors the built page: profile rail + stacked content cards. */
 function ProfileSkeleton() {
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-6">
-      <div className="flex items-center gap-6">
-        <div className="size-28 shrink-0 rounded-full bg-placeholder" />
-        <div className="flex flex-col gap-2.5">
-          <div className="h-7 w-44 rounded bg-placeholder" />
-          <div className="h-4 w-32 rounded bg-placeholder/60" />
-          <div className="h-4 w-64 rounded bg-placeholder/60" />
-        </div>
-      </div>
-      <div className="h-10 w-72 rounded-full bg-bg" />
-      <div className="rounded-3xl bg-bg p-4">
-        <div className="grid gap-3 md:grid-cols-2">
-          {Array.from({ length: 2 }).map((_, i) => (
-            <div key={i} className="flex flex-col gap-3 rounded-2xl bg-surface p-5">
-              <div className="h-5 w-36 rounded bg-placeholder" />
-              <div className="h-8 w-16 rounded bg-placeholder" />
-              <div className="h-4 w-48 rounded bg-placeholder/60" />
-            </div>
+    <div className="flex min-h-0 flex-1 flex-col gap-6 lg:flex-row">
+      <div className="flex w-full shrink-0 flex-col gap-4 lg:w-[300px]">
+        <div className="aspect-square w-36 rounded-2xl bg-placeholder sm:w-44 lg:w-full" />
+        <div className="h-6 w-40 rounded bg-placeholder" />
+        <div className="h-4 w-28 rounded bg-placeholder/60" />
+        <div className="flex flex-col gap-2 pt-2">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="h-9 rounded-lg bg-bg" />
           ))}
         </div>
       </div>
-      <div className="rounded-3xl bg-bg p-5">
-        <div className="h-5 w-40 rounded bg-placeholder" />
-        <div className="mt-4 h-9 w-72 rounded bg-placeholder/60" />
+      <div className="flex min-w-0 flex-1 flex-col gap-6">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <div key={i} className="flex flex-col gap-3 rounded-3xl bg-bg p-5">
+            <div className="h-5 w-44 rounded bg-placeholder" />
+            <div className="h-4 w-72 max-w-full rounded bg-placeholder/60" />
+            <div className="h-4 w-56 max-w-full rounded bg-placeholder/60" />
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -56,12 +58,20 @@ function ProfileSkeleton() {
 async function ProfileBody({ userId }: { userId: string }) {
   const person = await getPerson(userId);
   if (!person) notFound();
-  const stats = await getProfileStats(person);
+  const [stats, activity, projects] = await Promise.all([
+    getProfileStats(person),
+    getUserActivity(person.id),
+    getPersonProjects(person),
+  ]);
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-6">
-      <ProfileHeader person={person} activeTab="overview" />
-      <PerformanceSummary personId={person.id} stats={stats} />
-      <ProfileAboutCard person={person} />
+    <div className="flex min-h-0 flex-1 flex-col gap-6 lg:flex-row">
+      <ProfileRail person={person} stats={stats} activeTab="overview" />
+      <div className="flex min-w-0 flex-1 flex-col gap-6">
+        <ProfileAboutCard person={person} />
+        {activity && <ActivityHeatmap activity={activity} />}
+        <AchievementsCard person={person} stats={stats} activity={activity} />
+        <ProjectsHighlight person={person} projects={projects} />
+      </div>
     </div>
   );
 }

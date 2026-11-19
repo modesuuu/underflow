@@ -5,7 +5,7 @@ import { getDashboardPosts } from "@/features/dashboard/api";
 import { getMyCollabProjects } from "@/features/my-collaborations/api";
 import type { CollabProject } from "@/features/collaborations/types";
 import type { Post } from "@/features/dashboard/types";
-import type { PersonDetail, ProfileStats } from "./types";
+import type { PersonDetail, ProfileStats, UserActivity } from "./types";
 
 // GET /api/users/:id (contract envelope `{ data, meta }`). The backend
 // returns aliases: [id] — a person has just their own id as alias.
@@ -65,6 +65,22 @@ export async function getProfileStats(person: PersonDetail): Promise<ProfileStat
     postFeed,
     activeProjects: memberships.length - completeProjects,
   };
+}
+
+/**
+ * Per-day activity for the profile heatmap (GET /api/users/:id/activity).
+ * Returns null on any failure so the Overview simply omits the card.
+ */
+export async function getUserActivity(id: string): Promise<UserActivity | null> {
+  if (!isApiConfigured()) return null;
+  try {
+    const res = await apiFetch<ApiEnvelope<UserActivity>>(
+      `/api/users/${id}/activity`,
+    );
+    return res.data;
+  } catch {
+    return null;
+  }
 }
 
 /** Posts authored by the person (any alias) — feeds /profile/[userId]/posts. */

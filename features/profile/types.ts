@@ -2,6 +2,9 @@ import type { SkillTag } from "@/features/collaborations/types";
 
 export type { SkillTag };
 
+/** The three profile pages the shared rail navigates between. */
+export type ProfileTab = "overview" | "posts" | "projects";
+
 /** One social link on a profile (rendered as a lime circle with a brand glyph). */
 export interface PersonSocial {
   label: string;
@@ -26,6 +29,8 @@ export interface PersonDetail {
   username?: string;
   /** Profile photo URL (profiles.photo_profile_url); null renders initials. */
   avatarUrl?: string | null;
+  /** Account creation timestamp (users.created_at) for "Member since". */
+  createdAt?: string | null;
   /** Role line from the collab member pool, e.g. "Owner • Fullstack". */
   role?: string;
   bio?: string;
@@ -39,4 +44,21 @@ export interface ProfileStats {
   completeProjects: number;
   postFeed: number;
   activeProjects: number;
+}
+
+/**
+ * Per-day collaboration activity from GET /api/users/:id/activity:
+ * posts + visible comments + projects created + projects joined,
+ * merged per calendar day over the last 182 days.
+ */
+export interface UserActivity {
+  days: Record<string, number>;
+  totals: {
+    posts: number;
+    comments: number;
+    projectsCreated: number;
+    projectsJoined: number;
+    total: number;
+  };
+  since: string;
 }
