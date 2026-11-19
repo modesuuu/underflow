@@ -5,10 +5,11 @@ export type ProjectType = "coursework" | "portfolio" | "product";
 
 /**
  * The owner's group-space choice, made in the create form (Circle
- * Phase 1, 2026-11-18): a built-in Circle, an external group link, or
- * decide later (the Circle can still be created from the project).
+ * Phase 1, 2026-11-18): a built-in Circle or an external group link.
+ * (The decide-later option was removed from the form 2026-11-19; a
+ * Circle can still be created later from the project page.)
  */
-export type GroupMode = "circle" | "external" | "none";
+export type GroupMode = "circle" | "external";
 
 export interface CollabMember {
   id: string;

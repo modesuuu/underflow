@@ -807,8 +807,8 @@ export function MakeCollabModal({
           </div>
 
           {/* Team communication (create only): the owner picks the
-              project's group space up front — a built-in Circle, an
-              external group link, or decide later (Circle Phase 1). */}
+              project's group space up front — a built-in Circle or an
+              external group link (Circle Phase 1). */}
           {!editing && (
             <div className="flex flex-col gap-3 mt-3">
               <span className="text-base font-medium">
@@ -831,11 +831,6 @@ export function MakeCollabModal({
                       title: t("modal.groupExternal"),
                       hint: t("modal.groupExternalHint"),
                     },
-                    {
-                      id: "none",
-                      title: t("modal.groupNone"),
-                      hint: t("modal.groupNoneHint"),
-                    },
                   ] as { id: GroupMode; title: string; hint: string }[]
                 ).map((option) => {
                   const selected = groupMode === option.id;
@@ -846,7 +841,7 @@ export function MakeCollabModal({
                       role="radio"
                       aria-checked={selected}
                       onClick={() => setGroupMode(option.id)}
-                      className={`flex cursor-pointer items-start gap-3 rounded-xl border px-3.5 py-3 text-left transition-colors focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none ${
+                      className={`flex cursor-pointer items-start gap-3 rounded-2xl border px-3.5 py-3 text-left transition-colors focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none ${
                         selected
                           ? "border-accent bg-bg"
                           : "border-line hover:border-subtle"

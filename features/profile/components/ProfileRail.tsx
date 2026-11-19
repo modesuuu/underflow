@@ -6,6 +6,7 @@ import { useSessionUser } from "@/features/auth/store";
 import type { DictKey } from "@/lib/i18n/dictionary";
 import { localeTag } from "@/lib/i18n/format";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
+import { skillIconName } from "@/lib/skill-icon";
 import type { PersonDetail, ProfileStats, ProfileTab } from "../types";
 import { OwnProfileLogout } from "./OwnProfileLogout";
 
@@ -190,7 +191,7 @@ export function ProfileRail({
               key={skill.id}
               className="flex items-center gap-1 rounded-full bg-accent px-2.5 py-1 text-xs font-medium text-on-accent"
             >
-              <Icon name="code-curly" size={14} />
+              <Icon name={skillIconName(skill.label)} size={14} />
               {skill.label}
             </li>
           ))}
