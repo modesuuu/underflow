@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Icon } from "@/components/ui/Icon";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import type { MyCollabProject } from "@/features/my-collaborations/types";
@@ -22,6 +23,9 @@ function initialsOf(name: string): string {
  * for circles with unread messages (tall bar when active) and a red
  * count badge on the tile. When the user owns projects without a
  * Circle, a dashed plus tile at the bottom opens the create modal.
+ * A home tile sits below everything else, always last: Circle pages
+ * render without the app Sidebar (RootShell), so the rail carries
+ * the way back to the feed.
  */
 export function CircleRail({
   circles,
@@ -117,6 +121,16 @@ export function CircleRail({
           </button>
         </div>
       )}
+      <div className="flex justify-center pt-1 pb-3">
+        <Link
+          href="/"
+          title={t("circle.backToFeed")}
+          aria-label={t("circle.backToFeed")}
+          className="flex size-11 items-center justify-center rounded-[14px] border border-line bg-surface text-ink transition-colors hover:border-accent hover:text-accent focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+        >
+          <Icon name="home" size={20} />
+        </Link>
+      </div>
     </div>
   );
 }
