@@ -1,117 +1,104 @@
 "use client";
 
-import { useLanguage } from "@/lib/i18n/LanguageProvider";
-
-import type { ReactNode } from "react";
 import Link from "next/link";
 import { Icon } from "@/components/ui/Icon";
+import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import type { ProfileStats } from "../types";
-import { FileCodeIcon, FolderCheckIcon, NoteIcon } from "./StatIcons";
 
-interface PerformanceSummaryProps {
-  /** Canonical person id — the View detail links target its subroutes. */
+const TICKS = 44;
+
+/**
+ * Stats band of the profile Overview, following the reference
+ * layout: two white cards on a flat gray band. Left card is the
+ * project completion percentage over a dotted tick track (filled
+ * ticks in the accent color); right card is the post count with
+ * the active / complete project figures underneath. Both cards
+ * keep their View detail links to the Posts / Projects pages.
+ */
+export function PerformanceSummary({
+  personId,
+  stats,
+}: {
   personId: string;
   stats: ProfileStats;
-}
-
-/**
- * One stat card, values taken from Figma 414:822 exactly: transparent
- * fill, 1px border in --uf-line (#6d6c6a), 12px radius, 12px padding,
- * 24px custom tile icon + Medium 12px "View detail" with a 16px
- * chevron on the top row, then Medium 24px number and Medium 14px
- * --uf-line label. `href` omitted renders "View detail" as inert text
- * — the design's own structure does the same for Complete Projects
- * (its prototype has no destination).
- */
-function StatCard({
-  icon,
-  value,
-  label,
-  href,
-}: {
-  icon: ReactNode;
-  value: number;
-  label: string;
-  href?: string;
 }) {
-  const viewDetail = (
-    <>
-      View detail
-      <Icon name="chevron-right" size={16} />
-    </>
-  );
-  return (
-    <div className="flex w-full flex-col gap-2.5 rounded-lg border border-line p-3">
-      <div className="flex items-center justify-between gap-2">
-        {icon}
-        {href ? (
-          <Link
-            href={href}
-            className="flex items-center text-xs font-medium whitespace-nowrap text-ink hover:underline"
-          >
-            {viewDetail}
-          </Link>
-        ) : (
-          <span className="flex items-center text-xs font-medium whitespace-nowrap text-ink">
-            {viewDetail}
-          </span>
-        )}
-      </div>
-      <div className="flex flex-col gap-0.5">
-        <p className="text-2xl font-medium text-ink">{value}</p>
-        <p className="text-sm font-medium text-muted">{label}</p>
-      </div>
-    </div>
-  );
-}
-
-/**
- * Right card of the Profile page (Figma 414:822): flat light-gray card,
- * Medium 20px title, three stat cards in the frame's 2 + 1 arrangement
- * (Active Projects spans full width).
- */
-export function PerformanceSummary({ personId, stats }: PerformanceSummaryProps) {
   const { t } = useLanguage();
+  const total = stats.completeProjects + stats.activeProjects;
+  const pct = total > 0 ? Math.round((stats.completeProjects / total) * 100) : 0;
+  const filled = Math.round((pct / 100) * TICKS);
+
   return (
     <section
       aria-label={t("profile.performanceSummary")}
-      className="flex w-full shrink-0 flex-col gap-5 rounded-3xl bg-bg p-5 lg:w-[397px]"
+      className="rounded-3xl bg-bg p-3 sm:p-4"
     >
-      <div className="flex items-center justify-between">
-        <h2 className="text-[20px] font-medium text-ink">{t("profile.performanceSummary")}</h2>
-        <button
-          type="button"
-          aria-label={t("profile.performanceOptions")}
-          className="flex size-8 items-center justify-center rounded-full text-ink transition-colors hover:bg-surface"
-        >
-          <Icon name="dots-horizontal-rounded" size={24} />
-        </button>
-      </div>
-
-      <div className="flex flex-col gap-3">
-        <div className="flex gap-4">
-          <div className="flex flex-1">
-            <StatCard
-              icon={<FolderCheckIcon />}
-              value={stats.completeProjects}
-              label={t("profile.completeProjects")}
-            />
+      <div className="grid gap-3 md:grid-cols-2">
+        <div className="flex flex-col gap-4 rounded-2xl bg-surface p-5">
+          <div className="flex items-start justify-between gap-3">
+            <h3 className="text-base font-medium text-ink">
+              {t("profile.projectCompletion")}
+            </h3>
+            <p className="text-[28px] font-semibold leading-none text-ink">
+              {pct}
+              <span className="text-base font-medium text-muted">%</span>
+            </p>
           </div>
-          <div className="flex flex-1">
-            <StatCard
-              icon={<NoteIcon />}
-              value={stats.postFeed}
-              label={t("profile.postFeed")}
-              href={`/profile/${personId}/posts`}
-            />
+          <div className="flex items-end gap-[3px]" aria-hidden="true">
+            {Array.from({ length: TICKS }).map((_, i) => (
+              <span
+                key={i}
+                className={`h-4 flex-1 rounded-full ${i < filled ? "bg-accent" : "bg-line/50"}`}
+              />
+            ))}
+          </div>
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-sm text-muted">
+              {total > 0
+                ? t("profile.completedOfTotal", {
+                    complete: stats.completeProjects,
+                    total,
+                  })
+                : t("profile.noProjectsYet")}
+            </p>
+            <Link
+              href={`/profile/${personId}/projects`}
+              className="flex shrink-0 items-center gap-0.5 text-sm font-medium text-ink hover:underline"
+            >
+              {t("profile.viewDetail")}
+              <Icon name="chevron-right" size={16} />
+            </Link>
           </div>
         </div>
-        <StatCard
-          icon={<FileCodeIcon />}
-          value={stats.activeProjects}
-          label={t("profile.activeProjects")}
-          href={`/profile/${personId}/projects`}
-        />
+
+        <div className="flex flex-col gap-4 rounded-2xl bg-surface p-5">
+          <div className="flex items-start justify-between gap-3">
+            <h3 className="text-base font-medium text-ink">
+              {t("profile.postFeed")}
+            </h3>
+            <Link
+              href={`/profile/${personId}/posts`}
+              className="flex shrink-0 items-center gap-0.5 text-sm font-medium text-ink hover:underline"
+            >
+              {t("profile.viewDetail")}
+              <Icon name="chevron-right" size={16} />
+            </Link>
+          </div>
+          <p className="text-[40px] font-semibold leading-none text-accent">
+            {stats.postFeed}
+          </p>
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-1 text-sm text-muted">
+            <span>
+              {t("profile.activeProjects")}:{" "}
+              <span className="font-medium text-ink">{stats.activeProjects}</span>
+            </span>
+            <span>
+              {t("profile.completeProjects")}:{" "}
+              <span className="font-medium text-ink">
+                {stats.completeProjects}
+              </span>
+            </span>
+          </div>
+        </div>
       </div>
     </section>
   );

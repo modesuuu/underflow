@@ -22,6 +22,10 @@ export interface PersonDetail {
   id: string;
   aliases: string[];
   name: string;
+  /** Login handle, rendered as @username in the profile header. */
+  username?: string;
+  /** Profile photo URL (profiles.photo_profile_url); null renders initials. */
+  avatarUrl?: string | null;
   /** Role line from the collab member pool, e.g. "Owner • Fullstack". */
   role?: string;
   bio?: string;

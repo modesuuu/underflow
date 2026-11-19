@@ -1,12 +1,12 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AppShell } from "@/components/layout/AppShell";
 import { PostButton } from "@/components/layout/PostButton";
 import { Icon } from "@/components/ui/Icon";
 import { FeedColumn } from "@/features/dashboard/components/FeedColumn";
 import { getPerson, getPersonPosts } from "@/features/profile/api";
+import { ProfileHeader } from "@/features/profile/components/ProfileHeader";
 import { NotificationsPanel } from "@/features/dashboard/components/NotificationsPanel";
 import { tStatic } from "@/lib/i18n/format";
 
@@ -88,14 +88,8 @@ export default async function ProfilePostsPage({ params }: ProfilePostsPageProps
       panel={<NotificationsPanel className="px-6" />}
     >
       <h1 className="sr-only">{`${person.name}'s posts`}</h1>
-      <div className="mx-auto w-full max-w-(--uf-content-w) px-4 pt-3 lg:mx-0 lg:ml-[28px] lg:px-0">
-        <Link
-          href={`/profile/${person.id}`}
-          className="flex w-fit items-center gap-1 text-base font-medium text-ink hover:underline"
-        >
-          <Icon name="chevron-left" size={24} />
-          {person.name}
-        </Link>
+      <div className="px-4 pt-6 sm:px-6">
+        <ProfileHeader person={person} activeTab="posts" />
       </div>
       <Suspense fallback={<FeedColumnSkeleton />}>
         <PostsBody userId={userId} />

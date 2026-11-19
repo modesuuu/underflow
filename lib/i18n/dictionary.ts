@@ -934,6 +934,14 @@ export const en = {
   "profile.detailInformation": "Detail Information",
   "profile.editingUnavailable": "Editing is not available yet",
   "profile.fullName": "Full Name",
+  "profile.tabOverview": "Overview",
+  "profile.tabPosts": "Posts",
+  "profile.tabProjects": "Projects",
+  "profile.editProfile": "Edit Profile",
+  "profile.projectCompletion": "Project Completion",
+  "profile.completedOfTotal": "{complete} of {total} projects completed",
+  "profile.noProjectsYet": "No projects yet",
+  "profile.viewDetail": "View detail",
 
   // Misc pages + lightbox
   "misc.pageNotFound": "Page not found",
@@ -2036,6 +2044,14 @@ export const id: Record<DictKey, string> = {
   "profile.detailInformation": "Informasi Detail",
   "profile.editingUnavailable": "Pengubahan belum tersedia",
   "profile.fullName": "Nama Lengkap",
+  "profile.tabOverview": "Ringkasan",
+  "profile.tabPosts": "Postingan",
+  "profile.tabProjects": "Proyek",
+  "profile.editProfile": "Ubah Profil",
+  "profile.projectCompletion": "Penyelesaian Proyek",
+  "profile.completedOfTotal": "{complete} dari {total} proyek selesai",
+  "profile.noProjectsYet": "Belum ada proyek",
+  "profile.viewDetail": "Lihat detail",
 
   // Misc pages + lightbox
   "misc.pageNotFound": "Halaman tidak ditemukan",

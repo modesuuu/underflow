@@ -4,7 +4,8 @@ import { notFound } from "next/navigation";
 import { AppShell } from "@/components/layout/AppShell";
 import { getPerson, getProfileStats } from "@/features/profile/api";
 import { PerformanceSummary } from "@/features/profile/components/PerformanceSummary";
-import { ProfileDetailCard } from "@/features/profile/components/ProfileDetailCard";
+import { ProfileAboutCard } from "@/features/profile/components/ProfileAboutCard";
+import { ProfileHeader } from "@/features/profile/components/ProfileHeader";
 import { ProfileLoader } from "@/features/profile/components/ProfileLoader";
 
 interface ProfilePageProps {
@@ -20,49 +21,33 @@ export async function generateMetadata({
   return { title: `${person.name} — Underflow`, description: person.bio };
 }
 
-/**
- * Mirrors the built page (Figma 414:822): two flat gray cards of equal
- * height, spread apart across the content area.
- */
+/** Mirrors the built page: header row, tab bar, stats band, About card. */
 function ProfileSkeleton() {
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-6 lg:flex-row lg:justify-between">
-      <div className="w-full shrink-0 rounded-3xl bg-bg p-6 lg:w-[397px]">
-        <div className="h-5 w-28 rounded bg-placeholder" />
-        <div className="mt-6 flex flex-col items-center">
-          <div className="size-[100px] rounded-full bg-placeholder" />
-          <div className="mt-3 h-7 w-32 rounded bg-placeholder" />
-          <div className="mt-3 h-3.5 w-48 rounded bg-placeholder" />
+    <div className="flex min-h-0 flex-1 flex-col gap-6">
+      <div className="flex items-center gap-6">
+        <div className="size-28 shrink-0 rounded-full bg-placeholder" />
+        <div className="flex flex-col gap-2.5">
+          <div className="h-7 w-44 rounded bg-placeholder" />
+          <div className="h-4 w-32 rounded bg-placeholder/60" />
+          <div className="h-4 w-64 rounded bg-placeholder/60" />
         </div>
-        <div className="mt-6 flex justify-center gap-2.5">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="size-11 rounded-full bg-placeholder/60" />
-          ))}
-        </div>
-        <div className="mt-6 flex flex-wrap justify-center gap-2">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="h-8 w-24 rounded-full bg-placeholder/60" />
+      </div>
+      <div className="h-10 w-72 rounded-full bg-bg" />
+      <div className="rounded-3xl bg-bg p-4">
+        <div className="grid gap-3 md:grid-cols-2">
+          {Array.from({ length: 2 }).map((_, i) => (
+            <div key={i} className="flex flex-col gap-3 rounded-2xl bg-surface p-5">
+              <div className="h-5 w-36 rounded bg-placeholder" />
+              <div className="h-8 w-16 rounded bg-placeholder" />
+              <div className="h-4 w-48 rounded bg-placeholder/60" />
+            </div>
           ))}
         </div>
       </div>
-      <div className="w-full shrink-0 rounded-3xl bg-bg p-6 lg:w-[397px]">
-        <div className="h-5 w-44 rounded bg-placeholder" />
-        <div className="mt-5 flex flex-col gap-3">
-          <div className="flex gap-4">
-            {Array.from({ length: 2 }).map((_, i) => (
-              <div key={i} className="flex-1 rounded-lg border border-line p-3">
-                <div className="size-6 rounded bg-placeholder" />
-                <div className="mt-3 h-6 w-10 rounded bg-placeholder" />
-                <div className="mt-0.5 h-4 w-24 rounded bg-placeholder" />
-              </div>
-            ))}
-          </div>
-          <div className="rounded-lg border border-line p-3">
-            <div className="size-6 rounded bg-placeholder" />
-            <div className="mt-3 h-6 w-10 rounded bg-placeholder" />
-            <div className="mt-0.5 h-4 w-24 rounded bg-placeholder" />
-          </div>
-        </div>
+      <div className="rounded-3xl bg-bg p-5">
+        <div className="h-5 w-40 rounded bg-placeholder" />
+        <div className="mt-4 h-9 w-72 rounded bg-placeholder/60" />
       </div>
     </div>
   );
@@ -73,9 +58,10 @@ async function ProfileBody({ userId }: { userId: string }) {
   if (!person) notFound();
   const stats = await getProfileStats(person);
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-6 lg:flex-row lg:justify-between">
-      <ProfileDetailCard person={person} />
+    <div className="flex min-h-0 flex-1 flex-col gap-6">
+      <ProfileHeader person={person} activeTab="overview" />
       <PerformanceSummary personId={person.id} stats={stats} />
+      <ProfileAboutCard person={person} />
     </div>
   );
 }
