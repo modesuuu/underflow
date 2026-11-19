@@ -13,7 +13,20 @@ export async function getPerson(id: string): Promise<PersonDetail | undefined> {
   if (isApiConfigured()) {
     try {
       const res = await apiFetch<ApiEnvelope<PersonDetail>>(`/api/users/${id}`);
-      return res.data;
+      const person = res.data;
+      // The profile selection can hold both a private skill and the
+      // system skill of the same name (two separate catalog rows).
+      // Viewers cannot tell same-name tags apart, so collapse them.
+      if (person?.skills) {
+        const seen = new Set<string>();
+        person.skills = person.skills.filter((skill) => {
+          const key = skill.label.trim().toLowerCase();
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+      }
+      return person;
     } catch (err) {
       if (err instanceof ApiError && err.status === 404) return undefined;
       // 401/403: no token on the server (e.g. /profile/me). Treat as
