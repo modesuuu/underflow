@@ -976,7 +976,7 @@ export const en = {
   "profile.badgeAllRounder": "All-Rounder",
   "profile.badgeAllRounderDesc": "List 5 or more skills",
   "profile.memberSince": "Member since {date}",
-  "profile.projectHighlights": "Project Highlights",
+  "profile.newProjects": "New Projects",
   "profile.membersCount": "{filled} of {total} members",
 
   // Misc pages + lightbox
@@ -2122,7 +2122,7 @@ export const id: Record<DictKey, string> = {
   "profile.badgeAllRounder": "Serba Bisa",
   "profile.badgeAllRounderDesc": "Cantumkan 5 skill atau lebih",
   "profile.memberSince": "Anggota sejak {date}",
-  "profile.projectHighlights": "Proyek Pilihan",
+  "profile.newProjects": "Proyek Terbaru",
   "profile.membersCount": "{filled} dari {total} anggota",
 
   // Misc pages + lightbox

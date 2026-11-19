@@ -14,12 +14,12 @@ const STATUS_KEY: Record<CollabProject["status"], DictKey> = {
 };
 
 /**
- * Project highlights on the profile Overview: the person's own
- * projects first, then the fullest teams, capped at three cards.
- * Renders nothing when the person has no active projects.
+ * New projects on the profile Overview: the person's most recently
+ * posted projects (postedAt is the backend created_at), capped at
+ * three cards. Equal timestamps keep the backend's created_at DESC
+ * order. Renders nothing when the person has no active projects.
  */
 export function ProjectsHighlight({
-  person,
   projects,
 }: {
   person: PersonDetail;
@@ -27,22 +27,17 @@ export function ProjectsHighlight({
 }) {
   const { t } = useLanguage();
   const sorted = [...projects]
-    .sort((a, b) => {
-      const aOwned = person.aliases.includes(a.owner.id) ? 0 : 1;
-      const bOwned = person.aliases.includes(b.owner.id) ? 0 : 1;
-      if (aOwned !== bOwned) return aOwned - bOwned;
-      return b.slotsFilled - a.slotsFilled;
-    })
+    .sort((a, b) => (b.postedAt ?? "").localeCompare(a.postedAt ?? ""))
     .slice(0, 3);
   if (sorted.length === 0) return null;
 
   return (
     <section
-      aria-label={t("profile.projectHighlights")}
+      aria-label={t("profile.newProjects")}
       className="flex flex-col gap-4 rounded-2xl bg-bg p-5"
     >
       <h3 className="text-lg font-medium text-ink">
-        {t("profile.projectHighlights")}
+        {t("profile.newProjects")}
       </h3>
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {sorted.map((project) => (
