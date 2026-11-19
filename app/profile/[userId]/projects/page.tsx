@@ -86,6 +86,7 @@ export default async function ProfileProjectsPage({
 
   return (
     <AppShell
+      fill
       hideTopBar
       breadcrumbRoot={person.name}
       breadcrumbLeaf="Collaborations"
@@ -93,10 +94,10 @@ export default async function ProfileProjectsPage({
       backHref={`/profile/${person.id}`}
     >
       <h1 className="sr-only">{`${person.name}'s projects`}</h1>
-      <div className="flex flex-col gap-6 px-4 py-6 sm:px-6 sm:py-8 lg:flex-row">
+      <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto px-4 py-6 sm:px-6 sm:py-8 lg:flex-row lg:overflow-visible">
         <ProfileRail person={person} stats={stats} activeTab="projects" />
 
-        <div className="min-w-0 flex-1">
+        <div className="no-scrollbar min-w-0 flex-1 lg:min-h-0 lg:overflow-y-auto">
           <Suspense fallback={<ProjectsGridSkeleton />}>
             <ProjectsBody userId={userId} />
           </Suspense>

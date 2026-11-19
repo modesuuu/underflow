@@ -27,8 +27,9 @@ const NAV: { key: ProfileTab; labelKey: DictKey; icon: string; suffix: string }[
  * The GitHub-style profile rail shared by the Overview / Posts /
  * Projects pages: big photo card, name + @username, bio, a vertical
  * nav with real counts, contact rows (socials, email, member since)
- * and the Edit Profile action on your own profile. Sticky on wide
- * screens so the nav stays reachable while the content scrolls.
+ * and the Edit Profile action on your own profile. On wide screens
+ * the rail is a fixed full-height column that never scrolls; only
+ * the content column beside it does.
  */
 export function ProfileRail({
   person,
@@ -57,8 +58,8 @@ export function ProfileRail({
     : null;
 
   return (
-    <aside className="flex w-full shrink-0 flex-col gap-4 lg:sticky lg:top-6 lg:w-[300px] lg:self-start">
-      <div className="w-36 sm:w-44 lg:w-full">
+    <aside className="flex w-full shrink-0 flex-col gap-4 lg:h-full lg:w-[300px] lg:overflow-hidden">
+      <div className="w-36 sm:w-44">
         {person.avatarUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img

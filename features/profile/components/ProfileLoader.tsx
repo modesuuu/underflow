@@ -75,13 +75,13 @@ export function ProfileLoader({ userId }: { userId: string }) {
 
   if (!person || !stats) {
     return (
-      <div className="flex min-h-0 flex-1 flex-col gap-6 lg:flex-row">
+      <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto lg:flex-row lg:overflow-visible">
         <div className="flex w-full shrink-0 flex-col gap-4 lg:w-[300px]">
-          <div className="aspect-square w-36 rounded-2xl bg-placeholder sm:w-44 lg:w-full" />
+          <div className="aspect-square w-36 rounded-2xl bg-placeholder sm:w-44" />
           <div className="h-6 w-40 rounded bg-placeholder" />
           <div className="h-4 w-28 rounded bg-placeholder/60" />
         </div>
-        <div className="flex min-w-0 flex-1 flex-col gap-6">
+        <div className="no-scrollbar flex min-w-0 flex-1 flex-col gap-6 lg:min-h-0 lg:overflow-y-auto">
           {Array.from({ length: 2 }).map((_, i) => (
             <div key={i} className="flex flex-col gap-3 rounded-2xl bg-bg p-5">
               <div className="h-5 w-44 rounded bg-placeholder" />
@@ -94,9 +94,9 @@ export function ProfileLoader({ userId }: { userId: string }) {
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-6 lg:flex-row">
+    <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto lg:flex-row lg:overflow-visible">
       <ProfileRail person={person} stats={stats} activeTab="overview" />
-      <div className="flex min-w-0 flex-1 flex-col gap-6">
+      <div className="no-scrollbar flex min-w-0 flex-1 flex-col gap-6 lg:min-h-0 lg:overflow-y-auto">
         <ProfileDetailCard person={person} />
         {activity && <ActivityHeatmap activity={activity} />}
         <ProjectsHighlight person={person} projects={projects} />

@@ -82,6 +82,7 @@ export default async function ProfilePostsPage({ params }: ProfilePostsPageProps
 
   return (
     <AppShell
+      fill
       hideTopBar
       actions={<PostButton />}
       breadcrumbRoot={person.name}
@@ -90,9 +91,9 @@ export default async function ProfilePostsPage({ params }: ProfilePostsPageProps
       backHref={`/profile/${person.id}`}
     >
       <h1 className="sr-only">{`${person.name}'s posts`}</h1>
-      <div className="flex flex-col gap-6 px-4 py-6 sm:px-6 lg:flex-row">
+      <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto px-4 py-6 sm:px-6 lg:flex-row lg:overflow-visible">
         <ProfileRail person={person} stats={stats} activeTab="posts" />
-        <div className="min-w-0 flex-1">
+        <div className="no-scrollbar min-w-0 flex-1 lg:min-h-0 lg:overflow-y-auto">
           <Suspense fallback={<FeedColumnSkeleton />}>
             <PostsBody userId={userId} />
           </Suspense>
