@@ -84,7 +84,7 @@ export function ActivityHeatmap({ activity }: { activity: UserActivity }) {
   return (
     <section
       aria-label={t("profile.activityHeading")}
-      className="flex flex-col gap-4 rounded-3xl bg-bg p-5"
+      className="flex flex-col gap-4 rounded-2xl bg-bg p-5"
     >
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h3 className="text-lg font-medium text-ink">

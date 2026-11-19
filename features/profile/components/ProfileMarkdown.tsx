@@ -57,13 +57,13 @@ export function ProfileMarkdown({ source }: { source: string }) {
             </code>
           ),
           pre: ({ children }) => (
-            <pre className="overflow-x-auto rounded-lg bg-surface p-3 font-mono text-[13px] leading-relaxed">
+            <pre className="overflow-x-auto rounded-md bg-surface p-3 font-mono text-[13px] leading-relaxed">
               {children}
             </pre>
           ),
           img: ({ src, alt }) => (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={src} alt={alt ?? ""} className="max-w-full rounded-lg" />
+            <img src={src} alt={alt ?? ""} className="max-w-full rounded-md" />
           ),
           hr: () => <hr className="border-line" />,
           table: ({ children }) => (

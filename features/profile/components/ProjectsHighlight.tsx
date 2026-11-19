@@ -39,7 +39,7 @@ export function ProjectsHighlight({
   return (
     <section
       aria-label={t("profile.projectHighlights")}
-      className="flex flex-col gap-4 rounded-3xl bg-bg p-5"
+      className="flex flex-col gap-4 rounded-2xl bg-bg p-5"
     >
       <h3 className="text-lg font-medium text-ink">
         {t("profile.projectHighlights")}
@@ -49,7 +49,7 @@ export function ProjectsHighlight({
           <Link
             key={project.id}
             href={`/collaborations/${project.id}`}
-            className="flex flex-col gap-2 rounded-2xl border border-transparent bg-surface p-4 transition-colors hover:border-line"
+            className="flex flex-col gap-2 rounded-md border border-transparent bg-surface p-4 transition-colors hover:border-line"
           >
             <span className="flex items-start justify-between gap-2">
               <span className="text-sm font-medium leading-snug text-ink">

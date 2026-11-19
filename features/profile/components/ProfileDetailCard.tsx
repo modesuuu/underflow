@@ -23,7 +23,7 @@ export function ProfileDetailCard({ person }: { person: PersonDetail }) {
   return (
     <section
       aria-label={t("profile.profileDetail")}
-      className="flex flex-col gap-4 rounded-3xl bg-bg p-5"
+      className="flex flex-col gap-4 rounded-2xl bg-bg p-5"
     >
       <div className="flex items-center justify-between gap-2">
         <h3 className="text-lg font-medium text-ink">
