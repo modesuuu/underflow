@@ -11,7 +11,6 @@ import {
   getProfileStats,
 } from "@/features/profile/api";
 import { ProfileRail } from "@/features/profile/components/ProfileRail";
-import { NotificationsPanel } from "@/features/dashboard/components/NotificationsPanel";
 import { tStatic } from "@/lib/i18n/format";
 
 interface ProfilePostsPageProps {
@@ -89,7 +88,6 @@ export default async function ProfilePostsPage({ params }: ProfilePostsPageProps
       breadcrumbLeaf="Feed"
       backLabel={person.name}
       backHref={`/profile/${person.id}`}
-      panel={<NotificationsPanel className="px-6" />}
     >
       <h1 className="sr-only">{`${person.name}'s posts`}</h1>
       <div className="flex flex-col gap-6 px-4 py-6 sm:px-6 lg:flex-row">
