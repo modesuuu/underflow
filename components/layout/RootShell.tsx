@@ -20,9 +20,9 @@ import { applyThemeMode } from "@/components/ui/ThemeToggle";
  * parts (TopBar, scrolling main, right panel) and renders as
  * this frame's flex child.
  *
- * Profile routes keep their chrome-free treatment (AppShell
- * navVariant "none" draws its own full-height shell), so the
- * frame steps aside for them.
+ * Profile routes used to keep a chrome-free treatment; since
+ * 2026-11-19 they ride the standard frame like every other
+ * app page (user request).
  */
 export function RootShell({ children }: { children: ReactNode }) {
   const { t } = useLanguage();
@@ -66,10 +66,9 @@ export function RootShell({ children }: { children: ReactNode }) {
   // Framed routes (app + admin) own their scrolling through inner
   // containers; the document itself must never scroll, or a stray
   // window scroll leaves the whole frame shifted with a void below
-  // it (the admin -> Open post report). Bare routes (auth, profile)
+  // it (the admin -> Open post report). Bare routes (auth, legal)
   // keep native document scrolling.
-  const lockDocumentScroll =
-    !isAuthRoute && !isLegalRoute && !(pathname?.startsWith("/profile") ?? false);
+  const lockDocumentScroll = !isAuthRoute && !isLegalRoute;
   useEffect(() => {
     if (!lockDocumentScroll) return;
     const html = document.documentElement;
@@ -99,15 +98,6 @@ export function RootShell({ children }: { children: ReactNode }) {
     return (
       <RequireAuth>
         <LivePoller />
-        {children}
-      </RequireAuth>
-    );
-  }
-  if (pathname?.startsWith("/profile")) {
-    return (
-      <RequireAuth>
-        <LivePoller />
-        <SkipLink label={t("common.skipToContent")} />
         {children}
       </RequireAuth>
     );

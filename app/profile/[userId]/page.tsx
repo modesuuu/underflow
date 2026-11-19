@@ -73,7 +73,6 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
   if (!person) {
     return (
       <AppShell
-        navVariant="none"
         hideTopBar
         breadcrumbRoot="Profile"
         breadcrumbLeaf="Profile"
@@ -90,7 +89,6 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
 
   return (
     <AppShell
-      navVariant="none"
       hideTopBar
       breadcrumbRoot={person.name}
       breadcrumbLeaf="Profile"

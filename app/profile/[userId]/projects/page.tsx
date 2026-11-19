@@ -81,7 +81,6 @@ export default async function ProfileProjectsPage({
 
   return (
     <AppShell
-      navVariant="none"
       hideTopBar
       breadcrumbRoot={person.name}
       breadcrumbLeaf="Collaborations"

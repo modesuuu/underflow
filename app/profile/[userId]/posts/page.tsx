@@ -78,7 +78,6 @@ export default async function ProfilePostsPage({ params }: ProfilePostsPageProps
 
   return (
     <AppShell
-      navVariant="none"
       hideTopBar
       actions={<PostButton />}
       breadcrumbRoot={person.name}
