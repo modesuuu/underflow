@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { toast } from "sonner";
 import { AppShell } from "@/components/layout/AppShell";
@@ -474,8 +475,15 @@ export function CircleWorkspace({
   if (circles.length === 0 && !initialCircleId) {
     return (
       <AppShell breadcrumbRoot="Dashboard" breadcrumbLeaf="Circle">
-        <div className="mx-auto flex w-full max-w-(--uf-content-w) flex-col gap-5 px-4 py-6 lg:mx-0 lg:ml-[28px] lg:px-0">
-          <div className="flex flex-col gap-2">
+        <div className="mx-auto flex w-full max-w-(--uf-content-w) flex-col gap-5 px-4 py-6 lg:px-0">
+          <Link
+            href="/"
+            className="inline-flex w-fit items-center gap-1.5 text-sm font-medium text-muted transition-colors hover:text-accent"
+          >
+            <Icon name="left-arrow-alt" size={18} />
+            {t("circle.backToFeed")}
+          </Link>
+          <div className="flex flex-col items-center gap-2 text-center">
             <h1 className="text-3xl font-semibold tracking-tight text-ink">
               {t("circle.title")}
             </h1>
@@ -496,7 +504,7 @@ export function CircleWorkspace({
           </div>
           {withoutCircle.length > 0 && (
             <div className="flex flex-col gap-1 pt-2">
-              <h2 className="pb-1 text-base font-semibold text-ink">
+              <h2 className="pb-1 text-center text-base font-semibold text-ink">
                 {t("circle.withoutCircleTitle")}
               </h2>
               <CreateCircleRows
