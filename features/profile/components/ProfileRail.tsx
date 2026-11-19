@@ -82,10 +82,7 @@ export function ProfileRail({
           {person.name}
         </h2>
         {person.username && (
-          <p className="flex items-center gap-2 text-sm font-medium text-accent">
-            <span aria-hidden="true" className="size-2 rounded-full bg-accent" />
-            @{person.username}
-          </p>
+          <p className="text-sm font-medium text-accent">@{person.username}</p>
         )}
         {person.bio && (
           <p className="whitespace-pre-wrap pt-1 text-sm text-muted">
