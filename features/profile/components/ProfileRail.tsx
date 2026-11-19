@@ -64,12 +64,12 @@ export function ProfileRail({
           <img
             src={person.avatarUrl}
             alt={person.name}
-            className="aspect-square w-full rounded-2xl object-cover"
+            className="aspect-square w-full rounded-3xl object-cover"
           />
         ) : (
           <div
             aria-hidden="true"
-            className="grid aspect-square w-full place-items-center rounded-2xl bg-accent/15 text-6xl font-semibold text-accent"
+            className="grid aspect-square w-full place-items-center rounded-3xl bg-accent/15 text-6xl font-semibold text-accent"
           >
             {initialsOf(person.name)}
           </div>

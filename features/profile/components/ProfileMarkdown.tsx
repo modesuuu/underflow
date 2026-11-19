@@ -1,16 +1,20 @@
 import ReactMarkdown from "react-markdown";
+import remarkBreaks from "remark-breaks";
 import remarkGfm from "remark-gfm";
 
 /**
  * Markdown rendering for the Profile Detail text, styled with the
  * app tokens. react-markdown never renders raw HTML, so user text
- * cannot inject markup; links open in a new tab.
+ * cannot inject markup; links open in a new tab. remark-breaks
+ * makes a single Enter a visible line break, the way GitHub
+ * renders profile text and the way people expect a textarea to
+ * behave.
  */
 export function ProfileMarkdown({ source }: { source: string }) {
   return (
     <div className="flex flex-col gap-3 text-[15px] leading-relaxed text-ink">
       <ReactMarkdown
-        remarkPlugins={[remarkGfm]}
+        remarkPlugins={[remarkGfm, remarkBreaks]}
         components={{
           h1: ({ children }) => (
             <h1 className="text-[22px] font-semibold leading-snug">{children}</h1>
@@ -48,18 +52,18 @@ export function ProfileMarkdown({ source }: { source: string }) {
             </blockquote>
           ),
           code: ({ children }) => (
-            <code className="rounded bg-surface px-1 py-0.5 font-mono text-[13px]">
+            <code className="rounded-sm bg-surface px-1 py-0.5 font-mono text-[13px]">
               {children}
             </code>
           ),
           pre: ({ children }) => (
-            <pre className="overflow-x-auto rounded-xl bg-surface p-3 font-mono text-[13px] leading-relaxed">
+            <pre className="overflow-x-auto rounded-lg bg-surface p-3 font-mono text-[13px] leading-relaxed">
               {children}
             </pre>
           ),
           img: ({ src, alt }) => (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={src} alt={alt ?? ""} className="max-w-full rounded-xl" />
+            <img src={src} alt={alt ?? ""} className="max-w-full rounded-lg" />
           ),
           hr: () => <hr className="border-line" />,
           table: ({ children }) => (
