@@ -31,6 +31,20 @@ const NAV: { key: ProfileTab; labelKey: DictKey; icon: string; suffix: string }[
  * the rail is a fixed full-height column that never scrolls; only
  * the content column beside it does.
  */
+/** Brand glyph for a social row; the website link uses the regular
+ *  globe icon because Boxicons has no bxl-website glyph. */
+function SocialIcon({ icon }: { icon: string }) {
+  if (icon === "website") {
+    return <Icon name="globe" size={18} className="text-accent" />;
+  }
+  return (
+    <i
+      aria-hidden="true"
+      className={`bx bxl-${icon} text-[18px] text-accent`}
+    />
+  );
+}
+
 export function ProfileRail({
   person,
   stats,
@@ -138,18 +152,12 @@ export function ProfileRail({
                   rel="noreferrer"
                   className="flex items-center gap-2.5 text-muted transition-colors hover:text-ink"
                 >
-                  <i
-                    aria-hidden="true"
-                    className={`bx bxl-${social.icon} text-[18px] text-accent`}
-                  />
+                  <SocialIcon icon={social.icon} />
                   <span className="truncate">{social.label}</span>
                 </a>
               ) : (
                 <span className="flex items-center gap-2.5 text-muted">
-                  <i
-                    aria-hidden="true"
-                    className={`bx bxl-${social.icon} text-[18px] text-accent`}
-                  />
+                  <SocialIcon icon={social.icon} />
                   <span className="truncate">{social.label}</span>
                 </span>
               )}

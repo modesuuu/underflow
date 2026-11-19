@@ -57,6 +57,30 @@ export async function updateProfileBasics(
   });
 }
 
+/** One stored social / portfolio link (a backend social_media row). */
+export interface ProfileLink {
+  platform: string;
+  url: string;
+}
+
+interface BackendMeLinks {
+  social_media?: ProfileLink[];
+}
+
+export async function getProfileLinks(): Promise<ProfileLink[]> {
+  const res = await apiFetch<ApiEnvelope<BackendMeLinks>>("/api/profiles/me");
+  return res.data?.social_media ?? [];
+}
+
+export async function updateProfileLinks(
+  links: ProfileLink[],
+): Promise<void> {
+  await apiFetch<ApiEnvelope<unknown>>("/api/profiles/me", {
+    method: "PUT",
+    body: JSON.stringify({ social_media: links }),
+  });
+}
+
 /** Notification preferences (audit P1 #14). */
 export interface NotificationPreferences {
   likes: boolean;

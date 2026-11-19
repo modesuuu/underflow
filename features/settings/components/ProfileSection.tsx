@@ -24,6 +24,7 @@ import { SettingsSection } from "./SettingsSection";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import { updateProfilePhoto } from "../api";
 import { ProfileBasicsForm } from "./ProfileBasicsForm";
+import { ProfileLinksForm } from "./ProfileLinksForm";
 
 const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
 
@@ -176,6 +177,10 @@ export function ProfileSection() {
       <div className="h-px w-full bg-line" />
 
       <ProfileBasicsForm />
+
+      <div className="h-px w-full bg-line" />
+
+      <ProfileLinksForm />
 
       <div className="h-px w-full bg-line" />
 
