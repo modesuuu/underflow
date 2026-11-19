@@ -983,8 +983,6 @@ export const en = {
   "profile.badgeAllRounderDesc": "List 5 or more skills",
   "profile.memberSince": "Member since {date}",
   "profile.newProjects": "New Projects",
-  "profile.completedCollabs": "Completed Collaborations",
-  "profile.projectBy": "by {name}",
   "profile.membersCount": "{filled} of {total} members",
 
   // Misc pages + lightbox
@@ -1099,6 +1097,8 @@ export const en = {
   "modal.groupCircleHint": "A private group space inside Underflow for this project, with an announcements zone and a general zone.",
   "modal.groupExternal": "External group link",
   "modal.groupExternalHint": "Use a group you already have, for example WhatsApp, Telegram, or Discord.",
+  "modal.groupNone": "Decide later",
+  "modal.groupNoneHint": "No group space yet. You can create a Circle later from the project page.",
   "modal.groupLinkLabel": "Group link",
   "modal.groupLinkPlaceholder": "https://chat.whatsapp.com/...",
   "modal.groupLinkInvalid": "Enter a valid link starting with http:// or https://",
@@ -2135,8 +2135,6 @@ export const id: Record<DictKey, string> = {
   "profile.badgeAllRounderDesc": "Cantumkan 5 skill atau lebih",
   "profile.memberSince": "Anggota sejak {date}",
   "profile.newProjects": "Proyek Terbaru",
-  "profile.completedCollabs": "Kolaborasi Selesai",
-  "profile.projectBy": "oleh {name}",
   "profile.membersCount": "{filled} dari {total} anggota",
 
   // Misc pages + lightbox
@@ -2251,6 +2249,8 @@ export const id: Record<DictKey, string> = {
   "modal.groupCircleHint": "Ruang grup privat di dalam Underflow untuk proyek ini, dengan zone announcements dan zone general.",
   "modal.groupExternal": "Link grup eksternal",
   "modal.groupExternalHint": "Pakai grup yang sudah kamu punya, misalnya WhatsApp, Telegram, atau Discord.",
+  "modal.groupNone": "Nanti saja",
+  "modal.groupNoneHint": "Belum ada ruang grup. Kamu bisa membuat Circle nanti dari halaman proyek.",
   "modal.groupLinkLabel": "Link grup",
   "modal.groupLinkPlaceholder": "https://chat.whatsapp.com/...",
   "modal.groupLinkInvalid": "Masukkan link yang valid, diawali http:// atau https://",

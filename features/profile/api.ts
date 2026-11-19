@@ -135,6 +135,32 @@ export async function getPersonCompletedJoinedProjects(
   );
 }
 
+/**
+ * The profile Projects page list (user decision 2026-11-19): every
+ * project the person owns, whatever its status (open ones included),
+ * plus projects they joined that are already completed. Joined
+ * projects that are still running stay off the page until they
+ * finish. Sorted newest first.
+ */
+export async function getPersonAllProjects(
+  person: PersonDetail,
+): Promise<CollabProject[]> {
+  const [projects, completedJoined] = await Promise.all([
+    getCollabProjects(),
+    getPersonCompletedJoinedProjects(person),
+  ]);
+  const own = projects.filter((project) =>
+    person.aliases.includes(project.owner.id),
+  );
+  const byId = new Map<string, CollabProject>();
+  for (const project of [...own, ...completedJoined]) {
+    byId.set(project.id, project);
+  }
+  return [...byId.values()].sort((a, b) =>
+    (b.postedAt ?? "").localeCompare(a.postedAt ?? ""),
+  );
+}
+
 /** Posts authored by the person (any alias) — feeds /profile/[userId]/posts. */
 export async function getPersonPosts(person: PersonDetail): Promise<Post[]> {
   const posts = await getDashboardPosts();

@@ -5,7 +5,7 @@ import { AppShell } from "@/components/layout/AppShell";
 import { CollabGrid } from "@/features/collaborations/components/CollabGrid";
 import {
   getPerson,
-  getPersonProjects,
+  getPersonAllProjects,
   getProfileStats,
 } from "@/features/profile/api";
 import { ProfileRail } from "@/features/profile/components/ProfileRail";
@@ -72,7 +72,7 @@ function ProjectsGridSkeleton() {
 async function ProjectsBody({ userId }: { userId: string }) {
   const person = await getPerson(userId);
   if (!person) notFound();
-  const projects = await getPersonProjects(person);
+  const projects = await getPersonAllProjects(person);
   return (
     <CollabGrid
       clientList={projects}
