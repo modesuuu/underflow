@@ -3,7 +3,7 @@
  * Skills are user-created with free-form names, so matching is
  * keyword based: the name is split into words and the first rule
  * with a matching word wins ("front-end" also matches via its
- * joined form). Unknown names fall back to a neutral shapes glyph
+ * joined form). Unknown names fall back to a plain tag glyph
  * instead of a code icon, which reads wrong for non-technical
  * skills. Rule order matters: specific domains come before the
  * generic coding bucket.
@@ -71,5 +71,5 @@ export function skillIconName(skillName: string): string {
       return rule.icon;
     }
   }
-  return "shapes";
+  return "tag";
 }
