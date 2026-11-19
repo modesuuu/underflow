@@ -22,7 +22,11 @@ import {
 } from "@/features/collaborations/skills-api";
 import { SettingsSection } from "./SettingsSection";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
-import { updateProfilePhoto } from "../api";
+import {
+  getProfileSkillIds,
+  updateProfilePhoto,
+  updateProfileSkills,
+} from "../api";
 import { ProfileForm } from "./ProfileForm";
 
 const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
@@ -30,10 +34,12 @@ const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
 /**
  * Profile section of Settings: the profile photo (uploaded
  * straight to Cloudinary, then saved with PUT /api/profiles/me)
- * and the user's skills. System skills are listed locked — they
- * are the shared role vocabulary and cannot be removed; private
- * skills can be added and removed here, the same endpoints the
- * New Project modal uses.
+ * and the user's skills. System skills are the shared role
+ * vocabulary: clicking one toggles whether it shows on the user's
+ * profile (the backend user_skill selection, synced through
+ * PUT /api/profiles/me). Private skills can be added and removed
+ * here, the same endpoints the New Project modal uses, and a new
+ * private skill joins the profile automatically.
  */
 export function ProfileSection() {
   const { t } = useLanguage();
@@ -48,6 +54,8 @@ export function ProfileSection() {
   const [adding, setAdding] = useState(false);
   const [confirmRemoveId, setConfirmRemoveId] = useState<string | null>(null);
   const [removing, setRemoving] = useState(false);
+  const [profileSkillIds, setProfileSkillIds] = useState<string[] | null>(null);
+  const [togglingId, setTogglingId] = useState<string | null>(null);
 
   async function loadSkills() {
     setSkillsError(null);
@@ -58,9 +66,38 @@ export function ProfileSection() {
     }
   }
 
+  async function loadProfileSkills() {
+    try {
+      setProfileSkillIds(await getProfileSkillIds());
+    } catch {
+      setProfileSkillIds(null);
+    }
+  }
+
   useEffect(() => {
     void loadSkills();
+    void loadProfileSkills();
   }, []);
+
+  async function toggleProfileSkill(skill: Skill) {
+    if (profileSkillIds === null || togglingId !== null) return;
+    const next = profileSkillIds.includes(skill.id)
+      ? profileSkillIds.filter((id) => id !== skill.id)
+      : [...profileSkillIds, skill.id];
+    setTogglingId(skill.id);
+    try {
+      await updateProfileSkills(next);
+      setProfileSkillIds(next);
+    } catch (err) {
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : t("settings.profile.couldNotUpdateSkills"),
+      );
+    } finally {
+      setTogglingId(null);
+    }
+  }
 
   async function handlePhoto(file: File) {
     if (!file.type.startsWith("image/")) {
@@ -106,6 +143,9 @@ export function ProfileSection() {
     try {
       const created = await createSkill(name);
       setSkills((prev) => (prev ? [...prev, created] : [created]));
+      setProfileSkillIds((prev) =>
+        prev && !prev.includes(created.id) ? [...prev, created.id] : prev,
+      );
       setDraft("");
     } catch (err) {
       setAddError(
@@ -121,6 +161,9 @@ export function ProfileSection() {
     try {
       await deleteSkill(skill.id);
       setSkills((prev) => (prev ? prev.filter((s) => s.id !== skill.id) : prev));
+      setProfileSkillIds((prev) =>
+        prev ? prev.filter((id) => id !== skill.id) : prev,
+      );
       setConfirmRemoveId(null);
     } catch (err) {
       toast.error(
@@ -203,18 +246,35 @@ export function ProfileSection() {
             {systemSkills.length > 0 && (
               <div className="flex flex-col gap-2">
                 <div className="flex flex-wrap gap-1.5">
-                  {systemSkills.map((skill) => (
-                    <Token
-                      key={skill.id}
-                      label={skill.name}
-                      size="sm"
-                      icon={
-                        SYSTEM_SKILL_ICONS[skill.name] ? (
-                          <Icon name={SYSTEM_SKILL_ICONS[skill.name]} size={12} />
-                        ) : undefined
-                      }
-                    />
-                  ))}
+                  {systemSkills.map((skill) => {
+                    const onProfile =
+                      profileSkillIds?.includes(skill.id) ?? false;
+                    return (
+                      <Token
+                        key={skill.id}
+                        label={skill.name}
+                        size="sm"
+                        color={onProfile ? "green" : undefined}
+                        icon={
+                          SYSTEM_SKILL_ICONS[skill.name] ? (
+                            <Icon
+                              name={SYSTEM_SKILL_ICONS[skill.name]}
+                              size={12}
+                            />
+                          ) : undefined
+                        }
+                        endContent={
+                          <Icon name={onProfile ? "check" : "plus"} size={12} />
+                        }
+                        onClick={
+                          profileSkillIds !== null
+                            ? () => void toggleProfileSkill(skill)
+                            : undefined
+                        }
+                        isDisabled={togglingId !== null}
+                      />
+                    );
+                  })}
                 </div>
                 <p className="text-[13px] text-muted">
                   {t("settings.profile.standardRolesNote")}

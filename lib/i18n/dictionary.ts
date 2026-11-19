@@ -184,7 +184,7 @@ export const en = {
   "settings.profile.yourSkills": "Your skills",
   "settings.profile.loadingSkills": "Loading your skills…",
   "settings.profile.standardRolesNote":
-    "Standard roles, shared by everyone. They cannot be removed.",
+    "Standard roles, shared by everyone. Click one to show or hide it on your profile.",
   "settings.profile.noSkillsYet":
     "No personal skills yet. Add the ones you want to be found for.",
   "settings.profile.addSkillPlaceholder": "Add a skill, e.g. Figma",
@@ -200,6 +200,7 @@ export const en = {
   "settings.profile.couldNotUpdatePhoto": "Could not update your photo.",
   "settings.profile.couldNotAddSkill": "Could not add that skill.",
   "settings.profile.couldNotRemoveSkill": "Could not remove that skill.",
+  "settings.profile.couldNotUpdateSkills": "Could not update your profile skills.",
 
   // Settings > Help Center
   "settings.help.title": "Help Center",
@@ -1333,7 +1334,7 @@ export const id: Record<DictKey, string> = {
   "settings.profile.yourSkills": "Keahlian kamu",
   "settings.profile.loadingSkills": "Memuat keahlian kamu…",
   "settings.profile.standardRolesNote":
-    "Peran standar, dipakai bersama oleh semua orang. Tidak bisa dihapus.",
+    "Peran standar, dipakai bersama oleh semua orang. Klik untuk menampilkan atau menyembunyikannya di profile kamu.",
   "settings.profile.noSkillsYet":
     "Belum ada keahlian pribadi. Tambahkan keahlian yang ingin kamu temukan.",
   "settings.profile.addSkillPlaceholder": "Tambah keahlian, mis. Figma",
@@ -1349,6 +1350,7 @@ export const id: Record<DictKey, string> = {
   "settings.profile.couldNotUpdatePhoto": "Tidak bisa memperbarui foto kamu.",
   "settings.profile.couldNotAddSkill": "Tidak bisa menambahkan keahlian itu.",
   "settings.profile.couldNotRemoveSkill": "Tidak bisa menghapus keahlian itu.",
+  "settings.profile.couldNotUpdateSkills": "Tidak bisa memperbarui keahlian profile.",
 
   // Settings > Help Center
   "settings.help.title": "Pusat Bantuan",

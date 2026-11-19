@@ -42,6 +42,7 @@ interface BackendMe {
   bio?: string;
   profile_detail?: string;
   social_media?: ProfileLink[];
+  skills?: { id: string }[];
 }
 
 export async function getProfileForm(): Promise<ProfileFormData> {
@@ -65,6 +66,22 @@ export async function updateProfileForm(
       profile_detail: data.profileDetail,
       social_media: data.links,
     }),
+  });
+}
+
+/** Skill ids currently shown on the user's profile: the backend's
+ *  user_skill selection, returned by GET /api/profiles/me. */
+export async function getProfileSkillIds(): Promise<string[]> {
+  const res = await apiFetch<ApiEnvelope<BackendMe>>("/api/profiles/me");
+  return (res.data?.skills ?? []).map((s) => s.id);
+}
+
+/** Replace the profile skill selection: PUT /api/profiles/me syncs
+ *  the user_skill rows to exactly this id list in one transaction. */
+export async function updateProfileSkills(skillIds: string[]): Promise<void> {
+  await apiFetch<ApiEnvelope<unknown>>("/api/profiles/me", {
+    method: "PUT",
+    body: JSON.stringify({ skills: skillIds }),
   });
 }
 
