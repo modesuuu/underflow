@@ -11,7 +11,7 @@
 const RULES: { icon: string; words: string[] }[] = [
   { icon: "video", words: ["video", "motion", "film", "editing"] },
   {
-    icon: "pen-tool",
+    icon: "palette",
     words: ["ui", "ux", "figma", "design", "desain", "grafis", "graphic", "graphics"],
   },
   { icon: "cloud", words: ["devops"] },
@@ -34,7 +34,7 @@ const RULES: { icon: string; words: string[] }[] = [
     words: ["assisten", "assistant", "asisten", "support", "admin"],
   },
   {
-    icon: "megaphone",
+    icon: "trending-up",
     words: ["marketing", "social", "sosial", "seo", "promotion", "promosi"],
   },
   {
