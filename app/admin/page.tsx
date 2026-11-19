@@ -150,7 +150,6 @@ function HighlightCard({
   pillText?: string;
   spark: React.ReactNode;
 }) {
-  const { t } = useLanguage();
   return (
     <div className="rounded-lg border border-line bg-surface px-4 py-3.5">
       <div className="flex items-center justify-between gap-2">
@@ -159,18 +158,7 @@ function HighlightCard({
           <span className="truncate">{label}</span>
         </span>
         {delta !== undefined ? (
-          delta === null ? (
-            <span
-              className="inline-flex shrink-0 items-center rounded-full px-1.5 py-0.5 text-[11px] font-medium"
-              style={{
-                background:
-                  "color-mix(in srgb, var(--color-success, #198100) 14%, transparent)",
-                color: "var(--color-success, #198100)",
-              }}
-            >
-              {t("admin.deltaNew")}
-            </span>
-          ) : (
+          delta === null ? null : (
             <DeltaPill delta={delta} />
           )
         ) : pillText ? (
