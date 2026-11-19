@@ -25,7 +25,10 @@ export async function generateMetadata({
   const { userId } = await params;
   const person = await getPerson(userId);
   if (!person) return { title: "Profile" };
-  return { title: `${person.name} — Underflow`, description: person.bio };
+  return {
+    title: `${person.name} — Underflow`,
+    description: `${person.name} (@${person.username}) on Underflow`,
+  };
 }
 
 /** Mirrors the built page: profile rail + stacked content cards. */

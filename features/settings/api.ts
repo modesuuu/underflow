@@ -3,7 +3,7 @@ import { apiFetch, type ApiEnvelope } from "@/lib/api-client";
 /**
  * PUT /api/profiles/me with the photo fields only — the backend
  * updates just the fields present in the body, so a photo change
- * never touches the name, bio or social links. The URL and public
+ * never touches the name or social links. The URL and public
  * id come from the direct-to-Cloudinary upload (uploadImage in
  * features/dashboard/api.ts).
  */
@@ -32,7 +32,6 @@ export interface ProfileLink {
  *  button is atomic — nothing half-saves. */
 export interface ProfileFormData {
   fullName: string;
-  bio: string;
   profileDetail: string;
   links: ProfileLink[];
 }
@@ -49,7 +48,6 @@ export async function getProfileForm(): Promise<ProfileFormData> {
   const res = await apiFetch<ApiEnvelope<BackendMe>>("/api/profiles/me");
   return {
     fullName: res.data?.full_name ?? "",
-    bio: res.data?.bio ?? "",
     profileDetail: res.data?.profile_detail ?? "",
     links: res.data?.social_media ?? [],
   };
@@ -62,7 +60,6 @@ export async function updateProfileForm(
     method: "PUT",
     body: JSON.stringify({
       full_name: data.fullName,
-      bio: data.bio,
       profile_detail: data.profileDetail,
       social_media: data.links,
     }),

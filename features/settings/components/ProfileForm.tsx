@@ -11,7 +11,7 @@ import { getProfileForm, updateProfileForm, type ProfileLink } from "../api";
 import { useUnsavedChangesGuard } from "../useUnsavedChangesGuard";
 
 /**
- * The whole editable Settings → Profile form — name, bio, Profile
+ * The whole editable Settings → Profile form — name, Profile
  * Detail and the social/portfolio links — behind ONE Save button.
  * Saving sends a single PUT /api/profiles/me (transactional on the
  * backend), so the page never half-saves. While the form differs
@@ -39,12 +39,11 @@ function linkRecord(links: ProfileLink[]): Record<string, string> {
   return record;
 }
 
-/** The comparable shape of the form: trimmed name/bio, the raw
+/** The comparable shape of the form: trimmed name, the raw
  *  detail, and the non-empty links in platform order. Used both
  *  for the loaded snapshot and the live dirty check. */
 function serialize(
   name: string,
-  bio: string,
   detail: string,
   values: Record<string, string>,
 ): string {
@@ -54,7 +53,6 @@ function serialize(
   });
   return JSON.stringify({
     name: name.trim(),
-    bio: bio.trim(),
     detail,
     links,
   });
@@ -63,7 +61,6 @@ function serialize(
 export function ProfileForm() {
   const { t } = useLanguage();
   const [name, setName] = useState("");
-  const [bio, setBio] = useState("");
   const [detail, setDetail] = useState("");
   const [detailTab, setDetailTab] = useState<"write" | "preview">("write");
   const [linkValues, setLinkValues] = useState<Record<string, string>>({});
@@ -77,12 +74,10 @@ export function ProfileForm() {
       .then((data) => {
         const record = linkRecord(data.links);
         setName(data.fullName);
-        setBio(data.bio);
         setDetail(data.profileDetail);
         setLinkValues(record);
         snapshotRef.current = serialize(
           data.fullName,
-          data.bio,
           data.profileDetail,
           record,
         );
@@ -92,7 +87,7 @@ export function ProfileForm() {
   }, []);
 
   const dirty =
-    loaded && serialize(name, bio, detail, linkValues) !== snapshotRef.current;
+    loaded && serialize(name, detail, linkValues) !== snapshotRef.current;
   const guard = useUnsavedChangesGuard(dirty);
 
   async function save() {
@@ -118,13 +113,12 @@ export function ProfileForm() {
     try {
       await updateProfileForm({
         fullName: name.trim(),
-        bio: bio.trim(),
         profileDetail: detail,
         links,
       });
       const record = linkRecord(links);
       setLinkValues(record);
-      snapshotRef.current = serialize(name, bio, detail, record);
+      snapshotRef.current = serialize(name, detail, record);
       guard.disarmAfterSave();
       toast.success(t("settings.profile.basicsSaved"));
     } catch {
@@ -155,23 +149,6 @@ export function ProfileForm() {
         value={name}
         onChange={setName}
       />
-      <div className="flex flex-col gap-1.5">
-        <label
-          htmlFor="settings-bio"
-          className="text-sm font-medium text-ink"
-        >
-          {t("settings.profile.bioLabel")}
-        </label>
-        <textarea
-          id="settings-bio"
-          value={bio}
-          onChange={(e) => setBio(e.target.value)}
-          rows={3}
-          maxLength={300}
-          placeholder={t("settings.profile.bioPlaceholder")}
-          className="w-full resize-none rounded-lg border border-line bg-surface px-3 py-2 text-[15px] text-ink placeholder:text-subtle"
-        />
-      </div>
       <div className="flex flex-col gap-1.5">
         <div className="flex items-center justify-between gap-2">
           <label

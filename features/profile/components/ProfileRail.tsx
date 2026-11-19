@@ -99,11 +99,6 @@ export function ProfileRail({
         {person.username && (
           <p className="text-sm font-medium text-accent">@{person.username}</p>
         )}
-        {person.bio && (
-          <p className="whitespace-pre-wrap pt-1 text-sm text-muted">
-            {person.bio}
-          </p>
-        )}
       </div>
 
       {isOwn && (
