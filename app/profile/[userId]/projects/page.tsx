@@ -73,7 +73,12 @@ async function ProjectsBody({ userId }: { userId: string }) {
   const person = await getPerson(userId);
   if (!person) notFound();
   const projects = await getPersonProjects(person);
-  return <CollabGrid clientList={projects} />;
+  return (
+    <CollabGrid
+      clientList={projects}
+      gridClassName="grid grid-cols-1 gap-4 md:grid-cols-2 2xl:grid-cols-3"
+    />
+  );
 }
 
 export default async function ProfileProjectsPage({

@@ -27,6 +27,12 @@ interface CollabGridProps {
    * backend pagination is not used. When set, `initial` is ignored.
    */
   clientList?: CollabProject[];
+  /**
+   * Grid column classes. The board default assumes the full content
+   * width; narrower hosts (the profile projects column beside the
+   * rail) pass fewer columns so the cards keep a usable width.
+   */
+  gridClassName?: string;
 }
 
 /** Cap the stagger index so late cards don't wait a full second in. */
@@ -50,7 +56,7 @@ const STAGGER_CAP = 8;
  * grid — index numbers reshuffle on every interaction and imply a ranking
  * that doesn't exist.
  */
-export function CollabGrid({ initial, clientList }: CollabGridProps) {
+export function CollabGrid({ initial, clientList, gridClassName }: CollabGridProps) {
   const { t } = useLanguage();
   // Toolbar state lives in the shared store — the controls render
   // in the TopBar (AppShell actions) while this grid consumes them.
@@ -241,7 +247,11 @@ export function CollabGrid({ initial, clientList }: CollabGridProps) {
       ) : (
         /* Person cards in a grid, one page at a time. */
         <>
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <div
+            className={
+              gridClassName ?? "grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4"
+            }
+          >
             {visibleProjects.map((project, i) => (
               <div
                 key={project.id}

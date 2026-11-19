@@ -58,8 +58,8 @@ export function ProfileRail({
     : null;
 
   return (
-    <aside className="flex w-full shrink-0 flex-col gap-4 lg:h-full lg:w-[300px] lg:overflow-hidden">
-      <div className="w-36 sm:w-44">
+    <aside className="flex w-full shrink-0 flex-col gap-3 lg:h-full lg:w-[300px] lg:overflow-hidden">
+      <div className="w-36 sm:w-40">
         {person.avatarUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -114,8 +114,8 @@ export function ProfileRail({
               aria-current={active ? "page" : undefined}
               className={
                 active
-                  ? "flex items-center gap-2.5 rounded-lg bg-bg px-3 py-2 text-sm font-medium text-ink"
-                  : "flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-muted transition-colors hover:bg-bg hover:text-ink"
+                  ? "flex items-center gap-2.5 rounded-lg bg-bg px-3 py-1.5 text-sm font-medium text-ink"
+                  : "flex items-center gap-2.5 rounded-lg px-3 py-1.5 text-sm font-medium text-muted transition-colors hover:bg-bg hover:text-ink"
               }
             >
               <Icon name={item.icon} size={16} />
@@ -131,7 +131,7 @@ export function ProfileRail({
       </nav>
 
       {(person.socials?.length || person.email || memberSince) && (
-        <ul className="flex flex-col gap-2 border-t border-line pt-4 text-sm">
+        <ul className="flex flex-col gap-2 border-t border-line pt-3 text-sm">
           {person.socials?.map((social) => (
             <li key={social.label}>
               {social.href ? (
