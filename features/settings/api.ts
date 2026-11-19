@@ -20,64 +20,51 @@ export async function updateProfilePhoto(
   });
 }
 
-/** Current name + bio + profile detail for the Settings form. */
-export interface ProfileBasics {
-  fullName: string;
-  bio: string;
-  profileDetail: string;
-}
-
-interface BackendMe {
-  full_name?: string;
-  bio?: string;
-  profile_detail?: string;
-}
-
-export async function getProfileBasics(): Promise<ProfileBasics> {
-  const res = await apiFetch<ApiEnvelope<BackendMe>>("/api/profiles/me");
-  return {
-    fullName: res.data?.full_name ?? "",
-    bio: res.data?.bio ?? "",
-    profileDetail: res.data?.profile_detail ?? "",
-  };
-}
-
-export async function updateProfileBasics(
-  fullName: string,
-  bio: string,
-  profileDetail: string,
-): Promise<void> {
-  await apiFetch<ApiEnvelope<unknown>>("/api/profiles/me", {
-    method: "PUT",
-    body: JSON.stringify({
-      full_name: fullName,
-      bio,
-      profile_detail: profileDetail,
-    }),
-  });
-}
-
 /** One stored social / portfolio link (a backend social_media row). */
 export interface ProfileLink {
   platform: string;
   url: string;
 }
 
-interface BackendMeLinks {
+/** Everything the Settings → Profile form edits, loaded and saved
+ *  as one payload: the backend updates only the fields present and
+ *  wraps the whole PUT in a transaction, so the page's single Save
+ *  button is atomic — nothing half-saves. */
+export interface ProfileFormData {
+  fullName: string;
+  bio: string;
+  profileDetail: string;
+  links: ProfileLink[];
+}
+
+interface BackendMe {
+  full_name?: string;
+  bio?: string;
+  profile_detail?: string;
   social_media?: ProfileLink[];
 }
 
-export async function getProfileLinks(): Promise<ProfileLink[]> {
-  const res = await apiFetch<ApiEnvelope<BackendMeLinks>>("/api/profiles/me");
-  return res.data?.social_media ?? [];
+export async function getProfileForm(): Promise<ProfileFormData> {
+  const res = await apiFetch<ApiEnvelope<BackendMe>>("/api/profiles/me");
+  return {
+    fullName: res.data?.full_name ?? "",
+    bio: res.data?.bio ?? "",
+    profileDetail: res.data?.profile_detail ?? "",
+    links: res.data?.social_media ?? [],
+  };
 }
 
-export async function updateProfileLinks(
-  links: ProfileLink[],
+export async function updateProfileForm(
+  data: ProfileFormData,
 ): Promise<void> {
   await apiFetch<ApiEnvelope<unknown>>("/api/profiles/me", {
     method: "PUT",
-    body: JSON.stringify({ social_media: links }),
+    body: JSON.stringify({
+      full_name: data.fullName,
+      bio: data.bio,
+      profile_detail: data.profileDetail,
+      social_media: data.links,
+    }),
   });
 }
 

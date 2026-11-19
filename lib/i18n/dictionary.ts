@@ -123,6 +123,11 @@ export const en = {
   "settings.profile.websiteLabel": "Website / Portfolio",
   "settings.profile.linksInvalid": "One of the links is not a valid URL",
   "settings.profile.linksLoadFailed": "Couldn't load your links.",
+  "settings.unsavedTitle": "Unsaved changes",
+  "settings.unsavedDesc":
+    "You have unsaved changes on this page. Leave without saving them?",
+  "settings.unsavedLeave": "Leave",
+  "settings.unsavedHint": "Unsaved changes",
   "settings.account.deleteTitle": "Delete account",
   "settings.account.deleteDesc": "This permanently deletes your account, your posts, and your comments. Projects you own that still have other members must be deleted first.",
   "settings.account.deleteButton": "Delete account",
@@ -1268,6 +1273,11 @@ export const id: Record<DictKey, string> = {
   "settings.profile.websiteLabel": "Website / Portofolio",
   "settings.profile.linksInvalid": "Salah satu tautan bukan URL yang valid",
   "settings.profile.linksLoadFailed": "Gagal memuat tautanmu.",
+  "settings.unsavedTitle": "Perubahan belum disimpan",
+  "settings.unsavedDesc":
+    "Ada perubahan yang belum disimpan di halaman ini. Keluar tanpa menyimpan?",
+  "settings.unsavedLeave": "Keluar",
+  "settings.unsavedHint": "Perubahan belum disimpan",
   "settings.account.deleteTitle": "Hapus akun",
   "settings.account.deleteDesc": "Ini menghapus akun, postingan, dan komentarmu secara permanen. Proyek milikmu yang masih punya member lain harus dihapus dulu.",
   "settings.account.deleteButton": "Hapus akun",
