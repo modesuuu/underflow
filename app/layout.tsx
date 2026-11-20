@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "boxicons/css/boxicons.min.css";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import { RootShell } from "@/components/layout/RootShell";
 import { AppToaster } from "@/components/ui/AppToaster";
 import { ThemeInitScript } from "@/components/ui/ThemeInitScript";
@@ -56,6 +57,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             <AppToaster />
           </LanguageProvider>
         </AstryxTheme>
+        <SpeedInsights />
       </body>
     </html>
   );
