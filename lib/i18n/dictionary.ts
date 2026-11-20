@@ -183,6 +183,7 @@ export const en = {
   "settings.profile.loadingSkills": "Loading your skills…",
   "settings.profile.skillsNote":
     "Click a skill to show or hide it on your profile, then save. Skills you added yourself carry an x that deletes them for good.",
+  "settings.profile.skillExists": "That skill is already in the list above.",
   "settings.profile.addSkillPlaceholder": "Add a skill, e.g. Figma",
   "settings.profile.add": "Add",
   "settings.profile.adding": "Adding…",
@@ -1330,6 +1331,7 @@ export const id: Record<DictKey, string> = {
   "settings.profile.loadingSkills": "Memuat keahlian kamu…",
   "settings.profile.skillsNote":
     "Klik skill untuk menampilkan atau menyembunyikannya di profile kamu, lalu simpan. Skill buatanmu sendiri punya tanda x yang menghapusnya permanen.",
+  "settings.profile.skillExists": "Skill itu sudah ada di daftar di atas.",
   "settings.profile.addSkillPlaceholder": "Tambah keahlian, mis. Figma",
   "settings.profile.add": "Tambah",
   "settings.profile.adding": "Menambahkan…",

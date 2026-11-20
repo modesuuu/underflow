@@ -155,6 +155,16 @@ export function ProfileForm() {
       setAddError(invalid);
       return;
     }
+    // Duplicate guard: the visible list (standard roles + the
+    // user's own skills) is the namespace. The backend rejects
+    // these too; checking here gives instant feedback.
+    const duplicate = (skills ?? []).some(
+      (s) => s.name.trim().toLowerCase() === skillName.toLowerCase(),
+    );
+    if (duplicate) {
+      setAddError(t("settings.profile.skillExists"));
+      return;
+    }
     setAdding(true);
     setAddError(null);
     try {
