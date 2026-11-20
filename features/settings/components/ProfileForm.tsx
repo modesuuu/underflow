@@ -401,15 +401,25 @@ export function ProfileForm() {
           )}
 
           {privateSkills.length > 0 ? (
-            <div className="flex flex-wrap gap-1.5">
-              {privateSkills.map((skill) => (
-                <Token
-                  key={skill.id}
-                  label={skill.name}
-                  size="sm"
-                  onRemove={() => setConfirmRemoveId(skill.id)}
-                />
-              ))}
+            <div className="flex flex-col gap-2">
+              <div className="flex flex-wrap gap-1.5">
+                {privateSkills.map((skill) => {
+                  const onProfile = profileSkillIds.includes(skill.id);
+                  return (
+                    <Token
+                      key={skill.id}
+                      label={skill.name}
+                      size="sm"
+                      color={onProfile ? "green" : undefined}
+                      onClick={() => toggleProfileSkill(skill)}
+                      onRemove={() => setConfirmRemoveId(skill.id)}
+                    />
+                  );
+                })}
+              </div>
+              <p className="text-[13px] text-muted">
+                {t("settings.profile.privateSkillsNote")}
+              </p>
             </div>
           ) : (
             <p className="text-sm text-muted">

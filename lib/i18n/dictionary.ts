@@ -183,6 +183,8 @@ export const en = {
   "settings.profile.loadingSkills": "Loading your skills…",
   "settings.profile.standardRolesNote":
     "Standard roles, shared by everyone. Click one to show or hide it on your profile, then save.",
+  "settings.profile.privateSkillsNote":
+    "Your own skills. Click one to show or hide it on your profile, then save. The x on a skill deletes it for good.",
   "settings.profile.noSkillsYet":
     "No personal skills yet. Add the ones you want to be found for.",
   "settings.profile.addSkillPlaceholder": "Add a skill, e.g. Figma",
@@ -1332,6 +1334,8 @@ export const id: Record<DictKey, string> = {
   "settings.profile.loadingSkills": "Memuat keahlian kamu…",
   "settings.profile.standardRolesNote":
     "Peran standar, dipakai bersama oleh semua orang. Klik untuk menampilkan atau menyembunyikannya di profile kamu, lalu simpan.",
+  "settings.profile.privateSkillsNote":
+    "Skill buatanmu sendiri. Klik untuk menampilkan atau menyembunyikannya di profile kamu, lalu simpan. Tanda x di skill menghapusnya permanen.",
   "settings.profile.noSkillsYet":
     "Belum ada keahlian pribadi. Tambahkan keahlian yang ingin kamu temukan.",
   "settings.profile.addSkillPlaceholder": "Tambah keahlian, mis. Figma",
