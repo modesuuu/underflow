@@ -7,6 +7,7 @@ import { TextInput } from "@astryxdesign/core/TextInput";
 import { Token } from "@astryxdesign/core/Token";
 import { Icon } from "@/components/ui/Icon";
 import { isImeConfirmingEnter } from "@/lib/keyboard";
+import { skillIconName } from "@/lib/skill-icon";
 import { ProfileMarkdown } from "@/features/profile/components/ProfileMarkdown";
 import { ConfirmDialog } from "@/features/inbox/components/ConfirmDialog";
 import {
@@ -35,8 +36,8 @@ import { useUnsavedChangesGuard } from "../useUnsavedChangesGuard";
  * Two skill operations stay instant because they manage the
  * skill entities themselves, not the selection: adding a
  * personal skill creates it (the backend links it to the
- * profile right away) and removing one deletes it. Only the
- * standard-role toggles are draft state saved by the button.
+ * profile right away) and removing one deletes it. Toggling
+ * any skill in the list is draft state saved by the button.
  */
 
 const PLATFORMS = [
@@ -367,65 +368,38 @@ export function ProfileForm() {
 
       {skills !== null && (
         <>
-          {systemSkills.length > 0 && (
-            <div className="flex flex-col gap-2">
-              <div className="flex flex-wrap gap-1.5">
-                {systemSkills.map((skill) => {
-                  const onProfile = profileSkillIds.includes(skill.id);
-                  return (
-                    <Token
-                      key={skill.id}
-                      label={skill.name}
-                      size="sm"
-                      color={onProfile ? "green" : undefined}
-                      icon={
-                        SYSTEM_SKILL_ICONS[skill.name] ? (
-                          <Icon
-                            name={SYSTEM_SKILL_ICONS[skill.name]}
-                            size={12}
-                          />
-                        ) : undefined
-                      }
-                      endContent={
+          <div className="flex flex-col gap-2">
+            <div className="flex flex-wrap gap-1.5">
+              {[...systemSkills, ...privateSkills].map((skill) => {
+                const onProfile = profileSkillIds.includes(skill.id);
+                const iconName =
+                  SYSTEM_SKILL_ICONS[skill.name] ?? skillIconName(skill.name);
+                return (
+                  <Token
+                    key={skill.id}
+                    label={skill.name}
+                    size="sm"
+                    color={onProfile ? "green" : undefined}
+                    icon={<Icon name={iconName} size={12} />}
+                    endContent={
+                      skill.scope === "system" ? (
                         <Icon name={onProfile ? "check" : "plus"} size={12} />
-                      }
-                      onClick={() => toggleProfileSkill(skill)}
-                    />
-                  );
-                })}
-              </div>
-              <p className="text-[13px] text-muted">
-                {t("settings.profile.standardRolesNote")}
-              </p>
+                      ) : undefined
+                    }
+                    onClick={() => toggleProfileSkill(skill)}
+                    onRemove={
+                      skill.scope === "system"
+                        ? undefined
+                        : () => setConfirmRemoveId(skill.id)
+                    }
+                  />
+                );
+              })}
             </div>
-          )}
-
-          {privateSkills.length > 0 ? (
-            <div className="flex flex-col gap-2">
-              <div className="flex flex-wrap gap-1.5">
-                {privateSkills.map((skill) => {
-                  const onProfile = profileSkillIds.includes(skill.id);
-                  return (
-                    <Token
-                      key={skill.id}
-                      label={skill.name}
-                      size="sm"
-                      color={onProfile ? "green" : undefined}
-                      onClick={() => toggleProfileSkill(skill)}
-                      onRemove={() => setConfirmRemoveId(skill.id)}
-                    />
-                  );
-                })}
-              </div>
-              <p className="text-[13px] text-muted">
-                {t("settings.profile.privateSkillsNote")}
-              </p>
-            </div>
-          ) : (
-            <p className="text-sm text-muted">
-              {t("settings.profile.noSkillsYet")}
+            <p className="text-[13px] text-muted">
+              {t("settings.profile.skillsNote")}
             </p>
-          )}
+          </div>
 
           {confirming && (
             <div className="flex flex-wrap items-center gap-2 rounded-lg bg-bg px-3 py-2">

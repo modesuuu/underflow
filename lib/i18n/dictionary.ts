@@ -181,12 +181,8 @@ export const en = {
   "settings.profile.photoHint": "JPG, PNG, WebP or GIF, up to 5 MB.",
   "settings.profile.yourSkills": "Your skills",
   "settings.profile.loadingSkills": "Loading your skills…",
-  "settings.profile.standardRolesNote":
-    "Standard roles, shared by everyone. Click one to show or hide it on your profile, then save.",
-  "settings.profile.privateSkillsNote":
-    "Your own skills. Click one to show or hide it on your profile, then save. The x on a skill deletes it for good.",
-  "settings.profile.noSkillsYet":
-    "No personal skills yet. Add the ones you want to be found for.",
+  "settings.profile.skillsNote":
+    "Click a skill to show or hide it on your profile, then save. Skills you added yourself carry an x that deletes them for good.",
   "settings.profile.addSkillPlaceholder": "Add a skill, e.g. Figma",
   "settings.profile.add": "Add",
   "settings.profile.adding": "Adding…",
@@ -1332,12 +1328,8 @@ export const id: Record<DictKey, string> = {
   "settings.profile.photoHint": "JPG, PNG, WebP atau GIF, maksimal 5 MB.",
   "settings.profile.yourSkills": "Keahlian kamu",
   "settings.profile.loadingSkills": "Memuat keahlian kamu…",
-  "settings.profile.standardRolesNote":
-    "Peran standar, dipakai bersama oleh semua orang. Klik untuk menampilkan atau menyembunyikannya di profile kamu, lalu simpan.",
-  "settings.profile.privateSkillsNote":
-    "Skill buatanmu sendiri. Klik untuk menampilkan atau menyembunyikannya di profile kamu, lalu simpan. Tanda x di skill menghapusnya permanen.",
-  "settings.profile.noSkillsYet":
-    "Belum ada keahlian pribadi. Tambahkan keahlian yang ingin kamu temukan.",
+  "settings.profile.skillsNote":
+    "Klik skill untuk menampilkan atau menyembunyikannya di profile kamu, lalu simpan. Skill buatanmu sendiri punya tanda x yang menghapusnya permanen.",
   "settings.profile.addSkillPlaceholder": "Tambah keahlian, mis. Figma",
   "settings.profile.add": "Tambah",
   "settings.profile.adding": "Menambahkan…",
