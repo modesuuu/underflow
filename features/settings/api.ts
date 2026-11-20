@@ -34,6 +34,10 @@ export interface ProfileFormData {
   fullName: string;
   profileDetail: string;
   links: ProfileLink[];
+  /** Ids of the skills shown on the profile (the user_skill
+   *  selection). Sent as `skills` on save: the backend syncs
+   *  the pivot to exactly this list in the same transaction. */
+  skillIds: string[];
 }
 
 interface BackendMe {
@@ -50,6 +54,7 @@ export async function getProfileForm(): Promise<ProfileFormData> {
     fullName: res.data?.full_name ?? "",
     profileDetail: res.data?.profile_detail ?? "",
     links: res.data?.social_media ?? [],
+    skillIds: (res.data?.skills ?? []).map((s) => s.id),
   };
 }
 
@@ -62,25 +67,11 @@ export async function updateProfileForm(
       full_name: data.fullName,
       profile_detail: data.profileDetail,
       social_media: data.links,
+      skills: data.skillIds,
     }),
   });
 }
 
-/** Skill ids currently shown on the user's profile: the backend's
- *  user_skill selection, returned by GET /api/profiles/me. */
-export async function getProfileSkillIds(): Promise<string[]> {
-  const res = await apiFetch<ApiEnvelope<BackendMe>>("/api/profiles/me");
-  return (res.data?.skills ?? []).map((s) => s.id);
-}
-
-/** Replace the profile skill selection: PUT /api/profiles/me syncs
- *  the user_skill rows to exactly this id list in one transaction. */
-export async function updateProfileSkills(skillIds: string[]): Promise<void> {
-  await apiFetch<ApiEnvelope<unknown>>("/api/profiles/me", {
-    method: "PUT",
-    body: JSON.stringify({ skills: skillIds }),
-  });
-}
 
 /** Notification preferences (audit P1 #14). */
 export interface NotificationPreferences {
