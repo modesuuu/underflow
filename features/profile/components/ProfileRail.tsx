@@ -7,7 +7,6 @@ import type { DictKey } from "@/lib/i18n/dictionary";
 import { localeTag } from "@/lib/i18n/format";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import type { PersonDetail, ProfileStats, ProfileTab } from "../types";
-import { OwnProfileLogout } from "./OwnProfileLogout";
 
 function initialsOf(name: string): string {
   return name
@@ -178,7 +177,6 @@ export function ProfileRail({
         </ul>
       )}
 
-      <OwnProfileLogout personId={person.id} />
     </aside>
   );
 }
