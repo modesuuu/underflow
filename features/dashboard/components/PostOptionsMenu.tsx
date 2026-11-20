@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Icon } from "@/components/ui/Icon";
+import { useLanguage } from "@/lib/i18n/LanguageProvider";
 
 /**
  * The ••• menu on a feed post (header, right side) — same glyph and
@@ -19,6 +20,7 @@ export function PostOptionsMenu({
   onEdit?: () => void;
   onDelete?: () => void;
 }) {
+  const { t } = useLanguage();
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
 
@@ -44,7 +46,7 @@ export function PostOptionsMenu({
     <div ref={rootRef} className="relative shrink-0">
       <button
         type="button"
-        aria-label="Post options"
+        aria-label={t("feed.postOptions")}
         aria-haspopup="menu"
         aria-expanded={open}
         onClick={() => setOpen((value) => !value)}
@@ -55,7 +57,7 @@ export function PostOptionsMenu({
       {open && (
         <div
           role="menu"
-          aria-label="Post options"
+          aria-label={t("feed.postOptions")}
           className="absolute top-full right-0 z-30 mt-1 min-w-44 rounded-lg border border-line bg-surface p-1 shadow-lg"
         >
           {onReport && (
@@ -69,7 +71,7 @@ export function PostOptionsMenu({
               className="flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-medium text-ink transition-colors hover:bg-bg"
             >
               <Icon name="flag" size={18} />
-              Report post
+              {t("feed.reportPost")}
             </button>
           )}
           {onEdit && (
@@ -83,7 +85,7 @@ export function PostOptionsMenu({
               className="flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-medium text-ink transition-colors hover:bg-bg"
             >
               <Icon name="edit" size={18} />
-              Edit post
+              {t("feed.editPost")}
             </button>
           )}
           {onDelete && (
@@ -97,7 +99,7 @@ export function PostOptionsMenu({
               className="flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-medium text-badge transition-colors hover:bg-bg"
             >
               <Icon name="trash" size={18} />
-              Delete post
+              {t("feed.deletePost")}
             </button>
           )}
         </div>

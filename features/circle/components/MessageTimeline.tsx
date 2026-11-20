@@ -1,225 +1,223 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { Icon } from "@/components/ui/Icon";
-import { markChannelRead } from "../store";
-import { MessageGroup } from "./MessageGroup";
-import { formatTime } from "./MessageItem";
-import type { ChannelId, CircleData, CircleMember, CircleMessage } from "../types";
+import { MessageItem } from "./MessageItem";
+import { NewMessagesDivider } from "./NewMessagesDivider";
+import type { CircleZone, ZoneMessage } from "../types";
+import { useLanguage } from "@/lib/i18n/LanguageProvider";
 
-type Block =
-  | { type: "date"; key: string; label: string }
-  | { type: "new"; key: string }
-  | { type: "system"; key: string; message: CircleMessage }
-  | { type: "group"; key: string; author: CircleMember | undefined; messages: CircleMessage[] };
-
-const SEVEN_MINUTES = 7 * 60 * 1000;
-
+/** Local calendar-day key for grouping ("2026-11-18"). */
 function dayKey(iso: string): string {
   const d = new Date(iso);
   return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
 }
 
-function dayLabel(iso: string): string {
-  return new Date(iso).toLocaleDateString("en-US", {
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-  });
+function isContinuation(prev: ZoneMessage, next: ZoneMessage): boolean {
+  if (prev.authorId !== next.authorId) return false;
+  if (dayKey(prev.createdAt) !== dayKey(next.createdAt)) return false;
+  const gap = new Date(next.createdAt).getTime() - new Date(prev.createdAt).getTime();
+  return gap >= 0 && gap < 5 * 60 * 1000;
 }
 
 /**
- * The message timeline (spec §5.1): date separators, <7-minute grouping,
- * system messages centered, and the NEW divider computed from the
- * lastRead value frozen at mount (opening the channel marks it read for
- * the next visit; the divider belongs to this one).
+ * The scrolling message list for one zone (Circle Phase 2): day
+ * dividers, author grouping, a load-older button while the backend
+ * says more history exists, and the welcome empty state while the
+ * zone has no messages at all.
+ *
+ * Scroll behaviour: the first load lands on the first unread
+ * message when the zone was opened with unreads (Discord opens at
+ * the NEW divider), otherwise at the bottom; new messages keep
+ * the view pinned only when the reader is already near the
+ * bottom; loading older messages preserves the reading position.
+ * A floating button offers the jump back to the newest message
+ * whenever the reader has scrolled away from the bottom.
  */
 export function MessageTimeline({
-  projectId,
-  channelId,
-  data,
-  meIsOwner,
+  messages,
+  memberNames,
+  zone,
+  hasMore,
+  loadingOlder,
+  onLoadOlder,
   onReply,
+  firstUnreadId = null,
+  unreadCount = 0,
+  currentUserId = null,
+  canModerate = false,
+  onEdit,
+  onDelete,
 }: {
-  projectId: string;
-  channelId: ChannelId;
-  data: CircleData;
-  meIsOwner: boolean;
-  onReply: (message: CircleMessage) => void;
+  messages: ZoneMessage[];
+  memberNames: string[];
+  zone: CircleZone;
+  hasMore: boolean;
+  loadingOlder: boolean;
+  onLoadOlder: () => void;
+  onReply?: (message: ZoneMessage) => void;
+  firstUnreadId?: string | null;
+  unreadCount?: number;
+  currentUserId?: string | null;
+  canModerate?: boolean;
+  onEdit?: (message: ZoneMessage, content: string) => Promise<void>;
+  onDelete?: (message: ZoneMessage) => Promise<void>;
 }) {
-  const [frozenLastRead] = useState(() => data.lastRead[channelId]);
+  const { t } = useLanguage();
   const scrollRef = useRef<HTMLDivElement>(null);
-  const nearBottomRef = useRef(true);
-  const lastCountRef = useRef(0);
   const [showJump, setShowJump] = useState(false);
 
-  const membersById = useMemo(
-    () => new Map(data.members.map((m) => [m.userId, m])),
-    [data.members],
-  );
-  const messagesById = useMemo(
-    () => new Map(data.messages.map((m) => [m.id, m])),
-    [data.messages],
-  );
-
-  const channelMessages = useMemo(
-    () => data.messages.filter((m) => m.channelId === channelId),
-    [data.messages, channelId],
-  );
-
-  const blocks = useMemo<Block[]>(() => {
-    const out: Block[] = [];
-    const frozenIndex =
-      frozenLastRead === null
-        ? -1
-        : channelMessages.findIndex((m) => m.id === frozenLastRead);
-    const firstUnread = channelMessages.find(
-      (m, i) => i > frozenIndex && m.kind === "user",
-    );
-    let lastDay = "";
-    let group: Extract<Block, { type: "group" }> | null = null;
-    for (const message of channelMessages) {
-      const day = dayKey(message.createdAt);
-      if (day !== lastDay) {
-        out.push({ type: "date", key: `date-${day}`, label: dayLabel(message.createdAt) });
-        lastDay = day;
-        group = null;
-      }
-      if (firstUnread && message.id === firstUnread.id) {
-        out.push({ type: "new", key: "new-divider" });
-        group = null;
-      }
-      if (message.kind === "system") {
-        out.push({ type: "system", key: message.id, message });
-        group = null;
-        continue;
-      }
-      const author = membersById.get(message.authorId);
-      const lastInGroup = group?.messages[group.messages.length - 1];
-      if (
-        group &&
-        lastInGroup &&
-        group.author?.userId === message.authorId &&
-        new Date(message.createdAt).getTime() - new Date(lastInGroup.createdAt).getTime() < SEVEN_MINUTES
-      ) {
-        group.messages.push(message);
-      } else {
-        group = { type: "group", key: message.id, author, messages: [message] };
-        out.push(group);
-      }
-    }
-    return out;
-  }, [channelMessages, frozenLastRead, membersById]);
-
-  // Opening the channel marks it read (the badge clears immediately;
-  // the NEW divider stays for this visit because it uses the frozen copy).
-  useEffect(() => {
-    markChannelRead(projectId, channelId);
-  }, [projectId, channelId]);
-
-  // Scroll to the latest message on open.
-  useEffect(() => {
-    const el = scrollRef.current;
-    if (el) el.scrollTop = el.scrollHeight;
-    lastCountRef.current = channelMessages.length;
-    nearBottomRef.current = true;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projectId, channelId]);
-
-  // New messages: follow them only while the user is near the bottom.
-  useEffect(() => {
+  const handleScroll = () => {
     const el = scrollRef.current;
     if (!el) return;
-    if (channelMessages.length > lastCountRef.current) {
-      const last = channelMessages[channelMessages.length - 1];
-      if (nearBottomRef.current || last?.authorId === "me") {
-        el.scrollTop = el.scrollHeight;
-        setShowJump(false);
-      } else {
-        setShowJump(true);
-      }
-    }
-    lastCountRef.current = channelMessages.length;
-  }, [channelMessages]);
-
-  const onScroll = () => {
-    const el = scrollRef.current;
-    if (!el) return;
-    nearBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 120;
-    if (nearBottomRef.current) setShowJump(false);
+    setShowJump(el.scrollHeight - el.scrollTop - el.clientHeight > 240);
   };
 
-  const hasUserMessages = channelMessages.some((m) => m.kind === "user");
+  const jumpToBottom = () => {
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+  };
+  const prevRef = useRef<{ count: number; firstId: string | null; height: number; top: number }>({
+    count: 0,
+    firstId: null,
+    height: 0,
+    top: 0,
+  });
+
+  useLayoutEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const prev = prevRef.current;
+    const firstId = messages[0]?.id ?? null;
+    if (prev.count === 0 && messages.length > 0) {
+      // First load: land on the first unread message when there
+      // is one (Discord opens at the NEW divider), else at the
+      // newest message.
+      const target = firstUnreadId
+        ? el.querySelector<HTMLElement>(`[id="zone-msg-${firstUnreadId}"]`)
+        : null;
+      if (target) {
+        el.scrollTop =
+          target.getBoundingClientRect().top -
+          el.getBoundingClientRect().top +
+          el.scrollTop -
+          44;
+      } else {
+        el.scrollTop = el.scrollHeight;
+      }
+    } else if (firstId !== prev.firstId && messages.length > prev.count) {
+      // Older page prepended: keep the same messages in view.
+      el.scrollTop = prev.top + (el.scrollHeight - prev.height);
+    } else if (messages.length > prev.count) {
+      // Appended: follow only when the reader was near the bottom.
+      const nearBottom = prev.height - prev.top - el.clientHeight < 160;
+      if (nearBottom) el.scrollTop = el.scrollHeight;
+    }
+    prevRef.current = {
+      count: messages.length,
+      firstId,
+      height: el.scrollHeight,
+      top: el.scrollTop,
+    };
+  }, [messages, firstUnreadId]);
+
+  const dayLabel = (iso: string): string => {
+    const d = new Date(iso);
+    const now = new Date();
+    const yesterday = new Date(now);
+    yesterday.setDate(now.getDate() - 1);
+    if (dayKey(iso) === dayKey(now.toISOString())) return t("circle.today");
+    if (dayKey(iso) === dayKey(yesterday.toISOString())) return t("circle.yesterday");
+    return d.toLocaleDateString("en-GB", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+  };
+
+  if (messages.length === 0) {
+    return (
+      <div className="flex flex-1 flex-col items-center justify-center gap-2 px-6 py-16 text-center">
+        <span className="flex size-12 items-center justify-center rounded-full bg-bg text-subtle">
+          <Icon name="conversation" size={22} />
+        </span>
+        <p className="text-base font-medium text-ink">
+          {t("circle.zoneEmptyTitle", { zone: zone.title })}
+        </p>
+        <p className="max-w-sm text-sm text-muted">
+          {zone.title === "announcements"
+            ? t("circle.zoneEmptyAnnouncements")
+            : t("circle.zoneEmptyGeneral")}
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="relative flex min-h-0 flex-1 flex-col">
       <div
         ref={scrollRef}
-        onScroll={onScroll}
-        className="no-scrollbar min-h-0 flex-1 overflow-y-auto pb-4"
-        role="log"
-        aria-label={`Messages in #${channelId}`}
+        onScroll={handleScroll}
+        className="min-h-0 flex-1 overflow-y-auto py-4"
       >
-        {!hasUserMessages && channelMessages.length <= 1 && (
-          <p className="px-4 pt-10 text-center text-sm text-muted">
-            {channelId === "general"
-              ? "No messages yet. Say hello to your team."
-              : "No announcements yet."}
-          </p>
-        )}
-        {blocks.map((block) => {
-          if (block.type === "date") {
-            return (
-              <div key={block.key} className="flex items-center gap-3 px-4 pt-5">
-                <span className="h-px flex-1 bg-line/60" />
-                <span className="text-xs font-medium text-subtle">{block.label}</span>
-                <span className="h-px flex-1 bg-line/60" />
+      {hasMore && (
+        <div className="flex justify-center pb-3">
+          <button
+            type="button"
+            onClick={onLoadOlder}
+            disabled={loadingOlder}
+            className="cursor-pointer rounded-full bg-bg px-3.5 py-1.5 text-xs font-medium text-ink transition-colors hover:bg-line/40 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {t("circle.loadOlderMessages")}
+          </button>
+        </div>
+      )}
+      {messages.map((message, i) => {
+        const prev = i > 0 ? messages[i - 1] : null;
+        const newDay = !prev || dayKey(prev.createdAt) !== dayKey(message.createdAt);
+        // A reply always opens a new group (Discord-style): the
+        // quote needs the author header under it.
+        const continuation =
+          !!prev && !newDay && !message.replyToId && isContinuation(prev, message);
+        const isFirstUnread =
+          firstUnreadId !== null && message.id === firstUnreadId;
+        return (
+          <div key={message.id}>
+            {newDay && (
+              <div className="flex items-center gap-3 px-4 pt-4 pb-2">
+                <span className="h-px flex-1 bg-line" />
+                <span className="text-xs font-medium text-subtle">
+                  {dayLabel(message.createdAt)}
+                </span>
+                <span className="h-px flex-1 bg-line" />
               </div>
-            );
-          }
-          if (block.type === "new") {
-            return (
-              <div key={block.key} className="flex items-center gap-3 px-4 pt-4" aria-label="Unread messages below">
-                <span className="h-px flex-1 bg-badge/50" />
-                <span className="text-xs font-semibold text-badge">NEW</span>
-                <span className="h-px flex-1 bg-badge/50" />
-              </div>
-            );
-          }
-          if (block.type === "system") {
-            return (
-              <p key={block.key} className="px-4 pt-3 text-center text-xs text-subtle">
-                {block.message.body}{" "}
-                <span aria-hidden>· {formatTime(block.message.createdAt)}</span>
-              </p>
-            );
-          }
-          return (
-            <MessageGroup
-              key={block.key}
-              projectId={projectId}
-              author={block.author}
-              messages={block.messages}
-              membersById={membersById}
-              messagesById={messagesById}
-              meIsOwner={meIsOwner}
+            )}
+            {isFirstUnread && <NewMessagesDivider count={unreadCount} />}
+            <MessageItem
+              message={message}
+              memberNames={memberNames}
+              isContinuation={continuation}
+              groupStart={!!prev && !newDay && !continuation && !isFirstUnread}
               onReply={onReply}
+              currentUserId={currentUserId}
+              canModerate={canModerate}
+              onEdit={onEdit}
+              onDelete={onDelete}
             />
-          );
-        })}
+          </div>
+        );
+      })}
       </div>
       {showJump && (
         <button
           type="button"
-          onClick={() => {
-            const el = scrollRef.current;
-            if (el) el.scrollTop = el.scrollHeight;
-            setShowJump(false);
-          }}
-          className="absolute bottom-3 left-1/2 flex -translate-x-1/2 cursor-pointer items-center gap-1.5 rounded-full bg-ink px-3.5 py-1.5 text-xs font-medium text-surface shadow-[0_8px_20px_-8px_rgba(var(--uf-shadow-rgb),0.4)] transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+          onClick={jumpToBottom}
+          aria-label={t("circle.jumpToBottom")}
+          title={t("circle.jumpToBottom")}
+          className="absolute right-4 bottom-4 z-20 flex size-10 cursor-pointer items-center justify-center rounded-full bg-accent text-on-accent shadow-lg transition-transform hover:scale-105 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
         >
-          <Icon name="chevron-down" size={14} />
-          New messages
+          <Icon name="chevron-down" size={20} />
         </button>
       )}
     </div>

@@ -8,12 +8,21 @@ import type { CollabProject } from "@/features/collaborations/types";
  */
 export type MyCollabStatus = "not-started" | "pending" | "complete" | "revise";
 
+/**
+ * Category slug: the four work statuses plus "owned" — the
+ * board's fourth column since 2026-11-13 (user order). Owned
+ * is a RELATIONSHIP (the user owns the project), not a work
+ * status, so it lives in the slug domain only; myStatus never
+ * takes this value.
+ */
+export type MyCollabCategorySlug = MyCollabStatus | "owned";
+
 export interface MyCollabProject extends CollabProject {
   myStatus: MyCollabStatus;
 }
 
 export interface MyCollabCategory {
-  slug: MyCollabStatus;
+  slug: MyCollabCategorySlug;
   /** Column heading on the board, e.g. "My collaborations". */
   boardLabel: string;
   /** Breadcrumb / category-page heading, e.g. "Active". */
@@ -64,6 +73,14 @@ export const MY_COLLAB_CATEGORIES: MyCollabCategory[] = [
     pillClassName: "bg-badge text-white",
     subtitle: "Needs another pass.",
     icon: "revision",
+  },
+  {
+    slug: "owned",
+    boardLabel: "Owned",
+    crumbLabel: "Owned",
+    pillClassName: "bg-bg text-ink",
+    subtitle: "Projects you own.",
+    icon: "crown",
   },
 ];
 

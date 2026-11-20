@@ -1,17 +1,19 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Card } from "@astryxdesign/core/Card";
+import { Button } from "@astryxdesign/core/Button";
 import { Icon } from "@/components/ui/Icon";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { startApplicationThread, withdrawApplication } from "@/features/inbox/store";
 import { applyToCollab, backendErrorMessage } from "../api";
 import { ApplyMessageModal } from "./ApplyMessageModal";
+import { useLanguage } from "@/lib/i18n/LanguageProvider";
 
 type ApplyState = "default" | "pending" | "entered" | "declined" | "closed";
 
-const HELPER_TEXT =
-  "The owner reviews your application after you apply. Track the status in My Collaborations.";
+
 
 interface ApplyCtaProps {
   projectId: string;
@@ -31,6 +33,13 @@ interface ApplyCtaProps {
   initialState?: ApplyState;
 }
 
+/**
+ * The detail page's apply panel (Astryx rebuild 2026-11-13):
+ * the container is an Astryx muted Card and every state renders
+ * as an Astryx Button — primary for Apply, secondary + disabled
+ * for the informational states, destructive for Cancel
+ * Application. The state machine and flows are unchanged.
+ */
 export function ApplyCta({
   projectId,
   projectTitle,
@@ -43,6 +52,7 @@ export function ApplyCta({
   isOwner = false,
   initialState = "default",
 }: ApplyCtaProps) {
+  const { t } = useLanguage();
   const router = useRouter();
   const [state, setState] = useState<ApplyState>(initialState);
   // The detail page fills initialState in after its authed fetch
@@ -62,8 +72,8 @@ export function ApplyCta({
         // show Pending instead of erroring (no second inbox thread).
         setState("pending");
         setModalOpen(false);
-        toast("Application already sent", {
-          description: `Your application to ${projectTitle} is pending review.`,
+        toast(t("collab.alreadySentTitle"), {
+          description: t("collab.alreadySentBody", { title: projectTitle }),
         });
         return;
       }
@@ -82,12 +92,12 @@ export function ApplyCta({
       });
       setState("pending");
       setModalOpen(false);
-      toast.success("Application sent", {
-        description: `Your message is in ${ownerName}'s inbox.`,
+      toast.success(t("collab.sentTitle"), {
+        description: t("collab.sentBody", { name: ownerName }),
       });
       router.push("/inbox");
     } catch (err) {
-      toast.error("Application failed", {
+      toast.error(t("collab.failedTitle"), {
         description: backendErrorMessage(err),
       });
     } finally {
@@ -99,82 +109,102 @@ export function ApplyCta({
     try {
       await withdrawApplication(projectId);
       setState("default");
-      toast("Application withdrawn", { description: projectTitle });
+      toast(t("collab.withdrawnToast"), { description: projectTitle });
     } catch (err) {
-      toast.error("Couldn't withdraw the application", {
+      toast.error(t("collab.couldntWithdraw"), {
         description: backendErrorMessage(err),
       });
     }
   };
 
   return (
-    <div className="flex flex-col gap-3 items-center rounded-lg bg-bg p-6">
+    <Card variant="muted" padding={6} className="flex flex-col items-center gap-3">
       {isOwner && (
-        <button
-          type="button"
-          disabled
-          title="This is your project"
-          className="w-full cursor-not-allowed rounded-full bg-placeholder py-3 text-base font-medium text-muted"
-        >
-          This is your project
-        </button>
+        <Button
+          label={t("collab.yourProject")}
+          variant="secondary"
+          size="lg"
+          width="100%"
+          isDisabled
+          tooltip={t("collab.yourProject")}
+        />
       )}
       {!isOwner && state === "default" &&
         (slotsFull ? (
-          <button
-            type="button"
-            disabled
-            className="w-full cursor-not-allowed rounded-full bg-placeholder py-3 text-base font-medium text-muted"
-          >
-            Apply to this project
-          </button>
+          <Button
+            label={t("collab.applyToProjectBtn")}
+            variant="secondary"
+            size="lg"
+            width="100%"
+            isDisabled
+          />
         ) : (
-          <button
-            type="button"
+          <Button
+            label={t("collab.applyToProjectBtn")}
+            variant="primary"
+            size="lg"
+            width="100%"
+            icon={<Icon name="send" size={20} />}
+            isDisabled={submitting}
             onClick={() => setModalOpen(true)}
-            disabled={submitting}
-            className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-accent py-3 text-base font-medium text-on-accent transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none disabled:opacity-50"
-          >
-            <Icon name="send" size={20} />
-            Apply to this project
-          </button>
+          />
         ))}
 
       {state === "pending" && (
-        <div className="flex gap-2 w-full">
-          <div className="flex flex-1 items-center justify-center w-full rounded-md border border-line py-3 text-base font-medium text-muted">
-            Pending
+        <div className="flex w-full gap-2">
+          <div className="flex-1">
+            <Button
+              label={t("collab.pending")}
+              variant="secondary"
+              size="lg"
+              width="100%"
+              isDisabled
+            />
           </div>
-          <button
-            type="button"
-            onClick={handleCancel}
-            className="flex-1 cursor-pointer rounded-md bg-badge py-3 text-base font-medium text-surface transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
-          >
-            Cancel Application
-          </button>
+          <div className="flex-1">
+            <Button
+              label={t("collab.cancelApplication")}
+              variant="destructive"
+              size="lg"
+              width="100%"
+              onClick={handleCancel}
+            />
+          </div>
         </div>
       )}
 
       {state === "entered" && (
-        <div className="flex w-full items-center justify-center rounded-full bg-accent px-6 py-3 text-center text-base font-medium text-on-accent">
-          You have entered this project
-        </div>
+        <Button
+          label={t("collab.enteredLong")}
+          variant="primary"
+          size="lg"
+          width="100%"
+          isDisabled
+        />
       )}
 
       {state === "declined" && (
-        <div className="flex w-full items-center justify-center rounded-full bg-placeholder px-6 py-3 text-center text-base font-medium text-muted">
-          Your application was declined by the owner
-        </div>
+        <Button
+          label={t("collab.declinedLong")}
+          variant="secondary"
+          size="lg"
+          width="100%"
+          isDisabled
+        />
       )}
 
       {state === "closed" && (
-        <div className="flex w-full items-center justify-center rounded-full bg-bg px-6 py-3 text-center text-base font-medium text-muted">
-          This project is closed
-        </div>
+        <Button
+          label={t("collab.closedLong")}
+          variant="secondary"
+          size="lg"
+          width="100%"
+          isDisabled
+        />
       )}
 
       {/* Helper text below the button, per Figma "Collaborations - Details" */}
-      <p className="text-xs text-muted">{HELPER_TEXT}</p>
+      <p className="text-xs text-muted">{t("collab.helperText")}</p>
 
       {modalOpen && (
         <ApplyMessageModal
@@ -186,6 +216,6 @@ export function ApplyCta({
           onSend={handleApply}
         />
       )}
-    </div>
+    </Card>
   );
 }

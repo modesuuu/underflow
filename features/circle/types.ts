@@ -1,76 +1,113 @@
 // features/circle/types.ts
-// Shapes for the Circle V1 mock (spec-circle-v1 §4). Field names follow
-// the repo's conventions; the backend contract delta is a separate
-// deliverable (spec §12) — nothing here changes docs/api-contract.md.
+// Shapes for Circle Phase 1 (backend foundation, 2026-11-18): a Circle
+// belongs to one collaboration, holds Zones, and is reachable only by
+// the owner + accepted members. The owner opts in — at collab creation
+// or later — so a collaboration may have no Circle at all. Messaging
+// types arrived with the Phase 2 endpoints (ZoneMessage below).
 
-export type ChannelId = "announcements" | "general";
-export type Presence = "online" | "idle" | "offline";
+export interface CircleZone {
+  id: string;
+  title: string;
+  /** Resolved by the backend for the requesting user. */
+  memberCanPost: boolean;
+  /** Raw zone permission from the backend (settings UI). */
+  allowPublicMessage: boolean;
+  /** Messages from others the user has not read yet. */
+  unreadCount: number;
+  /** Read up to this timestamp (zone_reads); null if never read. */
+  lastRead: string | null;
+  /** Unread messages that mention the user (@username, or a
+      certified @everyone from the owner). */
+  mentionCount: number;
+  /** Earliest unread mentioning message (jump target). */
+  firstMentionId: string | null;
+}
 
 export interface CircleMember {
   userId: string;
   name: string;
-  /** Slot role in the project; the owner reads "Project Owner". */
-  role: string;
-  isOwner: boolean;
   avatarUrl?: string;
-  /** Static from the mock in V1; realtime presence is a backend phase. */
-  presence: Presence;
+  isOwner: boolean;
 }
 
-export interface CircleReaction {
-  emoji: string;
-  count: number;
-  reactedByMe: boolean;
+export interface CircleDetail {
+  id: string;
+  projectId: string;
+  title: string;
+  photoUrl: string | null;
+  /** Raw collaboration status key from the backend ("open", ...). */
+  status: string;
+  zones: CircleZone[];
+  members: CircleMember[];
 }
 
-export interface CircleAttachment {
-  name: string;
+/** One row of GET /api/circles (the /circle index). */
+export interface CircleSummary {
+  id: string;
+  projectId: string;
+  title: string;
+  photoProfileUrl: string | null;
+  unreadCount: number;
+  mentionCount: number;
+  status: string;
+  isOwner: boolean;
+  memberNames: string[];
+  memberCount: number;
+}
+
+/** The quoted original attached to a reply message. */
+export interface ZoneReplyPreview {
+  id: string;
+  authorId: string;
+  authorName: string;
+  authorAvatarUrl: string | null;
+  content: string;
+}
+
+/**
+ * One file attached to a zone message. The file itself lives on
+ * the project Cloudinary account (folder assets/messageCircle);
+ * images render inline, documents render as a download card.
+ */
+export interface ZoneMessageAttachment {
+  id: string;
+  url: string;
+  publicId: string;
+  fileName: string;
+  kind: "image" | "document";
   sizeBytes: number;
 }
 
-export interface CircleMessage {
+/** An uploaded file ready to attach (no id until the message is saved). */
+export type ZoneAttachmentInput = Omit<ZoneMessageAttachment, "id">;
+
+/** One zone message (GET/POST /api/circles/:id/zones/:zoneId/messages). */
+export interface ZoneMessage {
   id: string;
-  channelId: ChannelId;
-  /** "system" for system messages (kind carries the distinction too). */
+  zoneId: string;
   authorId: string;
-  kind: "user" | "system";
-  body: string;
-  /** ISO 8601. */
+  authorName: string;
+  authorAvatarUrl: string | null;
+  content: string;
+  /** Backend DATETIME string ("YYYY-MM-DD HH:mm:ss", server time). */
   createdAt: string;
-  editedAt?: string;
-  replyToId?: string;
-  reactions: CircleReaction[];
-  pinned: boolean;
-  attachments: CircleAttachment[];
+  /** When the text was last edited (null = never edited). */
+  editedAt: string | null;
+  /** Id of the quoted message when this message is a reply. */
+  replyToId: string | null;
+  /** The quoted original (null when this is not a reply, or the
+      original no longer exists). */
+  replyTo: ZoneReplyPreview | null;
+  /** Certified by the backend: content tags @everyone AND the
+      author is the circle owner. A member typing @everyone just
+      sends plain text (Discord rule). */
+  mentionsEveryone: boolean;
+  /** Files attached to this message (empty for plain text). */
+  attachments: ZoneMessageAttachment[];
 }
 
-export interface CircleResource {
-  id: string;
-  kind: "figma" | "github" | "drive" | "link" | "deadline";
-  label: string;
-  /** Deadlines have no url. */
-  url?: string;
-  /** e.g. the date for a deadline. */
-  note?: string;
-  /** Set when the resource came from promoting a pinned message. */
-  sourceMessageId?: string;
-}
-
-export interface CircleData {
-  projectId: string;
-  members: CircleMember[];
-  /** All channels in one list; filter by channelId. */
-  messages: CircleMessage[];
-  resources: CircleResource[];
-  /** Last-read message id per channel; null = nothing read yet. */
-  lastRead: Record<ChannelId, string | null>;
-}
-
-/** One row of the /circle index (server-derived project facts). */
-export interface CircleProjectSummary {
-  projectId: string;
-  title: string;
-  /** My Collaborations status label, e.g. "Active". */
-  statusLabel: string;
-  members: { userId: string; name: string }[];
+/** One page of zone history: chronological order + older-page flag. */
+export interface ZoneMessagePage {
+  messages: ZoneMessage[];
+  hasMore: boolean;
 }

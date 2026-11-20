@@ -2,6 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { Icon } from "@/components/ui/Icon";
+import { useLanguage } from "@/lib/i18n/LanguageProvider";
+import type { DictKey } from "@/lib/i18n/dictionary";
+import { apiFetch } from "@/lib/api-client";
+import { getSession } from "@/features/auth/session";
 
 export type ThemeMode = "light" | "system" | "dark";
 
@@ -22,7 +26,7 @@ function resolveMode(mode: ThemeMode): "light" | "dark" {
   return mode;
 }
 
-function applyMode(mode: ThemeMode) {
+export function applyThemeMode(mode: ThemeMode) {
   const root = document.documentElement;
   // Cross-fade the whole app into the new palette (globals.css
   // scopes the transitions to .theme-anim), then clean up.
@@ -49,6 +53,8 @@ export function ThemeToggle({
 }: {
   variant?: "full" | "rail";
 }) {
+  const { t } = useLanguage();
+  const labelOf = (m: { id: ThemeMode }) => t(("theme." + m.id) as DictKey);
   const [mode, setMode] = useState<ThemeMode>("system");
   const [mounted, setMounted] = useState(false);
 
@@ -64,7 +70,7 @@ export function ThemeToggle({
   useEffect(() => {
     if (mode !== "system") return;
     const mq = window.matchMedia("(prefers-color-scheme: dark)");
-    const onChange = () => applyMode("system");
+    const onChange = () => applyThemeMode("system");
     mq.addEventListener("change", onChange);
     return () => mq.removeEventListener("change", onChange);
   }, [mode]);
@@ -72,7 +78,18 @@ export function ThemeToggle({
   const choose = (next: ThemeMode) => {
     setMode(next);
     localStorage.setItem(STORAGE_KEY, next);
-    applyMode(next);
+    applyThemeMode(next);
+    // Persist to the account too: localStorage is per-origin, so
+    // without this the choice appears lost whenever the app is
+    // opened from another origin, browser, or device. Best-effort;
+    // the local value above already applied.
+    if (getSession()?.token) {
+      void apiFetch("/api/profiles/me", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ theme_mode: next }),
+      }).catch(() => {});
+    }
   };
 
   if (variant === "rail") {
@@ -83,7 +100,7 @@ export function ThemeToggle({
       <button
         type="button"
         onClick={() => choose(next.id)}
-        aria-label={`Theme: ${current.label}. Switch to ${next.label}`}
+        aria-label={t("theme.switchAria", { current: labelOf(current), next: labelOf(next) })}
         className="nav-row-hoverable flex size-9 cursor-pointer items-center justify-center rounded-md text-muted transition-colors hover:text-ink focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
       >
         <Icon name={mounted ? current.icon : "desktop"} size={20} />
@@ -95,7 +112,7 @@ export function ThemeToggle({
     <div
       className="flex items-center gap-0.5 rounded-full bg-placeholder/50 p-1"
       role="group"
-      aria-label="Theme"
+      aria-label={t("theme.aria")}
     >
       {MODES.map((m) => (
         <button
@@ -103,7 +120,7 @@ export function ThemeToggle({
           type="button"
           onClick={() => choose(m.id)}
           aria-pressed={mode === m.id}
-          aria-label={`${m.label} theme`}
+          aria-label={t("theme.modeAria", { label: labelOf(m) })}
           className={
             mode === m.id
               ? "flex size-7 cursor-pointer items-center justify-center rounded-full bg-ink text-surface shadow-sm transition-colors focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"

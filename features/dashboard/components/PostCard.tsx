@@ -15,21 +15,28 @@ import { useCommentCount } from "../comment-count-store";
 import { PostOptionsMenu } from "./PostOptionsMenu";
 import { PostModal } from "./PostModal";
 import { ConfirmDialog } from "@/features/inbox/components/ConfirmDialog";
-import { deletePost } from "../api";
+import { deletePost, reportPost, withdrawReport } from "../api";
 import { toast } from "sonner";
 import { ReportedPostNotice } from "./ReportedPostNotice";
+import { ReportForm } from "./ReportForm";
+import { useLanguage } from "@/lib/i18n/LanguageProvider";
+import { formatRelativeAgo } from "@/lib/i18n/format";
 
 /**
- * Feed post: flat on the page surface — no card border (the
- * user pulled the bordered treatment back out). Rhythm and the
- * internal hairline above the comment entry separate posts.
+ * Feed post: flat on the page surface. One bottom border per
+ * post separates the river (user order 2026-11-17; a card
+ * treatment was tried and reverted the same day). The comment
+ * entry sits inside the post, above that bottom border.
  * Body text reads in Book, not Medium.
  */
-const CARD_CHROME = "px-1 py-2";
+const CARD_CHROME = "border-b border-line px-1 pt-2 pb-5";
 
 export function PostCard({ post }: { post: Post }) {
+  const { t, lang } = useLanguage();
   const router = useRouter();
   const [reported, setReported] = useState(false);
+  const [reportFormOpen, setReportFormOpen] = useState(false);
+  const [reportedId, setReportedId] = useState<string | null>(null);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [deleted, setDeleted] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
@@ -48,20 +55,52 @@ export function PostCard({ post }: { post: Post }) {
     try {
       await deletePost(post.id);
       setDeleted(true);
-      toast.success("Post deleted");
+      toast.success(t("feed.postDeleted"));
     } catch {
-      toast("Couldn't delete this post. Try again.");
+      toast(t("feed.couldntDeletePost"));
     }
+  };
+
+  // Report beneran ke backend (spec-admin §4.3): form alasan ->
+  // POST /api/reports -> notice; Undo menarik laporannya lagi.
+  const handleReportSubmit = async (reason: string) => {
+    const report = await reportPost(post.id, reason);
+    setReportedId(report.id);
+    setReportFormOpen(false);
+    setReported(true);
+  };
+
+  const handleUndoReport = async () => {
+    if (reportedId) {
+      try {
+        await withdrawReport(reportedId);
+      } catch {
+        // Gagal menarik laporan tidak boleh menjebak tampilan.
+      }
+      setReportedId(null);
+    }
+    setReported(false);
   };
 
   const openDetail = () => router.push(`/dashboard/${post.id}`);
   const openDetailAtComment = () =>
     router.push(`/dashboard/${post.id}?focus=comment`);
 
+  if (reportFormOpen) {
+    return (
+      <article className={CARD_CHROME}>
+        <ReportForm
+          onCancel={() => setReportFormOpen(false)}
+          onSubmit={handleReportSubmit}
+        />
+      </article>
+    );
+  }
+
   if (reported) {
     return (
       <article className={CARD_CHROME}>
-        <ReportedPostNotice onUndo={() => setReported(false)} />
+        <ReportedPostNotice onUndo={handleUndoReport} />
       </article>
     );
   }
@@ -75,14 +114,14 @@ export function PostCard({ post }: { post: Post }) {
         <Link
           href={`/profile/${post.author.id}`}
           className="group flex items-center gap-2.5"
-          aria-label={`View ${post.author.name}'s profile`}
+          aria-label={t("feed.viewProfile", { name: post.author.name })}
         >
           <Avatar size={36} src={post.author.avatarUrl} alt={post.author.name} />
           <div className="flex flex-col">
             <span className="text-[15px] font-medium group-hover:underline">
               {post.author.name}
             </span>
-            <span className="text-xs text-subtle">{post.postedAgo}</span>
+            <span className="text-xs text-subtle">{post.postedAt ? formatRelativeAgo(post.postedAt, lang) : post.postedAgo}</span>
           </div>
         </Link>
         <PostOptionsMenu
@@ -91,7 +130,7 @@ export function PostCard({ post }: { post: Post }) {
                 onEdit: () => setEditOpen(true),
                 onDelete: () => setConfirmingDelete(true),
               }
-            : { onReport: () => setReported(true) })}
+            : { onReport: () => setReportFormOpen(true) })}
         />
       </div>
 
@@ -114,18 +153,17 @@ export function PostCard({ post }: { post: Post }) {
         <button
           type="button"
           onClick={openDetailAtComment}
-          aria-label={`Comment on post by ${post.author.name}`}
+          aria-label={t("feed.commentOnPost", { name: post.author.name })}
           className="flex cursor-pointer items-center gap-1.5 text-muted transition-colors hover:text-ink"
         >
           <Icon name="message-rounded" size={20} />
           <span className="text-xs font-medium">
-            {liveCommentCount > 0 ? formatCount(liveCommentCount) : "Comment"}
+            {liveCommentCount > 0 ? formatCount(liveCommentCount) : t("feed.comment")}
           </span>
         </button>
       </div>
 
-      {/* Comment entry — divided from the post, goes to the detail */}
-      <div className="h-px w-full bg-placeholder" aria-hidden="true" />
+      {/* Comment entry — goes to the detail page */}
       <div className="flex items-center gap-2.5">
         <Avatar size={28} src={CURRENT_USER.photo} alt={CURRENT_USER.name} />
         <button
@@ -133,15 +171,15 @@ export function PostCard({ post }: { post: Post }) {
           onClick={openDetailAtComment}
           className="flex flex-1 cursor-text items-center justify-between rounded-full bg-bg px-4 py-2 text-left transition-colors hover:text-ink focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
         >
-          <span className="text-sm text-muted">Write your comment</span>
+          <span className="text-sm text-muted">{t("feed.writeComment")}</span>
           <Icon name="send" size={18} className="text-muted" />
         </button>
       </div>
       {confirmingDelete && (
         <ConfirmDialog
-          title="Delete this post?"
-          description="This post will be removed from the feed for everyone. This can't be undone."
-          confirmLabel="Delete"
+          title={t("feed.deletePostTitle")}
+          description={t("feed.deletePostBody")}
+          confirmLabel={t("common.delete")}
           onConfirm={() => {
             setConfirmingDelete(false);
             void handleDelete();

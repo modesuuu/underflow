@@ -7,6 +7,7 @@ import { HeartIcon } from "@/components/ui/HeartIcon";
 import { formatCount } from "@/lib/format";
 import { useLikeState } from "../like-store";
 import { likeComment, likePost, unlikeComment, unlikePost } from "../api";
+import { useLanguage } from "@/lib/i18n/LanguageProvider";
 
 interface LikeButtonProps {
   storeKey: string;
@@ -28,6 +29,7 @@ export function LikeButton({
   initialLikes,
   size = "md",
 }: LikeButtonProps) {
+  const { t } = useLanguage();
   const bumpRef = useRef<HTMLSpanElement>(null);
   const [busy, setBusy] = useState(false);
   const [{ liked, likes }, toggle] = useLikeState(
@@ -68,7 +70,7 @@ export function LikeButton({
       }
     } catch {
       toggle();
-      toast("Couldn't save your like. Try again.");
+      toast(t("feed.couldntSaveLike"));
     } finally {
       setBusy(false);
     }

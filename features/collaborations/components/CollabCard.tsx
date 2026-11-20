@@ -4,17 +4,22 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
+import { Card } from "@astryxdesign/core/Card";
+import { Button } from "@astryxdesign/core/Button";
+import { Token } from "@astryxdesign/core/Token";
 import { applyToCollab, backendErrorMessage } from "../api";
 import { useSessionUser } from "@/features/auth/store";
 import { startApplicationThread } from "@/features/inbox/store";
 import { formatDueDate } from "../sort";
 import type { CollabProject, ProjectStatus } from "../types";
 import { ApplyMessageModal } from "./ApplyMessageModal";
+import { useLanguage } from "@/lib/i18n/LanguageProvider";
+import type { DictKey } from "@/lib/i18n/dictionary";
 
-const STATUS_LABEL: Record<ProjectStatus, string> = {
-  open: "Open",
-  "in-progress": "In progress",
-  completed: "Completed",
+const STATUS_LABEL: Record<ProjectStatus, DictKey> = {
+  open: "collab.statusOpen",
+  "in-progress": "collab.statusInProgress",
+  completed: "collab.statusCompleted",
 };
 
 const STATUS_DOT: Record<ProjectStatus, string> = {
@@ -29,9 +34,12 @@ const STATUS_DOT: Record<ProjectStatus, string> = {
  * Inbox → land there), without the detail page's state machine
  * — after sending, the sender is in the Inbox anyway. Project
  * state (pending/withdraw) lives on the detail page and in
- * My Collaborations.
+ * My Collaborations. The button itself is Astryx's Button:
+ * primary while applying is possible, secondary + disabled for
+ * every terminal state.
  */
 function CardApply({ project }: { project: CollabProject }) {
+  const { t } = useLanguage();
   const router = useRouter();
   const [modalOpen, setModalOpen] = useState(false);
   const [sending, setSending] = useState(false);
@@ -49,16 +57,16 @@ function CardApply({ project }: { project: CollabProject }) {
   const declined = myApplication === "declined";
   const blocked = isOwner || applied || joined || declined || isFull;
   const label = isOwner
-    ? "This is your project"
+    ? t("collab.yourProject")
     : joined
-      ? "Joined"
+      ? t("collab.joined")
       : applied
-        ? "Pending"
+        ? t("collab.pending")
         : declined
-          ? "Declined"
+          ? t("collab.declinedBtn")
           : isFull
-            ? "Full"
-            : "Apply";
+            ? t("collab.full")
+            : t("collab.apply");
 
   const handleSend = async (message: string) => {
     setSending(true);
@@ -68,9 +76,8 @@ function CardApply({ project }: { project: CollabProject }) {
       if (result.alreadyApplied) {
         // 409 Already applied: the application already exists, so
         // no second inbox thread - just go to the existing one.
-        toast("Application already sent", {
-          description:
-            "Your application to " + project.title + " is pending review.",
+        toast(t("collab.alreadySentTitle"), {
+          description: t("collab.alreadySentBody", { title: project.title }),
         });
         router.push("/inbox");
         return;
@@ -85,12 +92,12 @@ function CardApply({ project }: { project: CollabProject }) {
         slotsLabel: project.slotsFilled + " / " + project.slotsTotal,
         messageText: message.trim(),
       });
-      toast.success("Application sent", {
-        description: "Your message is in " + project.owner.name + "'s inbox.",
+      toast.success(t("collab.sentTitle"), {
+        description: t("collab.sentBody", { name: project.owner.name }),
       });
       router.push("/inbox");
     } catch (err) {
-      toast.error("Application failed", {
+      toast.error(t("collab.failedTitle"), {
         description: backendErrorMessage(err),
       });
     } finally {
@@ -100,19 +107,22 @@ function CardApply({ project }: { project: CollabProject }) {
 
   return (
     <>
-      <button
-        type="button"
-        disabled={blocked}
-        title={isOwner ? "This is your project" : undefined}
-        onClick={() => setModalOpen(true)}
-        className={
-          blocked
-            ? "rounded-full bg-placeholder px-5 py-2 text-[13px] font-medium text-muted"
-            : "pressable cursor-pointer rounded-full bg-accent px-5 py-2 text-[13px] font-medium text-on-accent transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
-        }
-      >
-        {label}
-      </button>
+      {blocked ? (
+        <Button
+          label={label}
+          variant="secondary"
+          size="sm"
+          isDisabled
+          tooltip={isOwner ? t("collab.yourProject") : undefined}
+        />
+      ) : (
+        <Button
+          label={label}
+          variant="primary"
+          size="sm"
+          onClick={() => setModalOpen(true)}
+        />
+      )}
       {modalOpen && (
         <ApplyMessageModal
           projectTitle={project.title}
@@ -130,18 +140,21 @@ function CardApply({ project }: { project: CollabProject }) {
 }
 
 /**
- * One card of the collaborations board (redesign 2026-11-12,
- * structure borrowed from a job-board card, colors from the
- * app's own theme): due-date pill, title, a two-line mini
- * description, outlined skill tags, and a footer with the seat
- * count and the Apply pill. No owner avatar or name on the
- * card — that lives on the detail page. The card background
- * comes from .collab-card (tokens.css): the surface color in
- * light; in dark the page ground goes black and the card
- * itself carries the brand green. The whole card links to the
- * detail (stretched link); Apply runs inline.
+ * One card of the collaborations board (Astryx rebuild
+ * 2026-11-13): the surface is Astryx's Card (its own border,
+ * background and container radius), the due/status/skill tags
+ * are Astryx Tokens (the design system's tag component — the
+ * same treatment the board's Kanban cards got, user order
+ * 2026-11-13), and Apply is Astryx's Button. Content
+ * anatomy stays the board's: due badge, title, a two-line mini
+ * description, skill badges, and a footer with the seat count
+ * and Apply. No owner avatar or name on the card — that lives
+ * on the detail page. The whole card links to the detail
+ * (stretched link); Apply runs inline. Hover lift/shadow still
+ * come from .collab-card-live (tokens.css).
  */
 export function CollabCard({ project }: { project: CollabProject }) {
+  const { t } = useLanguage();
   const isFull = project.slotsFilled >= project.slotsTotal;
   const spotsLeft = project.slotsTotal - project.slotsFilled;
   const shownSkills = project.skills.slice(0, 3);
@@ -150,7 +163,11 @@ export function CollabCard({ project }: { project: CollabProject }) {
   const hasDescription = project.description.trim() !== "";
 
   return (
-    <article className="collab-card collab-card-live group relative flex h-full flex-col rounded-lg border border-line p-5">
+    <Card
+      height="100%"
+      padding={5}
+      className="collab-card-live group relative flex flex-col"
+    >
       {/* Stretched link — whole card clickable, keyboard reachable */}
       <Link
         href={"/collaborations/" + project.id}
@@ -158,24 +175,32 @@ export function CollabCard({ project }: { project: CollabProject }) {
         className="absolute inset-0 z-0 rounded-lg focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
       />
 
-      {/* Top row: due pill + status pill. The status pill keeps
+      {/* Top row: due badge + status badge. The status badge keeps
           the old reserve trick: on open cards it renders
           invisibly, so every card's top row is the same height. */}
       <div className="pointer-events-none relative z-10 flex items-center justify-between gap-2">
-        <span className="inline-flex items-center rounded-full bg-placeholder px-2.5 py-1 text-[11px] font-semibold text-accent">
-          {project.dueDate
-            ? "Due " + formatDueDate(project.dueDate)
-            : "No deadline"}
-        </span>
+        <Token
+          size="sm"
+          label={
+            project.dueDate
+              ? "Due " + formatDueDate(project.dueDate)
+              : "No deadline"
+          }
+        />
         <span
           aria-hidden={project.status === "open" ? true : undefined}
-          className={
-            "inline-flex items-center gap-1.5 rounded-full bg-placeholder px-2 py-0.5 text-[11px] font-semibold text-ink" +
-            (project.status === "open" ? " invisible" : "")
-          }
+          className={project.status === "open" ? "invisible" : undefined}
         >
-          <span aria-hidden="true" className={"size-1.5 rounded-full " + STATUS_DOT[project.status]} />
-          {STATUS_LABEL[project.status]}
+          <Token
+            size="sm"
+            icon={
+              <span
+                aria-hidden="true"
+                className={"size-1.5 rounded-full " + STATUS_DOT[project.status]}
+              />
+            }
+            label={t(STATUS_LABEL[project.status])}
+          />
         </span>
       </div>
 
@@ -189,19 +214,15 @@ export function CollabCard({ project }: { project: CollabProject }) {
         </p>
       )}
 
-      {/* Skill tags — outlined pills, anchored to the bottom
-          of the card above the footer. */}
+      {/* Skill badges — anchored to the bottom of the card
+          above the footer. */}
       {hasSkills && (
         <div className="pointer-events-none relative z-10 mt-auto flex flex-wrap gap-1.5 pt-4">
           {shownSkills.map((s) => (
-            <span key={s.label} className="rounded-full border border-line/50 px-2.5 py-1 text-[11px] font-medium text-ink">
-              {s.label}
-            </span>
+            <Token key={s.label} size="sm" label={s.label} />
           ))}
           {extraSkills > 0 && (
-            <span className="rounded-full border border-line/50 px-2.5 py-1 text-[11px] font-medium text-muted">
-              +{extraSkills} more
-            </span>
+            <Token size="sm" label={t("collab.moreSkills", { count: extraSkills })} />
           )}
         </div>
       )}
@@ -228,6 +249,6 @@ export function CollabCard({ project }: { project: CollabProject }) {
           <CardApply project={project} />
         </span>
       </div>
-    </article>
+    </Card>
   );
 }

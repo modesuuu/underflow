@@ -1,0 +1,49 @@
+import { AppShell } from "@/components/layout/AppShell";
+
+export default function CircleZoneLoading() {
+  return (
+    <AppShell
+      fill
+      breadcrumbRoot="Dashboard / Circle"
+      breadcrumbLeaf="Circle"
+      variant="detail"
+    >
+      <div className="flex min-h-0 flex-1">
+        <div className="flex w-[60px] shrink-0 flex-col items-center gap-2 border-r border-line bg-bg py-3 sm:w-[68px]">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="size-11 shrink-0 rounded-[14px] bg-placeholder" />
+          ))}
+        </div>
+        <div className="hidden w-[260px] shrink-0 flex-col gap-3 border-r border-line p-4 lg:flex">
+          <div className="h-5 w-3/4 rounded bg-placeholder" />
+          <div className="h-3 w-1/2 rounded bg-placeholder" />
+          <div className="mt-4 flex flex-col gap-2">
+            <div className="h-9 rounded-lg bg-placeholder" />
+            <div className="h-9 rounded-lg bg-placeholder" />
+          </div>
+        </div>
+        <div className="flex min-w-0 flex-1 flex-col">
+          <div className="flex h-[52px] items-center border-b border-line px-4">
+            <div className="h-5 w-32 rounded bg-placeholder" />
+          </div>
+          <div className="flex flex-1 items-center justify-center p-4">
+            <div className="flex flex-col items-center gap-3">
+              <div className="size-12 rounded-full bg-placeholder" />
+              <div className="h-4 w-48 rounded bg-placeholder" />
+              <div className="h-3.5 w-64 rounded bg-placeholder" />
+            </div>
+          </div>
+        </div>
+        <div className="hidden w-[308px] shrink-0 flex-col gap-3 border-l border-line p-4 xl:flex">
+          <div className="h-5 w-24 rounded bg-placeholder" />
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="flex items-center gap-2.5">
+              <div className="size-8 rounded-full bg-placeholder" />
+              <div className="h-3.5 w-24 rounded bg-placeholder" />
+            </div>
+          ))}
+        </div>
+      </div>
+    </AppShell>
+  );
+}

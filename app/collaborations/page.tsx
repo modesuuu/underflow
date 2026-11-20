@@ -4,6 +4,7 @@ import { AppShell } from "@/components/layout/AppShell";
 import { getCollabProjectsPage } from "@/features/collaborations/api";
 import { CollabGrid } from "@/features/collaborations/components/CollabGrid";
 import { CollabTopBarActions } from "@/features/collaborations/components/CollabTopBarActions";
+import { CollabQueryFromUrl } from "@/features/collaborations/components/CollabQueryFromUrl";
 
 export const metadata: Metadata = {
   title: "Collaborations",
@@ -75,6 +76,7 @@ export default function CollaborationsPage() {
       actions={<CollabTopBarActions />}
     >
       <div className="flex min-h-full flex-col gap-6 collab-ground px-4 pt-6 pb-24 sm:px-6 sm:pt-8 sm:pb-8">
+        <CollabQueryFromUrl />
         {/* Page header — display heading + subheading. Base theme
             (Forest & Cream) since 2026-11-09; subheading restored
             on the user's order the same day. The search controls

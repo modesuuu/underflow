@@ -22,7 +22,7 @@ interface AppShellProps {
   /**
    * App-like page (e.g. Inbox): main becomes a non-scrolling flex
    * column and the children fill exactly the space below the TopBar.
-   * Without it, a child that is h-full adds the TopBar's 79px on top
+   * Without it, a child that is h-full adds the TopBar's 64px on top
    * of main's height, so main scrolls and the panes slide under the
    * sticky bar.
    */
@@ -47,7 +47,7 @@ export function AppShell({
     return (
       <div className="flex h-dvh w-full flex-col overflow-hidden">
         <div className="flex min-h-0 flex-1">
-          <main className="no-scrollbar min-w-0 flex-1 overflow-y-auto bg-surface app-canvas">
+          <main id="main-content" className="no-scrollbar min-w-0 flex-1 overflow-y-auto bg-surface app-canvas">
             {!hideTopBar && (
               <TopBar
                 breadcrumbRoot={breadcrumbRoot}
@@ -73,6 +73,7 @@ export function AppShell({
   return (
     <div className="flex min-w-0 flex-1 overflow-hidden">
       <main
+        id="main-content"
         className={
           fill
             ? "no-scrollbar flex min-w-0 flex-1 flex-col overflow-hidden bg-surface app-canvas"

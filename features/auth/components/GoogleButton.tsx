@@ -3,7 +3,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { signInWithGoogle } from "../api";
+import { Button } from "@astryxdesign/core/Button";
+import { signInWithGoogle, SuspendedAccountError, type SuspendedInfo } from "../api";
+import { useLanguage } from "@/lib/i18n/LanguageProvider";
 
 /** The Google "G" mark (official four-color mark, drawn as SVG). */
 function GoogleMark({ className }: { className?: string }) {
@@ -34,7 +36,16 @@ function GoogleMark({ className }: { className?: string }) {
  * 2026-11-06: Google only). The mock signs in as the Google-linked demo
  * account; see signInWithGoogle for the backend TODO.
  */
-export function GoogleButton({ next, disabled }: { next: string; disabled?: boolean }) {
+export function GoogleButton({
+  next,
+  disabled,
+  onSuspended,
+}: {
+  next: string;
+  disabled?: boolean;
+  onSuspended?: (info: SuspendedInfo, idToken: string) => void;
+}) {
+  const { t } = useLanguage();
   const router = useRouter();
   const [busy, setBusy] = useState(false);
 
@@ -45,26 +56,29 @@ export function GoogleButton({ next, disabled }: { next: string; disabled?: bool
       await signInWithGoogle();
       router.replace(next);
     } catch (err) {
+      if (err instanceof SuspendedAccountError && onSuspended) {
+        onSuspended(err.suspended, err.googleIdToken ?? "");
+        return;
+      }
       // The user closed Google's chooser: reset silently, no error.
       const cancelled =
         err instanceof Error && "code" in err && (err as { code?: string }).code === "google_cancelled";
-      if (!cancelled) toast.error("Google sign-in failed. Try again.");
+      if (!cancelled) toast.error(t("auth.googleFailed"));
     } finally {
       setBusy(false);
     }
   };
 
   return (
-    <div className="flex flex-col gap-1.5">
-      <button
-        type="button"
-        onClick={run}
-        disabled={busy || disabled}
-        className="flex h-12 w-full cursor-pointer items-center justify-center gap-2.5 rounded-lg border border-line bg-surface text-sm font-medium text-ink transition-colors hover:bg-bg disabled:cursor-not-allowed disabled:opacity-50"
-      >
-        <GoogleMark className="size-5 shrink-0" />
-        {busy ? "Signing in…" : "Continue with Google"}
-      </button>
-    </div>
+    <Button
+      label={busy ? t("auth.signingIn") : t("auth.continueWithGoogle")}
+      variant="secondary"
+      size="lg"
+      width="100%"
+      icon={<GoogleMark className="size-5 shrink-0" />}
+      isLoading={busy}
+      isDisabled={busy || disabled}
+      onClick={run}
+    />
   );
 }

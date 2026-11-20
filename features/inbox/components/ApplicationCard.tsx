@@ -1,12 +1,14 @@
 "use client";
 
 import { Icon } from "@/components/ui/Icon";
+import { useLanguage } from "@/lib/i18n/LanguageProvider";
+import type { DictKey } from "@/lib/i18n/dictionary";
 import type { ThreadApplication } from "../types";
 
-const STATUS_CHIP: Record<string, { label: string; className: string }> = {
-  accepted: { label: "Accepted", className: "bg-accent text-on-accent" },
-  declined: { label: "Declined", className: "bg-placeholder text-muted" },
-  withdrawn: { label: "Withdrawn", className: "bg-placeholder text-muted" },
+const STATUS_CHIP: Record<string, { labelKey: DictKey; className: string }> = {
+  accepted: { labelKey: "inbox.accepted", className: "bg-accent text-on-accent" },
+  declined: { labelKey: "inbox.declined", className: "bg-placeholder text-muted" },
+  withdrawn: { labelKey: "inbox.withdrawn", className: "bg-placeholder text-muted" },
 };
 
 /**
@@ -22,16 +24,17 @@ export function ApplicationCard({
   application: ThreadApplication;
   onResolve?: (status: "accepted" | "declined") => void;
 }) {
+  const { t } = useLanguage();
   const { direction, status } = application;
   const chip =
     status === "pending" && direction === "outgoing"
-      ? { label: "Pending owner review", className: "bg-bg text-muted" }
+      ? { labelKey: "inbox.pendingOwnerReview" as DictKey, className: "bg-bg text-muted" }
       : STATUS_CHIP[status];
 
   return (
     <div className="flex w-56 flex-col gap-1.5">
       <span className="text-xs text-muted">
-        {direction === "incoming" ? "Application received" : "Application sent"}
+        {direction === "incoming" ? t("inbox.appCardReceived") : t("inbox.appCardSent")}
       </span>
       <div className="flex flex-col gap-3 rounded-lg border border-line bg-surface p-3">
         <div className="flex flex-col gap-0.5">
@@ -42,7 +45,7 @@ export function ApplicationCard({
         </div>
         <div className="flex items-center gap-1.5 text-sm text-ink">
           <Icon name="calendar" size={16} className="text-muted" />
-          Due to: {application.dueLabel}
+          {t("inbox.dueTo")} {application.dueLabel}
         </div>
         <div className="h-px w-full bg-placeholder" />
         <div className="flex items-center gap-2">
@@ -58,21 +61,21 @@ export function ApplicationCard({
               onClick={() => onResolve("declined")}
               className="flex-1 cursor-pointer rounded-full border border-line bg-surface py-2 text-sm font-medium text-ink transition-colors hover:bg-bg"
             >
-              Decline
+              {t("inbox.decline")}
             </button>
             <button
               type="button"
               onClick={() => onResolve("accepted")}
               className="flex-1 cursor-pointer rounded-full bg-accent py-2 text-sm font-medium text-on-accent transition-opacity hover:opacity-85"
             >
-              Accept
+              {t("inbox.accept")}
             </button>
           </div>
         ) : chip ? (
           <span
             className={`w-fit rounded-full px-2.5 py-1 text-xs font-medium ${chip.className}`}
           >
-            {chip.label}
+            {t(chip.labelKey)}
           </span>
         ) : null}
       </div>

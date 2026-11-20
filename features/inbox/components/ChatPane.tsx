@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import clsx from "clsx";
 import { Avatar } from "@/components/ui/Avatar";
 import { Icon } from "@/components/ui/Icon";
@@ -17,6 +17,9 @@ import type { Conversation } from "../types";
 import { ApplicationCard } from "./ApplicationCard";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { ThreadOptionsMenu } from "./ThreadOptionsMenu";
+import { AppealControl } from "@/features/appeals/components/AppealControl";
+import { useLanguage } from "@/lib/i18n/LanguageProvider";
+import { getMyAppeals, type MyAppeal } from "@/features/appeals/api";
 
 /**
  * Right side of the Inbox (Figma 386:5), WhatsApp-Web model: the
@@ -35,35 +38,85 @@ export function ChatPane({
   onBack?: () => void;
   className?: string;
 }) {
+  const { t } = useLanguage();
   const [draft, setDraft] = useState("");
   const [confirm, setConfirm] = useState<"clear" | "delete" | null>(null);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
+  const composerRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
+    if (searchQuery.trim()) return;
     const el = scrollRef.current;
     if (el) el.scrollTop = el.scrollHeight;
-  }, [conversation?.id, conversation?.messages.length]);
+  }, [conversation?.id, conversation?.messages.length, searchQuery]);
+
+  // Auto-grow the composer with the draft (capped, then it
+  // scrolls internally). Clearing the draft shrinks it back.
+  useEffect(() => {
+    const el = composerRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${Math.min(el.scrollHeight, 160)}px`;
+  }, [draft]);
 
   // The draft belongs to one thread: switching threads clears it.
   useEffect(() => {
     setDraft("");
+    setSearchOpen(false);
+    setSearchQuery("");
   }, [conversation?.id]);
+
+  const [appeals, setAppeals] = useState<Record<string, MyAppeal>>({});
+
+  // Appeal states for the system thread (spec §4.4): one fetch per
+  // thread, keyed by moderation action id.
+  useEffect(() => {
+    if (conversation?.kind !== "system") return;
+    let live = true;
+    getMyAppeals()
+      .then((rows) => {
+        if (!live) return;
+        const map: Record<string, MyAppeal> = {};
+        rows.forEach((a) => {
+          map[a.moderation_action_id] = a;
+        });
+        setAppeals(map);
+      })
+      .catch(() => {
+        // The appeal buttons simply stay hidden on failure.
+      });
+    return () => {
+      live = false;
+    };
+  }, [conversation?.id, conversation?.kind]);
 
   if (!conversation) {
     return (
       <section
-        aria-label="Conversation"
+        aria-label={t("inbox.conversation")}
         className={clsx(
           "flex min-w-0 flex-1 items-center justify-center bg-surface",
           className
         )}
       >
-        <p className="text-sm text-muted">Select a conversation</p>
+        <p className="text-sm text-muted">{t("inbox.selectConversation")}</p>
       </section>
     );
   }
 
   const { application } = conversation;
+
+  // In-conversation search (audit P1 #13): while a query is
+  // active the pane renders only the matching messages and the
+  // application card steps aside.
+  const searching = searchQuery.trim().length > 0;
+  const visibleMessages = searching
+    ? conversation.messages.filter((m) =>
+        m.text.toLowerCase().includes(searchQuery.trim().toLowerCase()),
+      )
+    : conversation.messages;
   // Consecutive same-sender messages form one stack (6px apart in
   // the frame); stacks sit 24px apart. The application card is
   // pinned to the application MOMENT — right after the thread's
@@ -74,28 +127,31 @@ export function ChatPane({
     | { kind: "stack"; from: "me" | "them"; messages: typeof conversation.messages }
     | { kind: "card" };
   const blocks: Block[] = [];
-  conversation.messages.forEach((message, index) => {
+  visibleMessages.forEach((message, index) => {
     const lastBlock = blocks[blocks.length - 1];
     if (lastBlock?.kind === "stack" && lastBlock.from === message.from) {
       lastBlock.messages.push(message);
     } else {
       blocks.push({ kind: "stack", from: message.from, messages: [message] });
     }
-    if (index === 0 && application) blocks.push({ kind: "card" });
+    if (index === 0 && application && !searching) blocks.push({ kind: "card" });
   });
 
   const handleResolve = async (status: "accepted" | "declined") => {
     if (!application) return;
     try {
       await resolveApplication(conversation.id, status);
-      const description = `${conversation.name}'s application for ${application.projectTitle} was ${status}.`;
+      const description =
+        status === "accepted"
+          ? t("inbox.appAcceptedBody", { name: conversation.name, project: application.projectTitle })
+          : t("inbox.appDeclinedBody", { name: conversation.name, project: application.projectTitle });
       if (status === "accepted") {
-        toast.success("Application accepted", { description });
+        toast.success(t("inbox.appAccepted"), { description });
       } else {
-        toast("Application declined", { description });
+        toast(t("inbox.appDeclined"), { description });
       }
     } catch (err) {
-      toast.error("Couldn't update the application", {
+      toast.error(t("inbox.couldntUpdateApplication"), {
         description: backendErrorMessage(err),
       });
     }
@@ -110,7 +166,7 @@ export function ChatPane({
 
   return (
     <section
-      aria-label={`Conversation with ${conversation.name}`}
+      aria-label={t("inbox.conversationWith", { name: conversation.name })}
       className={clsx("relative flex min-w-0 flex-1 flex-col bg-surface", className)}
     >
       {/* Back to the conversation list: mobile only. On desktop
@@ -119,7 +175,7 @@ export function ChatPane({
         <button
           type="button"
           onClick={onBack}
-          aria-label="Back to conversations"
+          aria-label={t("inbox.backToConversations")}
           className="pressable absolute top-4 left-4 z-10 flex size-10 cursor-pointer items-center justify-center rounded-full bg-bg text-ink focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none lg:hidden"
         >
           <Icon name="chevron-left" size={22} />
@@ -139,20 +195,71 @@ export function ChatPane({
           Clear All / Delete Chat buttons floated here as labeled
           pills; the user found them intrusive, so they live in
           this menu now, same as on the rail rows). */}
-      <div className="absolute top-4 right-4 z-10 sm:right-6">
-        <ThreadOptionsMenu
-          thread={conversation}
-          onClearRequest={() => setConfirm("clear")}
-          onDeleteRequest={() => setConfirm("delete")}
-        />
+      <div className="absolute top-4 right-4 z-10 flex items-start gap-1 sm:right-6">
+        <button
+          type="button"
+          aria-label={t("inbox.searchInConversation")}
+          aria-pressed={searchOpen}
+          onClick={() => {
+            setSearchOpen((v) => !v);
+            if (searchOpen) setSearchQuery("");
+          }}
+          className="flex size-9 cursor-pointer items-center justify-center rounded-full text-muted transition-colors hover:bg-bg hover:text-ink"
+        >
+          <Icon name="search" size={20} />
+        </button>
+        {conversation.kind !== "system" && (
+          <ThreadOptionsMenu
+            thread={conversation}
+            onClearRequest={() => setConfirm("clear")}
+            onDeleteRequest={() => setConfirm("delete")}
+          />
+        )}
       </div>
+
+      {searchOpen && (
+        <div className="absolute top-[72px] left-1/2 z-10 flex w-[min(440px,92%)] -translate-x-1/2 items-center gap-2 rounded-full border border-line bg-surface px-3 py-1.5 shadow-lg">
+          <Icon name="search" size={16} className="shrink-0 text-muted" />
+          <input
+            autoFocus
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+            placeholder={t("inbox.searchInConversation")}
+            aria-label={t("inbox.searchInConversation")}
+            className="min-w-0 flex-1 bg-transparent text-sm text-ink outline-none placeholder:text-muted"
+          />
+          {searching && (
+            <span className="shrink-0 text-xs text-muted">
+              {visibleMessages.length === 1
+                ? t("inbox.messagesMatchOne")
+                : t("inbox.messagesMatch", { count: visibleMessages.length })}
+            </span>
+          )}
+          <button
+            type="button"
+            aria-label={t("common.close")}
+            onClick={() => {
+              setSearchOpen(false);
+              setSearchQuery("");
+            }}
+            className="flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-full text-muted transition-colors hover:bg-bg hover:text-ink"
+          >
+            <Icon name="x" size={14} />
+          </button>
+        </div>
+      )}
 
       <div
         ref={scrollRef}
         className="no-scrollbar flex-1 overflow-y-auto overscroll-contain px-4 pt-[104px] pb-6 sm:px-6"
       >
         <div className="flex flex-col gap-6">
-          {conversation.messages.length === 0 &&
+          {searching && visibleMessages.length === 0 && (
+            <p className="py-10 text-center text-sm text-muted">
+              {t("inbox.noMessagesMatchSearch")}
+            </p>
+          )}
+          {conversation.messages.length === 0 && !searching &&
             (application ? (
               <div
                 className={`flex ${
@@ -168,7 +275,7 @@ export function ChatPane({
               </div>
             ) : (
               <p className="py-10 text-center text-sm text-muted">
-                No messages in this chat yet.
+                {t("inbox.noMessagesInChat")}
               </p>
             ))}
           {blocks.map((block, blockIndex) => {
@@ -196,23 +303,37 @@ export function ChatPane({
                 }`}
               >
                 {block.messages.map((message) => (
-                  <p
-                    key={message.id}
-                    className={`max-w-[85%] rounded-lg px-3 py-3 text-base whitespace-pre-wrap sm:max-w-[310px] ${
-                      mine
-                        ? "rounded-br-[2px] bg-accent text-on-accent"
-                        : "rounded-bl-[2px] bg-bg text-ink"
-                    }`}
-                  >
-                    {message.text}
-                    <span
-                      className={`float-right mt-2.5 ml-3 text-[10px] leading-none ${
-                        mine ? "text-on-accent/70" : "text-subtle"
+                  <Fragment key={message.id}>
+                    <p
+                      className={`max-w-[85%] rounded-lg px-3 py-3 text-base whitespace-pre-wrap sm:max-w-[310px] ${
+                        mine
+                          ? "rounded-br-[2px] bg-accent text-on-accent"
+                          : "rounded-bl-[2px] bg-bg text-ink"
                       }`}
                     >
-                      {message.clock}
-                    </span>
-                  </p>
+                      {message.text}
+                      <span
+                        className={`float-right mt-2.5 ml-3 text-[10px] leading-none ${
+                          mine ? "text-on-accent/70" : "text-subtle"
+                        }`}
+                      >
+                        {message.clock}
+                      </span>
+                    </p>
+                    {conversation.kind === "system" &&
+                    message.moderationActionId ? (
+                      <AppealControl
+                        actionId={message.moderationActionId}
+                        appeal={appeals[message.moderationActionId]}
+                        onSubmitted={(a) =>
+                          setAppeals((prev) => ({
+                            ...prev,
+                            [a.moderation_action_id]: a,
+                          }))
+                        }
+                      />
+                    ) : null}
+                  </Fragment>
                 ))}
               </div>
             );
@@ -220,60 +341,81 @@ export function ChatPane({
         </div>
       </div>
 
-      <form onSubmit={handleSend} className="shrink-0 px-4 pt-2 pb-4 sm:px-6 sm:pb-6">
-        <div className="flex items-center gap-3">
-          <div className="flex min-w-0 flex-1 items-center gap-1 rounded-full bg-bg px-4 py-2 transition-shadow focus-within:ring-2 focus-within:ring-accent">
+      {conversation.kind === "system" ? (
+        <div className="shrink-0 px-4 pt-2 pb-4 sm:px-6 sm:pb-6">
+          <p className="rounded-full bg-bg px-4 py-2.5 text-center text-sm text-muted">
+            {t("inbox.systemNotice")}
+          </p>
+        </div>
+      ) : (
+        <form onSubmit={handleSend} className="shrink-0 px-4 pt-2 pb-4 sm:px-6 sm:pb-6">
+        <div className="flex items-end gap-3">
+          <div className="flex min-w-0 flex-1 items-end gap-1 rounded-3xl bg-bg px-4 py-2 transition-shadow focus-within:ring-2 focus-within:ring-accent">
             <label className="sr-only" htmlFor={`composer-${conversation.id}`}>
-              Message {conversation.name}
+              {t("inbox.messageTo", { name: conversation.name })}
             </label>
-            <input
+            <textarea
               id={`composer-${conversation.id}`}
-              type="text"
+              ref={composerRef}
+              rows={1}
               value={draft}
               onChange={(event) => setDraft(event.target.value)}
+              onKeyDown={(event) => {
+                // Enter sends; Shift+Enter falls through to the
+                // textarea default and starts a new line.
+                if (
+                  event.key === "Enter" &&
+                  !event.shiftKey &&
+                  !event.nativeEvent.isComposing
+                ) {
+                  event.preventDefault();
+                  event.currentTarget.form?.requestSubmit();
+                }
+              }}
               placeholder="Aa"
-              className="h-8 min-w-0 flex-1 bg-transparent text-base text-ink outline-none placeholder:text-muted"
+              className="max-h-40 min-w-0 flex-1 resize-none overflow-y-auto bg-transparent py-1.5 text-base leading-snug text-ink outline-none placeholder:text-muted"
             />
           </div>
           <button
             type="submit"
-            aria-label="Send message"
+            aria-label={t("inbox.sendMessage")}
             disabled={!draft.trim()}
             className="flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-full bg-accent text-on-accent transition-opacity hover:opacity-85 disabled:cursor-not-allowed disabled:opacity-40"
           >
             <Icon name="send" size={20} />
           </button>
         </div>
-      </form>
+        </form>
+      )}
 
       {confirm && (
         <ConfirmDialog
-          title={confirm === "delete" ? "Delete chat" : "Clear chat"}
+          title={confirm === "delete" ? t("inbox.deleteChat") : t("inbox.clearChat")}
           description={
             confirm === "delete"
-              ? `The chat with ${conversation.name} will be deleted. This cannot be undone.`
-              : `Messages in this chat will be removed. The conversation and its application stay. This cannot be undone.`
+              ? t("inbox.deleteChatBody", { name: conversation.name })
+              : t("inbox.clearChatBody")
           }
-          confirmLabel={confirm === "delete" ? "Delete" : "Clear"}
+          confirmLabel={confirm === "delete" ? t("common.delete") : t("inbox.clear")}
           onConfirm={() => {
             const snapshot = conversation;
             if (confirm === "delete") {
               deleteThread(conversation.id);
-              toast("Chat deleted", {
+              toast(t("inbox.chatDeleted"), {
                 description: snapshot.name,
                 duration: 5000,
                 action: {
-                  label: "Undo",
+                  label: t("common.undo"),
                   onClick: () => restoreThread(snapshot),
                 },
               });
             } else {
               clearThread(conversation.id);
-              toast("Chat cleared", {
+              toast(t("inbox.chatCleared"), {
                 description: snapshot.name,
                 duration: 5000,
                 action: {
-                  label: "Undo",
+                  label: t("common.undo"),
                   onClick: () => restoreThread(snapshot),
                 },
               });

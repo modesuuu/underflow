@@ -2,17 +2,21 @@
 
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { ApiError } from "@/lib/api-client";
-import { register } from "../api";
+import { register, type PendingRegistration } from "../api";
 import { firstError, validateRegister, type FieldErrors } from "../validation";
+import { Button } from "@astryxdesign/core/Button";
 import { AuthField } from "./AuthField";
 import { AuthShell } from "./AuthShell";
 import { GoogleButton } from "./GoogleButton";
+import { VerifyPendingModal } from "./VerifyPendingModal";
+import { useLanguage } from "@/lib/i18n/LanguageProvider";
+import type { DictKey } from "@/lib/i18n/dictionary";
 
 export function SignupForm() {
-  const router = useRouter();
+  const { t } = useLanguage();
   const searchParams = useSearchParams();
   const next = searchParams.get("next") || "/";
   const [username, setUsername] = useState("");
@@ -20,34 +24,58 @@ export function SignupForm() {
   const [password, setPassword] = useState("");
   const [errors, setErrors] = useState<FieldErrors>({});
   const [submitting, setSubmitting] = useState(false);
+  const [pending, setPending] = useState<PendingRegistration | null>(null);
+  const [agreed, setAgreed] = useState(false);
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     if (submitting) return;
     const fieldErrors = validateRegister({ username, email, password });
-    setErrors(fieldErrors);
+    const localizedErrors: FieldErrors = {};
+    for (const [field, key] of Object.entries(fieldErrors)) {
+      localizedErrors[field] = t(key as DictKey);
+    }
+    setErrors(localizedErrors);
     if (Object.keys(fieldErrors).length > 0) {
-      toast.error(firstError(fieldErrors) ?? "Check the form and try again.");
+      toast.error(firstError(localizedErrors) ?? t("auth.checkForm"));
+      return;
+    }
+    if (!agreed) {
+      toast.error(t("auth.errTerms"));
       return;
     }
     setSubmitting(true);
     try {
-      await register({ username, email, password });
-      router.replace(next);
+      const pendingResult = await register({ username, email, password, termsAccepted: agreed });
+      // Pending scheme: no account and no session yet. The
+      // verification modal opens on this page; the account is
+      // created when the emailed link is clicked.
+      setPending(pendingResult);
     } catch (err) {
       if (err instanceof ApiError && err.code === "username_taken") {
         // Taken username/email: inline on the field AND a toast,
         // so the reason is impossible to miss.
-        setErrors((prev) => ({ ...prev, username: err.message }));
-        toast.error(err.message);
+        setErrors((prev) => ({
+          ...prev,
+          username: t("auth.errUsernameTaken"),
+        }));
+        toast.error(t("auth.errUsernameTaken"));
       } else if (err instanceof ApiError && err.code === "email_taken") {
-        setErrors((prev) => ({ ...prev, email: err.message }));
-        toast.error(err.message);
+        setErrors((prev) => ({ ...prev, email: t("auth.errEmailTaken") }));
+        toast.error(t("auth.errEmailTaken"));
+      } else if (err instanceof ApiError && err.code === "email_send_failed") {
+        // The backend cancelled the registration because the
+        // verification email could not be sent; nothing was stored.
+        toast.error(t("auth.errEmailSend"));
+      } else if (err instanceof ApiError && err.code === "terms_not_accepted") {
+        toast.error(t("auth.errTerms"));
+      } else if (err instanceof ApiError && err.code === "rate_limited") {
+        toast.error(t("auth.errTooMany"));
       } else {
         toast.error(
           err instanceof ApiError
             ? err.message
-            : "Can't reach the server. Check your connection and try again.",
+            : t("auth.serverUnreachable"),
         );
       }
     } finally {
@@ -56,17 +84,18 @@ export function SignupForm() {
   };
 
   return (
+    <>
     <AuthShell
-      title="Create your account"
-      subtitle="Join Underflow to find your team"
+      title={t("auth.createTitle")}
+      subtitle={t("auth.createSubtitle")}
       footer={
         <>
-          Already have an account?{" "}
+          {t("auth.alreadyHaveAccount")}{" "}
           <Link
             href={`/login?next=${encodeURIComponent(next)}`}
             className="font-medium text-ink underline underline-offset-2"
           >
-            Log in
+            {t("auth.logIn")}
           </Link>
         </>
       }
@@ -74,18 +103,18 @@ export function SignupForm() {
       <form onSubmit={submit} noValidate className="flex flex-col gap-5">
         <AuthField
           id="username"
-          label="Username"
+          label={t("auth.username")}
           type="text"
           autoComplete="username"
-          placeholder="Username"
+          placeholder={t("auth.username")}
           value={username}
           onChange={(e) => setUsername(e.target.value)}
           error={errors.username}
-          hint="3–20 lowercase letters, numbers, dots, underscores, or dashes."
+          hint={t("auth.usernameHint")}
         />
         <AuthField
           id="email"
-          label="Email"
+          label={t("auth.email")}
           type="email"
           autoComplete="email"
           placeholder="you@university.ac.id"
@@ -95,28 +124,69 @@ export function SignupForm() {
         />
         <AuthField
           id="password"
-          label="Password"
+          label={t("auth.password")}
           type="password"
           autoComplete="new-password"
-          placeholder="At least 8 characters"
+          placeholder={t("auth.passwordHint")}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           error={errors.password}
         />
-        <button
+        <label className="flex cursor-pointer items-start gap-2.5 text-sm text-muted">
+          <input
+            type="checkbox"
+            checked={agreed}
+            onChange={(e) => setAgreed(e.target.checked)}
+            className="mt-0.5 h-4 w-4 shrink-0"
+            style={{ accentColor: "#35702b" }}
+          />
+          <span>
+            {t("auth.agreePrefix")}{" "}
+            <Link href="/terms" className="font-medium text-ink underline underline-offset-2">
+              {t("auth.termsLink")}
+            </Link>{" "}
+            {t("auth.agreeAnd")}{" "}
+            <Link href="/privacy" className="font-medium text-ink underline underline-offset-2">
+              {t("auth.privacyLink")}
+            </Link>
+            .
+          </span>
+        </label>
+        <Button
           type="submit"
-          disabled={submitting}
-          className="h-12 w-full cursor-pointer rounded-lg bg-accent text-sm font-medium text-on-accent transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {submitting ? "Creating your account…" : "Create account"}
-        </button>
+          label={submitting ? t("auth.creatingAccount") : t("auth.createAccount")}
+          variant="primary"
+          size="lg"
+          width="100%"
+          isLoading={submitting}
+          isDisabled={submitting}
+        />
       </form>
       <div className="flex items-center gap-3 text-xs text-subtle">
         <span className="h-px flex-1 bg-line" aria-hidden="true" />
-        or continue with
+        {t("auth.orContinueWith")}
         <span className="h-px flex-1 bg-line" aria-hidden="true" />
       </div>
       <GoogleButton next={next} disabled={submitting} />
+      <p className="text-center text-xs text-subtle">
+        {t("auth.googleAgreePrefix")}{" "}
+        <Link href="/terms" className="underline underline-offset-2">
+          {t("auth.termsLink")}
+        </Link>{" "}
+        {t("auth.agreeAnd")}{" "}
+        <Link href="/privacy" className="underline underline-offset-2">
+          {t("auth.privacyLink")}
+        </Link>
+        .
+      </p>
     </AuthShell>
+    {pending ? (
+      <VerifyPendingModal
+        pendingId={pending.pendingId}
+        email={pending.email}
+        onClose={() => setPending(null)}
+      />
+    ) : null}
+    </>
   );
 }

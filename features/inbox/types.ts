@@ -45,6 +45,8 @@ export interface ChatMessage {
   clock: string;
   /** Incoming only: not true = unread. Own messages are always read. */
   read?: boolean;
+  /** System notices only: the moderation action this message reports. */
+  moderationActionId?: string | null;
 }
 
 export interface Conversation {
@@ -66,5 +68,11 @@ export interface Conversation {
   muted?: boolean;
   /** Pinned threads sort above the rest of the list. */
   pinned?: boolean;
+  /** Archived threads live under the Archived tab (audit P1 #13). */
+  archived?: boolean;
+  /** Server-side "unread by me" flag (audit P1 #13). */
+  markedUnread?: boolean;
+  /** Thread kind from the backend; "system" = one-way announcements. */
+  kind?: "direct" | "application" | "system";
   application?: ThreadApplication;
 }

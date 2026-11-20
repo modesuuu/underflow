@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Icon } from "@/components/ui/Icon";
 import { MakeCollabModal } from "./MakeCollabModal";
+import { useLanguage } from "@/lib/i18n/LanguageProvider";
 
 /**
  * Right-side header actions for /collaborations (Figma "Collaborations" frame).
@@ -16,6 +17,7 @@ import { MakeCollabModal } from "./MakeCollabModal";
  * so it fits on one row with the breadcrumb).
  */
 export function CollabHeaderActions() {
+  const { t } = useLanguage();
   const [modalOpen, setModalOpen] = useState(false);
 
   return (
@@ -28,7 +30,7 @@ export function CollabHeaderActions() {
           className="pressable flex cursor-pointer items-center gap-1.5 rounded-full bg-accent px-4 py-2 text-on-accent transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
         >
           <Icon name="plus" size={16} />
-          <span className="text-sm font-medium">New Project</span>
+          <span className="text-sm font-medium">{t("collab.newProject")}</span>
         </button>
       </div>
 
@@ -36,11 +38,11 @@ export function CollabHeaderActions() {
       <button
         type="button"
         onClick={() => setModalOpen(true)}
-        aria-label="New Project"
+        aria-label={t("collab.newProject")}
         className="pressable fixed right-4 bottom-4 z-30 flex cursor-pointer items-center gap-1.5 rounded-full bg-accent px-4 py-2.5 text-on-accent shadow-lg transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none sm:hidden"
       >
         <Icon name="plus" size={16} />
-        <span className="text-sm font-medium">New Project</span>
+        <span className="text-sm font-medium">{t("collab.newProject")}</span>
       </button>
 
       <MakeCollabModal open={modalOpen} onClose={() => setModalOpen(false)} />

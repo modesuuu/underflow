@@ -1,11 +1,14 @@
 "use client";
 
+import { isImeConfirmingEnter } from "@/lib/keyboard";
+
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Icon } from "@/components/ui/Icon";
 import { getMyCollabProjects } from "../api";
 import { setQuery, useMyCollabToolbar } from "../toolbar-store";
 import type { MyCollabProject } from "../types";
+import { useLanguage } from "@/lib/i18n/LanguageProvider";
 
 /**
  * Mobile search sheet for /my-collaborations (user order
@@ -27,6 +30,7 @@ export function MyCollabMobileSearchModal({
   open,
   onClose,
 }: MyCollabMobileSearchModalProps) {
+  const { t } = useLanguage();
   const { query } = useMyCollabToolbar();
   const [projects, setProjects] = useState<MyCollabProject[]>([]);
   const [loading, setLoading] = useState(false);
@@ -116,10 +120,10 @@ export function MyCollabMobileSearchModal({
       className="fixed inset-0 z-50"
       role="dialog"
       aria-modal="true"
-      aria-label="Search"
+      aria-label={t("common.search")}
     >
       <div
-        className={`absolute inset-0 bg-ink/40 ${
+        className={`absolute inset-0 bg-black/40 backdrop-blur-sm ${
           closing ? "modal-overlay-out" : "modal-overlay-in"
         }`}
         onClick={requestClose}
@@ -134,7 +138,7 @@ export function MyCollabMobileSearchModal({
         <div className="flex items-center gap-2 border-b border-line px-3 py-3">
           <button
             type="button"
-            aria-label="Back"
+            aria-label={t("common.back")}
             onClick={requestClose}
             className="flex size-10 shrink-0 cursor-pointer items-center justify-center rounded-full text-ink transition-colors hover:bg-bg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
           >
@@ -148,17 +152,17 @@ export function MyCollabMobileSearchModal({
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === "Enter") requestClose();
+                if (e.key === "Enter" && !isImeConfirmingEnter(e)) requestClose();
               }}
-              placeholder="Search projects"
-              aria-label="Search projects"
+              placeholder={t("collab.searchProjectsLabel")}
+              aria-label={t("collab.searchProjectsLabel")}
               autoComplete="off"
               className="min-w-0 flex-1 bg-transparent text-[15px] text-ink outline-none placeholder:text-muted"
             />
             {query && (
               <button
                 type="button"
-                aria-label="Clear search"
+                aria-label={t("collab.clearSearch")}
                 onClick={() => setQuery("")}
                 className="flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-full text-muted transition-colors hover:bg-surface hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
               >

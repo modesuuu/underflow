@@ -1,13 +1,17 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AppShell } from "@/components/layout/AppShell";
 import { PostButton } from "@/components/layout/PostButton";
 import { Icon } from "@/components/ui/Icon";
 import { FeedColumn } from "@/features/dashboard/components/FeedColumn";
-import { getPerson, getPersonPosts } from "@/features/profile/api";
-import { NotificationsPanel } from "@/features/dashboard/components/NotificationsPanel";
+import {
+  getPerson,
+  getPersonPosts,
+  getProfileStats,
+} from "@/features/profile/api";
+import { ProfileRail } from "@/features/profile/components/ProfileRail";
+import { tStatic } from "@/lib/i18n/format";
 
 interface ProfilePostsPageProps {
   params: Promise<{ userId: string }>;
@@ -58,9 +62,9 @@ async function PostsBody({ userId }: { userId: string }) {
         <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-line bg-surface px-6 py-16 text-center">
           <Icon name="image-add" size={32} className="text-muted" />
           <div className="flex flex-col gap-1">
-            <p className="text-base font-medium text-ink">No posts yet</p>
+            <p className="text-base font-medium text-ink">{tStatic("profile.noPostsYet")}</p>
             <p className="text-sm text-muted">
-              {person.name} hasn&rsquo;t shared any posts.
+              {tStatic("profile.noPostsBody", { name: person.name })}
             </p>
           </div>
         </div>
@@ -74,31 +78,27 @@ export default async function ProfilePostsPage({ params }: ProfilePostsPageProps
   const { userId } = await params;
   const person = await getPerson(userId);
   if (!person) notFound();
+  const stats = await getProfileStats(person);
 
   return (
     <AppShell
-      navVariant="none"
+      fill
       hideTopBar
       actions={<PostButton />}
       breadcrumbRoot={person.name}
       breadcrumbLeaf="Feed"
       backLabel={person.name}
       backHref={`/profile/${person.id}`}
-      panel={<NotificationsPanel className="px-6" />}
     >
       <h1 className="sr-only">{`${person.name}'s posts`}</h1>
-      <div className="mx-auto w-full max-w-(--uf-content-w) px-4 pt-3 lg:mx-0 lg:ml-[28px] lg:px-0">
-        <Link
-          href={`/profile/${person.id}`}
-          className="flex w-fit items-center gap-1 text-base font-medium text-ink hover:underline"
-        >
-          <Icon name="chevron-left" size={24} />
-          {person.name}
-        </Link>
+      <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto px-4 py-6 sm:px-6 lg:flex-row lg:overflow-visible">
+        <ProfileRail person={person} stats={stats} activeTab="posts" />
+        <div className="no-scrollbar min-w-0 flex-1 lg:min-h-0 lg:overflow-y-auto">
+          <Suspense fallback={<FeedColumnSkeleton />}>
+            <PostsBody userId={userId} />
+          </Suspense>
+        </div>
       </div>
-      <Suspense fallback={<FeedColumnSkeleton />}>
-        <PostsBody userId={userId} />
-      </Suspense>
     </AppShell>
   );
 }

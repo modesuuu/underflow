@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import Link from "next/link";
+import { useLanguage } from "@/lib/i18n/LanguageProvider";
 
 /**
  * Route-level error boundary for /collaborations (also covers the nested
@@ -14,6 +15,7 @@ export default function CollaborationsError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const { t } = useLanguage();
   useEffect(() => {
     // eslint-disable-next-line no-console
     console.error("Collaborations route error:", error);
@@ -21,9 +23,9 @@ export default function CollaborationsError({
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-bg px-6 text-center">
-      <p className="text-2xl font-bold text-ink">This page failed to load</p>
+      <p className="text-2xl font-bold text-ink">{t("misc.pageFailed")}</p>
       <p className="max-w-sm text-sm text-muted">
-        Reload the page to try again.
+        {t("misc.reloadBody")}
       </p>
       <div className="flex items-center gap-3">
         <button
@@ -31,13 +33,13 @@ export default function CollaborationsError({
           onClick={() => reset()}
           className="pressable cursor-pointer rounded-md bg-accent px-4 py-2.5 text-sm font-medium text-on-accent transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
         >
-          Try again
+          {t("misc.tryAgain")}
         </button>
         <Link
           href="/"
           className="rounded-md px-4 py-2.5 text-sm font-medium text-muted transition-colors hover:text-ink focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
         >
-          Go home
+          {t("misc.goHome")}
         </Link>
       </div>
     </div>

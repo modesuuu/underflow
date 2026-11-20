@@ -1,9 +1,10 @@
 import { Suspense } from "react";
 import { AppShell } from "@/components/layout/AppShell";
 import { PostButton } from "@/components/layout/PostButton";
-import { getDashboardPosts } from "@/features/dashboard/api";
+import { getFeedPage } from "@/features/dashboard/api";
 import { FeedColumn } from "@/features/dashboard/components/FeedColumn";
 import { NotificationsPanel } from "@/features/dashboard/components/NotificationsPanel";
+import { tStatic } from "@/lib/i18n/format";
 
 /**
  * The feed page keeps its own shaped skeleton (post-card stack + notifications
@@ -16,7 +17,7 @@ function FeedColumnSkeleton() {
   return (
     <div className="mx-auto flex w-full max-w-(--uf-content-w) flex-col gap-5 px-4 py-3 lg:mx-auto lg:px-0">
       {Array.from({ length: 3 }).map((_, i) => (
-        <div key={i} className="px-1 py-2">
+        <div key={i} className="border-b border-line px-1 pt-2 pb-5">
           <div className="flex items-center gap-3">
             <div className="size-8 rounded-full bg-placeholder" />
             <div className="flex flex-col gap-1.5">
@@ -39,8 +40,8 @@ function FeedColumnSkeleton() {
 }
 
 async function FeedColumnAsync() {
-  const posts = await getDashboardPosts();
-  return <FeedColumn posts={posts} centered />;
+  const page = await getFeedPage(1);
+  return <FeedColumn posts={page.posts} centered feedTotal={page.total} />;
 }
 
 export default function Home() {
@@ -62,7 +63,7 @@ export default function Home() {
     >
       {/* P1-C #20: one real h1 per page — visually hidden so the
           breadcrumb in the TopBar stays the visual heading. */}
-      <h1 className="sr-only">Feed</h1>
+      <h1 className="sr-only">{tStatic("crumb.feed")}</h1>
       <div className="pb-24 sm:pb-0">
         <Suspense fallback={<FeedColumnSkeleton />}>
           <FeedColumnAsync />

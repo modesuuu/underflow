@@ -1,0 +1,268 @@
+"use client";
+
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+  type ReactNode,
+} from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { Avatar } from "@/components/ui/Avatar";
+import { Icon } from "@/components/ui/Icon";
+import { LogoMark } from "@/components/ui/LogoMark";
+import { SkipLink } from "@/components/ui/SkipLink";
+import { ApiError } from "@/lib/api-client";
+import { getAdminOverview } from "../api";
+import { useLanguage } from "@/lib/i18n/LanguageProvider";
+import type { DictKey } from "@/lib/i18n/dictionary";
+import type { AdminOverview, AdminViewer } from "../types";
+
+/**
+ * The admin shell (spec-admin.md §7): its own layout outside the
+ * user AppShell. The gate is the overview call itself — the
+ * backend AdminMiddleware decides; a 403 renders the denied
+ * screen, so a hidden sidebar entry is never the security.
+ */
+
+interface AdminContextValue {
+  viewer: AdminViewer;
+  overview: AdminOverview;
+  /** Silent refetch so queue badges stay true after an action. */
+  refreshOverview: () => void;
+}
+
+const AdminContext = createContext<AdminContextValue | null>(null);
+
+export function useAdmin(): AdminContextValue {
+  const ctx = useContext(AdminContext);
+  if (!ctx) throw new Error("useAdmin must be used inside AdminShell");
+  return ctx;
+}
+
+const NAV = [
+  { href: "/admin", labelKey: "admin.navOverview" as DictKey, icon: "home", badge: null as null | "reports" | "requests" | "appeals", match: (p: string) => p === "/admin" },
+  { href: "/admin/users", labelKey: "admin.navUsers" as DictKey, icon: "group", badge: null as null | "reports" | "requests" | "appeals", match: (p: string) => p.startsWith("/admin/users") },
+  { href: "/admin/content", labelKey: "admin.navContent" as DictKey, icon: "news", badge: null as null | "reports" | "requests" | "appeals", match: (p: string) => p.startsWith("/admin/content") },
+  { href: "/admin/reports", labelKey: "admin.navReports" as DictKey, icon: "flag", badge: "reports" as null | "reports" | "requests" | "appeals", match: (p: string) => p.startsWith("/admin/reports") },
+  { href: "/admin/approvals", labelKey: "admin.navApprovals" as DictKey, icon: "check-square", badge: "requests" as null | "reports" | "requests" | "appeals", match: (p: string) => p.startsWith("/admin/approvals") },
+  { href: "/admin/appeals", labelKey: "admin.navAppeals" as DictKey, icon: "undo", badge: "appeals" as null | "reports" | "requests" | "appeals", match: (p: string) => p.startsWith("/admin/appeals") },
+  { href: "/admin/audit-log", labelKey: "admin.navAuditLog" as DictKey, icon: "history", badge: null as null | "reports" | "requests" | "appeals", match: (p: string) => p.startsWith("/admin/audit-log") },
+  { href: "/admin/ai-moderation", labelKey: "admin.navAiMod" as DictKey, icon: "bot", badge: null as null | "reports" | "requests" | "appeals", match: (p: string) => p.startsWith("/admin/ai-moderation") },
+];
+
+type GateState =
+  | { kind: "loading" }
+  | { kind: "denied" }
+  | { kind: "error" }
+  | { kind: "ready"; overview: AdminOverview };
+
+export function AdminShell({ children }: { children: ReactNode }) {
+  const { t } = useLanguage();
+  const pathname = usePathname() ?? "/admin";
+  const [navOpen, setNavOpen] = useState(false);
+  // The mobile drawer never survives a navigation.
+  useEffect(() => {
+    setNavOpen(false);
+  }, [pathname]);
+  const [gate, setGate] = useState<GateState>({ kind: "loading" });
+  const [attempt, setAttempt] = useState(0);
+
+  // Silent refetch: only ever updates an already-ready gate, so the
+  // badges stay true without flashing the loading screen.
+  const silentRefresh = useCallback(() => {
+    getAdminOverview()
+      .then((fresh) => {
+        setGate((g) => (g.kind === "ready" ? { kind: "ready", overview: fresh } : g));
+      })
+      .catch(() => {
+        // Badges may go stale; the gate itself stays up.
+      });
+  }, []);
+
+  // Queues change outside this tab too (users filing reports and
+  // appeals from the app, monitors proposing actions): re-check on
+  // every navigation inside the admin area and on window focus.
+  useEffect(() => {
+    silentRefresh();
+  }, [pathname, silentRefresh]);
+  useEffect(() => {
+    const onFocus = () => silentRefresh();
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, [silentRefresh]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setGate({ kind: "loading" });
+    getAdminOverview()
+      .then((overview) => {
+        if (!cancelled) setGate({ kind: "ready", overview });
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        if (err instanceof ApiError && (err.status === 403 || err.status === 401)) {
+          setGate({ kind: "denied" });
+        } else {
+          setGate({ kind: "error" });
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [attempt]);
+
+  if (gate.kind === "loading") {
+    return (
+      <div className="flex h-dvh items-center justify-center bg-bg text-sm text-muted">
+        {t("admin.loading")}
+      </div>
+    );
+  }
+
+  if (gate.kind === "denied") {
+    return (
+      <div className="flex h-dvh flex-col items-center justify-center gap-3 bg-bg px-6 text-center">
+        <Icon name="lock-alt" size={28} className="text-muted" />
+        <p className="text-base font-medium">{t("admin.deniedTitle")}</p>
+        <p className="max-w-sm text-sm text-muted">
+          {t("admin.deniedBody")}
+        </p>
+        <a
+          href="/"
+          className="mt-2 rounded-full bg-accent px-4 py-1.5 text-sm font-medium text-on-accent"
+        >
+          {t("admin.backToApp")}
+        </a>
+      </div>
+    );
+  }
+
+  const retryScreen = (
+    <div className="flex h-dvh flex-col items-center justify-center gap-3 bg-bg px-6 text-center">
+      <p className="text-sm text-muted">{t("admin.apiError")}</p>
+      <button
+        type="button"
+        onClick={() => setAttempt((n) => n + 1)}
+        className="cursor-pointer rounded-full bg-accent px-4 py-1.5 text-sm font-medium text-on-accent"
+      >
+        {t("common.retry")}
+      </button>
+    </div>
+  );
+
+  if (gate.kind === "error") {
+    return retryScreen;
+  }
+
+  const { overview } = gate;
+  const viewer = overview.viewer;
+  if (!viewer) {
+    return retryScreen;
+  }
+
+  const refreshOverview = silentRefresh;
+  const badgeCount = (badge: "reports" | "requests" | "appeals" | null): number =>
+    badge === "reports"
+      ? overview.reports_open
+      : badge === "requests"
+        ? overview.action_requests_pending
+        : badge === "appeals"
+          ? overview.appeals_pending
+          : 0;
+
+  return (
+    <AdminContext.Provider value={{ viewer, overview, refreshOverview }}>
+      <div className="flex h-dvh w-full overflow-hidden bg-bg text-ink">
+        <SkipLink label={t("common.skipToContent")} />
+        <button
+          type="button"
+          aria-label={t("common.openMenu")}
+          onClick={() => setNavOpen(true)}
+          className="fixed top-4 left-4 z-40 flex size-10 cursor-pointer items-center justify-center rounded-full border border-line bg-surface text-ink shadow-sm focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none lg:hidden"
+        >
+          <Icon name="menu" size={20} />
+        </button>
+        {navOpen && (
+          <button
+            type="button"
+            aria-label={t("common.closeMenu")}
+            onClick={() => setNavOpen(false)}
+            className="fixed inset-0 z-40 cursor-pointer bg-black/40 lg:hidden"
+          />
+        )}
+        <aside
+          className={`fixed inset-y-0 left-0 z-50 flex w-[232px] shrink-0 flex-col border-r border-line bg-surface transition-transform duration-200 lg:static lg:z-auto lg:translate-x-0 ${navOpen ? "translate-x-0" : "-translate-x-full"}`}
+        >
+          <div className="flex items-center gap-2 px-4 pt-5 pb-4">
+            <LogoMark className="h-[22px] w-[22px]" />
+            <span className="text-[15px] font-semibold tracking-tight">Underflow</span>
+            <span
+              className="ml-1 rounded-full px-2 py-0.5 text-[11px] font-semibold tracking-wide uppercase"
+              style={{
+                background: "color-mix(in srgb, var(--color-warning, #ffce2f) 26%, transparent)",
+              }}
+            >
+              Admin
+            </span>
+          </div>
+          <nav className="flex flex-col gap-1 px-2">
+            {NAV.map((item) => {
+              const active = item.match(pathname);
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm ${
+                    active
+                      ? "bg-bg font-medium text-ink"
+                      : "text-muted hover:text-ink"
+                  }`}
+                >
+                  <Icon name={item.icon} size={18} />
+                  {t(item.labelKey)}
+                  {badgeCount(item.badge) > 0 && (
+                    <span
+                      className="ml-auto rounded-full px-1.5 py-0.5 text-[11px] font-semibold"
+                      style={{
+                        background:
+                          "color-mix(in srgb, var(--color-error, #c9303a) 14%, transparent)",
+                        color: "var(--color-error, #c9303a)",
+                      }}
+                    >
+                      {badgeCount(item.badge)}
+                    </span>
+                  )}
+                </Link>
+              );
+            })}
+          </nav>
+          <div className="mt-auto flex flex-col gap-3 px-4 pb-5">
+            <div className="h-px w-full bg-line" />
+            <div className="flex items-center gap-2.5">
+              <Avatar size={30} src={viewer.photo ?? undefined} alt={viewer.username} />
+              <div className="flex min-w-0 flex-col">
+                <span className="truncate text-sm font-medium">
+                  {viewer.username}
+                </span>
+                <span className="text-xs text-muted">
+                  {viewer.role === "super_admin" ? t("admin.superAdmin") : t("admin.monitor")}
+                </span>
+              </div>
+            </div>
+            <a
+              href="/"
+              className="flex items-center gap-2 text-sm text-muted hover:text-ink"
+            >
+              <Icon name="arrow-back" size={16} />
+              {t("admin.backToApp")}
+            </a>
+          </div>
+        </aside>
+        <main id="main-content" className="min-w-0 flex-1 overflow-y-auto px-4 pt-16 pb-6 sm:px-8 lg:py-6">{children}</main>
+      </div>
+    </AdminContext.Provider>
+  );
+}

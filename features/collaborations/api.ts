@@ -1,8 +1,9 @@
 // features/collaborations/api.ts
 import { ApiEnvelope, apiFetch, ApiError, isApiConfigured } from "@/lib/api-client";
-import type { CollabMember, CollabProject, CollabSortKey, ProjectType } from "./types";
+import type { CollabMember, CollabProject, CollabSortKey, GroupMode, ProjectType } from "./types";
 import { SYSTEM_SKILL_ICONS } from "./skills-api";
 import { uploadImage } from "@/features/dashboard/api";
+import { formatRelativeAgo } from "@/lib/i18n/format";
 
 /** Wire shape of GET /api/collab (CollabModel::getAll, enriched 2026-11-10). */
 interface BackendCollab {
@@ -25,18 +26,16 @@ interface BackendCollab {
   /** Accepted members (owner included), join order. Sent by the
    *  detail + my-collaborations payloads; absent on the public list. */
   members?: { id: string; username: string; photo_profile_url?: string; work_status?: string }[];
+  /** The project's Circle, when the owner created one (Phase 1). */
+  circle?: { id: string } | null;
+  /** External group link; the backend nulls it for non-members. */
+  communication_url?: string | null;
   created_at?: string;
 }
 
 function relativeAgo(iso: string | undefined): string {
   if (!iso) return "";
-  const ms = Date.now() - new Date(iso).getTime();
-  if (Number.isNaN(ms) || ms < 0) return "";
-  const days = Math.floor(ms / 86_400_000);
-  if (days >= 1) return days + "d ago";
-  const hours = Math.floor(ms / 3_600_000);
-  if (hours >= 1) return hours + "h ago";
-  return "just now";
+  return formatRelativeAgo(iso);
 }
 
 /** user_collaboration.status values the UI understands; anything
@@ -108,6 +107,8 @@ export function mapBackendCollab(b: BackendCollab): CollabProject {
     photoPublicIds: (b.media_urls ?? []).map(
       (_, i) => b.media_public_ids?.[i] ?? null
     ),
+    circleId: b.circle?.id ?? null,
+    communicationUrl: b.communication_url ?? null,
     owner,
   };
 }
@@ -296,6 +297,12 @@ export interface CreateCollabInput {
 export interface CreateCollabFormInput
   extends Omit<CreateCollabInput, "photoUrls"> {
   photos: File[];
+  /** Create-form only (Circle Phase 1): the group-space choice.
+   *  Optional so the edit form, which reuses this payload, is
+   *  untouched — the backend reads it on create only. */
+  groupMode?: GroupMode;
+  /** The external group link; sent only when groupMode is external. */
+  groupLink?: string;
 }
 
 // The backend's create expects title, description, required_member
@@ -321,6 +328,9 @@ export async function createCollabProject(
         due_date: data.dueDate || null,
         media_urls: uploaded.map((item) => item.url),
         media_public_ids: uploaded.map((item) => item.public_id),
+        group_mode: data.groupMode ?? "none",
+        communication_url:
+          data.groupMode === "external" ? (data.groupLink ?? "") : null,
       }),
     });
     return { success: true };

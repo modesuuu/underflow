@@ -14,14 +14,17 @@ import {
   fetchMessages,
   hideConversation as apiHideConversation,
   markConversationRead,
+  markConversationUnread as apiMarkConversationUnread,
   postMessage,
   restoreConversation as apiRestoreConversation,
   toggleConversationMute,
   toggleConversationPin,
+  toggleConversationArchive as apiToggleConversationArchive,
   type BackendConversation,
   type BackendInboxMessage,
 } from "./api";
 import type { ApplicationStatus, ChatMessage, Conversation } from "./types";
+import { formatShortAgo, localeTag, tStatic } from "@/lib/i18n/format";
 
 /**
  * Inbox store — API-backed since 2026-11-12 (was session memory).
@@ -68,7 +71,12 @@ export function useConversations(): Conversation[] {
 
 export function unreadCount(thread: Conversation): number {
   if (loadedMessages.has(thread.id)) {
-    return thread.messages.filter((m) => m.from === "them" && !m.read).length;
+    const fromMessages = thread.messages.filter(
+      (m) => m.from === "them" && !m.read,
+    ).length;
+    // A server-side mark-as-unread (audit P1 #13) keeps the badge
+    // lit even though every loaded message is technically read.
+    return thread.markedUnread ? Math.max(1, fromMessages) : fromMessages;
   }
   return thread.serverUnread ?? 0;
 }
@@ -102,23 +110,17 @@ function myId(): string | null {
 }
 
 function timeLabelOf(iso: string): string {
-  const ms = Date.now() - new Date(iso).getTime();
-  if (Number.isNaN(ms) || ms < 60_000) return "now";
-  const minutes = Math.floor(ms / 60_000);
-  if (minutes < 60) return `${minutes}min`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h`;
-  return `${Math.floor(hours / 24)}d`;
+  return formatShortAgo(iso);
 }
 
 function clockOf(iso: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "";
-  return d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+  return d.toLocaleTimeString(localeTag(), { hour: "2-digit", minute: "2-digit" });
 }
 
 const clockNow = () =>
-  new Date().toLocaleTimeString("en-GB", {
+  new Date().toLocaleTimeString(localeTag(), {
     hour: "2-digit",
     minute: "2-digit",
   });
@@ -131,6 +133,7 @@ function mapMessage(m: BackendInboxMessage): ChatMessage {
     timeLabel: timeLabelOf(m.created_at),
     clock: clockOf(m.created_at),
     read: m.is_read,
+    moderationActionId: m.moderation_action_id ?? null,
   };
 }
 
@@ -142,11 +145,14 @@ function mapConversation(
   return {
     id: b.id,
     personId: b.other.id,
-    name: b.other.username,
+    name: b.kind === "system" ? "Underflow Admin" : b.other.username,
+    kind: (b.kind as Conversation["kind"]) ?? "direct",
     avatarUrl: b.other.photo_profile_url || undefined,
     messages: hasLoaded ? prev.messages : [],
     muted: b.is_muted || undefined,
     pinned: b.is_pinned || undefined,
+    archived: b.is_archived || undefined,
+    markedUnread: b.marked_unread || undefined,
     serverUnread: hasLoaded ? 0 : b.unread_count,
     updatedAt: b.updated_at,
     preview:
@@ -251,6 +257,7 @@ export async function openThread(id: string): Promise<void> {
   replaceThread(id, (t) => ({
     ...t,
     serverUnread: 0,
+    markedUnread: undefined,
     messages: t.messages.map((m) => (m.read ? m : { ...m, read: true })),
   }));
 }
@@ -262,6 +269,7 @@ export function markThreadRead(id: string) {
   replaceThread(id, (t) => ({
     ...t,
     serverUnread: 0,
+    markedUnread: undefined,
     messages: t.messages.map((m) => (m.read ? m : { ...m, read: true })),
   }));
 }
@@ -316,24 +324,26 @@ export function togglePinThread(id: string) {
   });
 }
 
+/** Archive / unarchive (audit P1 #13): server flag, local-first. */
+export function toggleArchiveThread(id: string) {
+  replaceThread(id, (t) => ({ ...t, archived: !t.archived }));
+  void apiToggleConversationArchive(id).catch(() => {
+    void refreshConversations();
+  });
+}
+
 /**
- * Mark-as-unread is a local affordance only (the server has no
- * "unread by me" flag): it re-lights this session's badges.
+ * Mark-as-unread (audit P1 #13): a server-side per-participant
+ * flag (dm_participants.marked_unread) folded into the unread
+ * count until the thread is opened again — it survives reloads
+ * and other devices. Local state flips first, API follows.
  */
 export function markThreadUnread(id: string) {
-  replaceThread(id, (t) => {
-    if (unreadCount(t) > 0) return t;
-    if (loadedMessages.has(id)) {
-      const lastIncoming = t.messages.map((m) => m.from).lastIndexOf("them");
-      if (lastIncoming === -1) return t;
-      return {
-        ...t,
-        messages: t.messages.map((m, i) =>
-          i === lastIncoming ? { ...m, read: false } : m,
-        ),
-      };
-    }
-    return { ...t, serverUnread: 1 };
+  const thread = conversations.find((t) => t.id === id);
+  if (!thread || unreadCount(thread) > 0) return;
+  replaceThread(id, (t) => ({ ...t, markedUnread: true }));
+  void apiMarkConversationUnread(id).catch(() => {
+    void refreshConversations();
   });
 }
 
@@ -389,8 +399,8 @@ export function sendMessage(threadId: string, text: string) {
         ...t,
         messages: t.messages.filter((m) => m.id !== tempId),
       }));
-      toast.error("Message failed to send", {
-        description: "Check your connection and try again.",
+      toast.error(tStatic("inbox.messageFailed"), {
+        description: tStatic("inbox.checkConnection"),
       });
     }
   })();

@@ -3,6 +3,7 @@ import {
   apiFetch,
 } from "@/lib/api-client";
 import type { NotificationItem, PostAuthor } from "./types";
+import { formatRelativeAgoFine, tStatic } from "@/lib/i18n/format";
 
 /**
  * Wire shape of GET /api/notifications (NotificationController) —
@@ -10,7 +11,7 @@ import type { NotificationItem, PostAuthor } from "./types";
  */
 export interface BackendNotification {
   id: string;
-  type: "like" | "comment" | "comment_like" | "application";
+  type: "like" | "comment" | "comment_like" | "application" | "admin_action_request" | "admin_request_decided" | "admin_appeal" | "collab_completed" | "collab_reopened" | "member_status";
   title: string;
   is_read: boolean | number;
   created_at: string;
@@ -27,15 +28,7 @@ export interface BackendNotification {
 /** Relative label for a notification timestamp ("just now", "5m ago", ...). */
 function relativeAgo(iso: string | undefined): string {
   if (!iso) return "";
-  const ms = Date.now() - new Date(iso).getTime();
-  if (Number.isNaN(ms) || ms < 0) return "";
-  const minutes = Math.floor(ms / 60_000);
-  if (minutes < 1) return "just now";
-  if (minutes < 60) return minutes + "m ago";
-  const hours = Math.floor(ms / 3_600_000);
-  if (hours < 24) return hours + "h ago";
-  const days = Math.floor(ms / 86_400_000);
-  return days + "d ago";
+  return formatRelativeAgoFine(iso);
 }
 
 /** Map one wire notification (list endpoint or WS push) to the store shape. */
@@ -43,7 +36,7 @@ export function mapWireNotification(b: BackendNotification): NotificationItem {
   const actor: PostAuthor | undefined = b.actor?.id
     ? {
         id: b.actor.id,
-        name: b.actor.username ?? "Someone",
+        name: b.actor.username ?? tStatic("notif.someone"),
         avatarUrl: b.actor.photo ?? undefined,
       }
     : undefined;
@@ -56,12 +49,19 @@ export function mapWireNotification(b: BackendNotification): NotificationItem {
     actor,
     action:
       b.type === "like"
-        ? "liked your post"
+        ? tStatic("notif.actionLikedPost")
         : b.type === "comment_like"
-          ? "liked your comment"
+          ? tStatic("notif.actionLikedComment")
           : b.type === "application"
-            ? "applied to your project"
-            : "commented on your post",
+            ? tStatic("notif.actionApplied")
+            : b.type === "admin_action_request" ||
+                b.type === "admin_request_decided" ||
+                b.type === "admin_appeal" ||
+                b.type === "collab_completed" ||
+                b.type === "collab_reopened" ||
+                b.type === "member_status"
+              ? b.title
+              : tStatic("notif.actionCommented"),
     openCollabId:
       b.type === "application" ? (b.collabId ?? undefined) : undefined,
 

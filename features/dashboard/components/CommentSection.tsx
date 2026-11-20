@@ -1,16 +1,21 @@
 "use client";
 
+import { isImeConfirmingEnter } from "@/lib/keyboard";
+
 import { useEffect, useRef, useState } from "react";
+import { scrollWithinContainer } from "@/lib/scroll";
 import { toast } from "sonner";
 import { Avatar } from "@/components/ui/Avatar";
 import { Icon } from "@/components/ui/Icon";
 import { CURRENT_USER } from "@/components/layout/nav";
 import { useSessionUser } from "@/features/auth/store";
+import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import type { PostComment } from "../types";
 import { CommentThread } from "./CommentThread";
 import { getComments, postComment } from "../api";
 import { syncLikeCount, syncLiked } from "../like-store";
 import { isApiConfigured } from "@/lib/api-client";
+import { formatRelativeAgo } from "@/lib/i18n/format";
 
 /**
  * Sync one authenticated comments fetch into the shared like-store.
@@ -39,6 +44,7 @@ interface CommentSectionProps {
 
 
 export function CommentSection({ postId, initialComments, autoFocusComment = false }: CommentSectionProps) {
+  const { t, lang } = useLanguage();
   const [comments, setComments] = useState<PostComment[]>(initialComments);
   const [draft, setDraft] = useState("");
   // Subscribe to the session so this re-renders when the photo is
@@ -77,14 +83,14 @@ export function CommentSection({ postId, initialComments, autoFocusComment = fal
   // into view and focus it so the user can type immediately.
   useEffect(() => {
     if (!autoFocusComment) return;
-    inputBarRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    scrollWithinContainer(inputBarRef.current);
     inputRef.current?.focus({ preventScroll: true });
   }, [autoFocusComment]);
 
   const submit = async () => {
     const text = draft.trim();
     if (!text) {
-      toast("Write a comment first");
+      toast(t("feed.writeCommentFirst"));
       return;
     }
     const tempId = `local-${Date.now()}`;
@@ -96,7 +102,7 @@ export function CommentSection({ postId, initialComments, autoFocusComment = fal
         id: tempId,
         author: { id: "me", name: CURRENT_USER.name },
         text,
-        postedAgo: "Just now",
+        postedAgo: formatRelativeAgo(new Date().toISOString(), lang),
         likes: 0,
         liked: false,
       },
@@ -112,14 +118,14 @@ export function CommentSection({ postId, initialComments, autoFocusComment = fal
     } catch {
       setComments((prev) => prev.filter((c) => c.id !== tempId));
       setLastAddedId(null);
-      toast("Couldn't post your comment. Try again.");
+      toast(t("feed.couldntPostComment"));
     }
   };
 
 
   useEffect(() => {
     if (!lastAddedId || !newCommentRef.current) return;
-    newCommentRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+    scrollWithinContainer(newCommentRef.current);
   }, [lastAddedId]);
 
   return (
@@ -135,20 +141,20 @@ export function CommentSection({ postId, initialComments, autoFocusComment = fal
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === "Enter") {
+              if (e.key === "Enter" && !isImeConfirmingEnter(e)) {
                 e.preventDefault();
                 submit();
               }
             }}
-            placeholder="Write your comment"
+            placeholder={t("feed.writeComment")}
             // P1-C #20: the input had no accessible name beyond the
             // placeholder (placeholders disappear on focus) — add one.
-            aria-label="Write your comment"
+            aria-label={t("feed.writeComment")}
             className="min-w-0 flex-1 bg-transparent text-sm text-ink placeholder:text-muted focus:outline-none"
           />
           <button
             type="button"
-            aria-label="Send comment"
+            aria-label={t("feed.sendComment")}
             onClick={submit}
             disabled={!draft.trim()}
             className={`flex shrink-0 cursor-pointer items-center transition-colors hover:text-ink disabled:cursor-not-allowed disabled:opacity-40 ${

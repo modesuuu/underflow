@@ -14,6 +14,7 @@ export interface BackendInboxMessage {
   body: string;
   is_read: boolean;
   created_at: string;
+  moderation_action_id: string | null;
 }
 
 export interface BackendInboxApplication {
@@ -39,8 +40,11 @@ export interface BackendConversation {
   unread_count: number;
   is_muted: boolean;
   is_pinned: boolean;
+  is_archived: boolean;
+  marked_unread: boolean;
   updated_at: string;
   application: BackendInboxApplication | null;
+  kind: string;
 }
 
 export async function fetchConversations(): Promise<BackendConversation[]> {
@@ -150,4 +154,23 @@ export async function getInboxSummary(): Promise<InboxSummary> {
   } catch {
     return { unreadCount: 0 };
   }
+}
+
+export async function toggleConversationArchive(
+  conversationId: string,
+): Promise<boolean> {
+  const res = await apiFetch<ApiEnvelope<{ archived: boolean }>>(
+    `/api/inbox/conversations/${conversationId}/archive`,
+    { method: "PUT" },
+  );
+  return res.data?.archived ?? false;
+}
+
+export async function markConversationUnread(
+  conversationId: string,
+): Promise<void> {
+  await apiFetch<ApiEnvelope<unknown>>(
+    `/api/inbox/conversations/${conversationId}/mark-unread`,
+    { method: "POST" },
+  );
 }

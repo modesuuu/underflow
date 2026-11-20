@@ -62,7 +62,10 @@ export type NotificationAction =
   | "liked your post"
   | "liked your comment"
   | "mentioned you in"
-  | "invited you to";
+  | "invited you to"
+  // Server-driven free text (admin moderation notices carry their
+  // full sentence as the action).
+  | (string & {});
 
 /**
  * Aligned to the contract `Notification` shape (docs/api-contract.md):

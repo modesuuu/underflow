@@ -66,3 +66,32 @@ export function setSession(next: AuthSession | null): void {
   emit();
 }
 
+/**
+ * Re-read the persisted session, bypassing the one-shot restore flag.
+ * A page restored from the back-forward cache keeps its frozen
+ * in-memory session — after a sign-out in a later document, that heap
+ * still looks signed in while storage is already empty. Storage is
+ * the source of truth; listeners are notified when the token changed.
+ */
+export function resyncSession(): void {
+  if (typeof window === "undefined") return;
+  restored = true;
+  let next: AuthSession | null = null;
+  try {
+    const raw = window.localStorage.getItem(SESSION_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw) as AuthSession;
+      if (parsed?.user?.id && parsed.token && parsed.expiresAt > Date.now()) {
+        next = parsed;
+      } else {
+        window.localStorage.removeItem(SESSION_KEY);
+      }
+    }
+  } catch {
+    window.localStorage.removeItem(SESSION_KEY);
+  }
+  const changed = (next?.token ?? null) !== (session?.token ?? null);
+  session = next;
+  if (changed) emit();
+}
+

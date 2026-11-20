@@ -3,24 +3,33 @@
 import { useEffect, useState } from "react";
 import {
   getPerson,
+  getPersonProjects,
   getProfileStats,
+  getUserActivity,
 } from "@/features/profile/api";
 import type {
   PersonDetail,
   ProfileStats,
+  UserActivity,
 } from "@/features/profile/types";
+import type { CollabProject } from "@/features/collaborations/types";
+import { ActivityHeatmap } from "@/features/profile/components/ActivityHeatmap";
 import { ProfileDetailCard } from "@/features/profile/components/ProfileDetailCard";
-import { PerformanceSummary } from "@/features/profile/components/PerformanceSummary";
+import { ProfileRail } from "@/features/profile/components/ProfileRail";
+import { ProfileSkills } from "@/features/profile/components/ProfileSkills";
+import { ProjectsHighlight } from "@/features/profile/components/ProjectsHighlight";
 
 /**
  * Client-side profile loader for routes the server cannot resolve on its
  * own — today only /profile/me, whose backend call needs the JWT that
  * lives in localStorage. Fetches after mount (token available), then
- * renders the same two cards as the server ProfileBody.
+ * renders the same header + stats + About stack as the server body.
  */
 export function ProfileLoader({ userId }: { userId: string }) {
   const [person, setPerson] = useState<PersonDetail | null>(null);
   const [stats, setStats] = useState<ProfileStats | null>(null);
+  const [activity, setActivity] = useState<UserActivity | null>(null);
+  const [projects, setProjects] = useState<CollabProject[]>([]);
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
@@ -32,10 +41,16 @@ export function ProfileLoader({ userId }: { userId: string }) {
           if (!cancelled) setFailed(true);
           return;
         }
-        const s = await getProfileStats(p);
+        const [s, a, pr] = await Promise.all([
+          getProfileStats(p),
+          getUserActivity(p.id),
+          getPersonProjects(p),
+        ]);
         if (!cancelled) {
           setPerson(p);
           setStats(s);
+          setActivity(a);
+          setProjects(pr);
         }
       } catch {
         if (!cancelled) setFailed(true);
@@ -61,32 +76,33 @@ export function ProfileLoader({ userId }: { userId: string }) {
 
   if (!person || !stats) {
     return (
-      <div className="flex min-h-0 flex-1 flex-col gap-6 lg:flex-row lg:justify-between">
-        <div className="w-full shrink-0 rounded-3xl bg-bg p-6 lg:w-[397px]">
-          <div className="h-5 w-28 rounded bg-placeholder" />
-          <div className="mt-6 flex flex-col items-center">
-            <div className="size-[100px] rounded-full bg-placeholder" />
-            <div className="mt-3 h-7 w-32 rounded bg-placeholder" />
-            <div className="mt-3 h-3.5 w-48 rounded bg-placeholder" />
-          </div>
+      <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto lg:flex-row lg:overflow-visible">
+        <div className="flex w-full shrink-0 flex-col gap-4 lg:w-[300px]">
+          <div className="aspect-square w-36 rounded-2xl bg-placeholder sm:w-40" />
+          <div className="h-6 w-40 rounded bg-placeholder" />
+          <div className="h-4 w-28 rounded bg-placeholder/60" />
         </div>
-        <div className="w-full shrink-0 rounded-3xl bg-bg p-6 lg:w-[397px]">
-          <div className="h-5 w-44 rounded bg-placeholder" />
-          <div className="mt-5 flex flex-col gap-3">
-            <div className="rounded-lg border border-line p-3">
-              <div className="size-6 rounded bg-placeholder" />
-              <div className="mt-3 h-6 w-10 rounded bg-placeholder" />
+        <div className="no-scrollbar flex min-w-0 flex-1 flex-col gap-6 lg:min-h-0 lg:overflow-y-auto">
+          {Array.from({ length: 2 }).map((_, i) => (
+            <div key={i} className="flex flex-col gap-3 rounded-2xl bg-bg p-5">
+              <div className="h-5 w-44 rounded bg-placeholder" />
+              <div className="h-4 w-72 max-w-full rounded bg-placeholder/60" />
             </div>
-          </div>
+          ))}
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-6 lg:flex-row lg:justify-between">
-      <ProfileDetailCard person={person} />
-      <PerformanceSummary personId={person.id} stats={stats} />
+    <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto lg:flex-row lg:overflow-visible">
+      <ProfileRail person={person} stats={stats} activeTab="overview" />
+      <div className="no-scrollbar flex min-w-0 flex-1 flex-col gap-6 lg:min-h-0 lg:overflow-y-auto">
+        <ProfileDetailCard person={person} />
+        <ProfileSkills person={person} />
+        {activity && <ActivityHeatmap activity={activity} />}
+        <ProjectsHighlight person={person} projects={projects} />
+      </div>
     </div>
   );
 }

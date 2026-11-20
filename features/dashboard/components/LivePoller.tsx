@@ -4,7 +4,11 @@ import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import { useIsAuthenticated } from "@/features/auth/store";
 import { getSession, getSessionUser, setSession } from "@/features/auth/session";
-import { apiFetch, type ApiEnvelope } from "@/lib/api-client";
+import {
+  apiFetch,
+  refreshSessionToken,
+  type ApiEnvelope,
+} from "@/lib/api-client";
 import { getDashboardPosts } from "../api";
 import { syncLikeCount } from "../like-store";
 import { setCommentCount } from "../comment-count-store";
@@ -23,6 +27,16 @@ import {
   applyRealtimeInboxUpdate,
   refreshConversations,
 } from "@/features/inbox/store";
+import {
+  applyRealtimeZoneMessage,
+  applyRealtimeZoneMessageDeleted,
+  applyRealtimeZoneMessageUpdated,
+} from "@/features/circle/store";
+import {
+  applyThemeMode,
+  type ThemeMode,
+} from "@/components/ui/ThemeToggle";
+import type { ZoneMessage } from "@/features/circle/types";
 import type { BackendInboxMessage } from "@/features/inbox/api";
 
 /**
@@ -98,6 +112,126 @@ export function LivePoller() {
     })();
   }, [isAuthed]);
 
+  // Email-verification backfill: sessions saved before verification
+  // existed learn the flag from /api/profiles/me so the reminder
+  // banner shows (or stays hidden) correctly. One shot per mount,
+  // and only while the flag is still unknown.
+  const verifyRefreshDone = useRef(false);
+  useEffect(() => {
+    if (!isAuthed || verifyRefreshDone.current) return;
+    if (getSessionUser()?.emailVerified !== undefined) {
+      verifyRefreshDone.current = true;
+      return;
+    }
+    verifyRefreshDone.current = true;
+    (async () => {
+      try {
+        const res = await apiFetch<ApiEnvelope<{ email_verified?: boolean }>>("/api/profiles/me");
+        const sess = getSession();
+        if (!sess || typeof res.data?.email_verified !== "boolean") return;
+        setSession({ ...sess, user: { ...sess.user, emailVerified: res.data.email_verified } });
+      } catch {
+        // Best-effort: the banner simply stays hidden this session.
+      }
+    })();
+  }, [isAuthed]);
+
+  // Token refresh (audit P0, 2026-11-14): when the session token
+  // is in its last day, swap it for a fresh one. The rotation
+  // itself lives in lib/api-client (refreshSessionToken) because
+  // it must be single-flight: this poller used to rotate on its
+  // own while other requests were still carrying the old token,
+  // and a remount could rotate a second time — the revoked-token
+  // 401 wave fixed 2026-11-16. One shot per mount, best-effort.
+  const tokenRefreshDone = useRef(false);
+  useEffect(() => {
+    if (!isAuthed || tokenRefreshDone.current) return;
+    tokenRefreshDone.current = true;
+    void refreshSessionToken();
+  }, [isAuthed]);
+
+  // Role backfill: sessions saved before roles existed pick the
+  // role up from /api/profiles/me so the sidebar can show the
+  // Admin entry (spec-admin.md §2). One shot per mount.
+  const roleRefreshDone = useRef(false);
+  useEffect(() => {
+    if (!isAuthed || roleRefreshDone.current) return;
+    if (getSessionUser()?.role) {
+      roleRefreshDone.current = true;
+      return;
+    }
+    roleRefreshDone.current = true;
+    (async () => {
+      try {
+        const res = await apiFetch<ApiEnvelope<{ role?: string | null }>>(
+          "/api/profiles/me"
+        );
+        const role = res.data?.role;
+        const sess = getSession();
+        if (!role || !sess) return;
+        setSession({
+          ...sess,
+          user: {
+            ...sess.user,
+            role: role as "user" | "monitor" | "super_admin",
+          },
+        });
+      } catch {
+        // Best-effort: no Admin entry until the next login.
+      }
+    })();
+  }, [isAuthed]);
+
+  // Theme sync (2026-11-18): the account carries the theme mode so
+  // it follows the user across origins, browsers, and devices
+  // (localStorage alone is per-origin and looked like the choice
+  // was never saved). Account value wins when present; a local-only
+  // choice is pushed up once. One shot per mount, best-effort.
+  const themeSyncDone = useRef(false);
+  useEffect(() => {
+    if (!isAuthed || themeSyncDone.current) return;
+    let cancelled = false;
+    (async () => {
+      // Retry while the backend is unreachable (e.g. the page
+      // loaded during a server restart): one failed attempt must
+      // not leave the account theme unapplied for the whole
+      // session. Success marks it done; the local theme keeps
+      // working in the meantime.
+      for (let attempt = 0; attempt < 5 && !cancelled; attempt++) {
+        if (attempt > 0) {
+          await new Promise((r) => setTimeout(r, attempt * 2000));
+        }
+        try {
+          const res = await apiFetch<ApiEnvelope<{ theme_mode?: string | null }>>(
+            "/api/profiles/me"
+          );
+          const accountMode = res.data?.theme_mode;
+          const local = localStorage.getItem("uf-theme-mode");
+          const isMode = (v: string | null | undefined): v is ThemeMode =>
+            v === "light" || v === "dark" || v === "system";
+          if (isMode(accountMode)) {
+            if (local !== accountMode) {
+              localStorage.setItem("uf-theme-mode", accountMode);
+              applyThemeMode(accountMode);
+            }
+          } else if (isMode(local)) {
+            await apiFetch("/api/profiles/me", {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ theme_mode: local }),
+            });
+          }
+          themeSyncDone.current = true;
+          return;
+        } catch {
+          // Backend not answering yet: back off and retry.
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuthed]);
   useEffect(() => {
     if (!isAuthed) return;
     let stopped = false;
@@ -256,6 +390,53 @@ export function LivePoller() {
           const conversationId = msg.payload?.conversationId;
           if (typeof conversationId === "string") {
             applyRealtimeInboxUpdate(conversationId);
+          }
+          return;
+        }
+        if (msg.type === "zone-message") {
+          const circleId = msg.payload?.circleId;
+          const zoneId = msg.payload?.zoneId;
+          const message = msg.payload?.message;
+          if (
+            typeof circleId === "string" &&
+            typeof zoneId === "string" &&
+            message
+          ) {
+            applyRealtimeZoneMessage({
+              circleId,
+              zoneId,
+              message: message as unknown as ZoneMessage,
+            });
+          }
+          return;
+        }
+        if (msg.type === "zone-message-updated") {
+          const circleId = msg.payload?.circleId;
+          const zoneId = msg.payload?.zoneId;
+          const message = msg.payload?.message;
+          if (
+            typeof circleId === "string" &&
+            typeof zoneId === "string" &&
+            message
+          ) {
+            applyRealtimeZoneMessageUpdated({
+              circleId,
+              zoneId,
+              message: message as unknown as ZoneMessage,
+            });
+          }
+          return;
+        }
+        if (msg.type === "zone-message-deleted") {
+          const circleId = msg.payload?.circleId;
+          const zoneId = msg.payload?.zoneId;
+          const messageId = msg.payload?.messageId;
+          if (
+            typeof circleId === "string" &&
+            typeof zoneId === "string" &&
+            typeof messageId === "string"
+          ) {
+            applyRealtimeZoneMessageDeleted({ circleId, zoneId, messageId });
           }
           return;
         }

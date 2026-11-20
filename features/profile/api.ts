@@ -1,11 +1,14 @@
 // features/profile/api.ts
 import { ApiEnvelope, apiFetch, ApiError, isApiConfigured } from "@/lib/api-client";
-import { getCollabProjects } from "@/features/collaborations/api";
+import {
+  getCollabProject,
+  getCollabProjects,
+} from "@/features/collaborations/api";
 import { getDashboardPosts } from "@/features/dashboard/api";
 import { getMyCollabProjects } from "@/features/my-collaborations/api";
 import type { CollabProject } from "@/features/collaborations/types";
 import type { Post } from "@/features/dashboard/types";
-import type { PersonDetail, ProfileStats } from "./types";
+import type { PersonDetail, ProfileStats, UserActivity } from "./types";
 
 // GET /api/users/:id (contract envelope `{ data, meta }`). The backend
 // returns aliases: [id] — a person has just their own id as alias.
@@ -13,7 +16,20 @@ export async function getPerson(id: string): Promise<PersonDetail | undefined> {
   if (isApiConfigured()) {
     try {
       const res = await apiFetch<ApiEnvelope<PersonDetail>>(`/api/users/${id}`);
-      return res.data;
+      const person = res.data;
+      // The profile selection can hold both a private skill and the
+      // system skill of the same name (two separate catalog rows).
+      // Viewers cannot tell same-name tags apart, so collapse them.
+      if (person?.skills) {
+        const seen = new Set<string>();
+        person.skills = person.skills.filter((skill) => {
+          const key = skill.label.trim().toLowerCase();
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+      }
+      return person;
     } catch (err) {
       if (err instanceof ApiError && err.status === 404) return undefined;
       // 401/403: no token on the server (e.g. /profile/me). Treat as
@@ -65,6 +81,84 @@ export async function getProfileStats(person: PersonDetail): Promise<ProfileStat
     postFeed,
     activeProjects: memberships.length - completeProjects,
   };
+}
+
+/**
+ * Per-day activity for the profile heatmap (GET /api/users/:id/activity).
+ * Returns null on any failure so the Overview simply omits the card.
+ */
+export async function getUserActivity(id: string): Promise<UserActivity | null> {
+  if (!isApiConfigured()) return null;
+  try {
+    const res = await apiFetch<ApiEnvelope<UserActivity>>(
+      `/api/users/${id}/activity`,
+    );
+    return res.data;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Projects the person JOINED (owned by someone else) that are already
+ * completed — the profile's finished-teamwork list. Own projects are
+ * excluded by the owner check; active joined projects are already
+ * covered by getPersonProjects.
+ */
+export async function getPersonCompletedJoinedProjects(
+  person: PersonDetail,
+): Promise<CollabProject[]> {
+  const projects = await getCollabProjects();
+  const completed = projects.filter(
+    (project) =>
+      project.status === "completed" &&
+      !person.aliases.includes(project.owner.id),
+  );
+  // The list payload carries no members (only the detail endpoint
+  // sends them), so membership is confirmed per completed project.
+  // The completed set is small, which keeps the extra fetches bounded.
+  const detailed = await Promise.all(
+    completed.map(async (project) => {
+      try {
+        return await getCollabProject(project.id);
+      } catch {
+        return null;
+      }
+    }),
+  );
+  return detailed.filter(
+    (project): project is CollabProject =>
+      project !== null &&
+      project.members.some(
+        (member) => !member.isOpenSlot && person.aliases.includes(member.id),
+      ),
+  );
+}
+
+/**
+ * The profile Projects page list (user decision 2026-11-19): every
+ * project the person owns, whatever its status (open ones included),
+ * plus projects they joined that are already completed. Joined
+ * projects that are still running stay off the page until they
+ * finish. Sorted newest first.
+ */
+export async function getPersonAllProjects(
+  person: PersonDetail,
+): Promise<CollabProject[]> {
+  const [projects, completedJoined] = await Promise.all([
+    getCollabProjects(),
+    getPersonCompletedJoinedProjects(person),
+  ]);
+  const own = projects.filter((project) =>
+    person.aliases.includes(project.owner.id),
+  );
+  const byId = new Map<string, CollabProject>();
+  for (const project of [...own, ...completedJoined]) {
+    byId.set(project.id, project);
+  }
+  return [...byId.values()].sort((a, b) =>
+    (b.postedAt ?? "").localeCompare(a.postedAt ?? ""),
+  );
 }
 
 /** Posts authored by the person (any alias) — feeds /profile/[userId]/posts. */

@@ -17,6 +17,10 @@ export interface AuthUser {
   photo?: string;
   /** How this session was established. */
   provider: "password" | "google";
+  /** Admin tier from the backend (spec-admin.md §2). Absent in older saved sessions; backfilled from /api/profiles/me. */
+  role?: "user" | "monitor" | "super_admin";
+  /** Email verification state (soft mode: unverified accounts still work, the banner nudges). Absent in older saved sessions; backfilled from /api/profiles/me. */
+  emailVerified?: boolean;
 }
 
 export interface AuthSession {
@@ -36,4 +40,5 @@ export interface RegisterInput {
   username: string;
   email: string;
   password: string;
+  termsAccepted?: boolean;
 }

@@ -6,6 +6,9 @@ export interface NavItem {
   icon: string;
   /** Optional route path. When set, clicking the nav item navigates here. */
   href?: string;
+  /** Cross-frame destinations (e.g. Admin) load a fresh document
+   *  instead of soft-navigating between RootShell frames. */
+  hard?: boolean;
 }
 
 export interface NavSection {
@@ -22,8 +25,8 @@ export const NAV_SECTIONS: NavSection[] = [
     title: "Dashboard",
     items: [
       { id: "feeds", label: "Feeds", icon: "grid-alt", href: "/" },
-      { id: "tasks", label: "Tasks", icon: "collection" },
       { id: "collaborations", label: "Collaborations", icon: "group", href: "/collaborations" },
+      { id: "my-collab", label: "My Collaborations", icon: "layout", href: "/my-collaborations" },
       { id: "circle", label: "Circle", icon: "conversation", href: "/circle" },
     ],
   },
@@ -31,8 +34,8 @@ export const NAV_SECTIONS: NavSection[] = [
     id: "tools",
     title: "Tools",
     items: [
+      { id: "search", label: "Search", icon: "search", href: "/search" },
       { id: "inbox", label: "Inbox", icon: "envelope", href: "/inbox" },
-      { id: "my-collab", label: "My Collaborations", icon: "group", href: "/my-collaborations" },
     ],
   },
 ];
@@ -40,7 +43,7 @@ export const NAV_SECTIONS: NavSection[] = [
 // Help Center used to live here; removed 2026-11-07 (user's plan:
 // it moves to the Settings page later).
 export const FOOTER_LINKS: NavItem[] = [
-  { id: "settings", label: "Setting", icon: "cog" },
+  { id: "settings", label: "Setting", icon: "cog", href: "/settings" },
 ];
 
 // TODO(backend): replace with GET /api/me once auth lands.

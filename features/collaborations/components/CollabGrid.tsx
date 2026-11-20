@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import { Icon } from "@/components/ui/Icon";
 import { CollabCard } from "./CollabCard";
 import { sortProjects } from "../sort";
@@ -26,6 +27,12 @@ interface CollabGridProps {
    * backend pagination is not used. When set, `initial` is ignored.
    */
   clientList?: CollabProject[];
+  /**
+   * Grid column classes. The board default assumes the full content
+   * width; narrower hosts (the profile projects column beside the
+   * rail) pass fewer columns so the cards keep a usable width.
+   */
+  gridClassName?: string;
 }
 
 /** Cap the stagger index so late cards don't wait a full second in. */
@@ -49,7 +56,8 @@ const STAGGER_CAP = 8;
  * grid — index numbers reshuffle on every interaction and imply a ranking
  * that doesn't exist.
  */
-export function CollabGrid({ initial, clientList }: CollabGridProps) {
+export function CollabGrid({ initial, clientList, gridClassName }: CollabGridProps) {
+  const { t } = useLanguage();
   // Toolbar state lives in the shared store — the controls render
   // in the TopBar (AppShell actions) while this grid consumes them.
   // Draft query is typed in the input; committed only on Search
@@ -191,7 +199,7 @@ export function CollabGrid({ initial, clientList }: CollabGridProps) {
             onClick={clearAll}
             className="cursor-pointer text-sm font-medium text-ink hover:underline focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
           >
-            Clear search & filters
+            {t("collab.clearSearchFilters")}
           </button>
         </div>
       )}
@@ -202,11 +210,10 @@ export function CollabGrid({ initial, clientList }: CollabGridProps) {
         <div className="flex flex-col items-center gap-3 py-16 text-center">
           <Icon name="error-circle" size={40} className="text-placeholder" />
           <p className="text-lg font-medium text-ink">
-            Couldn&apos;t load projects
+            {t("collab.couldntLoadProjects")}
           </p>
           <p className="max-w-xs text-sm text-muted">
-            The server couldn&apos;t be reached. Check your connection and
-            try again.
+            {t("inbox.checkConnection")}
           </p>
           <button
             type="button"
@@ -214,34 +221,37 @@ export function CollabGrid({ initial, clientList }: CollabGridProps) {
             disabled={loadingPage}
             className="pressable mt-1 cursor-pointer rounded-full border border-line bg-surface px-4 py-2 text-sm font-medium text-ink transition-colors hover:border-ink/40 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none disabled:cursor-wait disabled:opacity-60"
           >
-            {loadingPage ? "Retrying…" : "Retry"}
+            {loadingPage ? t("collab.retrying") : t("common.retry")}
           </button>
         </div>
       ) : loadingPage && visibleProjects.length === 0 ? (
         <div className="flex flex-col items-center gap-3 py-16 text-center">
-          <p className="text-sm text-muted">Loading projects…</p>
+          <p className="text-sm text-muted">{t("collab.loadingProjects")}</p>
         </div>
       ) : visibleProjects.length === 0 ? (
         /* P2 #12: proper empty view instead of a blank area */
         <div className="flex flex-col items-center gap-3 py-16 text-center">
           <Icon name="search-alt" size={40} className="text-placeholder" />
-          <p className="text-lg font-medium text-ink">No projects found</p>
+          <p className="text-lg font-medium text-ink">{t("collab.noProjectsTitle")}</p>
           <p className="max-w-xs text-sm text-muted">
-            No projects match your search and filters. Clear them to see
-            all projects.
+            {t("collab.noProjectsBody")}
           </p>
           <button
             type="button"
             onClick={clearAll}
             className="pressable mt-1 cursor-pointer rounded-full border border-line bg-surface px-4 py-2 text-sm font-medium text-ink transition-colors hover:border-ink/40 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
           >
-            Clear search & filters
+            {t("collab.clearSearchFilters")}
           </button>
         </div>
       ) : (
         /* Person cards in a grid, one page at a time. */
         <>
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <div
+            className={
+              gridClassName ?? "grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4"
+            }
+          >
             {visibleProjects.map((project, i) => (
               <div
                 key={project.id}
@@ -257,14 +267,14 @@ export function CollabGrid({ initial, clientList }: CollabGridProps) {
           {moreFailed && (
             <div className="flex flex-col items-center gap-2 pt-2 text-center">
               <p className="text-sm text-muted">
-                Couldn&apos;t load more projects.
+                {t("collab.couldntLoadMore")}
               </p>
               <button
                 type="button"
                 onClick={showMore}
                 className="pressable cursor-pointer rounded-full border border-line bg-surface px-5 py-2.5 text-sm font-medium text-ink transition-colors hover:border-ink/40 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
               >
-                Try again
+                {t("modal.tryAgain")}
               </button>
             </div>
           )}
@@ -277,8 +287,8 @@ export function CollabGrid({ initial, clientList }: CollabGridProps) {
                 className="pressable cursor-pointer rounded-full border border-line bg-surface px-5 py-2.5 text-sm font-medium text-ink transition-colors hover:border-ink/40 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none disabled:cursor-wait disabled:opacity-60"
               >
                 {loadingMore
-                  ? "Loading…"
-                  : `Show more projects (${remaining} more)`}
+                  ? t("collab.loadingEllipsis")
+                  : t("collab.showMore", { count: remaining })}
               </button>
             </div>
           )}

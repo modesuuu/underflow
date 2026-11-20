@@ -1,0 +1,401 @@
+"use client";
+
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  deleteZoneMessage,
+  editZoneMessage,
+  getZoneMessages,
+  sendZoneMessage,
+} from "../api";
+import {
+  subscribeZoneMessageDeletions,
+  subscribeZoneMessageUpdates,
+  subscribeZoneMessages,
+} from "../store";
+import { Composer } from "./Composer";
+import { MessageTimeline } from "./MessageTimeline";
+import type {
+  CircleDetail,
+  CircleZone,
+  ZoneAttachmentInput,
+  ZoneMessage,
+} from "../types";
+import { useLanguage } from "@/lib/i18n/LanguageProvider";
+import { useSessionUser } from "@/features/auth/store";
+
+const PAGE_SIZE = 50;
+/** Fallback refresh cadence (the LivePoller pattern: WS first). */
+const POLL_MS = 5000;
+
+/** Whether two copies of the same message differ in anything the
+    reader can see (an edit, a lost quote, an attachment change). */
+function sameMessage(a: ZoneMessage, b: ZoneMessage): boolean {
+  return (
+    a.content === b.content &&
+    a.editedAt === b.editedAt &&
+    a.mentionsEveryone === b.mentionsEveryone &&
+    a.attachments.length === b.attachments.length &&
+    (a.replyTo?.id ?? null) === (b.replyTo?.id ?? null) &&
+    (a.replyTo?.content ?? null) === (b.replyTo?.content ?? null)
+  );
+}
+
+/**
+ * Merge incoming messages into the current list by id, keeping the
+ * backend's chronological order (createdAt, then id — the same
+ * ordering the pagination cursor uses). An incoming copy that
+ * differs from the loaded one replaces it (edits arrive this way).
+ * Returns the current array untouched when nothing changed, so
+ * renders stay cheap.
+ */
+function mergeMessages(
+  current: ZoneMessage[],
+  incoming: ZoneMessage[]
+): ZoneMessage[] {
+  if (incoming.length === 0) return current;
+  const byId = new Map(current.map((m) => [m.id, m]));
+  let changed = false;
+  for (const m of incoming) {
+    const existing = byId.get(m.id);
+    if (!existing || !sameMessage(existing, m)) {
+      byId.set(m.id, m);
+      changed = true;
+    }
+  }
+  if (!changed) return current;
+  return [...byId.values()].sort((a, b) =>
+    a.createdAt === b.createdAt
+      ? a.id < b.id
+        ? -1
+        : 1
+      : a.createdAt < b.createdAt
+        ? -1
+        : 1
+  );
+}
+
+/**
+ * Drop one message locally (after a delete, own or live) and clear
+ * the quote on any loaded reply that pointed at it — the backend
+ * presents a deleted original as replyTo null too.
+ */
+function removeMessage(
+  current: ZoneMessage[],
+  messageId: string
+): ZoneMessage[] {
+  return current
+    .filter((m) => m.id !== messageId)
+    .map((m) =>
+      m.replyToId === messageId && m.replyTo ? { ...m, replyTo: null } : m
+    );
+}
+
+/**
+ * One zone's conversation (Circle Phase 2): history from the API,
+ * live appends from the realtime socket (forwarded by LivePoller
+ * through the circle store), a 5-second polling fallback while the
+ * socket is down, and the composer. Mounted with key={zone.id} by
+ * the shell, so switching zones remounts a fresh conversation.
+ */
+export function ZoneConversation({
+  detail,
+  zone,
+  onSeenNewest,
+  jumpTo = null,
+}: {
+  detail: CircleDetail;
+  zone: CircleZone;
+  onSeenNewest?: (newestCreatedAt: string) => void;
+  jumpTo?: { messageId: string; nonce: number } | null;
+}) {
+  const { t } = useLanguage();
+  const [messages, setMessages] = useState<ZoneMessage[]>([]);
+  const [hasMore, setHasMore] = useState(false);
+  const [phase, setPhase] = useState<"loading" | "ready" | "error">("loading");
+  const [loadingOlder, setLoadingOlder] = useState(false);
+  const [replyingTo, setReplyingTo] = useState<ZoneMessage | null>(null);
+  const sessionUser = useSessionUser();
+  const myId = sessionUser?.id ?? null;
+  // Read-state snapshot, frozen when this zone view opens. The
+  // workspace marks the zone read as soon as messages render, which
+  // advances the live zone values; the NEW divider must keep
+  // pointing at the boundary as it was on entry (Discord behaviour),
+  // so it is computed from this frozen copy, never the live props.
+  const [readSnapshot] = useState(() => ({
+    lastRead: zone.lastRead,
+    unreadCount: zone.unreadCount,
+  }));
+  const firstUnreadId = useMemo(() => {
+    if (readSnapshot.unreadCount <= 0 || !myId) return null;
+    const since = readSnapshot.lastRead;
+    const hit = messages.find(
+      (m) => m.authorId !== myId && (since === null || m.createdAt > since)
+    );
+    return hit?.id ?? null;
+  }, [messages, readSnapshot, myId]);
+  const circleId = detail.id;
+  const zoneId = zone.id;
+  const memberNames = detail.members.map((m) => m.name);
+  const stateRef = useRef({ messages, hasMore });
+  stateRef.current = { messages, hasMore };
+
+  const loadInitial = useCallback(async () => {
+    setPhase("loading");
+    try {
+      let page = await getZoneMessages(circleId, zoneId, { limit: PAGE_SIZE });
+      let all = page.messages;
+      let more = page.hasMore;
+      // Discord opens a zone at its first unread message, so when
+      // this zone was opened with unreads, pull older pages until
+      // the loaded window crosses the read boundary (bounded, so
+      // a huge backlog cannot stall the open). The zone object is
+      // the entry snapshot: this closure keeps the first render's.
+      const since = zone.lastRead;
+      let guard = 0;
+      while (
+        zone.unreadCount > 0 &&
+        more &&
+        guard < 10 &&
+        (since === null || !all.some((m) => m.createdAt <= since))
+      ) {
+        const oldest = all[0];
+        if (!oldest) break;
+        guard++;
+        page = await getZoneMessages(circleId, zoneId, {
+          limit: PAGE_SIZE,
+          before: oldest,
+        });
+        all = mergeMessages(all, page.messages);
+        more = page.hasMore;
+      }
+      setMessages(all);
+      setHasMore(more);
+      setPhase("ready");
+    } catch {
+      setPhase("error");
+    }
+  }, [circleId, zoneId]);
+
+  useEffect(() => {
+    void loadInitial();
+  }, [loadInitial]);
+
+  // Mark-as-read hook: whenever the newest message on screen changes,
+  // the workspace clears this zone's unread counters (Discord-style).
+  const seenRef = useRef<string | null>(null);
+  useEffect(() => {
+    const newest = messages[messages.length - 1];
+    if (!newest || seenRef.current === newest.id) return;
+    seenRef.current = newest.id;
+    onSeenNewest?.(newest.createdAt);
+  }, [messages, onSeenNewest]);
+
+  // Mention jump: when the workspace asks (zone-row pill), make
+  // sure the target message is inside the loaded window, then
+  // scroll to it and flash it, like the reply jump.
+  useEffect(() => {
+    if (!jumpTo || phase !== "ready") return;
+    let cancelled = false;
+    void (async () => {
+      let guard = 0;
+      while (
+        !cancelled &&
+        guard < 20 &&
+        !stateRef.current.messages.some((m) => m.id === jumpTo.messageId) &&
+        stateRef.current.hasMore
+      ) {
+        guard++;
+        await loadOlder();
+        await new Promise((r) => window.setTimeout(r, 60));
+      }
+      if (cancelled) return;
+      const el = document.getElementById(`zone-msg-${jumpTo.messageId}`);
+      if (!el) return;
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      el.style.backgroundColor = "var(--uf-active)";
+      window.setTimeout(() => {
+        el.style.backgroundColor = "";
+      }, 1500);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [jumpTo, phase]);
+
+  // Live pushes for this zone.
+  useEffect(() => {
+    return subscribeZoneMessages((event) => {
+      if (event.circleId !== circleId || event.zoneId !== zoneId) return;
+      setMessages((current) => mergeMessages(current, [event.message]));
+    });
+  }, [circleId, zoneId]);
+
+  // Live edits for this zone (the updated copy replaces by id).
+  useEffect(() => {
+    return subscribeZoneMessageUpdates((event) => {
+      if (event.circleId !== circleId || event.zoneId !== zoneId) return;
+      setMessages((current) => mergeMessages(current, [event.message]));
+    });
+  }, [circleId, zoneId]);
+
+  // Live deletions for this zone.
+  useEffect(() => {
+    return subscribeZoneMessageDeletions((event) => {
+      if (event.circleId !== circleId || event.zoneId !== zoneId) return;
+      setMessages((current) => removeMessage(current, event.messageId));
+    });
+  }, [circleId, zoneId]);
+
+  // Polling fallback: merge the newest page every few seconds.
+  // LivePoller's socket makes this redundant while it is up, and
+  // merging by id makes the overlap harmless.
+  useEffect(() => {
+    if (phase !== "ready") return;
+    const timer = window.setInterval(() => {
+      if (document.hidden) return;
+      void (async () => {
+        try {
+          const page = await getZoneMessages(circleId, zoneId, { limit: PAGE_SIZE });
+          setMessages((current) => {
+            let merged = mergeMessages(current, page.messages);
+            // A merge cannot express deletions: drop loaded
+            // messages inside the polled window (at or newer than
+            // the page's oldest message) that the page no longer
+            // returns — they were deleted since the last poll.
+            const windowStart = page.messages[0]?.createdAt;
+            if (windowStart) {
+              const pageIds = new Set(page.messages.map((m) => m.id));
+              merged = merged.filter(
+                (m) => m.createdAt < windowStart || pageIds.has(m.id)
+              );
+            } else if (page.messages.length === 0 && merged.length > 0) {
+              // The newest page is empty: the zone has no messages.
+              merged = [];
+            }
+            // The poll page reaches the top of the loaded history:
+            // its hasMore is the truth. Deeper (paginated) history
+            // keeps the flag the last load-older call established.
+            if (merged[0] && page.messages[0] && merged[0].id === page.messages[0].id) {
+              setHasMore(page.hasMore);
+            }
+            return merged;
+          });
+        } catch {
+          // Best-effort: the next tick retries.
+        }
+      })();
+    }, POLL_MS);
+    return () => window.clearInterval(timer);
+  }, [circleId, zoneId, phase]);
+
+  const loadOlder = async () => {
+    const oldest = stateRef.current.messages[0];
+    if (!oldest || loadingOlder || !stateRef.current.hasMore) return;
+    setLoadingOlder(true);
+    try {
+      const page = await getZoneMessages(circleId, zoneId, {
+        limit: PAGE_SIZE,
+        before: oldest,
+      });
+      setMessages((current) => mergeMessages(current, page.messages));
+      setHasMore(page.hasMore);
+    } catch {
+      // Keep the current list; the button stays available to retry.
+    } finally {
+      setLoadingOlder(false);
+    }
+  };
+
+  const handleSend = async (
+    content: string,
+    replyToId?: string | null,
+    attachments?: ZoneAttachmentInput[]
+  ) => {
+    const saved = await sendZoneMessage(
+      circleId,
+      zoneId,
+      content,
+      replyToId ?? undefined,
+      attachments
+    );
+    setMessages((current) => mergeMessages(current, [saved]));
+    setReplyingTo(null);
+  };
+
+  const handleEdit = async (message: ZoneMessage, content: string) => {
+    const saved = await editZoneMessage(circleId, zoneId, message.id, content);
+    setMessages((current) => mergeMessages(current, [saved]));
+  };
+
+  const handleDelete = async (message: ZoneMessage) => {
+    await deleteZoneMessage(circleId, zoneId, message.id);
+    setMessages((current) => removeMessage(current, message.id));
+    if (replyingTo?.id === message.id) setReplyingTo(null);
+  };
+
+  const canModerate =
+    detail.members.find((m) => m.userId === myId)?.isOwner ?? false;
+
+  if (phase === "loading") {
+    return (
+      <div className="flex flex-1 flex-col">
+        <div className="flex flex-1 items-center justify-center px-6 py-16">
+          <p className="text-sm text-subtle">{t("circle.loadingMessages")}</p>
+        </div>
+        <Composer zone={zone} onSend={handleSend} />
+      </div>
+    );
+  }
+
+  if (phase === "error") {
+    return (
+      <div className="flex flex-1 flex-col">
+        <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 py-16 text-center">
+          <p className="max-w-sm text-sm text-muted">
+            {t("circle.messagesLoadError")}
+          </p>
+          <button
+            type="button"
+            onClick={() => void loadInitial()}
+            className="cursor-pointer rounded-full bg-bg px-3.5 py-1.5 text-xs font-medium text-ink transition-colors hover:bg-line/40 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+          >
+            {t("circle.tryAgain")}
+          </button>
+        </div>
+        <Composer zone={zone} onSend={handleSend} />
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex min-h-0 flex-1 flex-col">
+      <MessageTimeline
+        messages={messages}
+        memberNames={memberNames}
+        zone={zone}
+        hasMore={hasMore}
+        loadingOlder={loadingOlder}
+        onLoadOlder={() => void loadOlder()}
+        onReply={
+          zone.memberCanPost ? (m) => setReplyingTo(m) : undefined
+        }
+        firstUnreadId={firstUnreadId}
+        unreadCount={readSnapshot.unreadCount}
+        currentUserId={myId}
+        canModerate={canModerate}
+        onEdit={handleEdit}
+        onDelete={handleDelete}
+      />
+      <Composer
+        zone={zone}
+        onSend={handleSend}
+        replyingTo={replyingTo}
+        onCancelReply={() => setReplyingTo(null)}
+        members={detail.members}
+        canEveryone={
+          detail.members.find((m) => m.userId === myId)?.isOwner ?? false
+        }
+      />
+    </div>
+  );
+}

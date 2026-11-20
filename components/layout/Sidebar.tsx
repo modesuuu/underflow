@@ -12,7 +12,6 @@ import Link from "next/link";
 import { createPortal } from "react-dom";
 import { usePathname } from "next/navigation";
 import { Avatar } from "@/components/ui/Avatar";
-import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { LogoutButton } from "@/features/auth/components/LogoutButton";
 import { LogoMark } from "@/components/ui/LogoMark";
 import { Badge } from "@/components/ui/Badge";
@@ -27,6 +26,9 @@ import {
   type NavItem,
   type NavSection,
 } from "./nav";
+import { useSessionUser } from "@/features/auth/store";
+import { useLanguage } from "@/lib/i18n/LanguageProvider";
+import type { DictKey } from "@/lib/i18n/dictionary";
 
 // P1-E #28 / P1-C #21: the sidebar no longer uses GSAP — the hover
 // background, chevron rotation, and section accordion are pure CSS
@@ -44,6 +46,22 @@ import {
 // the sidebar remounts on every navigation — a post-paint read
 // would flash the expanded rail, then replay the collapse
 // animation on each page change.
+
+const NAV_LABEL_KEYS: Record<string, DictKey> = {
+  feeds: "nav.feeds",
+  tasks: "nav.tasks",
+  collaborations: "nav.collaborations",
+  circle: "nav.circle",
+  inbox: "nav.inbox",
+  "my-collab": "nav.myCollaborations",
+  admin: "nav.admin",
+  settings: "nav.setting",
+};
+
+const SECTION_TITLE_KEYS: Record<string, DictKey> = {
+  dashboard: "nav.sectionDashboard",
+  tools: "nav.sectionTools",
+};
 
 const RAIL_STORAGE_KEY = "uf-sidebar-mini";
 const RAIL_WIDTH = 76;
@@ -87,6 +105,9 @@ interface NavRowProps {
 }
 
 function NavRow({ item, active, badge, mini, animate, onSelect, registerRef }: NavRowProps) {
+  const { t } = useLanguage();
+  const labelKey = NAV_LABEL_KEYS[item.id];
+  const label = labelKey ? t(labelKey) : item.label;
   // Items with an href are real <Link> anchors — Next.js prefetches the
   // destination route shell on hover/appearance, so slow compiles no longer
   // flash the wrong skeleton first (button + router.push had no prefetch).
@@ -182,7 +203,7 @@ function NavRow({ item, active, badge, mini, animate, onSelect, registerRef }: N
           mini ? "max-w-0 opacity-0" : "max-w-[140px] opacity-100"
         )}
       >
-        {item.label}
+        {label}
       </span>
       {/* Badge renders in every state: normal, hover, active */}
       {!mini && badge !== undefined && badge > 0 && (
@@ -199,13 +220,33 @@ function NavRow({ item, active, badge, mini, animate, onSelect, registerRef }: N
             style={{ left: tipPos.x, top: tipPos.y }}
             className="uf-tip pointer-events-none fixed z-[100] -translate-y-1/2 rounded-lg bg-ink px-2.5 py-1.5 text-xs font-medium whitespace-nowrap text-surface shadow-lg"
           >
-            {item.label}
+            {label}
             {badge !== undefined && badge > 0 ? ` (${badge})` : ""}
           </span>,
           document.body,
         )}
     </>
   );
+
+  if (item.href && item.hard) {
+    return (
+      <a
+        href={item.href}
+        ref={(el) => {
+          registerRef(item.id, el);
+        }}
+        onClick={() => {
+          onSelect(item.id);
+        }}
+        {...tipHandlers}
+        className={className}
+        aria-current={active ? "page" : undefined}
+        aria-label={mini ? label : undefined}
+      >
+        {inner}
+      </a>
+    );
+  }
 
   if (item.href) {
     return (
@@ -224,7 +265,7 @@ function NavRow({ item, active, badge, mini, animate, onSelect, registerRef }: N
         {...tipHandlers}
         className={className}
         aria-current={active ? "page" : undefined}
-        aria-label={mini ? item.label : undefined}
+        aria-label={mini ? label : undefined}
       >
         {inner}
       </Link>
@@ -243,7 +284,7 @@ function NavRow({ item, active, badge, mini, animate, onSelect, registerRef }: N
       {...tipHandlers}
       className={className}
       aria-current={active ? "page" : undefined}
-      aria-label={mini ? item.label : undefined}
+      aria-label={mini ? label : undefined}
     >
       {inner}
     </button>
@@ -353,12 +394,18 @@ function routeToNavId(pathname: string): string {
   if (pathname.startsWith("/circle")) return "circle";
   if (pathname.startsWith("/my-collaborations")) return "my-collab";
   if (pathname.startsWith("/collaborations")) return "collaborations";
+  if (pathname.startsWith("/search")) return "search";
   if (pathname.startsWith("/inbox")) return "inbox";
+  if (pathname.startsWith("/settings")) return "settings";
   if (pathname === "/" || pathname.startsWith("/dashboard")) return "feeds";
   return DEFAULT_ACTIVE_ID;
 }
 
 export function Sidebar() {
+  const { t } = useLanguage();
+  const sessionUser = useSessionUser();
+  const isAdminTier =
+    sessionUser?.role === "monitor" || sessionUser?.role === "super_admin";
   const pathname = usePathname();
   // Route-aware active state: init from URL, sync on navigation.
   const [activeId, setActiveId] = useState(() => routeToNavId(pathname));
@@ -415,6 +462,50 @@ export function Sidebar() {
     const frame = window.requestAnimationFrame(() => setAnimateWidth(true));
     return () => window.cancelAnimationFrame(frame);
   }, []);
+
+  // Rail-toggle tooltip, portaled to <body> like the NavRow
+  // tooltips. The old in-flow span lived inside this button, whose
+  // z-10 stacking context loses to the sticky TopBar (z-20): the
+  // TopBar painted over the tooltip's right half (user report:
+  // "hover text ketutup top bar"). The native title is gone too,
+  // so the OS tooltip never stacks on top of this one.
+  const [toggleTipPos, setToggleTipPos] = useState<{
+    x: number;
+    y: number;
+  } | null>(null);
+  const [toggleTipOpen, setToggleTipOpen] = useState(false);
+  const toggleTipTimer = useRef<number | undefined>(undefined);
+  const toggleTipExitTimer = useRef<number | undefined>(undefined);
+  const showToggleTip = (el: HTMLElement) => {
+    window.clearTimeout(toggleTipTimer.current);
+    window.clearTimeout(toggleTipExitTimer.current);
+    toggleTipTimer.current = window.setTimeout(() => {
+      const r = el.getBoundingClientRect();
+      setToggleTipPos({ x: r.right + 12, y: r.top + r.height / 2 });
+    }, 300);
+  };
+  const hideToggleTip = () => {
+    window.clearTimeout(toggleTipTimer.current);
+    setToggleTipOpen(false);
+    window.clearTimeout(toggleTipExitTimer.current);
+    toggleTipExitTimer.current = window.setTimeout(
+      () => setToggleTipPos(null),
+      155,
+    );
+  };
+  // Flip to the open style one frame after mount (see NavRow).
+  useEffect(() => {
+    if (!toggleTipPos) return;
+    const raf = requestAnimationFrame(() => setToggleTipOpen(true));
+    return () => cancelAnimationFrame(raf);
+  }, [toggleTipPos]);
+  useEffect(
+    () => () => {
+      window.clearTimeout(toggleTipTimer.current);
+      window.clearTimeout(toggleTipExitTimer.current);
+    },
+    [],
+  );
 
   const toggleMini = () => {
     setMiniPref((value) => {
@@ -590,25 +681,37 @@ export function Sidebar() {
             </div>
             <button
               type="button"
-              onClick={toggleMini}
+              onClick={() => {
+                hideToggleTip();
+                toggleMini();
+              }}
+              onMouseEnter={(e) => showToggleTip(e.currentTarget)}
+              onMouseLeave={hideToggleTip}
+              onFocus={(e) => showToggleTip(e.currentTarget)}
+              onBlur={hideToggleTip}
               aria-expanded={!mini}
-              aria-label={mini ? "Expand sidebar" : "Collapse sidebar"}
-              title={mini ? "Expand sidebar (Ctrl+B)" : "Collapse sidebar (Ctrl+B)"}
+              aria-label={mini ? t("nav.expandSidebar") : t("nav.collapseSidebar")}
               className={clsx(
-                "group nav-row-hoverable relative z-10 flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-lg text-muted transition-colors hover:text-ink",
+                "nav-row-hoverable relative z-10 flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-lg text-muted transition-colors hover:text-ink",
                 !mini && "ml-auto"
               )}
             >
               <SidebarPanelIcon />
-              {mini && (
+            </button>
+            {toggleTipPos &&
+              createPortal(
                 <span
                   aria-hidden="true"
-                  className="pointer-events-none absolute top-1/2 left-full z-50 ml-3 -translate-y-1/2 translate-x-[-4px] rounded-lg bg-ink px-2.5 py-1.5 text-xs font-medium whitespace-nowrap text-surface opacity-0 shadow-lg transition-all duration-150 group-hover:translate-x-0 group-hover:opacity-100 group-hover:delay-300 group-focus-visible:translate-x-0 group-focus-visible:opacity-100"
+                  data-open={toggleTipOpen}
+                  style={{ left: toggleTipPos.x, top: toggleTipPos.y }}
+                  className="uf-tip pointer-events-none fixed z-[100] -translate-y-1/2 rounded-lg bg-ink px-2.5 py-1.5 text-xs font-medium whitespace-nowrap text-surface shadow-lg"
                 >
-                  Expand sidebar
-                </span>
+                  {mini
+                    ? t("nav.expandSidebar")
+                    : t("nav.collapseSidebar")}
+                </span>,
+                document.body,
               )}
-            </button>
           </div>
 
           {/* Nav sections */}
@@ -616,7 +719,12 @@ export function Sidebar() {
             {NAV_SECTIONS.map((section) => (
               <NavSectionBlock
                 key={section.id}
-                section={section}
+                section={{
+                  ...section,
+                  title: SECTION_TITLE_KEYS[section.id]
+                    ? t(SECTION_TITLE_KEYS[section.id])
+                    : section.title,
+                }}
                 activeId={activeId}
                 collapsed={!!collapsed[section.id]}
                 mini={mini}
@@ -633,6 +741,16 @@ export function Sidebar() {
         {/* Footer */}
         <div className="flex flex-col gap-3">
           <div className="flex flex-col gap-3">
+            {isAdminTier && (
+              <NavRow
+                item={{ id: "admin", label: "Admin", icon: "shield", href: "/admin", hard: true }}
+                active={false}
+                mini={mini}
+                animate={animateWidth}
+                onSelect={setActiveId}
+                registerRef={registerRow}
+              />
+            )}
             {FOOTER_LINKS.map((link) => (
               <NavRow
                 key={link.id}
@@ -647,19 +765,6 @@ export function Sidebar() {
           </div>
           <div className="h-px w-full bg-line" />
 
-          {/* Theme — light / system / dark, persisted per device */}
-          <div
-            className={clsx(
-              "flex items-center",
-              mini ? "justify-center" : "justify-between px-1"
-            )}
-          >
-            {!mini && (
-              <span className="text-xs font-medium text-muted">Theme</span>
-            )}
-            <ThemeToggle variant={mini ? "rail" : "full"} />
-          </div>
-
           {/* Profile card — links to the current user's own profile,
               with the icon-only Log out button beside it (below it on
               the collapsed rail). */}
@@ -671,14 +776,14 @@ export function Sidebar() {
           >
             <Link
               href="/profile/me"
-              aria-label="View your profile"
+              aria-label={t("nav.viewYourProfile")}
               className={clsx(
                 "group relative z-10 flex cursor-pointer items-center rounded-sm bg-surface p-1",
                 mini ? "justify-center" : "min-w-0 flex-1 justify-between",
               )}
             >
             <div className="flex items-center gap-1">
-              <Avatar size={28} rounded="sm" alt={CURRENT_USER.name} />
+              <Avatar size={28} rounded="sm" src={CURRENT_USER.photo} alt={CURRENT_USER.name} />
               <div
                 className={clsx(
                   "flex flex-col gap-0.5 overflow-hidden",
@@ -713,7 +818,7 @@ export function Sidebar() {
                 aria-hidden="true"
                 className="pointer-events-none absolute top-1/2 left-full z-50 ml-3 -translate-y-1/2 translate-x-[-4px] rounded-lg bg-ink px-2.5 py-1.5 text-xs font-medium whitespace-nowrap text-surface opacity-0 shadow-lg transition-all duration-150 group-hover:translate-x-0 group-hover:opacity-100 group-hover:delay-300 group-focus-visible:translate-x-0 group-focus-visible:opacity-100"
               >
-                Log out
+                {t("nav.logOut")}
               </span>
             </div>
           </div>

@@ -5,31 +5,37 @@ import Link from "next/link";
 import { Icon } from "@/components/ui/Icon";
 import { clearToolbar, useMyCollabToolbar } from "../toolbar-store";
 import { KanbanCard } from "./KanbanCard";
-import {
-  MY_COLLAB_CATEGORIES,
-  getCategory,
+import { MY_COLLAB_CATEGORIES } from "../types";
+import type {
+  MyCollabCategory,
+  MyCollabCategorySlug,
+  MyCollabProject,
 } from "../types";
-import type { MyCollabCategory, MyCollabProject, MyCollabStatus } from "../types";
+import { groupMyCollabBoard } from "../columns";
+import { useLanguage } from "@/lib/i18n/LanguageProvider";
+import type { DictKey } from "@/lib/i18n/dictionary";
 
-/**
- * Dashboard order for the columns: the category-table order
- * (Active, Pending, Complete, Revise).
- */
-export const STATS_ORDER: MyCollabStatus[] = [
-  "not-started",
-  "pending",
-  "complete",
-  "revise",
-];
+const COL_LABEL: Record<string, DictKey> = {
+  "not-started": "mycollab.colActive",
+  pending: "mycollab.colPending",
+  complete: "mycollab.colComplete",
+  owned: "mycollab.colOwned",
+  revise: "mycollab.statusRevise",
+};
 
 interface MyCollabBoardProps {
   projects: MyCollabProject[];
+  /** The signed-in user: the Owned column keys off it. */
+  myUserId: string | null;
 }
 
 /**
  * The user's project board, redesigned 2026-11-10 as a weihu-style
  * Kanban (user order: "redesign lagi kaya gini", "harus bener-bener
- * mirip"). Four columns by status; the status chips are gone
+ * mirip"). Four columns: three by joined status plus Owned
+ * (the user's own projects, any status — it replaced the
+ * Revise column at his order 2026-11-13; see ../columns for
+ * the partition model). The status chips are gone
  * because the columns ARE the filter, and the header stats are
  * gone because each column header shows its count and links to
  * its category page. The search pill moved to the TopBar (user
@@ -44,9 +50,10 @@ interface MyCollabBoardProps {
 /** How many cards a column previews before the View more button. */
 const PREVIEW_LIMIT = 4;
 
-export function MyCollabBoard({ projects }: MyCollabBoardProps) {
+export function MyCollabBoard({ projects, myUserId }: MyCollabBoardProps) {
+  const { t } = useLanguage();
   const { query } = useMyCollabToolbar();
-  const [openMenu, setOpenMenu] = useState<MyCollabStatus | null>(null);
+  const [openMenu, setOpenMenu] = useState<MyCollabCategorySlug | null>(null);
 
   // Reset the shared search on unmount so each visit starts
   // fresh (same pattern as the collaborations grid).
@@ -65,37 +72,20 @@ export function MyCollabBoard({ projects }: MyCollabBoardProps) {
 
   const clearSearch = clearToolbar;
 
-  const bySlug = new Map<MyCollabStatus, MyCollabCategory>(
+  const bySlug = new Map<MyCollabCategorySlug, MyCollabCategory>(
     MY_COLLAB_CATEGORIES.map((c) => [c.slug, c])
   );
 
-  // Columns with a global pastel offset, so the 5 tints cycle across
-  // the whole board. (Per-column indexing never reaches the 5th
-  // tint — the largest column has 4 cards.)
-  let pastelOffset = 0;
-  const columns = STATS_ORDER.map((slug) => {
-    const cat = bySlug.get(slug);
-    const list = filtered.filter((p) => p.myStatus === slug);
-    const col = {
-      slug,
-      cat,
-      projects: list,
-      startIndex: pastelOffset,
-    };
-    pastelOffset += list.length;
-    return col;
-  }).filter(
-    (c): c is {
-      slug: MyCollabStatus;
-      cat: MyCollabCategory;
-      projects: MyCollabProject[];
-      startIndex: number;
-    } => c.cat !== undefined
-  );
+  // Columns partition the (search-filtered) list with a global
+  // pastel offset, so the 5 tints cycle across the whole board.
+  const columns = groupMyCollabBoard(filtered, myUserId).flatMap((col) => {
+    const cat = bySlug.get(col.slug);
+    return cat ? [{ ...col, cat }] : [];
+  });
 
   const totalCount = projects.length;
-  const statusCount = STATS_ORDER.filter(
-    (slug) => projects.some((p) => p.myStatus === slug)
+  const statusCount = groupMyCollabBoard(projects, myUserId).filter(
+    (c) => c.projects.length > 0
   ).length;
 
   return (
@@ -105,12 +95,12 @@ export function MyCollabBoard({ projects }: MyCollabBoardProps) {
           columns carry the counts and the status filter. */}
       <div className="flex flex-col gap-1">
         <h1 className="text-[40px] leading-none font-semibold tracking-tight text-ink uppercase">
-          My Collaborations
+          {t("nav.myCollaborations")}
         </h1>
         <p className="text-sm text-muted">
-          {totalCount} projects · {statusCount} statuses
+          {t("mycollab.headerStats", { total: totalCount, statuses: statusCount })}
           {query.trim() !== "" &&
-            ` · ${filtered.length} matching "${query.trim()}"`}
+            t("mycollab.matching", { count: filtered.length, query: query.trim() })}
         </p>
       </div>
 
@@ -122,43 +112,43 @@ export function MyCollabBoard({ projects }: MyCollabBoardProps) {
             <Icon name="search" size={20} className="text-muted" />
           </span>
           <p className="text-base font-semibold text-ink">
-            No projects match
+            {t("mycollab.noMatchTitle")}
           </p>
           <p className="max-w-sm text-sm text-muted">
-            No projects match your search. Clear it to see all
-            projects.
+            {t("mycollab.noMatchBody")}
           </p>
           <button
             type="button"
             onClick={clearSearch}
-            className="pressable mt-2 cursor-pointer rounded-full bg-ink px-4 py-2 text-sm font-medium text-surface transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+            className="pressable mt-2 cursor-pointer rounded-full bg-accent px-4 py-2 text-sm font-medium text-on-accent transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
           >
-            Clear search
+            {t("mycollab.clearSearchBtn")}
           </button>
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4 xl:divide-x xl:divide-line">
           {columns.map(({ slug, cat, projects: columnProjects, startIndex }) => {
+            const colLabel = t(COL_LABEL[slug] ?? "mycollab.colActive");
             return (
               <section
                 key={slug}
-                aria-label={cat.crumbLabel}
-                className="flex flex-col gap-3 rounded-lg border border-line bg-surface p-3"
+                aria-label={colLabel}
+                className="flex flex-col gap-3 rounded-lg border border-line bg-bg p-3"
               >
                 <div className="flex items-center gap-1.5 px-1 pt-1">
                   <Link
                     href={`/my-collaborations/${slug}`}
                     className="kanban-tag rounded-full px-3 py-1 text-sm font-semibold focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
                   >
-                    {cat.crumbLabel}
+                    {colLabel}
                   </Link>
-                  <span className="rounded-full bg-ink px-2 py-0.5 text-[11px] font-semibold text-surface tabular-nums">
+                  <span className="rounded-full bg-accent px-2 py-0.5 text-[11px] font-semibold text-on-accent tabular-nums">
                     {columnProjects.length}
                   </span>
                   <div className="relative ms-auto">
                     <button
                       type="button"
-                      aria-label={`More actions for ${cat.crumbLabel}`}
+                      aria-label={t("mycollab.moreActionsFor", { label: colLabel })}
                       aria-expanded={openMenu === slug}
                       onClick={() =>
                         setOpenMenu(openMenu === slug ? null : slug)
@@ -180,7 +170,7 @@ export function MyCollabBoard({ projects }: MyCollabBoardProps) {
                             onClick={() => setOpenMenu(null)}
                             className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-ink transition-colors hover:bg-bg focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
                           >
-                            View all projects
+                            {t("mycollab.viewAllProjects")}
                           </Link>
                         </div>
                       </>
@@ -190,7 +180,7 @@ export function MyCollabBoard({ projects }: MyCollabBoardProps) {
                   <div className="flex flex-col gap-3">
                     {columnProjects.length === 0 ? (
                       <p className="px-1 py-3 text-center text-[13px] text-muted">
-                        No projects match in this status.
+                        {t("mycollab.noMatchInStatus")}
                       </p>
                     ) : (
                       columnProjects.slice(0, PREVIEW_LIMIT).map((p, i) => (
@@ -207,8 +197,10 @@ export function MyCollabBoard({ projects }: MyCollabBoardProps) {
                         className="flex h-10 items-center justify-center gap-1 rounded-lg bg-bg text-sm font-medium text-muted transition-colors hover:text-ink focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
                       >
                         {columnProjects.length > PREVIEW_LIMIT
-                          ? `View ${columnProjects.length - PREVIEW_LIMIT} more`
-                          : "View more"}
+                          ? t("mycollab.viewMoreCount", {
+                              count: columnProjects.length - PREVIEW_LIMIT,
+                            })
+                          : t("mycollab.viewMore")}
                         <Icon name="chevron-down" size={16} />
                       </Link>
                     )}

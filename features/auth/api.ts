@@ -1,4 +1,4 @@
-import { ApiError, getApiBaseUrl } from "@/lib/api-client";
+import { ApiError, apiFetch, getApiBaseUrl, type ApiEnvelope } from "@/lib/api-client";
 import { getSession, setSession } from "./session";
 import type { AuthSession, AuthUser, LoginInput, RegisterInput } from "./types";
 import { firstError, validateLogin, validateRegister } from "./validation";
@@ -14,12 +14,80 @@ import { firstError, validateLogin, validateRegister } from "./validation";
 /** 3 days, in ms — mirrors the backend JWT expiry (utils/JWT.php: 259200s). */
 export const TOKEN_TTL_MS = 3 * 24 * 60 * 60 * 1000;
 
+/** Status banding atas suspend aktif, dari payload login 403 (§4.4). */
+export interface SuspendedAppealInfo {
+  status: "pending" | "granted" | "denied";
+  decisionNote: string | null;
+  createdAt: string;
+}
+
+export interface SuspendedInfo {
+  reason: string | null;
+  suspendedAt: string | null;
+  appeal: SuspendedAppealInfo | null;
+}
+
+/**
+ * Dilempar alih-alih ApiError generik saat login ditolak karena akun
+ * disuspend, supaya layar login bisa menampilkan alasan + form
+ * banding. googleIdToken dibawa untuk akun Google: kredensial yang
+ * barusan terverifikasi adalah verifikasi untuk bandingnya.
+ */
+export class SuspendedAccountError extends ApiError {
+  readonly suspended: SuspendedInfo;
+  readonly googleIdToken?: string;
+
+  constructor(info: SuspendedInfo, googleIdToken?: string) {
+    super(403, "account_suspended", "Akun kamu sedang disuspend.");
+    this.name = "SuspendedAccountError";
+    this.suspended = info;
+    this.googleIdToken = googleIdToken;
+  }
+}
+
+interface SuspendedPayload {
+  suspended?: boolean;
+  reason?: string | null;
+  suspended_at?: string | null;
+  appeal?: {
+    status: "pending" | "granted" | "denied";
+    decision_note: string | null;
+    created_at: string;
+  } | null;
+}
+
+/** Map a raw suspended payload (login 403 / middleware 403) into
+ *  the notice shape; null when the payload is not a suspension. */
+export function mapSuspendedInfo(data: unknown): SuspendedInfo | null {
+  const d = data as SuspendedPayload | null;
+  if (!d?.suspended) return null;
+  return {
+    reason: d.reason ?? null,
+    suspendedAt: d.suspended_at ?? null,
+    appeal: d.appeal
+      ? {
+          status: d.appeal.status,
+          decisionNote: d.appeal.decision_note,
+          createdAt: d.appeal.created_at,
+        }
+      : null,
+  };
+}
+
+function throwIfSuspended(data: unknown, googleIdToken?: string): void {
+  const info = mapSuspendedInfo(data);
+  if (!info) return;
+  throw new SuspendedAccountError(info, googleIdToken);
+}
+
 
 function toAuthUser(record: {
   id: string;
   username: string;
   email?: string | null;
   photo_profile_url?: string | null;
+  role?: string | null;
+  email_verified?: boolean | null;
 }): AuthUser {
   return {
     id: record.id,
@@ -27,6 +95,8 @@ function toAuthUser(record: {
     email: record.email ?? "",
     name: record.username,
     photo: record.photo_profile_url ?? undefined,
+    role: (record.role ?? "user") as AuthUser["role"],
+    emailVerified: record.email_verified ?? undefined,
     provider: "password",
   };
 }
@@ -43,7 +113,13 @@ export async function login(input: LoginInput): Promise<AuthSession> {
   return loginViaBackend(input);
 }
 
-export async function register(input: RegisterInput): Promise<AuthSession> {
+/** A registration waiting for its email link (pending scheme). */
+export interface PendingRegistration {
+  pendingId: string;
+  email: string;
+}
+
+export async function register(input: RegisterInput): Promise<PendingRegistration> {
   const errors = validateRegister(input);
   if (Object.keys(errors).length > 0) {
     throw new ApiError(
@@ -168,6 +244,7 @@ export async function signInWithGoogle(): Promise<AuthSession> {
     token: string;
     email?: string | null;
   }>(res);
+  throwIfSuspended(body.data, idToken);
   if (!res.ok || !body.success || !body.data?.token) {
     throw new ApiError(res.status, "invalid_credentials", body.message || "Google sign-in failed.");
   }
@@ -190,9 +267,33 @@ export async function getMe(): Promise<AuthUser | null> {
   return current.user;
 }
 
-/** Client-side only: the backend has no logout endpoint, the token is simply discarded. */
-export function logout(): void {
+/**
+ * Signs out on the server too (audit P0, 2026-11-14): the backend
+ * revokes the token so it cannot be replayed, then the local
+ * session is discarded either way — a failed revoke call must
+ * never trap the user in a signed-in UI.
+ */
+export async function logout(): Promise<void> {
+  const token = getSession()?.token;
+  if (token) {
+    try {
+      await fetch(getApiBaseUrl() + "/api/auth/logout", {
+        method: "POST",
+        headers: { Authorization: "Bearer " + token },
+      });
+    } catch {
+      // Best effort: the local sign-out proceeds regardless.
+    }
+  }
   setSession(null);
+}
+
+/** Changes the signed-in user's password (PUT /api/auth/change-password). */
+export async function changePassword(currentPassword: string, newPassword: string): Promise<void> {
+  await apiFetch<ApiEnvelope<null>>("/api/auth/change-password", {
+    method: "PUT",
+    body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }),
+  });
 }
 
 /* --- Backend path --- */
@@ -201,6 +302,8 @@ interface BackendEnvelope<T> {
   success: boolean;
   message: string;
   data: T | null;
+  /** Machine error code (audit P1 #17); absent on old backends. */
+  code?: string;
 }
 
 async function readBackendEnvelope<T>(res: Response): Promise<BackendEnvelope<T>> {
@@ -223,10 +326,23 @@ async function loginViaBackend(input: LoginInput): Promise<AuthSession> {
     token: string;
     email?: string | null;
   }>(res);
+  throwIfSuspended(body.data);
+  if (
+    body.code === "email_not_verified" ||
+    (body.data &&
+      (body.data as { email_not_verified?: boolean }).email_not_verified)
+  ) {
+    // Pending scheme: the registration is still waiting for its
+    // email link; the form shows the dedicated notice.
+    throw new ApiError(403, "email_not_verified", "Account not verified yet.");
+  }
+  if (res.status === 429) {
+    throw new ApiError(429, "rate_limited", "Too many attempts. Try again in a few minutes.");
+  }
   if (!res.ok || !body.success || !body.data?.token) {
-    // Deliberately generic (user rule 2026-11-12): the backend
-    // distinguishes "user not found" (404) from "wrong password"
-    // (400), but the UI never reveals which one failed.
+    // Deliberately generic (user rule 2026-11-12): the backend now
+    // answers one generic 401 for unknown user and wrong password
+    // alike (audit P0), and the UI keeps the same generic wording.
     throw new ApiError(res.status, "invalid_credentials", "Username/password salah");
   }
   const session: AuthSession = {
@@ -238,21 +354,41 @@ async function loginViaBackend(input: LoginInput): Promise<AuthSession> {
   return session;
 }
 
-async function registerViaBackend(input: RegisterInput): Promise<AuthSession> {
-  const res = await fetch(`${getApiBaseUrl()}/api/auth/register`, {
+async function registerViaBackend(input: RegisterInput): Promise<PendingRegistration> {
+  const payload: Record<string, string | boolean> = {};
+  payload.username = input.username.trim();
+  payload.email = input.email.trim();
+  payload.password = input.password;
+  payload.terms_accepted = input.termsAccepted === true;
+  const res = await fetch(getApiBaseUrl() + "/api/auth/register", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      username: input.username.trim(),
-      email: input.email.trim(),
-      password: input.password,
-    }),
+    body: JSON.stringify(payload),
   });
-  const body = await readBackendEnvelope<{ id: string; username: string }>(res);
+  const body = await readBackendEnvelope<{
+    pending?: boolean;
+    pending_id?: string;
+    email?: string;
+  }>(res);
+  if (res.status === 429) {
+    throw new ApiError(429, "rate_limited", "Too many attempts. Try again in a few minutes.");
+  }
+  if (res.status === 502) {
+    // Pending scheme: the verification email could not be sent, so
+    // the backend cancelled the registration and stored nothing.
+    throw new ApiError(502, "email_send_failed", body.message || "Could not send the verification email.");
+  }
   if (!res.ok || !body.success) {
-    // The backend answers 400 for every register failure, so the
-    // duplicates are recognized by message and mapped to the field
-    // they belong to (the form renders them inline + as a toast).
+    // Duplicates arrive as 409 + a machine code (audit P1 #16/#17)
+    // and map to the field they belong to (the form renders them
+    // inline + as a toast). The message match below only remains
+    // as a fallback for older backends without codes.
+    if (body.code === "username_taken") {
+      throw new ApiError(res.status, "username_taken", "That username is already taken.");
+    }
+    if (body.code === "email_taken") {
+      throw new ApiError(res.status, "email_taken", "That email is already registered.");
+    }
     const message = body.message || "";
     if (message.includes("Username tersebut telah terdaftar")) {
       throw new ApiError(res.status, "username_taken", "That username is already taken.");
@@ -266,5 +402,128 @@ async function registerViaBackend(input: RegisterInput): Promise<AuthSession> {
       message || "Could not create the account.",
     );
   }
-  return loginViaBackend({ username: input.username, password: input.password });
+  if (!body.data?.pending_id) {
+    throw new ApiError(res.status, "validation_error", "Could not start the sign-up.");
+  }
+  return {
+    pendingId: body.data.pending_id,
+    email: body.data.email ?? input.email.trim(),
+  };
+}
+
+/**
+ * POST /api/auth/forgot-password. The backend ALWAYS answers a
+ * generic success (registered or not), so this only throws when the
+ * request itself fails (server down, HTTP error) — never because
+ * the email is unknown.
+ */
+export async function forgotPassword(email: string): Promise<void> {
+  const payload: Record<string, string> = {};
+  payload.email = email;
+  const res = await fetch(`${getApiBaseUrl()}/api/auth/forgot-password`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      "forgot_failed",
+      `Forgot password failed (HTTP ${res.status}).`,
+    );
+  }
+}
+
+/**
+ * POST /api/auth/reset-password. Exchanges the emailed token for a
+ * new password; a 400 means the link is invalid, expired, or used.
+ */
+export async function resetPassword(
+  token: string,
+  newPassword: string,
+): Promise<void> {
+  const payload: Record<string, string> = {};
+  payload.token = token;
+  payload.new_password = newPassword;
+  const res = await fetch(`${getApiBaseUrl()}/api/auth/reset-password`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  const body = await readBackendEnvelope<null>(res);
+  if (!res.ok || !body.success) {
+    throw new ApiError(
+      res.status,
+      "reset_failed",
+      body.message || `Reset password failed (HTTP ${res.status}).`,
+    );
+  }
+}
+
+/**
+ * POST /api/auth/verify-email. Exchanges the emailed token for a
+ * real account (pending scheme); a 400 means the link is invalid,
+ * expired, or already used.
+ */
+export async function verifyEmail(token: string): Promise<AuthSession> {
+  const payload: Record<string, string> = {};
+  payload.token = token;
+  const res = await fetch(`${getApiBaseUrl()}/api/auth/verify-email`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  const body = await readBackendEnvelope<{
+    id: string;
+    username: string;
+    token: string;
+    email?: string | null;
+    role?: string | null;
+    email_verified?: boolean | null;
+  }>(res);
+  if (!res.ok || !body.success || !body.data?.token) {
+    throw new ApiError(
+      res.status,
+      "verify_failed",
+      body.message || `Verify email failed (HTTP ${res.status}).`,
+    );
+  }
+  // The endpoint answers with a full login payload (the link
+  // click is the identity proof), so store the session exactly
+  // like a password login does; the caller routes to the feed.
+  const session: AuthSession = {
+    user: toAuthUser(body.data),
+    token: body.data.token,
+    expiresAt: Date.now() + TOKEN_TTL_MS,
+  };
+  setSession(session);
+  return session;
+}
+
+/**
+ * POST /api/auth/resend-verification-pending. Resends the signup
+ * verification link for a pending registration (no account exists
+ * yet, so the pending id from the register response is the handle).
+ * The backend caps this at 3 per hour per registration (429); a
+ * 502 means the email could not be sent.
+ */
+export async function resendVerificationPending(pendingId: string): Promise<void> {
+  const payload: Record<string, string> = {};
+  payload.pending_id = pendingId;
+  const res = await fetch(getApiBaseUrl() + "/api/auth/resend-verification-pending", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  const body = await readBackendEnvelope<null>(res);
+  if (res.status === 429) {
+    throw new ApiError(429, "rate_limited", "Too many attempts. Try again in a few minutes.");
+  }
+  if (!res.ok || !body.success) {
+    throw new ApiError(
+      res.status,
+      "resend_failed",
+      body.message || "Resend failed (HTTP " + res.status + ").",
+    );
+  }
 }

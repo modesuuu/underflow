@@ -5,6 +5,7 @@ import {
   isApiConfigured,
 } from "@/lib/api-client";
 import type { Post, PostComment } from "./types";
+import { formatRelativeAgo } from "@/lib/i18n/format";
 
 /** Wire shape of GET /api/posts (PostModel::getAll). */
 interface BackendPost {
@@ -27,13 +28,7 @@ interface BackendPost {
 
 function relativeAgo(iso: string | undefined): string {
   if (!iso) return "";
-  const ms = Date.now() - new Date(iso).getTime();
-  if (Number.isNaN(ms) || ms < 0) return "";
-  const days = Math.floor(ms / 86_400_000);
-  if (days >= 1) return days + "d ago";
-  const hours = Math.floor(ms / 3_600_000);
-  if (hours >= 1) return hours + "h ago";
-  return "just now";
+  return formatRelativeAgo(iso);
 }
 
 function mapBackendPost(b: BackendPost): Post {
@@ -85,6 +80,45 @@ export async function getDashboardPosts(): Promise<Post[]> {
     // instead of crashing the page.
     if (err instanceof Error && "code" in err && (err as { code?: string }).code === "network_error") {
       return [];
+    }
+    throw err;
+  }
+}
+
+export interface FeedPage {
+  posts: Post[];
+  total: number;
+  page: number;
+  totalPages: number;
+}
+
+export const FEED_PAGE_SIZE = 10;
+
+/**
+ * One page of the feed (audit P0, 2026-11-14): GET /api/posts now
+ * accepts page/limit and answers with pagination metadata, so the
+ * feed page no longer downloads every post at once. The legacy
+ * getDashboardPosts() above stays for the hydrator/poller/profile,
+ * which genuinely need the whole list.
+ */
+export async function getFeedPage(page: number, limit: number = FEED_PAGE_SIZE): Promise<FeedPage> {
+  if (!isApiConfigured()) {
+    return { posts: [], total: 0, page, totalPages: 0 };
+  }
+  try {
+    const res = await apiFetch<ApiEnvelope<BackendPost[]>>(
+      "/api/posts?page=" + page + "&limit=" + limit,
+    );
+    const pagination = res.pagination;
+    return {
+      posts: res.data.map(mapBackendPost),
+      total: pagination?.total ?? res.data.length,
+      page: pagination?.page ?? page,
+      totalPages: pagination?.total_pages ?? 1,
+    };
+  } catch (err) {
+    if (err instanceof Error && "code" in err && (err as { code?: string }).code === "network_error") {
+      return { posts: [], total: 0, page, totalPages: 0 };
     }
     throw err;
   }
@@ -297,3 +331,78 @@ export async function postComment(
 
 // Notifications live in ./notifications-api.ts (getNotifications /
 // markNotificationRead / markAllNotificationsRead).
+
+/**
+ * POST /api/reports (auth required) — report a post to the admin
+ * moderation queue (spec-admin.md §4.3). Returns the report so the
+ * notice's Undo can withdraw it again by id.
+ */
+export async function reportPost(
+  postId: string,
+  reason: string
+): Promise<{ id: string }> {
+  const res = await apiFetch<ApiEnvelope<{ report: { id: string } }>>(
+    "/api/reports",
+    {
+      method: "POST",
+      body: JSON.stringify({
+        target_type: "post",
+        target_id: postId,
+        reason,
+      }),
+    }
+  );
+  return res.data.report;
+}
+
+/**
+ * POST /api/reports (auth required) — report a comment to the admin
+ * moderation queue. Same contract as reportPost; Undo withdraws it
+ * again through withdrawReport.
+ */
+export async function reportComment(
+  commentId: string,
+  reason: string
+): Promise<{ id: string }> {
+  const res = await apiFetch<ApiEnvelope<{ report: { id: string } }>>(
+    "/api/reports",
+    {
+      method: "POST",
+      body: JSON.stringify({
+        target_type: "comment",
+        target_id: commentId,
+        reason,
+      }),
+    }
+  );
+  return res.data.report;
+}
+
+/**
+ * POST /api/reports (auth required) — report a collaboration to the
+ * admin moderation queue. Same contract as reportPost; the backend
+ * has accepted target_type "collab" all along, this is the first UI
+ * that sends it. Undo withdraws it again through withdrawReport.
+ */
+export async function reportCollab(
+  collabId: string,
+  reason: string
+): Promise<{ id: string }> {
+  const res = await apiFetch<ApiEnvelope<{ report: { id: string } }>>(
+    "/api/reports",
+    {
+      method: "POST",
+      body: JSON.stringify({
+        target_type: "collab",
+        target_id: collabId,
+        reason,
+      }),
+    }
+  );
+  return res.data.report;
+}
+
+/** DELETE /api/reports/:id (auth required) — withdraw my open report. */
+export async function withdrawReport(reportId: string): Promise<void> {
+  await apiFetch("/api/reports/" + reportId, { method: "DELETE" });
+}

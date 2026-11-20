@@ -2,7 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import { TextArea } from "@astryxdesign/core/TextArea";
+import { Button } from "@astryxdesign/core/Button";
 import { Icon } from "@/components/ui/Icon";
+import { useLanguage } from "@/lib/i18n/LanguageProvider";
+import { useFocusTrap } from "@/lib/use-focus-trap";
 
 interface ApplyMessageModalProps {
   projectTitle: string;
@@ -28,8 +32,10 @@ export function ApplyMessageModal({
   onClose,
   onSend,
 }: ApplyMessageModalProps) {
-  const [message, setMessage] = useState(
-    `Hi! I'd like to apply as ${roleLabel} for ${projectTitle}. `,
+  const { t } = useLanguage();
+  const dialogRef = useFocusTrap<HTMLDivElement>(true);
+  const [message, setMessage] = useState(() =>
+    t("collab.applyPrefill", { role: roleLabel, title: projectTitle }),
   );
 
   useEffect(() => {
@@ -46,10 +52,11 @@ export function ApplyMessageModal({
   // In the root context its z-50 covers the TopBar, as a modal must.
   return createPortal(
     <div
+      ref={dialogRef}
       role="dialog"
       aria-modal="true"
-      aria-label={`Apply to ${projectTitle}`}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 p-4"
+      aria-label={t("collab.applyToProject", { title: projectTitle })}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
       onClick={onClose}
     >
       <div
@@ -59,54 +66,41 @@ export function ApplyMessageModal({
         <div className="flex items-start justify-between gap-4">
           <div className="flex flex-col gap-1">
             <h2 className="text-xl font-bold text-ink">
-              Apply to {projectTitle}
+              {t("collab.applyToProject", { title: projectTitle })}
             </h2>
             <p className="text-sm text-muted">
-              Your application is sent as a message to {ownerName} and
-              starts a conversation in your Inbox.
+              {t("collab.applyModalBody", { name: ownerName })}
             </p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            aria-label="Close"
+            aria-label={t("common.close")}
             className="flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-full text-ink transition-colors hover:bg-bg"
           >
             <Icon name="x" size={20} />
           </button>
         </div>
 
-        <label className="flex flex-col gap-1.5">
-          <span className="text-sm font-medium text-ink">
-            Message to {ownerName}
-          </span>
-          <textarea
-            value={message}
-            onChange={(event) => setMessage(event.target.value)}
-            rows={5}
-            autoFocus
-            className="w-full resize-none rounded-lg border border-line bg-surface p-3 text-base text-ink outline-none placeholder:text-muted focus-visible:ring-2 focus-visible:ring-accent"
-            placeholder="Introduce yourself, your experience, and how much time you can commit…"
-          />
-        </label>
+        <TextArea
+          label={t("collab.messageToOwner", { name: ownerName })}
+          value={message}
+          onChange={(value) => setMessage(value)}
+          rows={5}
+          hasAutoFocus
+          placeholder={t("collab.applyPlaceholder")}
+        />
 
         <div className="flex justify-end gap-2">
-          <button
-            type="button"
-            onClick={onClose}
-            className="cursor-pointer rounded-full border border-line px-5 py-2.5 text-sm font-medium text-ink transition-colors hover:bg-bg"
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
+          <Button label={t("common.cancel")} variant="secondary" onClick={onClose} />
+          <Button
+            label={sending ? t("common.sending") : t("collab.sendApplication")}
+            variant="primary"
+            icon={<Icon name="send" size={18} />}
+            isLoading={sending}
+            isDisabled={!message.trim() || sending}
             onClick={() => onSend(message)}
-            disabled={!message.trim() || sending}
-            className="flex cursor-pointer items-center gap-2 rounded-full bg-accent px-5 py-2.5 text-sm font-medium text-on-accent transition-opacity hover:opacity-85 disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            <Icon name="send" size={18} />
-            {sending ? "Sending…" : "Send application"}
-          </button>
+          />
         </div>
       </div>
     </div>,

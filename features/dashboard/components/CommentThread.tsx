@@ -1,10 +1,15 @@
 "use client";
 
-import { type CSSProperties, type Ref } from "react";
+import { useState, type CSSProperties, type Ref } from "react";
 import Link from "next/link";
 import { Avatar } from "@/components/ui/Avatar";
+import { useSessionUser } from "@/features/auth/store";
 import type { PostComment } from "../types";
+import { reportComment, withdrawReport } from "../api";
 import { LikeButton } from "./LikeButton";
+import { CommentOptionsMenu } from "./CommentOptionsMenu";
+import { ReportForm } from "./ReportForm";
+import { ReportedPostNotice } from "./ReportedPostNotice";
 
 interface CommentItemProps {
   comment: PostComment;
@@ -18,9 +23,39 @@ interface CommentItemProps {
  * Book body (the post is 15px), 12px time, a compact like. The
  * content column aligns under the name, so a comment reads as a
  * single block instead of stacked full-width rows.
+ *
+ * Other people's comments carry a ••• menu on the byline row:
+ * Report swaps the comment body for the reason form and then the
+ * reported notice, the same flow as reporting a post (the report
+ * goes to the admin queue; Undo withdraws it).
  */
 function CommentItem({ comment, innerRef, isNew = false }: CommentItemProps) {
   const profileHref = `/profile/${comment.author.id}`;
+  const sessionUser = useSessionUser();
+  const isOwn = sessionUser !== null && sessionUser.id === comment.author.id;
+  const [reportFormOpen, setReportFormOpen] = useState(false);
+  const [reported, setReported] = useState(false);
+  const [reportedId, setReportedId] = useState<string | null>(null);
+
+  const handleReportSubmit = async (reason: string) => {
+    const report = await reportComment(comment.id, reason);
+    setReportedId(report.id);
+    setReportFormOpen(false);
+    setReported(true);
+  };
+
+  const handleUndoReport = async () => {
+    if (reportedId) {
+      try {
+        await withdrawReport(reportedId);
+      } catch {
+        // Gagal menarik laporan tidak boleh menjebak tampilan.
+      }
+      setReportedId(null);
+    }
+    setReported(false);
+  };
+
   const byline = (
     <>
       <span className="text-sm font-medium group-hover:underline">
@@ -53,7 +88,7 @@ function CommentItem({ comment, innerRef, isNew = false }: CommentItemProps) {
       )}
 
       {/* Content column */}
-      <div className="flex min-w-0 flex-1 flex-col gap-1">
+      <div className="relative flex min-w-0 flex-1 flex-col gap-1">
         {profileHref ? (
           <Link
             href={profileHref}
@@ -65,20 +100,37 @@ function CommentItem({ comment, innerRef, isNew = false }: CommentItemProps) {
         ) : (
           <div className="flex items-center gap-1.5">{byline}</div>
         )}
+        {!isOwn && !reportFormOpen && !reported ? (
+          <div className="absolute top-0 right-0">
+            <CommentOptionsMenu onReport={() => setReportFormOpen(true)} />
+          </div>
+        ) : null}
 
-        <p className="text-sm leading-relaxed">{comment.text}</p>
-
-        {/* Like — compact variant; the shared store keeps it in
-            step with every other surface, persisted to the
-            backend like a post like. */}
-        <div className="mt-0.5 w-fit">
-          <LikeButton
-            size="sm"
-            storeKey={`comment:${comment.id}`}
-            initialLiked={comment.liked}
-            initialLikes={comment.likes}
+        {reportFormOpen ? (
+          <ReportForm
+            noun="comment"
+            onCancel={() => setReportFormOpen(false)}
+            onSubmit={handleReportSubmit}
           />
-        </div>
+        ) : reported ? (
+          <ReportedPostNotice noun="comment" onUndo={handleUndoReport} />
+        ) : (
+          <>
+            <p className="text-sm leading-relaxed">{comment.text}</p>
+
+            {/* Like — compact variant; the shared store keeps it in
+                step with every other surface, persisted to the
+                backend like a post like. */}
+            <div className="mt-0.5 w-fit">
+              <LikeButton
+                size="sm"
+                storeKey={`comment:${comment.id}`}
+                initialLiked={comment.liked}
+                initialLikes={comment.likes}
+              />
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
@@ -99,14 +151,20 @@ export function CommentThread({ comments, newCommentId, newCommentRef }: Comment
     );
   }
   return (
-    <div className="flex flex-col gap-6">
-      {comments.map((comment) => (
-        <CommentItem
+    <div className="flex flex-col gap-5">
+      {comments.map((comment, i) => (
+        <div
           key={comment.id}
-          comment={comment}
-          innerRef={comment.id === newCommentId ? newCommentRef : undefined}
-          isNew={comment.id === newCommentId}
-        />
+          className={
+            i < comments.length - 1 ? "border-b border-line pb-5" : undefined
+          }
+        >
+          <CommentItem
+            comment={comment}
+            innerRef={comment.id === newCommentId ? newCommentRef : undefined}
+            isNew={comment.id === newCommentId}
+          />
+        </div>
       ))}
     </div>
   );
