@@ -6,7 +6,6 @@ import { useSessionUser } from "@/features/auth/store";
 import type { DictKey } from "@/lib/i18n/dictionary";
 import { localeTag } from "@/lib/i18n/format";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
-import { skillIconName } from "@/lib/skill-icon";
 import type { PersonDetail, ProfileStats, ProfileTab } from "../types";
 import { OwnProfileLogout } from "./OwnProfileLogout";
 
@@ -176,20 +175,6 @@ export function ProfileRail({
               <span>{t("profile.memberSince", { date: memberSince })}</span>
             </li>
           )}
-        </ul>
-      )}
-
-      {person.skills && person.skills.length > 0 && (
-        <ul className="flex flex-wrap gap-1.5" aria-label={t("admin.sectionSkills")}>
-          {person.skills.map((skill) => (
-            <li
-              key={skill.id}
-              className="flex items-center gap-1 rounded-full bg-accent px-2.5 py-1 text-xs font-medium text-on-accent"
-            >
-              <Icon name={skillIconName(skill.label)} size={14} />
-              {skill.label}
-            </li>
-          ))}
         </ul>
       )}
 
