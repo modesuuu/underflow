@@ -2,7 +2,7 @@
   <img src="./app/icon.svg" width="72" alt="Logo Underflow" />
 </p>
 
-<h1 align="center">Underflow (Frontend)</h1>
+<h1 align="center">Underflow</h1>
 
 <p align="center">
   <img src="https://img.shields.io/badge/Next.js-16.3-black?logo=next.js" alt="Next.js 16" />
