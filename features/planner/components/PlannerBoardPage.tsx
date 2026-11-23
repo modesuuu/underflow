@@ -395,6 +395,10 @@ export function PlannerBoardPage() {
                 ) : null,
               )}
               <div
+                className="absolute inset-y-0 bg-ink/[0.05]"
+                style={{ left: WHO_W, width: TODAY_INDEX * DAY_W }}
+              />
+              <div
                 className="absolute inset-y-0 bg-ink/[0.04]"
                 style={{ left: WHO_W + TODAY_INDEX * DAY_W, width: DAY_W }}
               />
@@ -405,10 +409,6 @@ export function PlannerBoardPage() {
                   style={{ left: WHO_W + i * DAY_W }}
                 />
               ))}
-              <div
-                className="absolute inset-y-0 w-[2px] bg-ink opacity-70"
-                style={{ left: WHO_W + TODAY_INDEX * DAY_W }}
-              />
             </div>
 
             {/* Board header */}
@@ -436,11 +436,7 @@ export function PlannerBoardPage() {
                     </span>
                     <span
                       className={`text-xs font-semibold leading-tight ${
-                        isToday
-                          ? "rounded-full bg-ink px-1.5 py-px text-surface"
-                          : day.weekend
-                            ? "text-subtle"
-                            : "text-ink"
+                        day.weekend && !isToday ? "text-subtle" : "text-ink"
                       }`}
                     >
                       {day.date}
@@ -448,6 +444,18 @@ export function PlannerBoardPage() {
                   </div>
                 );
               })}
+              <div
+                aria-hidden
+                className="pointer-events-none absolute inset-y-0 z-[15] w-[2px] bg-ink"
+                style={{ left: WHO_W + TODAY_INDEX * DAY_W }}
+              />
+              <div
+                aria-hidden
+                className="pointer-events-none absolute top-1.5 z-[15] -translate-x-1/2 rounded-full bg-ink px-2 py-0.5 text-[10px] font-semibold text-surface"
+                style={{ left: WHO_W + TODAY_INDEX * DAY_W }}
+              >
+                {SAMPLE_TODAY}
+              </div>
             </div>
 
             {/* Member rows */}
@@ -485,6 +493,11 @@ export function PlannerBoardPage() {
                       height: lanes * LANE_H,
                     }}
                   >
+                    <div
+                      aria-hidden
+                      className="pointer-events-none absolute inset-y-0 z-[15] w-[2px] bg-ink"
+                      style={{ left: TODAY_INDEX * DAY_W }}
+                    />
                     {member.tasks.map((task) => (
                       <SamplePill
                         key={task.title}
