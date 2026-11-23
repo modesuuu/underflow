@@ -12,7 +12,6 @@ import { ReportForm } from "@/features/dashboard/components/ReportForm";
 import { ReportedPostNotice } from "@/features/dashboard/components/ReportedPostNotice";
 import { reportCollab, withdrawReport } from "@/features/dashboard/api";
 import { MakeCollabModal } from "./MakeCollabModal";
-import { PlannerPanel } from "@/features/planner/components/PlannerPanel";
 import { ConfirmDialog } from "@/features/inbox/components/ConfirmDialog";
 import { formatDueDate } from "../sort";
 import { STATUS_ICONS } from "../status";
@@ -366,11 +365,6 @@ export function CollabDetailContent({ project }: CollabDetailContentProps) {
           )}
         </div>
       </div>
-
-      {/* Planner (Tasks Fase 1): nempel ke collab seperti Circle,
-          berdiri sendiri. Panel menyembunyikan diri untuk
-          non-member dan untuk member saat planner belum dibuat. */}
-      <PlannerPanel projectId={project.id} />
 
       {/* 5. Apply CTA block (at the BOTTOM) */}
       <ApplyCta
