@@ -32,6 +32,8 @@ import {
   applyRealtimeZoneMessageDeleted,
   applyRealtimeZoneMessageUpdated,
 } from "@/features/circle/store";
+import { applyRealtimePlannerTask } from "@/features/planner/store";
+import type { PlannerTask } from "@/features/planner/types";
 import {
   applyThemeMode,
   type ThemeMode,
@@ -437,6 +439,17 @@ export function LivePoller() {
             typeof messageId === "string"
           ) {
             applyRealtimeZoneMessageDeleted({ circleId, zoneId, messageId });
+          }
+          return;
+        }
+        if (msg.type === "planner-task") {
+          const collabId = msg.payload?.collabId;
+          const task = msg.payload?.task;
+          if (typeof collabId === "string" && task) {
+            applyRealtimePlannerTask({
+              collabId,
+              task: task as unknown as PlannerTask,
+            });
           }
           return;
         }

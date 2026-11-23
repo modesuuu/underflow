@@ -17,6 +17,7 @@ import { LogoMark } from "@/components/ui/LogoMark";
 import { Badge } from "@/components/ui/Badge";
 import { Icon } from "@/components/ui/Icon";
 import { useInboxUnreadCount } from "@/features/inbox/store";
+import { useMyTaskOpenCount } from "@/features/planner/store";
 import { setMobileNav, useMobileNavOpen } from "./mobile-nav";
 import {
   CURRENT_USER,
@@ -431,6 +432,7 @@ export function Sidebar() {
   };
   const [animateWidth, setAnimateWidth] = useState(false);
   const inboxUnread = useInboxUnreadCount();
+  const taskOpenCount = useMyTaskOpenCount();
 
   const areaRef = useRef<HTMLDivElement>(null);
   const stackRef = useRef<HTMLDivElement>(null);
@@ -544,7 +546,11 @@ export function Sidebar() {
   }, []);
 
   const badgeFor = (id: string) =>
-    id === "inbox" && inboxUnread > 0 ? inboxUnread : undefined;
+    id === "inbox" && inboxUnread > 0
+      ? inboxUnread
+      : id === "tasks" && taskOpenCount > 0
+        ? taskOpenCount
+        : undefined;
 
   const activeVisible = useMemo(() => {
     for (const section of NAV_SECTIONS) {
