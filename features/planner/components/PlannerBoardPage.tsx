@@ -11,9 +11,10 @@
 // layer (continuous vertical lines, weekend bands, today's band and
 // start line), and pills are positioned freely on top of it — a pill
 // can span several day columns and crosses the lines, it is not
-// boxed into a cell. The board shows a FULL MONTH and pans sideways;
-// the Who column is the board's sticky sidebar, and the native
-// scrollbar is replaced by a custom one under the board.
+// boxed into a cell. The board shows a FULL MONTH and pans sideways
+// like a canvas: grab it and drag (the cursor turns into a hand).
+// The Who column is the board's sticky sidebar, and there is no
+// visible scrollbar at all — the native one is hidden.
 
 import { useEffect, useRef, useState } from "react";
 import type { CSSProperties, PointerEvent as ReactPointerEvent } from "react";
@@ -185,30 +186,14 @@ function SamplePill({
 export function PlannerBoardPage() {
   const { t } = useLanguage();
   const scrollRef = useRef<HTMLDivElement>(null);
-  const trackRef = useRef<HTMLDivElement>(null);
-  const dragRef = useRef<{ startX: number; startScroll: number } | null>(null);
-  const [thumb, setThumb] = useState({ left: 0, width: 100 });
+  const panRef = useRef<{ startX: number; startScroll: number } | null>(null);
+  const [panning, setPanning] = useState(false);
 
-  const updateThumb = () => {
-    const el = scrollRef.current;
-    if (!el) return;
-    const max = el.scrollWidth - el.clientWidth;
-    const width = (el.clientWidth / el.scrollWidth) * 100;
-    const left = max > 0 ? (el.scrollLeft / max) * (100 - width) : 0;
-    setThumb({ left, width });
-  };
-
+  // Open on the week of "today" (Monday Nov 16).
   useEffect(() => {
     const el = scrollRef.current;
-    if (!el) return;
-    el.scrollLeft = OPEN_SCROLL_DAYS * DAY_W;
-    updateThumb();
-    window.addEventListener("resize", updateThumb);
-    return () => window.removeEventListener("resize", updateThumb);
+    if (el) el.scrollLeft = OPEN_SCROLL_DAYS * DAY_W;
   }, []);
-
-  const scrollByDays = (days: number) =>
-    scrollRef.current?.scrollBy({ left: days * DAY_W, behavior: "smooth" });
 
   const scrollToTodayWeek = () =>
     scrollRef.current?.scrollTo({
@@ -216,32 +201,23 @@ export function PlannerBoardPage() {
       behavior: "smooth",
     });
 
-  const onThumbDown = (e: ReactPointerEvent<HTMLDivElement>) => {
+  // Canvas-style panning: press, hold and drag the board itself.
+  const onPanDown = (e: ReactPointerEvent<HTMLDivElement>) => {
     const el = scrollRef.current;
-    if (!el) return;
-    e.preventDefault();
-    e.stopPropagation();
-    dragRef.current = { startX: e.clientX, startScroll: el.scrollLeft };
-    e.currentTarget.setPointerCapture(e.pointerId);
+    if (!el || e.button !== 0) return;
+    panRef.current = { startX: e.clientX, startScroll: el.scrollLeft };
+    setPanning(true);
+    el.setPointerCapture(e.pointerId);
   };
-  const onThumbMove = (e: ReactPointerEvent<HTMLDivElement>) => {
-    const drag = dragRef.current;
+  const onPanMove = (e: ReactPointerEvent<HTMLDivElement>) => {
+    const pan = panRef.current;
     const el = scrollRef.current;
-    const track = trackRef.current;
-    if (!drag || !el || !track) return;
-    const ratio = el.scrollWidth / track.clientWidth;
-    el.scrollLeft = drag.startScroll + (e.clientX - drag.startX) * ratio;
+    if (!pan || !el) return;
+    el.scrollLeft = pan.startScroll - (e.clientX - pan.startX);
   };
-  const onThumbUp = () => {
-    dragRef.current = null;
-  };
-  const onTrackDown = (e: ReactPointerEvent<HTMLDivElement>) => {
-    const el = scrollRef.current;
-    const track = trackRef.current;
-    if (!el || !track) return;
-    const rect = track.getBoundingClientRect();
-    const ratio = (e.clientX - rect.left) / rect.width;
-    el.scrollLeft = ratio * (el.scrollWidth - el.clientWidth);
+  const onPanEnd = () => {
+    panRef.current = null;
+    setPanning(false);
   };
 
   return (
@@ -314,8 +290,14 @@ export function PlannerBoardPage() {
       <div className="overflow-hidden rounded-lg border border-line bg-surface">
         <div
           ref={scrollRef}
-          onScroll={updateThumb}
-          className="overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          onPointerDown={onPanDown}
+          onPointerMove={onPanMove}
+          onPointerUp={onPanEnd}
+          onPointerCancel={onPanEnd}
+          onDragStart={(e) => e.preventDefault()}
+          className={`overflow-x-auto [scrollbar-width:none] select-none [touch-action:pan-y] [&::-webkit-scrollbar]:hidden ${
+            panning ? "cursor-grabbing" : "cursor-grab"
+          }`}
         >
           <div className="relative isolate" style={{ width: BOARD_W }}>
             <div aria-hidden className="pointer-events-none absolute inset-0 z-0">
@@ -438,38 +420,6 @@ export function PlannerBoardPage() {
           </div>
         </div>
 
-        {/* Custom scrollbar */}
-        <div className="flex items-center gap-3 border-t border-line px-4 py-3">
-          <button
-            type="button"
-            aria-label="Scroll left"
-            onClick={() => scrollByDays(-7)}
-            className="flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-full border border-line text-ink"
-          >
-            <Icon name="chevron-left" size={15} />
-          </button>
-          <div
-            ref={trackRef}
-            onPointerDown={onTrackDown}
-            className="relative h-1.5 flex-1 cursor-pointer rounded-full bg-line"
-          >
-            <div
-              onPointerDown={onThumbDown}
-              onPointerMove={onThumbMove}
-              onPointerUp={onThumbUp}
-              className="absolute inset-y-0 cursor-grab rounded-full bg-ink/40 active:cursor-grabbing"
-              style={{ left: `${thumb.left}%`, width: `${thumb.width}%` }}
-            />
-          </div>
-          <button
-            type="button"
-            aria-label="Scroll right"
-            onClick={() => scrollByDays(7)}
-            className="flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-full border border-line text-ink"
-          >
-            <Icon name="chevron-right" size={15} />
-          </button>
-        </div>
       </div>
 
       {/* Undated strip */}
