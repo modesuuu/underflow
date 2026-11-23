@@ -227,6 +227,16 @@ export function PlannerBoardPage() {
   const onPanDown = (e: ReactPointerEvent<HTMLDivElement>) => {
     const el = scrollRef.current;
     if (!el || e.button !== 0) return;
+    // A press on the scroll container's own scrollbar (the strip
+    // outside its client box) belongs to the native scrollbar drag.
+    // Capturing it would hijack that drag and nothing would scroll.
+    const rect = el.getBoundingClientRect();
+    if (
+      e.clientX > rect.left + el.clientLeft + el.clientWidth ||
+      e.clientY > rect.top + el.clientTop + el.clientHeight
+    ) {
+      return;
+    }
     stopMomentum();
     panRef.current = {
       startX: e.clientX,
@@ -258,10 +268,20 @@ export function PlannerBoardPage() {
       el2.scrollLeft = p.startScroll - (p.lastX - p.startX);
     });
   };
-  const onPanEnd = () => {
+  const onPanEnd = (e: ReactPointerEvent<HTMLDivElement>) => {
     const pan = panRef.current;
     panRef.current = null;
     setPanning(false);
+    const captured = scrollRef.current;
+    if (captured) {
+      try {
+        if (captured.hasPointerCapture(e.pointerId)) {
+          captured.releasePointerCapture(e.pointerId);
+        }
+      } catch {
+        // Pointer already gone; nothing to release.
+      }
+    }
     const el = scrollRef.current;
     if (!pan || !el) return;
     el.scrollLeft = pan.startScroll - (pan.lastX - pan.startX);
@@ -357,8 +377,9 @@ export function PlannerBoardPage() {
           onPointerMove={onPanMove}
           onPointerUp={onPanEnd}
           onPointerCancel={onPanEnd}
+          onLostPointerCapture={onPanEnd}
           onDragStart={(e) => e.preventDefault()}
-          className={`overflow-x-auto [scrollbar-width:none] select-none [touch-action:pan-y] [&::-webkit-scrollbar]:hidden ${
+          className={`overflow-x-auto overflow-y-hidden [scrollbar-width:none] select-none [touch-action:pan-y] [&::-webkit-scrollbar]:hidden ${
             panning ? "cursor-grabbing" : "cursor-grab"
           }`}
         >
