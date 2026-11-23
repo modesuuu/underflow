@@ -55,6 +55,7 @@ type BoardTask = SampleTask & { day: number; span?: number; lane?: number };
 
 type SampleMember = {
   name: string;
+  role: string;
   pm?: boolean;
   tasks: BoardTask[];
 };
@@ -62,6 +63,7 @@ type SampleMember = {
 const SAMPLE_MEMBERS: SampleMember[] = [
   {
     name: "Raka Alfarezi",
+    role: "Frontend",
     tasks: [
       { title: "Desain board planner", section: "Desain", icon: "edit", day: 1 },
       {
@@ -83,6 +85,7 @@ const SAMPLE_MEMBERS: SampleMember[] = [
   },
   {
     name: "Faiz Aghitsna",
+    role: "Backend",
     pm: true,
     tasks: [
       { title: "Endpoint GET planner", section: "Backend", icon: "code-alt", day: 0 },
@@ -98,6 +101,7 @@ const SAMPLE_MEMBERS: SampleMember[] = [
   },
   {
     name: "Fadilah Yasin",
+    role: "Database",
     tasks: [
       { title: "Skema tabel collab_tasks", section: "Backend", done: true, day: 1 },
       {
@@ -112,6 +116,7 @@ const SAMPLE_MEMBERS: SampleMember[] = [
   },
   {
     name: "Alifah Syarifah",
+    role: "Research",
     tasks: [
       { title: "Riset referensi Talmo", section: "Riset", icon: "search", day: 1 },
       {
@@ -125,6 +130,7 @@ const SAMPLE_MEMBERS: SampleMember[] = [
   },
   {
     name: "Alvina Putri",
+    role: "Research",
     tasks: [
       { title: "Uji alur apply", section: "Riset", icon: "map-pin", day: 1 },
       { title: "Catatan rilis", section: "Riset", icon: "edit", day: 6 },
@@ -169,15 +175,6 @@ function SamplePill({
         >
           {task.title}
         </span>
-        {(task.section || task.follows || task.overdue) && (
-          <span className="flex items-center gap-1.5 truncate text-[9px] leading-tight opacity-60">
-            {task.overdue && (
-              <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-red-400" />
-            )}
-            {task.follows && <Icon name="subdirectory-right" size={10} />}
-            {task.section}
-          </span>
-        )}
       </span>
     </div>
   );
@@ -367,9 +364,7 @@ export function PlannerBoardPage() {
                         </span>
                       )}
                     </span>
-                    <span className="text-2xs text-muted">
-                      {t("planner.tasksCount", { n: member.tasks.length })}
-                    </span>
+                    <span className="text-2xs text-muted">{member.role}</span>
                   </div>
                 </div>
                 <div
