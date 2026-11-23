@@ -144,6 +144,18 @@ const SAMPLE_MEMBERS: SampleMember[] = [
 ];
 
 const SAMPLE_SECTIONS = ["Desain", "Frontend", "Backend", "Riset"];
+
+// Row geometry for the background layer: header height + each
+// member row's height (lanes * LANE_H). The horizontal separators
+// live in the background layer with the column lines, so the past
+// days wash covers them exactly like it covers the column lines.
+const HEADER_H = 48;
+const ROW_HEIGHTS = SAMPLE_MEMBERS.map(
+  (m) => Math.max(1, ...m.tasks.map((tk) => (tk.lane ?? 0) + 1)) * LANE_H,
+);
+const ROW_BOUNDARIES = ROW_HEIGHTS.map(
+  (_, i) => HEADER_H + ROW_HEIGHTS.slice(0, i).reduce((a, b) => a + b, 0),
+);
 const SAMPLE_UNDATED: SampleTask[] = [
   { title: "Ide board mingguan per anggota", section: "Desain" },
   { title: "Cek lisensi font", section: "Riset" },
@@ -405,6 +417,13 @@ export function PlannerBoardPage() {
                   style={{ left: WHO_W + i * DAY_W }}
                 />
               ))}
+              {ROW_BOUNDARIES.map((top) => (
+                <div
+                  key={top}
+                  className="absolute right-0 left-0 h-px bg-line"
+                  style={{ top: top - 1 }}
+                />
+              ))}
             </div>
 
             {/* Board header */}
@@ -470,10 +489,7 @@ export function PlannerBoardPage() {
                 ...member.tasks.map((task) => (task.lane ?? 0) + 1),
               );
               return (
-                <div
-                  key={member.name}
-                  className="relative z-10 flex border-t border-line"
-                >
+                <div key={member.name} className="relative z-10 flex">
                   <div
                     className="sticky left-0 z-20 flex shrink-0 items-center gap-3 border-t border-r border-line bg-surface px-4"
                     style={{ width: WHO_W }}
