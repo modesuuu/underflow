@@ -305,13 +305,32 @@ export function PlannerBoardPage() {
     id: number;
     kind: "ok" | "warn";
     text: string;
+    leaving: boolean;
   } | null>(null);
-  const toastTimerRef = useRef<number | null>(null);
+  const toastTimersRef = useRef<number[]>([]);
 
+  const clearToastTimers = () => {
+    toastTimersRef.current.forEach((id) => window.clearTimeout(id));
+    toastTimersRef.current = [];
+  };
+
+  // Toast lifecycle: glide in (decelerating), hold, then glide
+  // back out along the same path (accelerating) before it
+  // unmounts — never a hard cut in either direction.
   const showToast = (kind: "ok" | "warn", text: string) => {
-    setToast({ id: Date.now(), kind, text });
-    if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
-    toastTimerRef.current = window.setTimeout(() => setToast(null), 3400);
+    clearToastTimers();
+    const id = Date.now();
+    setToast({ id, kind, text, leaving: false });
+    toastTimersRef.current.push(
+      window.setTimeout(() => {
+        setToast((prev) =>
+          prev && prev.id === id ? { ...prev, leaving: true } : prev,
+        );
+      }, 3000),
+      window.setTimeout(() => {
+        setToast((prev) => (prev && prev.id === id ? null : prev));
+      }, 3260),
+    );
   };
 
   // Who may move a pill: done tasks never move; a member moves
@@ -357,7 +376,7 @@ export function PlannerBoardPage() {
       if (momentumRef.current) cancelAnimationFrame(momentumRef.current);
       if (dragRafRef.current) cancelAnimationFrame(dragRafRef.current);
       if (settleTimerRef.current) window.clearTimeout(settleTimerRef.current);
-      if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
+      clearToastTimers();
     };
   }, []);
 
@@ -1054,14 +1073,15 @@ export function PlannerBoardPage() {
           key={toast.id}
           className="fixed bottom-6 left-1/2 z-[100] -translate-x-1/2"
         >
-          <style>{`@keyframes planner-toast-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }`}</style>
+          <style>{`@keyframes planner-toast-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } } @keyframes planner-toast-out { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(10px); } }`}</style>
           <div
             className={`flex items-center gap-2 rounded-full px-4 py-2.5 text-sm font-medium shadow-2xl ${
               toast.kind === "ok" ? "bg-ink text-surface" : "text-white"
             }`}
             style={{
-              animation:
-                "planner-toast-in 180ms cubic-bezier(0.22, 1, 0.36, 1)",
+              animation: toast.leaving
+                ? "planner-toast-out 260ms cubic-bezier(0.5, 0, 0.75, 0) forwards"
+                : "planner-toast-in 200ms cubic-bezier(0.22, 1, 0.36, 1) both",
               backgroundColor: toast.kind === "warn" ? "#b3261e" : undefined,
             }}
           >
