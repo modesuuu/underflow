@@ -3,11 +3,19 @@
 // features/planner/components/PlannerBoardPage.tsx
 // UI-first canvas for the Tasks page, following the FigCraft design
 // pass (Talmo-style planner board). All data below is SAMPLE data so
-// the layout can be judged and directed first. Pills can already be
-// picked up and dragged to another day (locked to their own row,
-// past days reject the drop) against LOCAL state only — wiring the
-// moves to the planner API and the task dialog comes later. Do not
-// hook this up to the backend yet.
+// the layout can be judged and directed first. Pills can be picked
+// up and dragged to another day, or stretched by their edges,
+// against LOCAL state only — wiring the moves to the planner API
+// and the task dialog comes later. Do not hook this up to the
+// backend yet.
+//
+// The drag rules mirror the real planner permissions: the owner
+// and PMs move anyone's tasks, a member only their own, done tasks
+// never move, and past days reject drops. Rows are dynamic: a drop
+// that lands on an occupied lane opens the nearest free lane and
+// empty lanes collapse, so a row grows and shrinks with its tasks.
+// A small "view as" preview in the filter row stands in for the
+// signed-in user while this page runs on sample data.
 //
 // Board structure mirrors the reference: the grid is a BACKGROUND
 // layer (continuous vertical lines, weekend bands, today's band and
@@ -64,12 +72,69 @@ type BoardTask = SampleTask & { day: number; span?: number; lane?: number };
 type DragState = {
   member: number;
   title: string;
+  kind: "move" | "resize-l" | "resize-r";
   dx: number;
   dy: number;
   active: boolean;
   settling: boolean;
   invalid: boolean;
 };
+
+// Lane placement for a drop (Jev's pick, 0.95): the moved pill
+// takes the nearest free lane to where it was dropped, searching
+// downward first, then up, then a brand-new lane; afterwards empty
+// lanes are compacted away so the row shrinks back. Other pills
+// keep their lanes whenever possible.
+function resolvePlacement(
+  tasks: BoardTask[],
+  title: string,
+  day: number,
+  lane: number,
+): BoardTask[] {
+  const moved = tasks.find((tk) => tk.title === title);
+  if (!moved) return tasks;
+  const span = moved.span ?? 1;
+  const others = tasks.filter((tk) => tk.title !== title);
+  const hits = (l: number) =>
+    others.some(
+      (o) =>
+        (o.lane ?? 0) === l &&
+        day < o.day + (o.span ?? 1) &&
+        o.day < day + span,
+    );
+  let target = lane;
+  if (hits(target)) {
+    const maxLane = Math.max(0, ...others.map((o) => o.lane ?? 0));
+    let found = -1;
+    for (let l = target; l <= maxLane + 1 && found < 0; l++) {
+      if (!hits(l)) found = l;
+    }
+    for (let l = target - 1; l >= 0 && found < 0; l--) {
+      if (!hits(l)) found = l;
+    }
+    target = found < 0 ? maxLane + 1 : found;
+  }
+  const placed = tasks.map((tk) =>
+    tk.title === title ? { ...tk, day, lane: target } : tk,
+  );
+  const used = [...new Set(placed.map((tk) => tk.lane ?? 0))].sort(
+    (a, b) => a - b,
+  );
+  const remap = new Map(used.map((l, i) => [l, i]));
+  return placed.map((tk) => ({ ...tk, lane: remap.get(tk.lane ?? 0) ?? 0 }));
+}
+
+const dayLabel = (day: number, span: number) =>
+  span > 1 ? `${day + 1}–${day + span} Nov` : `${day + 1} Nov`;
+
+// Sample-phase stand-in for the signed-in user: who is looking at
+// the board decides whose pills may move.
+const PERSONAS = [
+  { key: "owner", member: 0 },
+  { key: "pm", member: 1 },
+  { key: "member", member: 3 },
+] as const;
+type ViewerKey = (typeof PERSONAS)[number]["key"];
 
 type SampleMember = {
   name: string;
@@ -162,14 +227,9 @@ const SAMPLE_SECTIONS = ["Desain", "Frontend", "Backend", "Riset"];
 // member row's height (lanes * LANE_H). The horizontal separators
 // live in the background layer with the column lines, so the past
 // days wash covers them exactly like it covers the column lines.
+// Heights are recomputed from the live task state on every render:
+// rows are dynamic and follow their tasks.
 const HEADER_H = 48;
-const ROW_HEIGHTS = SAMPLE_MEMBERS.map(
-  (m) => Math.max(1, ...m.tasks.map((tk) => (tk.lane ?? 0) + 1)) * LANE_H,
-);
-const ROW_BOUNDARIES = ROW_HEIGHTS.map(
-  (_, i) => HEADER_H + ROW_HEIGHTS.slice(0, i).reduce((a, b) => a + b, 0),
-);
-const LANES_PER_MEMBER = ROW_HEIGHTS.map((h) => h / LANE_H);
 const SAMPLE_UNDATED: SampleTask[] = [
   { title: "Ide board mingguan per anggota", section: "Desain" },
   { title: "Cek lisensi font", section: "Riset" },
@@ -180,11 +240,16 @@ function SamplePill({
   className = "",
   style,
   onPointerDown,
+  onResizeDown,
 }: {
   task: SampleTask;
   className?: string;
   style?: CSSProperties;
   onPointerDown?: (e: ReactPointerEvent<HTMLDivElement>) => void;
+  onResizeDown?: (
+    edge: "l" | "r",
+    e: ReactPointerEvent<HTMLDivElement>,
+  ) => void;
 }) {
   return (
     <div
@@ -208,6 +273,20 @@ function SamplePill({
       >
         {task.title}
       </span>
+      {onResizeDown && (
+        <>
+          <div
+            aria-hidden
+            onPointerDown={(e) => onResizeDown("l", e)}
+            className="absolute inset-y-0 left-0 z-20 w-3.5 cursor-ew-resize rounded-l-full"
+          />
+          <div
+            aria-hidden
+            onPointerDown={(e) => onResizeDown("r", e)}
+            className="absolute inset-y-0 right-0 z-20 w-3.5 cursor-ew-resize rounded-r-full"
+          />
+        </>
+      )}
     </div>
   );
 }
@@ -230,6 +309,54 @@ export function PlannerBoardPage() {
   const dragRafRef = useRef<number | null>(null);
   const settleTimerRef = useRef<number | null>(null);
   const pendingCommitRef = useRef<(() => void) | null>(null);
+  const [viewerKey, setViewerKey] = useState<ViewerKey>("owner");
+  const viewer = PERSONAS.find((p) => p.key === viewerKey) ?? PERSONAS[0];
+  const [toast, setToast] = useState<{
+    id: number;
+    kind: "ok" | "warn";
+    text: string;
+  } | null>(null);
+  const toastTimerRef = useRef<number | null>(null);
+
+  const showToast = (kind: "ok" | "warn", text: string) => {
+    setToast({ id: Date.now(), kind, text });
+    if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
+    toastTimerRef.current = window.setTimeout(() => setToast(null), 3400);
+  };
+
+  // Who may move a pill: done tasks never move; a member moves
+  // only their own; the owner and PMs move anyone's.
+  const dragGate = (mi: number, task: BoardTask): "done" | "own" | null => {
+    if (task.done) return "done";
+    if (viewer.key === "member" && viewer.member !== mi) return "own";
+    return null;
+  };
+  const gateToast = (gate: "done" | "own") =>
+    showToast(
+      "warn",
+      t(gate === "done" ? "planner.toastDone" : "planner.toastOwnOnly"),
+    );
+
+  // A grab during another pill's glide home commits that move
+  // instantly, so the new drag starts from rest.
+  const flushPending = () => {
+    if (pendingCommitRef.current) {
+      pendingCommitRef.current();
+      pendingCommitRef.current = null;
+    }
+    if (settleTimerRef.current) {
+      window.clearTimeout(settleTimerRef.current);
+      settleTimerRef.current = null;
+    }
+  };
+
+  // Dynamic row geometry, recomputed from the live tasks.
+  const rowHeights = members.map(
+    (m) => Math.max(1, ...m.tasks.map((tk) => (tk.lane ?? 0) + 1)) * LANE_H,
+  );
+  const rowBoundaries = rowHeights.map(
+    (_, i) => HEADER_H + rowHeights.slice(0, i).reduce((a, b) => a + b, 0),
+  );
 
   // Open on the week of "today" (Monday Nov 16).
   useEffect(() => {
@@ -240,6 +367,7 @@ export function PlannerBoardPage() {
       if (momentumRef.current) cancelAnimationFrame(momentumRef.current);
       if (dragRafRef.current) cancelAnimationFrame(dragRafRef.current);
       if (settleTimerRef.current) window.clearTimeout(settleTimerRef.current);
+      if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
     };
   }, []);
 
@@ -353,44 +481,34 @@ export function PlannerBoardPage() {
   ) => {
     if (e.button !== 0) return;
     e.stopPropagation();
+    const gate = dragGate(mi, task);
+    if (gate) {
+      gateToast(gate);
+      return;
+    }
     stopMomentum();
-    // Grabbing a pill that is still gliding home commits its
-    // pending move instantly, so the new drag starts from rest.
-    if (pendingCommitRef.current) {
-      pendingCommitRef.current();
-      pendingCommitRef.current = null;
-    }
-    if (settleTimerRef.current) {
-      window.clearTimeout(settleTimerRef.current);
-      settleTimerRef.current = null;
-    }
+    flushPending();
     const member = members[mi];
-    const lanes = LANES_PER_MEMBER[mi];
+    const lanes = Math.max(1, ...member.tasks.map((tk) => (tk.lane ?? 0) + 1));
     const lane0 = task.lane ?? 0;
     const span = task.span ?? 1;
     const startX = e.clientX;
     const startY = e.clientY;
     const minDx = -(task.day * DAY_W + 6);
     const maxDx = (SAMPLE_DAYS.length - task.day - span) * DAY_W;
+    // One lane of room below the last one: dropping there opens a
+    // new lane and the row grows.
     const minDy = -lane0 * LANE_H;
-    const maxDy = (lanes - 1 - lane0) * LANE_H;
+    const maxDy = (lanes - lane0) * LANE_H;
     let live: DragState | null = null;
 
-    const collides = (day: number, lane: number) =>
-      member.tasks.some(
-        (o) =>
-          o.title !== task.title &&
-          (o.lane ?? 0) === lane &&
-          day < o.day + (o.span ?? 1) &&
-          o.day < day + span,
-      );
     const judge = (dx: number, dy: number) => {
       const day = Math.round(task.day + dx / DAY_W);
       const lane = Math.min(
-        lanes - 1,
+        lanes,
         Math.max(0, Math.round(lane0 + dy / LANE_H)),
       );
-      return { day, lane, ok: day >= TODAY_INDEX && !collides(day, lane) };
+      return { day, lane, ok: day >= TODAY_INDEX };
     };
     const onMove = (ev: PointerEvent) => {
       let dx = Math.min(maxDx, Math.max(minDx, ev.clientX - startX));
@@ -402,6 +520,7 @@ export function PlannerBoardPage() {
       live = {
         member: mi,
         title: task.title,
+        kind: "move",
         dx,
         dy,
         active: true,
@@ -421,26 +540,28 @@ export function PlannerBoardPage() {
       if (!live) return;
       const { dx, dy } = live;
       const verdict = judge(dx, dy);
-      const valid = !cancelled && verdict.ok;
-      const targetDx = valid ? (verdict.day - task.day) * DAY_W : 0;
-      const targetDy = valid ? (verdict.lane - lane0) * LANE_H : 0;
+      const intoPast = verdict.day < TODAY_INDEX;
+      const valid = !cancelled && !intoPast;
+      const resolved = valid
+        ? resolvePlacement(member.tasks, task.title, verdict.day, verdict.lane)
+        : null;
+      const placed = resolved?.find((tk) => tk.title === task.title);
+      const targetDx = placed ? (placed.day - task.day) * DAY_W : 0;
+      const targetDy = placed ? ((placed.lane ?? 0) - lane0) * LANE_H : 0;
       setDrag({ ...live, dx: targetDx, dy: targetDy, settling: true });
       pendingCommitRef.current = () => {
-        if (valid && (verdict.day !== task.day || verdict.lane !== lane0)) {
+        if (resolved && placed) {
           setMembers((prev) =>
-            prev.map((m, i) =>
-              i !== mi
-                ? m
-                : {
-                    ...m,
-                    tasks: m.tasks.map((tk) =>
-                      tk.title === task.title
-                        ? { ...tk, day: verdict.day, lane: verdict.lane }
-                        : tk,
-                    ),
-                  },
-            ),
+            prev.map((m, i) => (i === mi ? { ...m, tasks: resolved } : m)),
           );
+          if (placed.day !== task.day || (placed.lane ?? 0) !== lane0) {
+            showToast(
+              "ok",
+              `${t("planner.dateMoved")} · "${task.title}" → ${dayLabel(placed.day, placed.span ?? 1)}`,
+            );
+          }
+        } else if (!cancelled && intoPast) {
+          showToast("warn", t("planner.toastPast"));
         }
         setDrag(null);
       };
@@ -450,6 +571,146 @@ export function PlannerBoardPage() {
         pendingCommitRef.current = null;
         commit?.();
       }, 200);
+    };
+    const onUpFalse = () => onUp(false);
+    const onUpTrue = () => onUp(true);
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUpFalse);
+    window.addEventListener("pointercancel", onUpTrue);
+  };
+
+  // Pill resize: drag the left or right edge (the cursor turns
+  // into a left-right arrow over the edge handles). The right edge
+  // changes the span; the left edge moves the start day and keeps
+  // the end fixed. Same gate as moving. The span stops at the
+  // neighbour in the same lane, at the month edges, and the start
+  // can never cross into the past zone.
+  const onResizeDown = (
+    edge: "l" | "r",
+    e: ReactPointerEvent<HTMLDivElement>,
+    mi: number,
+    task: BoardTask,
+  ) => {
+    e.stopPropagation();
+    if (e.button !== 0) return;
+    const gate = dragGate(mi, task);
+    if (gate) {
+      gateToast(gate);
+      return;
+    }
+    stopMomentum();
+    flushPending();
+    const member = members[mi];
+    const lane0 = task.lane ?? 0;
+    const span0 = task.span ?? 1;
+    const startX = e.clientX;
+    let minDx: number;
+    let maxDx: number;
+    if (edge === "r") {
+      const nextStart = Math.min(
+        SAMPLE_DAYS.length,
+        ...member.tasks
+          .filter(
+            (o) =>
+              o.title !== task.title && (o.lane ?? 0) === lane0 && o.day > task.day,
+          )
+          .map((o) => o.day),
+      );
+      minDx = -(span0 - 1) * DAY_W;
+      maxDx = (nextStart - task.day - span0) * DAY_W;
+    } else {
+      const prevEnd = Math.max(
+        TODAY_INDEX,
+        ...member.tasks
+          .filter(
+            (o) =>
+              o.title !== task.title &&
+              (o.lane ?? 0) === lane0 &&
+              o.day + (o.span ?? 1) <= task.day,
+          )
+          .map((o) => o.day + (o.span ?? 1)),
+      );
+      minDx = (prevEnd - task.day) * DAY_W;
+      maxDx = (span0 - 1) * DAY_W;
+    }
+    let live: DragState | null = null;
+    const onMove = (ev: PointerEvent) => {
+      const dx = Math.min(maxDx, Math.max(minDx, ev.clientX - startX));
+      if (!live && Math.abs(dx) < 3) return;
+      live = {
+        member: mi,
+        title: task.title,
+        kind: edge === "l" ? "resize-l" : "resize-r",
+        dx,
+        dy: 0,
+        active: true,
+        settling: false,
+        invalid: false,
+      };
+      if (dragRafRef.current) return;
+      dragRafRef.current = requestAnimationFrame(() => {
+        dragRafRef.current = null;
+        if (live) setDrag({ ...live });
+      });
+    };
+    const onUp = (cancelled: boolean) => {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUpFalse);
+      window.removeEventListener("pointercancel", onUpTrue);
+      if (!live) return;
+      const { dx } = live;
+      let newDay = task.day;
+      let newSpan = span0;
+      if (!cancelled) {
+        if (edge === "r") {
+          newSpan = Math.min(
+            span0 + Math.round(maxDx / DAY_W),
+            Math.max(1, span0 + Math.round(dx / DAY_W)),
+          );
+        } else {
+          newDay = Math.max(
+            task.day + Math.round(minDx / DAY_W),
+            Math.min(
+              task.day + span0 - 1,
+              task.day + Math.round(dx / DAY_W),
+            ),
+          );
+          newSpan = task.day + span0 - newDay;
+        }
+      }
+      const changed = newDay !== task.day || newSpan !== span0;
+      const targetDx =
+        edge === "r" ? (newSpan - span0) * DAY_W : (newDay - task.day) * DAY_W;
+      setDrag({ ...live, dx: targetDx, settling: true });
+      pendingCommitRef.current = () => {
+        if (changed) {
+          setMembers((prev) =>
+            prev.map((m, i) =>
+              i !== mi
+                ? m
+                : {
+                    ...m,
+                    tasks: m.tasks.map((tk) =>
+                      tk.title === task.title
+                        ? { ...tk, day: newDay, span: newSpan }
+                        : tk,
+                    ),
+                  },
+            ),
+          );
+          showToast(
+            "ok",
+            `${t("planner.toastResized")} · "${task.title}" → ${dayLabel(newDay, newSpan)}`,
+          );
+        }
+        setDrag(null);
+      };
+      settleTimerRef.current = window.setTimeout(() => {
+        settleTimerRef.current = null;
+        const commit = pendingCommitRef.current;
+        pendingCommitRef.current = null;
+        commit?.();
+      }, 150);
     };
     const onUpFalse = () => onUp(false);
     const onUpTrue = () => onUp(true);
@@ -497,6 +758,34 @@ export function PlannerBoardPage() {
         >
           {t("planner.today")}
         </button>
+        <div className="flex items-center gap-2">
+          <span className="font-mono text-2xs font-medium uppercase tracking-wider text-muted">
+            {t("planner.viewAs")}
+          </span>
+          <div className="flex rounded-full border border-line bg-surface p-0.5">
+            {PERSONAS.map((persona) => (
+              <button
+                key={persona.key}
+                type="button"
+                onClick={() => setViewerKey(persona.key)}
+                className={`rounded-full px-3 py-1.5 text-xs font-medium ${
+                  viewerKey === persona.key
+                    ? "bg-ink text-surface"
+                    : "text-muted"
+                }`}
+              >
+                {t(
+                  persona.key === "owner"
+                    ? "planner.roleOwner"
+                    : persona.key === "pm"
+                      ? "planner.rolePm"
+                      : "planner.roleMember",
+                )}{" "}
+                · {SAMPLE_MEMBERS[persona.member].name.split(" ")[0]}
+              </button>
+            ))}
+          </div>
+        </div>
         <div className="flex-1" />
         <div className="flex flex-wrap items-center gap-1.5">
           <button
@@ -560,7 +849,7 @@ export function PlannerBoardPage() {
                   style={{ left: WHO_W + i * DAY_W }}
                 />
               ))}
-              {ROW_BOUNDARIES.map((top) => (
+              {rowBoundaries.map((top) => (
                 <div
                   key={top}
                   className="absolute right-0 left-0 h-px bg-line"
@@ -627,7 +916,7 @@ export function PlannerBoardPage() {
 
             {/* Member rows */}
             {members.map((member, mi) => {
-              const lanes = LANES_PER_MEMBER[mi];
+              const lanes = rowHeights[mi] / LANE_H;
               return (
                 <div key={member.name} className="relative z-10 flex">
                   <div
@@ -672,28 +961,49 @@ export function PlannerBoardPage() {
                         drag && drag.member === mi && drag.title === task.title
                           ? drag
                           : null;
+                      const gate = dragGate(mi, task);
+                      const baseLeft = task.day * DAY_W + 6;
+                      const baseWidth = (task.span ?? 1) * DAY_W - 12;
                       return (
                         <SamplePill
                           key={task.title}
                           task={task}
                           onPointerDown={(e) => onPillDown(e, mi, task)}
-                          className={`absolute h-11 cursor-grab [touch-action:none] ${
+                          onResizeDown={
+                            gate
+                              ? undefined
+                              : (edge, e) => onResizeDown(edge, e, mi, task)
+                          }
+                          className={`absolute h-11 [touch-action:none] ${
                             d ? "z-40" : "z-10"
-                          } ${d?.invalid ? "opacity-60" : ""}`}
+                          } ${gate ? "cursor-not-allowed" : "cursor-grab"} ${
+                            d?.invalid ? "opacity-60" : ""
+                          }`}
                           style={{
-                            left: task.day * DAY_W + 6,
-                            width: (task.span ?? 1) * DAY_W - 12,
+                            left:
+                              d?.kind === "resize-l" ? baseLeft + d.dx : baseLeft,
+                            width:
+                              d?.kind === "resize-r"
+                                ? baseWidth + d.dx
+                                : d?.kind === "resize-l"
+                                  ? baseWidth - d.dx
+                                  : baseWidth,
                             top: (task.lane ?? 0) * LANE_H + 4,
-                            transform: d
-                              ? `translate(${d.dx}px, ${d.dy}px) scale(${d.active ? 1.04 : 1})`
-                              : undefined,
+                            transform:
+                              d?.kind === "move"
+                                ? `translate(${d.dx}px, ${d.dy}px) scale(${d.active ? 1.04 : 1})`
+                                : undefined,
                             transition: d?.settling
-                              ? "transform 200ms cubic-bezier(0.22, 1, 0.36, 1)"
+                              ? d.kind === "move"
+                                ? "transform 200ms cubic-bezier(0.22, 1, 0.36, 1)"
+                                : "left 150ms cubic-bezier(0.22, 1, 0.36, 1), width 150ms cubic-bezier(0.22, 1, 0.36, 1)"
                               : undefined,
                             boxShadow: d?.active
-                              ? "0 16px 32px rgba(0, 0, 0, 0.28)"
+                              ? d.kind === "move"
+                                ? "0 16px 32px rgba(0, 0, 0, 0.28)"
+                                : "0 8px 20px rgba(0, 0, 0, 0.18)"
                               : undefined,
-                            willChange: d ? "transform" : undefined,
+                            willChange: d ? "transform, width, left" : undefined,
                           }}
                         />
                       );
@@ -738,6 +1048,35 @@ export function PlannerBoardPage() {
           Follows
         </span>
       </div>
+
+      {/* Move feedback: every successful move or resize confirms
+          itself here, and every rejected grab explains why. When
+          the board is wired to the API, the same events also
+          notify the task's owner. */}
+      {toast && (
+        <div
+          key={toast.id}
+          className="fixed bottom-6 left-1/2 z-[100] -translate-x-1/2"
+        >
+          <style>{`@keyframes planner-toast-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }`}</style>
+          <div
+            className={`flex items-center gap-2 rounded-full px-4 py-2.5 text-sm font-medium shadow-2xl ${
+              toast.kind === "ok" ? "bg-ink text-surface" : "text-white"
+            }`}
+            style={{
+              animation:
+                "planner-toast-in 180ms cubic-bezier(0.22, 1, 0.36, 1)",
+              backgroundColor: toast.kind === "warn" ? "#b3261e" : undefined,
+            }}
+          >
+            <Icon
+              name={toast.kind === "ok" ? "check" : "info-circle"}
+              size={15}
+            />
+            {toast.text}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
