@@ -6,12 +6,18 @@
 // the layout can be judged and directed first — wiring to the
 // planner API (real projects, drag & drop moves, task dialog) comes
 // after the look is approved. Do not hook this up to the backend yet.
+//
+// Board structure mirrors the reference: the grid is a BACKGROUND
+// layer (continuous vertical lines + today's band and start line),
+// and pills are positioned freely on top of it — a pill can span
+// several day columns and crosses the lines, it is not boxed into
+// a cell.
+
+import type { CSSProperties } from "react";
 
 import { Avatar } from "@/components/ui/Avatar";
 import { Icon } from "@/components/ui/Icon";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
-
-const GRID_COLS = "200px repeat(7, minmax(0, 1fr))";
 
 // Sample week: Mon 16 – Sun 22 Nov, "today" is Tue 17 (mirrors the
 // FigCraft reference so the two can be compared side by side).
@@ -25,6 +31,12 @@ const SAMPLE_DAYS = [
   { dow: "Sun", date: 22 },
 ];
 const SAMPLE_TODAY = 17;
+const TODAY_INDEX = SAMPLE_DAYS.findIndex((d) => d.date === SAMPLE_TODAY);
+
+// Who column width (px) and the height of one pill lane (px). Pills
+// are 44px tall (h-11) with 4px of air above and below in a lane.
+const WHO_W = 180;
+const LANE_H = 52;
 
 type SampleTask = {
   title: string;
@@ -36,58 +48,87 @@ type SampleTask = {
   follows?: boolean;
 };
 
+// A board task sits on the day area by day index (0 = Mon), can
+// span several days, and stacks into a lane when two tasks share a
+// day for the same member.
+type BoardTask = SampleTask & { day: number; span?: number; lane?: number };
+
 type SampleMember = {
   name: string;
   pm?: boolean;
-  // Index = day of week (0 = Mon). Empty days are just absent.
-  tasks: Record<number, SampleTask[]>;
+  tasks: BoardTask[];
 };
 
 const SAMPLE_MEMBERS: SampleMember[] = [
   {
     name: "Raka Alfarezi",
-    tasks: {
-      1: [{ title: "Desain board planner", section: "Desain", icon: "edit" }],
-      2: [{ title: "Review PR backend", section: "Frontend", done: true, icon: "check" }],
-      3: [
-        {
-          title: "Implementasi board",
-          section: "Frontend",
-          follows: true,
-          icon: "group",
-        },
-      ],
-    },
+    tasks: [
+      { title: "Desain board planner", section: "Desain", icon: "edit", day: 1 },
+      {
+        title: "Review PR backend",
+        section: "Frontend",
+        done: true,
+        day: 2,
+      },
+      {
+        title: "Implementasi board",
+        section: "Frontend",
+        follows: true,
+        icon: "group",
+        day: 2,
+        span: 2,
+        lane: 1,
+      },
+    ],
   },
   {
     name: "Faiz Aghitsna",
     pm: true,
-    tasks: {
-      0: [{ title: "Endpoint GET planner", section: "Backend", icon: "code-alt" }],
-      1: [{ title: "Perbaiki CORS deploy", section: "Backend", overdue: true, icon: "wrench" }],
-      4: [{ title: "Setup Cloudflare Tunnel", section: "Backend", icon: "server" }],
-    },
+    tasks: [
+      { title: "Endpoint GET planner", section: "Backend", icon: "code-alt", day: 0 },
+      {
+        title: "Perbaiki CORS deploy",
+        section: "Backend",
+        overdue: true,
+        icon: "wrench",
+        day: 1,
+      },
+      { title: "Setup Cloudflare Tunnel", section: "Backend", icon: "server", day: 4 },
+    ],
   },
   {
     name: "Fadilah Yasin",
-    tasks: {
-      1: [{ title: "Skema tabel collab_tasks", section: "Backend", done: true, icon: "check" }],
-      3: [{ title: "Seed data demo", section: "Backend", pencilled: true, icon: "edit" }],
-    },
+    tasks: [
+      { title: "Skema tabel collab_tasks", section: "Backend", done: true, day: 1 },
+      {
+        title: "Seed data demo",
+        section: "Backend",
+        pencilled: true,
+        icon: "edit",
+        day: 3,
+        span: 2,
+      },
+    ],
   },
   {
     name: "Alifah Syarifah",
-    tasks: {
-      0: [{ title: "Riset referensi Talmo", section: "Riset", icon: "search" }],
-      2: [{ title: "Copywriting halaman Tasks", section: "Desain", pencilled: true, icon: "edit" }],
-    },
+    tasks: [
+      { title: "Riset referensi Talmo", section: "Riset", icon: "search", day: 1 },
+      {
+        title: "Copywriting halaman Tasks",
+        section: "Desain",
+        pencilled: true,
+        icon: "edit",
+        day: 2,
+      },
+    ],
   },
   {
     name: "Alvina Putri",
-    tasks: {
-      1: [{ title: "Uji alur apply", section: "Riset", icon: "map-pin" }],
-      6: [{ title: "Catatan rilis", section: "Riset", icon: "edit" }],
-    },
+    tasks: [
+      { title: "Uji alur apply", section: "Riset", icon: "map-pin", day: 1 },
+      { title: "Catatan rilis", section: "Riset", icon: "edit", day: 6 },
+    ],
   },
 ];
 
@@ -97,30 +138,39 @@ const SAMPLE_UNDATED: SampleTask[] = [
   { title: "Cek lisensi font", section: "Riset" },
 ];
 
-function SamplePill({ task }: { task: SampleTask }) {
+function SamplePill({
+  task,
+  className = "",
+  style,
+}: {
+  task: SampleTask;
+  className?: string;
+  style?: CSSProperties;
+}) {
   return (
     <div
-      className={`flex flex-1 items-start gap-2 rounded-2xl px-2.5 py-2 ${
+      style={style}
+      className={`flex items-center gap-2 rounded-full px-3.5 ${
         task.done
           ? "bg-ink/15 text-ink/70"
           : task.pencilled
-            ? "border border-dashed border-line text-ink/85"
+            ? "border border-line bg-ink/[0.07] text-ink/85"
             : "bg-ink text-surface"
-      }`}
+      } ${className}`}
     >
-      <span className="mt-0.5 shrink-0 opacity-90">
-        <Icon name={task.done ? "check" : (task.icon ?? "edit")} size={12} />
+      <span className="shrink-0 opacity-90">
+        <Icon name={task.done ? "check" : (task.icon ?? "edit")} size={13} />
       </span>
-      <span className="flex min-w-0 flex-col">
+      <span className="flex min-w-0 flex-col justify-center">
         <span
-          className={`line-clamp-2 text-[11px] font-semibold leading-tight ${
+          className={`truncate text-[11px] font-semibold leading-tight ${
             task.done ? "line-through" : ""
           }`}
         >
           {task.title}
         </span>
         {(task.section || task.follows || task.overdue) && (
-          <span className="mt-0.5 flex items-center gap-1.5 text-[9px] leading-tight opacity-60">
+          <span className="flex items-center gap-1.5 truncate text-[9px] leading-tight opacity-60">
             {task.overdue && (
               <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-red-400" />
             )}
@@ -133,11 +183,14 @@ function SamplePill({ task }: { task: SampleTask }) {
   );
 }
 
+// Left edge of day column i inside the board card, as a CSS calc
+// string: the fixed Who column plus i/7 of the remaining width.
+const dayLeft = (i: number) =>
+  `calc(${WHO_W}px + (100% - ${WHO_W}px) * ${Number((i / 7).toFixed(6))})`;
+const dayWidth = `calc((100% - ${WHO_W}px) * ${Number((1 / 7).toFixed(6))})`;
+
 export function PlannerBoardPage() {
   const { t } = useLanguage();
-
-  const countFor = (member: SampleMember) =>
-    Object.values(member.tasks).reduce((sum, list) => sum + list.length, 0);
 
   return (
     <div className="flex flex-col gap-5">
@@ -234,73 +287,111 @@ export function PlannerBoardPage() {
         </div>
       </div>
 
-      {/* Board */}
-      <div className="overflow-x-auto rounded-lg border border-line bg-surface">
-        <div className="min-w-[900px]">
-          <div className="grid" style={{ gridTemplateColumns: GRID_COLS }}>
-            <div className="px-4 py-2.5 font-mono text-2xs font-medium uppercase tracking-wider text-muted">
-              {t("planner.who")}
-            </div>
-            {SAMPLE_DAYS.map((day) => {
-              const isToday = day.date === SAMPLE_TODAY;
-              return (
-                <div
-                  key={day.date}
-                  className="flex items-center justify-center gap-1.5 border-l border-line px-2 py-2.5"
-                >
-                  <span className="text-2xs font-medium uppercase tracking-wide text-muted">
-                    {day.dow}
-                  </span>
-                  <span
-                    className={`text-xs font-semibold ${
-                      isToday
-                        ? "rounded-full bg-ink px-1.5 py-px text-surface"
-                        : "text-ink"
-                    }`}
-                  >
-                    {day.date}
-                  </span>
-                </div>
-              );
-            })}
+      {/* Board: grid lines are a background layer, pills float on top */}
+      <div className="overflow-x-auto">
+        <div className="relative min-w-[1024px] overflow-hidden rounded-lg border border-line bg-surface">
+          <div aria-hidden className="pointer-events-none absolute inset-0">
+            <div
+              className="absolute inset-y-0 bg-ink/[0.04]"
+              style={{ left: dayLeft(TODAY_INDEX), width: dayWidth }}
+            />
+            {SAMPLE_DAYS.map((day, i) => (
+              <div
+                key={day.date}
+                className="absolute inset-y-0 w-px bg-line"
+                style={{ left: dayLeft(i) }}
+              />
+            ))}
+            <div
+              className="absolute inset-y-0 w-[2px] bg-ink opacity-70"
+              style={{ left: dayLeft(TODAY_INDEX) }}
+            />
           </div>
 
-          {SAMPLE_MEMBERS.map((member) => (
+          {/* Board header */}
+          <div className="relative flex h-12 items-center">
             <div
-              key={member.name}
-              className="grid border-t border-line"
-              style={{ gridTemplateColumns: GRID_COLS }}
+              className="shrink-0 px-4 font-mono text-2xs font-medium uppercase tracking-wider text-muted"
+              style={{ width: WHO_W }}
             >
-              <div className="flex items-center gap-3 px-4 py-3">
-                <Avatar alt={member.name} size={30} />
-                <div className="flex min-w-0 flex-col">
-                  <span className="flex items-center gap-1.5 truncate text-sm font-medium leading-tight text-ink">
-                    {member.name}
-                    {member.pm && (
-                      <span className="rounded-full bg-accent-soft px-1.5 py-px text-[10px] font-semibold text-accent">
-                        {t("planner.rolePm")}
-                      </span>
-                    )}
-                  </span>
-                  <span className="text-2xs text-muted">
-                    {t("planner.tasksCount", { n: countFor(member) })}
-                  </span>
-                </div>
-              </div>
-              {SAMPLE_DAYS.map((day, dayIndex) => (
+              {t("planner.who")}
+            </div>
+            <div className="grid flex-1 grid-cols-7">
+              {SAMPLE_DAYS.map((day) => {
+                const isToday = day.date === SAMPLE_TODAY;
+                return (
+                  <div
+                    key={day.date}
+                    className="flex items-center justify-center gap-1.5"
+                  >
+                    <span className="text-2xs font-medium uppercase tracking-wide text-muted">
+                      {day.dow}
+                    </span>
+                    <span
+                      className={`text-xs font-semibold ${
+                        isToday
+                          ? "rounded-full bg-ink px-1.5 py-px text-surface"
+                          : "text-ink"
+                      }`}
+                    >
+                      {day.date}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Member rows */}
+          {SAMPLE_MEMBERS.map((member) => {
+            const lanes = Math.max(
+              1,
+              ...member.tasks.map((task) => (task.lane ?? 0) + 1),
+            );
+            return (
+              <div
+                key={member.name}
+                className="relative flex border-t border-line"
+              >
                 <div
-                  key={day.date}
-                  className={`flex min-h-[60px] flex-col gap-1.5 border-l border-line p-1.5 ${
-                    day.date === SAMPLE_TODAY ? "bg-ink/[0.04]" : ""
-                  }`}
+                  className="flex shrink-0 items-center gap-3 px-4"
+                  style={{ width: WHO_W }}
                 >
-                  {(member.tasks[dayIndex] ?? []).map((task) => (
-                    <SamplePill key={task.title} task={task} />
+                  <Avatar alt={member.name} size={30} />
+                  <div className="flex min-w-0 flex-col">
+                    <span className="flex items-center gap-1.5 truncate text-sm font-medium leading-tight text-ink">
+                      {member.name}
+                      {member.pm && (
+                        <span className="rounded-full bg-accent-soft px-1.5 py-px text-[10px] font-semibold text-accent">
+                          {t("planner.rolePm")}
+                        </span>
+                      )}
+                    </span>
+                    <span className="text-2xs text-muted">
+                      {t("planner.tasksCount", { n: member.tasks.length })}
+                    </span>
+                  </div>
+                </div>
+                <div
+                  className="relative flex-1"
+                  style={{ height: lanes * LANE_H }}
+                >
+                  {member.tasks.map((task) => (
+                    <SamplePill
+                      key={task.title}
+                      task={task}
+                      className="absolute h-11"
+                      style={{
+                        left: `calc(${(task.day * 100) / 7}% + 6px)`,
+                        width: `calc(${((task.span ?? 1) * 100) / 7}% - 12px)`,
+                        top: (task.lane ?? 0) * LANE_H + 4,
+                      }}
+                    />
                   ))}
                 </div>
-              ))}
-            </div>
-          ))}
+              </div>
+            );
+          })}
         </div>
       </div>
 
@@ -311,9 +402,7 @@ export function PlannerBoardPage() {
         </span>
         <div className="flex flex-wrap gap-2">
           {SAMPLE_UNDATED.map((task) => (
-            <div key={task.title} className="w-52">
-              <SamplePill task={task} />
-            </div>
+            <SamplePill key={task.title} task={task} className="h-11 w-56" />
           ))}
         </div>
       </div>
@@ -321,15 +410,15 @@ export function PlannerBoardPage() {
       {/* Legend */}
       <div className="flex flex-wrap items-center gap-4 text-xs text-muted">
         <span className="flex items-center gap-1.5">
-          <span className="h-2 w-2 rounded-full bg-ink" />
+          <span className="h-3 w-6 rounded-full bg-ink" />
           Booked
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="h-2 w-2 rounded-full border border-line bg-surface" />
+          <span className="h-3 w-6 rounded-full border border-line bg-ink/[0.07]" />
           Pencilled
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="h-2 w-2 rounded-full bg-line" />
+          <span className="h-3 w-6 rounded-full bg-ink/15" />
           Done
         </span>
         <span className="flex items-center gap-1.5">
