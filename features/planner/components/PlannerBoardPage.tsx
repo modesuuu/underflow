@@ -186,26 +186,55 @@ function SamplePill({
 export function PlannerBoardPage() {
   const { t } = useLanguage();
   const scrollRef = useRef<HTMLDivElement>(null);
-  const panRef = useRef<{ startX: number; startScroll: number } | null>(null);
+  const panRef = useRef<{
+    startX: number;
+    startScroll: number;
+    lastX: number;
+    lastT: number;
+    velocity: number; // px per ms, in scroll space
+  } | null>(null);
+  const rafRef = useRef<number | null>(null);
+  const momentumRef = useRef<number | null>(null);
   const [panning, setPanning] = useState(false);
 
   // Open on the week of "today" (Monday Nov 16).
   useEffect(() => {
     const el = scrollRef.current;
     if (el) el.scrollLeft = OPEN_SCROLL_DAYS * DAY_W;
+    return () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      if (momentumRef.current) cancelAnimationFrame(momentumRef.current);
+    };
   }, []);
 
-  const scrollToTodayWeek = () =>
+  const stopMomentum = () => {
+    if (momentumRef.current) cancelAnimationFrame(momentumRef.current);
+    momentumRef.current = null;
+  };
+
+  const scrollToTodayWeek = () => {
+    stopMomentum();
     scrollRef.current?.scrollTo({
       left: OPEN_SCROLL_DAYS * DAY_W,
       behavior: "smooth",
     });
+  };
 
   // Canvas-style panning: press, hold and drag the board itself.
+  // The drag is applied on animation frames so it tracks the
+  // pointer at display rate, and releasing mid-flick lets the
+  // board glide with decaying momentum, like the FigCraft canvas.
   const onPanDown = (e: ReactPointerEvent<HTMLDivElement>) => {
     const el = scrollRef.current;
     if (!el || e.button !== 0) return;
-    panRef.current = { startX: e.clientX, startScroll: el.scrollLeft };
+    stopMomentum();
+    panRef.current = {
+      startX: e.clientX,
+      startScroll: el.scrollLeft,
+      lastX: e.clientX,
+      lastT: performance.now(),
+      velocity: 0,
+    };
     setPanning(true);
     el.setPointerCapture(e.pointerId);
   };
@@ -213,11 +242,45 @@ export function PlannerBoardPage() {
     const pan = panRef.current;
     const el = scrollRef.current;
     if (!pan || !el) return;
-    el.scrollLeft = pan.startScroll - (e.clientX - pan.startX);
+    const now = performance.now();
+    const dt = now - pan.lastT;
+    if (dt > 0) {
+      pan.velocity = (pan.lastX - e.clientX) / dt;
+      pan.lastX = e.clientX;
+      pan.lastT = now;
+    }
+    if (rafRef.current) return;
+    rafRef.current = requestAnimationFrame(() => {
+      rafRef.current = null;
+      const p = panRef.current;
+      const el2 = scrollRef.current;
+      if (!p || !el2) return;
+      el2.scrollLeft = p.startScroll - (p.lastX - p.startX);
+    });
   };
   const onPanEnd = () => {
+    const pan = panRef.current;
     panRef.current = null;
     setPanning(false);
+    const el = scrollRef.current;
+    if (!pan || !el) return;
+    el.scrollLeft = pan.startScroll - (pan.lastX - pan.startX);
+    let v = pan.velocity;
+    if (Math.abs(v) < 0.05) return;
+    let last = performance.now();
+    const step = (now: number) => {
+      const dt = now - last;
+      last = now;
+      const before = el.scrollLeft;
+      el.scrollLeft = before + v * dt;
+      v *= Math.pow(0.5, dt / 160);
+      if (Math.abs(v) < 0.02 || el.scrollLeft === before) {
+        momentumRef.current = null;
+        return;
+      }
+      momentumRef.current = requestAnimationFrame(step);
+    };
+    momentumRef.current = requestAnimationFrame(step);
   };
 
   return (
