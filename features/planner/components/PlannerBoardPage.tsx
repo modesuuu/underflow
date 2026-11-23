@@ -2,41 +2,45 @@
 
 // features/planner/components/PlannerBoardPage.tsx
 // UI-ONLY canvas for the Tasks page, following the FigCraft design
-// pass (Talmo-style weekly board). All data below is SAMPLE data so
+// pass (Talmo-style planner board). All data below is SAMPLE data so
 // the layout can be judged and directed first — wiring to the
 // planner API (real projects, drag & drop moves, task dialog) comes
 // after the look is approved. Do not hook this up to the backend yet.
 //
 // Board structure mirrors the reference: the grid is a BACKGROUND
-// layer (continuous vertical lines + today's band and start line),
-// and pills are positioned freely on top of it — a pill can span
-// several day columns and crosses the lines, it is not boxed into
-// a cell.
+// layer (continuous vertical lines, weekend bands, today's band and
+// start line), and pills are positioned freely on top of it — a pill
+// can span several day columns and crosses the lines, it is not
+// boxed into a cell. The board shows a FULL MONTH and pans sideways;
+// the Who column is the board's sticky sidebar, and the native
+// scrollbar is replaced by a custom one under the board.
 
-import type { CSSProperties } from "react";
+import { useEffect, useRef, useState } from "react";
+import type { CSSProperties, PointerEvent as ReactPointerEvent } from "react";
 
 import { Avatar } from "@/components/ui/Avatar";
 import { Icon } from "@/components/ui/Icon";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 
-// Sample week: Mon 16 – Sun 22 Nov, "today" is Tue 17 (mirrors the
-// FigCraft reference so the two can be compared side by side).
-const SAMPLE_DAYS = [
-  { dow: "Mon", date: 16 },
-  { dow: "Tue", date: 17 },
-  { dow: "Wed", date: 18 },
-  { dow: "Thu", date: 19 },
-  { dow: "Fri", date: 20 },
-  { dow: "Sat", date: 21 },
-  { dow: "Sun", date: 22 },
-];
+// Sample month: November 2026 (Nov 1 is a Sunday). "Today" is
+// Tue 17, mirroring the FigCraft reference.
+const DOWS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const SAMPLE_DAYS = Array.from({ length: 30 }, (_, i) => ({
+  dow: DOWS[i % 7],
+  date: i + 1,
+  weekend: i % 7 === 0 || i % 7 === 6,
+}));
 const SAMPLE_TODAY = 17;
-const TODAY_INDEX = SAMPLE_DAYS.findIndex((d) => d.date === SAMPLE_TODAY);
+const TODAY_INDEX = SAMPLE_TODAY - 1;
+// The board opens on the week of "today": Monday Nov 16.
+const OPEN_SCROLL_DAYS = 15;
 
-// Who column width (px) and the height of one pill lane (px). Pills
-// are 44px tall (h-11) with 4px of air above and below in a lane.
+// Who column width (px), one day column (px), and one pill lane
+// (px). Pills are 44px tall (h-11) with 4px of air in a lane.
 const WHO_W = 180;
+const DAY_W = 132;
 const LANE_H = 52;
+const BOARD_W = WHO_W + SAMPLE_DAYS.length * DAY_W;
 
 type SampleTask = {
   title: string;
@@ -48,7 +52,7 @@ type SampleTask = {
   follows?: boolean;
 };
 
-// A board task sits on the day area by day index (0 = Mon), can
+// A board task sits on the day area by day index (0 = Nov 1), can
 // span several days, and stacks into a lane when two tasks share a
 // day for the same member.
 type BoardTask = SampleTask & { day: number; span?: number; lane?: number };
@@ -65,22 +69,18 @@ const SAMPLE_MEMBERS: SampleMember[] = [
     name: "Raka Alfarezi",
     role: "Frontend",
     tasks: [
-      { title: "Desain board planner", section: "Desain", icon: "edit", day: 1 },
-      {
-        title: "Review PR backend",
-        section: "Frontend",
-        done: true,
-        day: 2,
-      },
+      { title: "Desain board planner", section: "Desain", icon: "edit", day: 16 },
+      { title: "Review PR backend", section: "Frontend", done: true, day: 17 },
       {
         title: "Implementasi board",
         section: "Frontend",
         follows: true,
         icon: "group",
-        day: 2,
+        day: 17,
         span: 2,
         lane: 1,
       },
+      { title: "Polish halaman profil", section: "Frontend", icon: "palette", day: 24 },
     ],
   },
   {
@@ -88,28 +88,30 @@ const SAMPLE_MEMBERS: SampleMember[] = [
     role: "Backend",
     pm: true,
     tasks: [
-      { title: "Endpoint GET planner", section: "Backend", icon: "code-alt", day: 0 },
+      { title: "Audit endpoint lama", section: "Backend", icon: "search", day: 3 },
+      { title: "Endpoint GET planner", section: "Backend", icon: "code-alt", day: 15 },
       {
         title: "Perbaiki CORS deploy",
         section: "Backend",
         overdue: true,
         icon: "wrench",
-        day: 1,
+        day: 16,
       },
-      { title: "Setup Cloudflare Tunnel", section: "Backend", icon: "server", day: 4 },
+      { title: "Setup Cloudflare Tunnel", section: "Backend", icon: "server", day: 19 },
     ],
   },
   {
     name: "Fadilah Yasin",
     role: "Database",
     tasks: [
-      { title: "Skema tabel collab_tasks", section: "Backend", done: true, day: 1 },
+      { title: "Backup database", section: "Backend", icon: "server", day: 11 },
+      { title: "Skema tabel collab_tasks", section: "Backend", done: true, day: 16 },
       {
         title: "Seed data demo",
         section: "Backend",
         pencilled: true,
         icon: "edit",
-        day: 3,
+        day: 18,
         span: 2,
       },
     ],
@@ -118,13 +120,14 @@ const SAMPLE_MEMBERS: SampleMember[] = [
     name: "Alifah Syarifah",
     role: "Research",
     tasks: [
-      { title: "Riset referensi Talmo", section: "Riset", icon: "search", day: 1 },
+      { title: "Survei pengguna", section: "Riset", icon: "group", day: 8 },
+      { title: "Riset referensi Talmo", section: "Riset", icon: "search", day: 16 },
       {
         title: "Copywriting halaman Tasks",
         section: "Desain",
         pencilled: true,
         icon: "edit",
-        day: 2,
+        day: 17,
       },
     ],
   },
@@ -132,8 +135,9 @@ const SAMPLE_MEMBERS: SampleMember[] = [
     name: "Alvina Putri",
     role: "Research",
     tasks: [
-      { title: "Uji alur apply", section: "Riset", icon: "map-pin", day: 1 },
-      { title: "Catatan rilis", section: "Riset", icon: "edit", day: 6 },
+      { title: "Uji alur apply", section: "Riset", icon: "map-pin", day: 16 },
+      { title: "Catatan rilis", section: "Riset", icon: "edit", day: 21 },
+      { title: "Dokumentasi rilis", section: "Riset", icon: "edit", day: 26 },
     ],
   },
 ];
@@ -167,27 +171,78 @@ function SamplePill({
       <span className="shrink-0 opacity-90">
         <Icon name={task.done ? "check" : (task.icon ?? "edit")} size={13} />
       </span>
-      <span className="flex min-w-0 flex-col justify-center">
-        <span
-          className={`truncate text-[11px] font-semibold leading-tight ${
-            task.done ? "line-through" : ""
-          }`}
-        >
-          {task.title}
-        </span>
+      <span
+        className={`truncate text-[11px] font-semibold leading-tight ${
+          task.done ? "line-through" : ""
+        }`}
+      >
+        {task.title}
       </span>
     </div>
   );
 }
 
-// Left edge of day column i inside the board card, as a CSS calc
-// string: the fixed Who column plus i/7 of the remaining width.
-const dayLeft = (i: number) =>
-  `calc(${WHO_W}px + (100% - ${WHO_W}px) * ${Number((i / 7).toFixed(6))})`;
-const dayWidth = `calc((100% - ${WHO_W}px) * ${Number((1 / 7).toFixed(6))})`;
-
 export function PlannerBoardPage() {
   const { t } = useLanguage();
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const trackRef = useRef<HTMLDivElement>(null);
+  const dragRef = useRef<{ startX: number; startScroll: number } | null>(null);
+  const [thumb, setThumb] = useState({ left: 0, width: 100 });
+
+  const updateThumb = () => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const max = el.scrollWidth - el.clientWidth;
+    const width = (el.clientWidth / el.scrollWidth) * 100;
+    const left = max > 0 ? (el.scrollLeft / max) * (100 - width) : 0;
+    setThumb({ left, width });
+  };
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollLeft = OPEN_SCROLL_DAYS * DAY_W;
+    updateThumb();
+    window.addEventListener("resize", updateThumb);
+    return () => window.removeEventListener("resize", updateThumb);
+  }, []);
+
+  const scrollByDays = (days: number) =>
+    scrollRef.current?.scrollBy({ left: days * DAY_W, behavior: "smooth" });
+
+  const scrollToTodayWeek = () =>
+    scrollRef.current?.scrollTo({
+      left: OPEN_SCROLL_DAYS * DAY_W,
+      behavior: "smooth",
+    });
+
+  const onThumbDown = (e: ReactPointerEvent<HTMLDivElement>) => {
+    const el = scrollRef.current;
+    if (!el) return;
+    e.preventDefault();
+    e.stopPropagation();
+    dragRef.current = { startX: e.clientX, startScroll: el.scrollLeft };
+    e.currentTarget.setPointerCapture(e.pointerId);
+  };
+  const onThumbMove = (e: ReactPointerEvent<HTMLDivElement>) => {
+    const drag = dragRef.current;
+    const el = scrollRef.current;
+    const track = trackRef.current;
+    if (!drag || !el || !track) return;
+    const ratio = el.scrollWidth / track.clientWidth;
+    el.scrollLeft = drag.startScroll + (e.clientX - drag.startX) * ratio;
+  };
+  const onThumbUp = () => {
+    dragRef.current = null;
+  };
+  const onTrackDown = (e: ReactPointerEvent<HTMLDivElement>) => {
+    const el = scrollRef.current;
+    const track = trackRef.current;
+    if (!el || !track) return;
+    const rect = track.getBoundingClientRect();
+    const ratio = (e.clientX - rect.left) / rect.width;
+    el.scrollLeft = ratio * (el.scrollWidth - el.clientWidth);
+  };
 
   return (
     <div className="flex flex-col gap-5">
@@ -198,8 +253,7 @@ export function PlannerBoardPage() {
             {t("planner.title")}
           </h1>
           <p className="text-sm text-muted">
-            {t("planner.weekOf", { date: "16 Nov" })} ·{" "}
-            {t("planner.boardSubtitle")}
+            {t("planner.monthLabel")} · {t("planner.boardSubtitle")}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -220,40 +274,11 @@ export function PlannerBoardPage() {
         </div>
       </div>
 
-      {/* Week strip + section filters */}
+      {/* Section filters */}
       <div className="flex flex-wrap items-center gap-3">
-        <div className="flex items-center gap-1 rounded-full border border-line bg-surface p-1.5">
-          <span className="rounded-full p-1.5 text-muted">
-            <Icon name="chevron-left" size={16} />
-          </span>
-          {SAMPLE_DAYS.map((day) => {
-            const isToday = day.date === SAMPLE_TODAY;
-            return (
-              <div
-                key={day.date}
-                className={`flex min-w-[52px] flex-col items-center rounded-full px-2 py-1 ${
-                  isToday ? "bg-ink text-surface" : "text-ink"
-                }`}
-              >
-                <span
-                  className={`text-[10px] font-medium uppercase tracking-wide ${
-                    isToday ? "text-surface/70" : "text-muted"
-                  }`}
-                >
-                  {day.dow}
-                </span>
-                <span className="text-sm font-semibold leading-tight">
-                  {day.date}
-                </span>
-              </div>
-            );
-          })}
-          <span className="rounded-full p-1.5 text-muted">
-            <Icon name="chevron-right" size={16} />
-          </span>
-        </div>
         <button
           type="button"
+          onClick={scrollToTodayWeek}
           className="rounded-full border border-line bg-surface px-3.5 py-2 text-xs font-medium text-ink"
         >
           {t("planner.today")}
@@ -284,51 +309,72 @@ export function PlannerBoardPage() {
         </div>
       </div>
 
-      {/* Board: grid lines are a background layer, pills float on top */}
-      <div className="overflow-x-auto">
-        <div className="relative isolate min-w-[1024px] overflow-hidden rounded-lg border border-line bg-surface">
-          <div aria-hidden className="pointer-events-none absolute inset-0 z-0">
-            <div
-              className="absolute inset-y-0 bg-ink/[0.04]"
-              style={{ left: dayLeft(TODAY_INDEX), width: dayWidth }}
-            />
-            {SAMPLE_DAYS.map((day, i) => (
+      {/* Board: full month, sideways pan, Who column is the sticky
+          sidebar, grid lines are a background layer under the pills */}
+      <div className="overflow-hidden rounded-lg border border-line bg-surface">
+        <div
+          ref={scrollRef}
+          onScroll={updateThumb}
+          className="overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        >
+          <div className="relative isolate" style={{ width: BOARD_W }}>
+            <div aria-hidden className="pointer-events-none absolute inset-0 z-0">
+              {SAMPLE_DAYS.map((day, i) =>
+                day.weekend ? (
+                  <div
+                    key={day.date}
+                    className="absolute inset-y-0 bg-ink/[0.02]"
+                    style={{ left: WHO_W + i * DAY_W, width: DAY_W }}
+                  />
+                ) : null,
+              )}
               <div
-                key={day.date}
-                className="absolute inset-y-0 w-px bg-line"
-                style={{ left: dayLeft(i) }}
+                className="absolute inset-y-0 bg-ink/[0.04]"
+                style={{ left: WHO_W + TODAY_INDEX * DAY_W, width: DAY_W }}
               />
-            ))}
-            <div
-              className="absolute inset-y-0 w-[2px] bg-ink opacity-70"
-              style={{ left: dayLeft(TODAY_INDEX) }}
-            />
-          </div>
-
-          {/* Board header */}
-          <div className="relative z-10 flex h-12 items-center">
-            <div
-              className="shrink-0 px-4 font-mono text-2xs font-medium uppercase tracking-wider text-muted"
-              style={{ width: WHO_W }}
-            >
-              {t("planner.who")}
+              {SAMPLE_DAYS.map((day, i) => (
+                <div
+                  key={day.date}
+                  className="absolute inset-y-0 w-px bg-line"
+                  style={{ left: WHO_W + i * DAY_W }}
+                />
+              ))}
+              <div
+                className="absolute inset-y-0 w-[2px] bg-ink opacity-70"
+                style={{ left: WHO_W + TODAY_INDEX * DAY_W }}
+              />
             </div>
-            <div className="grid flex-1 grid-cols-7">
+
+            {/* Board header */}
+            <div className="relative z-10 flex h-12 items-stretch">
+              <div
+                className="sticky left-0 z-30 flex shrink-0 items-center border-r border-line bg-surface px-4 font-mono text-2xs font-medium uppercase tracking-wider text-muted"
+                style={{ width: WHO_W }}
+              >
+                {t("planner.who")}
+              </div>
               {SAMPLE_DAYS.map((day) => {
                 const isToday = day.date === SAMPLE_TODAY;
                 return (
                   <div
                     key={day.date}
-                    className="flex items-center justify-center gap-1.5"
+                    className="flex shrink-0 flex-col items-center justify-center gap-0.5"
+                    style={{ width: DAY_W }}
                   >
-                    <span className="text-2xs font-medium uppercase tracking-wide text-muted">
+                    <span
+                      className={`text-2xs font-medium uppercase tracking-wide ${
+                        day.weekend ? "text-subtle" : "text-muted"
+                      }`}
+                    >
                       {day.dow}
                     </span>
                     <span
-                      className={`text-xs font-semibold ${
+                      className={`text-xs font-semibold leading-tight ${
                         isToday
                           ? "rounded-full bg-ink px-1.5 py-px text-surface"
-                          : "text-ink"
+                          : day.weekend
+                            ? "text-subtle"
+                            : "text-ink"
                       }`}
                     >
                       {day.date}
@@ -337,56 +383,92 @@ export function PlannerBoardPage() {
                 );
               })}
             </div>
-          </div>
 
-          {/* Member rows */}
-          {SAMPLE_MEMBERS.map((member) => {
-            const lanes = Math.max(
-              1,
-              ...member.tasks.map((task) => (task.lane ?? 0) + 1),
-            );
-            return (
-              <div
-                key={member.name}
-                className="relative z-10 flex border-t border-line"
-              >
+            {/* Member rows */}
+            {SAMPLE_MEMBERS.map((member) => {
+              const lanes = Math.max(
+                1,
+                ...member.tasks.map((task) => (task.lane ?? 0) + 1),
+              );
+              return (
                 <div
-                  className="flex shrink-0 items-center gap-3 px-4"
-                  style={{ width: WHO_W }}
+                  key={member.name}
+                  className="relative z-10 flex border-t border-line"
                 >
-                  <Avatar alt={member.name} size={30} />
-                  <div className="flex min-w-0 flex-col">
-                    <span className="flex items-center gap-1.5 truncate text-sm font-medium leading-tight text-ink">
-                      {member.name}
-                      {member.pm && (
-                        <span className="rounded-full bg-accent-soft px-1.5 py-px text-[10px] font-semibold text-accent">
-                          {t("planner.rolePm")}
-                        </span>
-                      )}
-                    </span>
-                    <span className="text-2xs text-muted">{member.role}</span>
+                  <div
+                    className="sticky left-0 z-20 flex shrink-0 items-center gap-3 border-t border-r border-line bg-surface px-4"
+                    style={{ width: WHO_W }}
+                  >
+                    <Avatar alt={member.name} size={30} />
+                    <div className="flex min-w-0 flex-col">
+                      <span className="flex items-center gap-1.5 truncate text-sm font-medium leading-tight text-ink">
+                        {member.name}
+                        {member.pm && (
+                          <span className="rounded-full bg-accent-soft px-1.5 py-px text-[10px] font-semibold text-accent">
+                            {t("planner.rolePm")}
+                          </span>
+                        )}
+                      </span>
+                      <span className="text-2xs text-muted">{member.role}</span>
+                    </div>
+                  </div>
+                  <div
+                    className="relative shrink-0"
+                    style={{
+                      width: SAMPLE_DAYS.length * DAY_W,
+                      height: lanes * LANE_H,
+                    }}
+                  >
+                    {member.tasks.map((task) => (
+                      <SamplePill
+                        key={task.title}
+                        task={task}
+                        className="absolute z-10 h-11"
+                        style={{
+                          left: task.day * DAY_W + 6,
+                          width: (task.span ?? 1) * DAY_W - 12,
+                          top: (task.lane ?? 0) * LANE_H + 4,
+                        }}
+                      />
+                    ))}
                   </div>
                 </div>
-                <div
-                  className="relative flex-1"
-                  style={{ height: lanes * LANE_H }}
-                >
-                  {member.tasks.map((task) => (
-                    <SamplePill
-                      key={task.title}
-                      task={task}
-                      className="absolute z-10 h-11"
-                      style={{
-                        left: `calc(${(task.day * 100) / 7}% + 6px)`,
-                        width: `calc(${((task.span ?? 1) * 100) / 7}% - 12px)`,
-                        top: (task.lane ?? 0) * LANE_H + 4,
-                      }}
-                    />
-                  ))}
-                </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Custom scrollbar */}
+        <div className="flex items-center gap-3 border-t border-line px-4 py-3">
+          <button
+            type="button"
+            aria-label="Scroll left"
+            onClick={() => scrollByDays(-7)}
+            className="flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-full border border-line text-ink"
+          >
+            <Icon name="chevron-left" size={15} />
+          </button>
+          <div
+            ref={trackRef}
+            onPointerDown={onTrackDown}
+            className="relative h-1.5 flex-1 cursor-pointer rounded-full bg-line"
+          >
+            <div
+              onPointerDown={onThumbDown}
+              onPointerMove={onThumbMove}
+              onPointerUp={onThumbUp}
+              className="absolute inset-y-0 cursor-grab rounded-full bg-ink/40 active:cursor-grabbing"
+              style={{ left: `${thumb.left}%`, width: `${thumb.width}%` }}
+            />
+          </div>
+          <button
+            type="button"
+            aria-label="Scroll right"
+            onClick={() => scrollByDays(7)}
+            className="flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-full border border-line text-ink"
+          >
+            <Icon name="chevron-right" size={15} />
+          </button>
         </div>
       </div>
 
