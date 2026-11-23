@@ -100,10 +100,10 @@ function SamplePill({ task }: { task: SampleTask }) {
     <div
       className={`flex w-full flex-col gap-0.5 rounded-md px-2 py-1.5 ${
         task.done
-          ? "bg-line text-muted"
+          ? "bg-line text-ink/70"
           : task.pencilled
             ? "border border-line bg-surface text-ink"
-            : "bg-ink text-white"
+            : "bg-ink text-surface"
       }`}
     >
       <span className="flex items-start gap-1.5">
@@ -161,7 +161,7 @@ export function PlannerBoardPage() {
           </button>
           <button
             type="button"
-            className="flex items-center gap-1.5 rounded-full bg-ink px-4 py-2 text-sm font-medium text-white"
+            className="flex items-center gap-1.5 rounded-full bg-ink px-4 py-2 text-sm font-medium text-surface"
           >
             <Icon name="plus" size={14} />
             {t("planner.addTask")}
@@ -181,12 +181,12 @@ export function PlannerBoardPage() {
               <div
                 key={day.date}
                 className={`flex min-w-[52px] flex-col items-center rounded-full px-2 py-1 ${
-                  isToday ? "bg-ink text-white" : "text-ink"
+                  isToday ? "bg-ink text-surface" : "text-ink"
                 }`}
               >
                 <span
                   className={`text-[10px] font-medium uppercase tracking-wide ${
-                    isToday ? "text-white/70" : "text-muted"
+                    isToday ? "text-surface/70" : "text-muted"
                   }`}
                 >
                   {day.dow}
@@ -211,7 +211,7 @@ export function PlannerBoardPage() {
         <div className="flex flex-wrap items-center gap-1.5">
           <button
             type="button"
-            className="rounded-full bg-ink px-3.5 py-2 text-xs font-medium text-white"
+            className="rounded-full bg-ink px-3.5 py-2 text-xs font-medium text-surface"
           >
             {t("planner.filterAll")}
           </button>
@@ -253,7 +253,7 @@ export function PlannerBoardPage() {
                   <span
                     className={`text-xs font-semibold ${
                       isToday
-                        ? "rounded-full bg-ink px-1.5 py-px text-white"
+                        ? "rounded-full bg-ink px-1.5 py-px text-surface"
                         : "text-ink"
                     }`}
                   >
