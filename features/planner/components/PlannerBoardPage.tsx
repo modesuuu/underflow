@@ -395,10 +395,6 @@ export function PlannerBoardPage() {
                 ) : null,
               )}
               <div
-                className="absolute inset-y-0 bg-ink/[0.05]"
-                style={{ left: WHO_W, width: TODAY_INDEX * DAY_W }}
-              />
-              <div
                 className="absolute inset-y-0 bg-ink/[0.04]"
                 style={{ left: WHO_W + TODAY_INDEX * DAY_W, width: DAY_W }}
               />
@@ -446,16 +442,9 @@ export function PlannerBoardPage() {
               })}
               <div
                 aria-hidden
-                className="pointer-events-none absolute inset-y-0 z-[15] w-[2px] bg-ink"
-                style={{ left: WHO_W + TODAY_INDEX * DAY_W }}
+                className="pointer-events-none absolute inset-y-0 z-[12] bg-ink/[0.07]"
+                style={{ left: WHO_W, width: TODAY_INDEX * DAY_W }}
               />
-              <div
-                aria-hidden
-                className="pointer-events-none absolute top-1.5 z-[15] -translate-x-1/2 rounded-full bg-ink px-2 py-0.5 text-[10px] font-semibold text-surface"
-                style={{ left: WHO_W + TODAY_INDEX * DAY_W }}
-              >
-                {SAMPLE_TODAY}
-              </div>
             </div>
 
             {/* Member rows */}
@@ -495,8 +484,8 @@ export function PlannerBoardPage() {
                   >
                     <div
                       aria-hidden
-                      className="pointer-events-none absolute inset-y-0 z-[15] w-[2px] bg-ink"
-                      style={{ left: TODAY_INDEX * DAY_W }}
+                      className="pointer-events-none absolute inset-y-0 left-0 z-[12] bg-ink/[0.07]"
+                      style={{ width: TODAY_INDEX * DAY_W }}
                     />
                     {member.tasks.map((task) => (
                       <SamplePill
@@ -514,6 +503,22 @@ export function PlannerBoardPage() {
                 </div>
               );
             })}
+
+            {/* Today line + date chip: the topmost layer of the
+                board, drawn over pills, wash and the Who column,
+                like the now line in the reference. */}
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-y-0 z-50 w-[2px] bg-ink"
+              style={{ left: WHO_W + TODAY_INDEX * DAY_W }}
+            />
+            <div
+              aria-hidden
+              className="pointer-events-none absolute top-1.5 z-50 -translate-x-1/2 rounded-full bg-ink px-2 py-0.5 text-[10px] font-semibold text-surface"
+              style={{ left: WHO_W + TODAY_INDEX * DAY_W }}
+            >
+              {SAMPLE_TODAY}
+            </div>
           </div>
         </div>
 
