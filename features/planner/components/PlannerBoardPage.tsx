@@ -542,13 +542,43 @@ export function PlannerBoardPage() {
     momentumRef.current = requestAnimationFrame(step);
   };
 
+  // While a pill is held near the board's left or right edge,
+  // the board scrolls underneath it (faster the deeper the
+  // pointer pushes in) so the pill can travel to days outside
+  // the current view. onScroll re-runs the drag math after every
+  // step, because scrolling shifts the pill's board position
+  // under a pointer that is standing still. Returns stop.
+  const runEdgeScroll = (getX: () => number, onScroll: () => void) => {
+    let raf = 0;
+    const step = () => {
+      const el = scrollRef.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      const EDGE = 56;
+      const x = getX();
+      const leftLimit = rect.left + WHO_W + EDGE;
+      const rightLimit = rect.right - EDGE;
+      let v = 0;
+      if (x < leftLimit) v = -Math.min(14, 2 + (leftLimit - x) / 6);
+      else if (x > rightLimit) v = Math.min(14, 2 + (x - rightLimit) / 6);
+      if (v !== 0) {
+        el.scrollLeft += v;
+        onScroll();
+      }
+      raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+  };
+
   // Pill drag: press a pill and it lifts and follows the pointer
   // 1:1 (Pointer Events, the same system as the canvas pan — the
   // approach Jev picked). Horizontal movement reschedules within
-  // the member's own row; vertical movement only switches lanes
-  // inside that row and rubber-bands at its edges. Releasing snaps
-  // to the nearest day column; a drop into the gray past zone (or
-  // onto another pill) is rejected and the pill glides back.
+  // the member's own row; vertical movement reorders lanes inside
+  // that row (hard stop at its top edge, rubber band below).
+  // Holding the pill near a board edge scrolls the board under
+  // it. Releasing snaps to the nearest day column; a drop into
+  // the gray past zone is rejected and the pill glides back.
   const onPillDown = (
     e: ReactPointerEvent<HTMLDivElement>,
     mi: number,
@@ -585,10 +615,16 @@ export function PlannerBoardPage() {
       );
       return { day, lane, ok: day >= TODAY_INDEX };
     };
-    const onMove = (ev: PointerEvent) => {
-      let dx = Math.min(maxDx, Math.max(minDx, ev.clientX - startX));
-      let dy = ev.clientY - startY;
-      if (dy < minDy) dy = minDy + (dy - minDy) * 0.35;
+    let lastX = startX;
+    let lastY = startY;
+    const startScroll = scrollRef.current?.scrollLeft ?? 0;
+    const applyMove = () => {
+      const scrollComp = (scrollRef.current?.scrollLeft ?? 0) - startScroll;
+      let dx = Math.min(maxDx, Math.max(minDx, lastX - startX + scrollComp));
+      let dy = lastY - startY;
+      // Hard stop at the row's top edge: a pill never spills over
+      // the row above it. Downward overshoot keeps the rubber band.
+      if (dy < minDy) dy = minDy;
       if (dy > maxDy) dy = maxDy + (dy - maxDy) * 0.35;
       if (!live && Math.hypot(dx, dy) < 5) return;
       const verdict = judge(dx, dy);
@@ -602,16 +638,19 @@ export function PlannerBoardPage() {
         settling: false,
         invalid: !verdict.ok,
       };
-      if (dragRafRef.current) return;
-      dragRafRef.current = requestAnimationFrame(() => {
-        dragRafRef.current = null;
-        if (live) setDrag({ ...live });
-      });
+      setDrag({ ...live });
+    };
+    const stopEdge = runEdgeScroll(() => lastX, applyMove);
+    const onMove = (ev: PointerEvent) => {
+      lastX = ev.clientX;
+      lastY = ev.clientY;
+      applyMove();
     };
     const onUp = (cancelled: boolean) => {
       window.removeEventListener("pointermove", onMove);
       window.removeEventListener("pointerup", onUpFalse);
       window.removeEventListener("pointercancel", onUpTrue);
+      stopEdge();
       if (!live) return;
       const { dx, dy } = live;
       const verdict = judge(dx, dy);
@@ -709,8 +748,14 @@ export function PlannerBoardPage() {
       maxDx = (span0 - 1) * DAY_W;
     }
     let live: DragState | null = null;
-    const onMove = (ev: PointerEvent) => {
-      const dx = Math.min(maxDx, Math.max(minDx, ev.clientX - startX));
+    let lastX = startX;
+    const startScroll = scrollRef.current?.scrollLeft ?? 0;
+    const applyResize = () => {
+      const scrollComp = (scrollRef.current?.scrollLeft ?? 0) - startScroll;
+      const dx = Math.min(
+        maxDx,
+        Math.max(minDx, lastX - startX + scrollComp),
+      );
       if (!live && Math.abs(dx) < 3) return;
       live = {
         member: mi,
@@ -722,16 +767,18 @@ export function PlannerBoardPage() {
         settling: false,
         invalid: false,
       };
-      if (dragRafRef.current) return;
-      dragRafRef.current = requestAnimationFrame(() => {
-        dragRafRef.current = null;
-        if (live) setDrag({ ...live });
-      });
+      setDrag({ ...live });
+    };
+    const stopEdge = runEdgeScroll(() => lastX, applyResize);
+    const onMove = (ev: PointerEvent) => {
+      lastX = ev.clientX;
+      applyResize();
     };
     const onUp = (cancelled: boolean) => {
       window.removeEventListener("pointermove", onMove);
       window.removeEventListener("pointerup", onUpFalse);
       window.removeEventListener("pointercancel", onUpTrue);
+      stopEdge();
       if (!live) return;
       const { dx } = live;
       let newDay = task.day;
@@ -904,7 +951,7 @@ export function PlannerBoardPage() {
             panning || drag?.active ? "cursor-grabbing" : "cursor-grab"
           }`}
         >
-          <div className="relative isolate" style={{ width: BOARD_W }}>
+          <div className="relative isolate flex" style={{ width: BOARD_W }}>
             <div aria-hidden className="pointer-events-none absolute inset-0 z-0">
               {SAMPLE_DAYS.map((day, i) =>
                 day.weekend ? (
@@ -935,14 +982,47 @@ export function PlannerBoardPage() {
               ))}
             </div>
 
-            {/* Board header */}
-            <div className="relative z-10 flex h-12 items-stretch">
-              <div
-                className="sticky left-0 z-30 flex shrink-0 items-center border-r border-line bg-surface px-4 font-mono text-2xs font-medium uppercase tracking-wider text-muted"
-                style={{ width: WHO_W }}
-              >
+            {/* Who column: ONE sticky board-level column in the
+                topmost layer (z-50), no longer a cell inside each
+                row. Pills, the past-days wash and the today line
+                all pass underneath it, never over a member. */}
+            <div
+              className="sticky left-0 z-50 flex shrink-0 flex-col border-r border-line bg-surface"
+              style={{ width: WHO_W }}
+            >
+              <div className="flex h-12 items-center px-4 font-mono text-2xs font-medium uppercase tracking-wider text-muted">
                 {t("planner.who")}
               </div>
+              {members.map((member, mi) => (
+                <div
+                  key={member.name}
+                  className="flex items-center gap-3 border-t border-line px-4"
+                  style={{ height: rowHeights[mi] }}
+                >
+                  <Avatar alt={member.name} size={30} />
+                  <div className="flex min-w-0 flex-col">
+                    <span className="flex items-center gap-1.5 truncate text-sm font-medium leading-tight text-ink">
+                      {member.name}
+                      {member.pm && (
+                        <span className="rounded-full bg-accent-soft px-1.5 py-px text-[10px] font-semibold text-accent">
+                          {t("planner.rolePm")}
+                        </span>
+                      )}
+                    </span>
+                    <span className="text-2xs text-muted">{member.role}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Days column: the date header + one day area per
+                member, aligned with the Who column by height */}
+            <div
+              className="relative z-10 flex shrink-0 flex-col"
+              style={{ width: SAMPLE_DAYS.length * DAY_W }}
+            >
+            {/* Board header */}
+            <div className="relative flex h-12 items-stretch">
               {SAMPLE_DAYS.map((day) => {
                 const isToday = day.date === SAMPLE_TODAY;
                 return (
@@ -972,7 +1052,7 @@ export function PlannerBoardPage() {
                 aria-hidden
                 className="pointer-events-none absolute inset-y-0 z-[12]"
                 style={{
-                  left: WHO_W,
+                  left: 0,
                   width: TODAY_INDEX * DAY_W,
                   backgroundColor: "rgba(128, 128, 128, 0.32)",
                 }}
@@ -980,46 +1060,30 @@ export function PlannerBoardPage() {
               <div
                 aria-hidden
                 className="pointer-events-none absolute inset-y-0 z-[15] w-[2px] bg-ink"
-                style={{ left: WHO_W + TODAY_INDEX * DAY_W }}
+                style={{ left: TODAY_INDEX * DAY_W }}
               />
               <div
                 aria-hidden
                 className="pointer-events-none absolute top-1.5 z-[15] -translate-x-1/2 rounded-full bg-ink px-2 py-0.5 text-[10px] font-semibold text-surface"
-                style={{ left: WHO_W + TODAY_INDEX * DAY_W }}
+                style={{ left: TODAY_INDEX * DAY_W }}
               >
                 {SAMPLE_TODAY}
               </div>
             </div>
 
-            {/* Member rows */}
+            {/* Member day areas (their Who cells live in the
+                sticky column on the left) */}
             {members.map((member, mi) => {
               const lanes = rowHeights[mi] / LANE_H;
               return (
-                <div key={member.name} className="relative z-10 flex">
-                  <div
-                    className="sticky left-0 z-20 flex shrink-0 items-center gap-3 border-t border-r border-line bg-surface px-4"
-                    style={{ width: WHO_W }}
-                  >
-                    <Avatar alt={member.name} size={30} />
-                    <div className="flex min-w-0 flex-col">
-                      <span className="flex items-center gap-1.5 truncate text-sm font-medium leading-tight text-ink">
-                        {member.name}
-                        {member.pm && (
-                          <span className="rounded-full bg-accent-soft px-1.5 py-px text-[10px] font-semibold text-accent">
-                            {t("planner.rolePm")}
-                          </span>
-                        )}
-                      </span>
-                      <span className="text-2xs text-muted">{member.role}</span>
-                    </div>
-                  </div>
-                  <div
-                    className="relative shrink-0"
-                    style={{
-                      width: SAMPLE_DAYS.length * DAY_W,
-                      height: lanes * LANE_H,
-                    }}
-                  >
+                <div
+                  key={member.name}
+                  className="relative"
+                  style={{
+                    width: SAMPLE_DAYS.length * DAY_W,
+                    height: lanes * LANE_H,
+                  }}
+                >
                     <div
                       aria-hidden
                       className="pointer-events-none absolute inset-y-0 left-0 z-[12]"
@@ -1085,10 +1149,10 @@ export function PlannerBoardPage() {
                         />
                       );
                     })}
-                  </div>
                 </div>
               );
             })}
+            </div>
           </div>
         </div>
 
