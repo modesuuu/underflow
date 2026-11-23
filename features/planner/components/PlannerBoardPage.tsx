@@ -1,11 +1,13 @@
 "use client";
 
 // features/planner/components/PlannerBoardPage.tsx
-// UI-ONLY canvas for the Tasks page, following the FigCraft design
+// UI-first canvas for the Tasks page, following the FigCraft design
 // pass (Talmo-style planner board). All data below is SAMPLE data so
-// the layout can be judged and directed first — wiring to the
-// planner API (real projects, drag & drop moves, task dialog) comes
-// after the look is approved. Do not hook this up to the backend yet.
+// the layout can be judged and directed first. Pills can already be
+// picked up and dragged to another day (locked to their own row,
+// past days reject the drop) against LOCAL state only — wiring the
+// moves to the planner API and the task dialog comes later. Do not
+// hook this up to the backend yet.
 //
 // Board structure mirrors the reference: the grid is a BACKGROUND
 // layer (continuous vertical lines, weekend bands, today's band and
@@ -57,6 +59,17 @@ type SampleTask = {
 // span several days, and stacks into a lane when two tasks share a
 // day for the same member.
 type BoardTask = SampleTask & { day: number; span?: number; lane?: number };
+
+// One pill in flight: deltas are px from its home position.
+type DragState = {
+  member: number;
+  title: string;
+  dx: number;
+  dy: number;
+  active: boolean;
+  settling: boolean;
+  invalid: boolean;
+};
 
 type SampleMember = {
   name: string;
@@ -156,6 +169,7 @@ const ROW_HEIGHTS = SAMPLE_MEMBERS.map(
 const ROW_BOUNDARIES = ROW_HEIGHTS.map(
   (_, i) => HEADER_H + ROW_HEIGHTS.slice(0, i).reduce((a, b) => a + b, 0),
 );
+const LANES_PER_MEMBER = ROW_HEIGHTS.map((h) => h / LANE_H);
 const SAMPLE_UNDATED: SampleTask[] = [
   { title: "Ide board mingguan per anggota", section: "Desain" },
   { title: "Cek lisensi font", section: "Riset" },
@@ -165,14 +179,17 @@ function SamplePill({
   task,
   className = "",
   style,
+  onPointerDown,
 }: {
   task: SampleTask;
   className?: string;
   style?: CSSProperties;
+  onPointerDown?: (e: ReactPointerEvent<HTMLDivElement>) => void;
 }) {
   return (
     <div
       style={style}
+      onPointerDown={onPointerDown}
       className={`flex items-center gap-2 rounded-full px-3.5 ${
         task.done
           ? "bg-active text-ink/70"
@@ -208,6 +225,11 @@ export function PlannerBoardPage() {
   const rafRef = useRef<number | null>(null);
   const momentumRef = useRef<number | null>(null);
   const [panning, setPanning] = useState(false);
+  const [members, setMembers] = useState<SampleMember[]>(SAMPLE_MEMBERS);
+  const [drag, setDrag] = useState<DragState | null>(null);
+  const dragRafRef = useRef<number | null>(null);
+  const settleTimerRef = useRef<number | null>(null);
+  const pendingCommitRef = useRef<(() => void) | null>(null);
 
   // Open on the week of "today" (Monday Nov 16).
   useEffect(() => {
@@ -216,6 +238,8 @@ export function PlannerBoardPage() {
     return () => {
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
       if (momentumRef.current) cancelAnimationFrame(momentumRef.current);
+      if (dragRafRef.current) cancelAnimationFrame(dragRafRef.current);
+      if (settleTimerRef.current) window.clearTimeout(settleTimerRef.current);
     };
   }, []);
 
@@ -315,6 +339,125 @@ export function PlannerBoardPage() {
     momentumRef.current = requestAnimationFrame(step);
   };
 
+  // Pill drag: press a pill and it lifts and follows the pointer
+  // 1:1 (Pointer Events, the same system as the canvas pan — the
+  // approach Jev picked). Horizontal movement reschedules within
+  // the member's own row; vertical movement only switches lanes
+  // inside that row and rubber-bands at its edges. Releasing snaps
+  // to the nearest day column; a drop into the gray past zone (or
+  // onto another pill) is rejected and the pill glides back.
+  const onPillDown = (
+    e: ReactPointerEvent<HTMLDivElement>,
+    mi: number,
+    task: BoardTask,
+  ) => {
+    if (e.button !== 0) return;
+    e.stopPropagation();
+    stopMomentum();
+    // Grabbing a pill that is still gliding home commits its
+    // pending move instantly, so the new drag starts from rest.
+    if (pendingCommitRef.current) {
+      pendingCommitRef.current();
+      pendingCommitRef.current = null;
+    }
+    if (settleTimerRef.current) {
+      window.clearTimeout(settleTimerRef.current);
+      settleTimerRef.current = null;
+    }
+    const member = members[mi];
+    const lanes = LANES_PER_MEMBER[mi];
+    const lane0 = task.lane ?? 0;
+    const span = task.span ?? 1;
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const minDx = -(task.day * DAY_W + 6);
+    const maxDx = (SAMPLE_DAYS.length - task.day - span) * DAY_W;
+    const minDy = -lane0 * LANE_H;
+    const maxDy = (lanes - 1 - lane0) * LANE_H;
+    let live: DragState | null = null;
+
+    const collides = (day: number, lane: number) =>
+      member.tasks.some(
+        (o) =>
+          o.title !== task.title &&
+          (o.lane ?? 0) === lane &&
+          day < o.day + (o.span ?? 1) &&
+          o.day < day + span,
+      );
+    const judge = (dx: number, dy: number) => {
+      const day = Math.round(task.day + dx / DAY_W);
+      const lane = Math.min(
+        lanes - 1,
+        Math.max(0, Math.round(lane0 + dy / LANE_H)),
+      );
+      return { day, lane, ok: day >= TODAY_INDEX && !collides(day, lane) };
+    };
+    const onMove = (ev: PointerEvent) => {
+      let dx = Math.min(maxDx, Math.max(minDx, ev.clientX - startX));
+      let dy = ev.clientY - startY;
+      if (dy < minDy) dy = minDy + (dy - minDy) * 0.35;
+      if (dy > maxDy) dy = maxDy + (dy - maxDy) * 0.35;
+      if (!live && Math.hypot(dx, dy) < 5) return;
+      const verdict = judge(dx, dy);
+      live = {
+        member: mi,
+        title: task.title,
+        dx,
+        dy,
+        active: true,
+        settling: false,
+        invalid: !verdict.ok,
+      };
+      if (dragRafRef.current) return;
+      dragRafRef.current = requestAnimationFrame(() => {
+        dragRafRef.current = null;
+        if (live) setDrag({ ...live });
+      });
+    };
+    const onUp = (cancelled: boolean) => {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUpFalse);
+      window.removeEventListener("pointercancel", onUpTrue);
+      if (!live) return;
+      const { dx, dy } = live;
+      const verdict = judge(dx, dy);
+      const valid = !cancelled && verdict.ok;
+      const targetDx = valid ? (verdict.day - task.day) * DAY_W : 0;
+      const targetDy = valid ? (verdict.lane - lane0) * LANE_H : 0;
+      setDrag({ ...live, dx: targetDx, dy: targetDy, settling: true });
+      pendingCommitRef.current = () => {
+        if (valid && (verdict.day !== task.day || verdict.lane !== lane0)) {
+          setMembers((prev) =>
+            prev.map((m, i) =>
+              i !== mi
+                ? m
+                : {
+                    ...m,
+                    tasks: m.tasks.map((tk) =>
+                      tk.title === task.title
+                        ? { ...tk, day: verdict.day, lane: verdict.lane }
+                        : tk,
+                    ),
+                  },
+            ),
+          );
+        }
+        setDrag(null);
+      };
+      settleTimerRef.current = window.setTimeout(() => {
+        settleTimerRef.current = null;
+        const commit = pendingCommitRef.current;
+        pendingCommitRef.current = null;
+        commit?.();
+      }, 200);
+    };
+    const onUpFalse = () => onUp(false);
+    const onUpTrue = () => onUp(true);
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUpFalse);
+    window.addEventListener("pointercancel", onUpTrue);
+  };
+
   return (
     <div className="flex flex-col gap-5">
       {/* Header */}
@@ -392,7 +535,7 @@ export function PlannerBoardPage() {
           onLostPointerCapture={onPanEnd}
           onDragStart={(e) => e.preventDefault()}
           className={`overflow-x-auto overflow-y-hidden [scrollbar-width:none] select-none [touch-action:pan-y] [&::-webkit-scrollbar]:hidden ${
-            panning ? "cursor-grabbing" : "cursor-grab"
+            panning || drag?.active ? "cursor-grabbing" : "cursor-grab"
           }`}
         >
           <div className="relative isolate" style={{ width: BOARD_W }}>
@@ -483,11 +626,8 @@ export function PlannerBoardPage() {
             </div>
 
             {/* Member rows */}
-            {SAMPLE_MEMBERS.map((member) => {
-              const lanes = Math.max(
-                1,
-                ...member.tasks.map((task) => (task.lane ?? 0) + 1),
-              );
+            {members.map((member, mi) => {
+              const lanes = LANES_PER_MEMBER[mi];
               return (
                 <div key={member.name} className="relative z-10 flex">
                   <div
@@ -527,18 +667,37 @@ export function PlannerBoardPage() {
                       className="pointer-events-none absolute inset-y-0 z-[15] w-[2px] bg-ink"
                       style={{ left: TODAY_INDEX * DAY_W }}
                     />
-                    {member.tasks.map((task) => (
-                      <SamplePill
-                        key={task.title}
-                        task={task}
-                        className="absolute z-10 h-11"
-                        style={{
-                          left: task.day * DAY_W + 6,
-                          width: (task.span ?? 1) * DAY_W - 12,
-                          top: (task.lane ?? 0) * LANE_H + 4,
-                        }}
-                      />
-                    ))}
+                    {member.tasks.map((task) => {
+                      const d =
+                        drag && drag.member === mi && drag.title === task.title
+                          ? drag
+                          : null;
+                      return (
+                        <SamplePill
+                          key={task.title}
+                          task={task}
+                          onPointerDown={(e) => onPillDown(e, mi, task)}
+                          className={`absolute h-11 cursor-grab [touch-action:none] ${
+                            d ? "z-40" : "z-10"
+                          } ${d?.invalid ? "opacity-60" : ""}`}
+                          style={{
+                            left: task.day * DAY_W + 6,
+                            width: (task.span ?? 1) * DAY_W - 12,
+                            top: (task.lane ?? 0) * LANE_H + 4,
+                            transform: d
+                              ? `translate(${d.dx}px, ${d.dy}px) scale(${d.active ? 1.04 : 1})`
+                              : undefined,
+                            transition: d?.settling
+                              ? "transform 200ms cubic-bezier(0.22, 1, 0.36, 1)"
+                              : undefined,
+                            boxShadow: d?.active
+                              ? "0 16px 32px rgba(0, 0, 0, 0.28)"
+                              : undefined,
+                            willChange: d ? "transform" : undefined,
+                          }}
+                        />
+                      );
+                    })}
                   </div>
                 </div>
               );
