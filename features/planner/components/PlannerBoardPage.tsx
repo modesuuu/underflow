@@ -152,9 +152,9 @@ function SamplePill({
       style={style}
       className={`flex items-center gap-2 rounded-full px-3.5 ${
         task.done
-          ? "bg-ink/15 text-ink/70"
+          ? "bg-active text-ink/70"
           : task.pencilled
-            ? "border border-line bg-ink/[0.07] text-ink/85"
+            ? "border border-line bg-surface text-ink/85"
             : "bg-ink text-surface"
       } ${className}`}
     >
@@ -289,8 +289,8 @@ export function PlannerBoardPage() {
 
       {/* Board: grid lines are a background layer, pills float on top */}
       <div className="overflow-x-auto">
-        <div className="relative min-w-[1024px] overflow-hidden rounded-lg border border-line bg-surface">
-          <div aria-hidden className="pointer-events-none absolute inset-0">
+        <div className="relative isolate min-w-[1024px] overflow-hidden rounded-lg border border-line bg-surface">
+          <div aria-hidden className="pointer-events-none absolute inset-0 z-0">
             <div
               className="absolute inset-y-0 bg-ink/[0.04]"
               style={{ left: dayLeft(TODAY_INDEX), width: dayWidth }}
@@ -309,7 +309,7 @@ export function PlannerBoardPage() {
           </div>
 
           {/* Board header */}
-          <div className="relative flex h-12 items-center">
+          <div className="relative z-10 flex h-12 items-center">
             <div
               className="shrink-0 px-4 font-mono text-2xs font-medium uppercase tracking-wider text-muted"
               style={{ width: WHO_W }}
@@ -351,7 +351,7 @@ export function PlannerBoardPage() {
             return (
               <div
                 key={member.name}
-                className="relative flex border-t border-line"
+                className="relative z-10 flex border-t border-line"
               >
                 <div
                   className="flex shrink-0 items-center gap-3 px-4"
@@ -380,7 +380,7 @@ export function PlannerBoardPage() {
                     <SamplePill
                       key={task.title}
                       task={task}
-                      className="absolute h-11"
+                      className="absolute z-10 h-11"
                       style={{
                         left: `calc(${(task.day * 100) / 7}% + 6px)`,
                         width: `calc(${((task.span ?? 1) * 100) / 7}% - 12px)`,
@@ -414,11 +414,11 @@ export function PlannerBoardPage() {
           Booked
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="h-3 w-6 rounded-full border border-line bg-ink/[0.07]" />
+          <span className="h-3 w-6 rounded-full border border-line bg-surface" />
           Pencilled
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="h-3 w-6 rounded-full bg-ink/15" />
+          <span className="h-3 w-6 rounded-full bg-active" />
           Done
         </span>
         <span className="flex items-center gap-1.5">
