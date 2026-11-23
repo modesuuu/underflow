@@ -14,8 +14,11 @@
 // never move, and past days reject drops. Rows are dynamic: a drop
 // that lands on an occupied lane opens the nearest free lane and
 // empty lanes collapse, so a row grows and shrinks with its tasks.
-// A small "view as" preview in the filter row stands in for the
-// signed-in user while this page runs on sample data.
+// Lane placement follows gravity: a pill always occupies the
+// lowest lane free for its span, so nothing ever floats with
+// empty space above it. A small "view as" preview in the filter
+// row stands in for the signed-in user while this page runs on
+// sample data.
 //
 // Board structure mirrors the reference: the grid is a BACKGROUND
 // layer (continuous vertical lines, weekend bands, today's band and
@@ -80,48 +83,35 @@ type DragState = {
   invalid: boolean;
 };
 
-// Lane placement for a drop (Jev's pick, 0.95): the moved pill
-// takes the nearest free lane to where it was dropped, searching
-// downward first, then up, then a brand-new lane; afterwards empty
-// lanes are compacted away so the row shrinks back. Other pills
-// keep their lanes whenever possible.
-function resolvePlacement(
-  tasks: BoardTask[],
-  title: string,
-  day: number,
-  lane: number,
-): BoardTask[] {
-  const moved = tasks.find((tk) => tk.title === title);
-  if (!moved) return tasks;
-  const span = moved.span ?? 1;
-  const others = tasks.filter((tk) => tk.title !== title);
-  const hits = (l: number) =>
-    others.some(
-      (o) =>
-        (o.lane ?? 0) === l &&
-        day < o.day + (o.span ?? 1) &&
-        o.day < day + span,
-    );
-  let target = lane;
-  if (hits(target)) {
-    const maxLane = Math.max(0, ...others.map((o) => o.lane ?? 0));
-    let found = -1;
-    for (let l = target; l <= maxLane + 1 && found < 0; l++) {
-      if (!hits(l)) found = l;
+// Lane placement is GRAVITY (user rule): a pill always sits in
+// the lowest lane that is free for its whole day range — a pill
+// can never float with empty space above it. Recomputed for the
+// whole row after every move or resize: pills are processed in
+// their current stacking order (lane, then day) so the layout
+// stays stable, each taking the first lane its span fits into.
+// Rows grow only when spans genuinely overlap and shrink as soon
+// as space frees up.
+function applyGravity(tasks: BoardTask[]): BoardTask[] {
+  const ordered = [...tasks].sort(
+    (a, b) => (a.lane ?? 0) - (b.lane ?? 0) || a.day - b.day,
+  );
+  const placed: BoardTask[] = [];
+  for (const tk of ordered) {
+    let lane = 0;
+    while (
+      placed.some(
+        (o) =>
+          (o.lane ?? 0) === lane &&
+          tk.day < o.day + (o.span ?? 1) &&
+          o.day < tk.day + (tk.span ?? 1),
+      )
+    ) {
+      lane++;
     }
-    for (let l = target - 1; l >= 0 && found < 0; l--) {
-      if (!hits(l)) found = l;
-    }
-    target = found < 0 ? maxLane + 1 : found;
+    placed.push({ ...tk, lane });
   }
-  const placed = tasks.map((tk) =>
-    tk.title === title ? { ...tk, day, lane: target } : tk,
-  );
-  const used = [...new Set(placed.map((tk) => tk.lane ?? 0))].sort(
-    (a, b) => a - b,
-  );
-  const remap = new Map(used.map((l, i) => [l, i]));
-  return placed.map((tk) => ({ ...tk, lane: remap.get(tk.lane ?? 0) ?? 0 }));
+  const byTitle = new Map(placed.map((tk) => [tk.title, tk]));
+  return tasks.map((tk) => byTitle.get(tk.title) ?? tk);
 }
 
 const dayLabel = (day: number, span: number) =>
@@ -543,7 +533,11 @@ export function PlannerBoardPage() {
       const intoPast = verdict.day < TODAY_INDEX;
       const valid = !cancelled && !intoPast;
       const resolved = valid
-        ? resolvePlacement(member.tasks, task.title, verdict.day, verdict.lane)
+        ? applyGravity(
+            member.tasks.map((tk) =>
+              tk.title === task.title ? { ...tk, day: verdict.day } : tk,
+            ),
+          )
         : null;
       const placed = resolved?.find((tk) => tk.title === task.title);
       const targetDx = placed ? (placed.day - task.day) * DAY_W : 0;
@@ -690,10 +684,12 @@ export function PlannerBoardPage() {
                 ? m
                 : {
                     ...m,
-                    tasks: m.tasks.map((tk) =>
-                      tk.title === task.title
-                        ? { ...tk, day: newDay, span: newSpan }
-                        : tk,
+                    tasks: applyGravity(
+                      m.tasks.map((tk) =>
+                        tk.title === task.title
+                          ? { ...tk, day: newDay, span: newSpan }
+                          : tk,
+                      ),
                     ),
                   },
             ),
