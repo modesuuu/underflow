@@ -29,6 +29,7 @@ const SAMPLE_TODAY = 17;
 type SampleTask = {
   title: string;
   section?: string;
+  icon?: string;
   done?: boolean;
   pencilled?: boolean;
   overdue?: boolean;
@@ -46,13 +47,14 @@ const SAMPLE_MEMBERS: SampleMember[] = [
   {
     name: "Raka Alfarezi",
     tasks: {
-      1: [{ title: "Desain board planner", section: "Desain" }],
-      2: [{ title: "Review PR backend", section: "Frontend", done: true }],
+      1: [{ title: "Desain board planner", section: "Desain", icon: "edit" }],
+      2: [{ title: "Review PR backend", section: "Frontend", done: true, icon: "check" }],
       3: [
         {
           title: "Implementasi board",
           section: "Frontend",
           follows: true,
+          icon: "group",
         },
       ],
     },
@@ -61,30 +63,30 @@ const SAMPLE_MEMBERS: SampleMember[] = [
     name: "Faiz Aghitsna",
     pm: true,
     tasks: {
-      0: [{ title: "Endpoint GET planner", section: "Backend" }],
-      1: [{ title: "Perbaiki CORS deploy", section: "Backend", overdue: true }],
-      4: [{ title: "Setup Cloudflare Tunnel", section: "Backend" }],
+      0: [{ title: "Endpoint GET planner", section: "Backend", icon: "code-alt" }],
+      1: [{ title: "Perbaiki CORS deploy", section: "Backend", overdue: true, icon: "wrench" }],
+      4: [{ title: "Setup Cloudflare Tunnel", section: "Backend", icon: "server" }],
     },
   },
   {
     name: "Fadilah Yasin",
     tasks: {
-      1: [{ title: "Skema tabel collab_tasks", section: "Backend", done: true }],
-      3: [{ title: "Seed data demo", section: "Backend", pencilled: true }],
+      1: [{ title: "Skema tabel collab_tasks", section: "Backend", done: true, icon: "check" }],
+      3: [{ title: "Seed data demo", section: "Backend", pencilled: true, icon: "edit" }],
     },
   },
   {
     name: "Alifah Syarifah",
     tasks: {
-      0: [{ title: "Riset referensi Talmo", section: "Riset" }],
-      2: [{ title: "Copywriting halaman Tasks", section: "Desain", pencilled: true }],
+      0: [{ title: "Riset referensi Talmo", section: "Riset", icon: "search" }],
+      2: [{ title: "Copywriting halaman Tasks", section: "Desain", pencilled: true, icon: "edit" }],
     },
   },
   {
     name: "Alvina Putri",
     tasks: {
-      1: [{ title: "Uji alur apply", section: "Riset" }],
-      6: [{ title: "Catatan rilis", section: "Riset" }],
+      1: [{ title: "Uji alur apply", section: "Riset", icon: "map-pin" }],
+      6: [{ title: "Catatan rilis", section: "Riset", icon: "edit" }],
     },
   },
 ];
@@ -98,36 +100,35 @@ const SAMPLE_UNDATED: SampleTask[] = [
 function SamplePill({ task }: { task: SampleTask }) {
   return (
     <div
-      className={`flex w-full flex-col gap-0.5 rounded-md px-2 py-1.5 ${
+      className={`flex flex-1 items-start gap-2 rounded-2xl px-2.5 py-2 ${
         task.done
-          ? "bg-line text-ink/70"
+          ? "bg-ink/15 text-ink/70"
           : task.pencilled
-            ? "border border-line bg-surface text-ink"
+            ? "border border-dashed border-line text-ink/85"
             : "bg-ink text-surface"
       }`}
     >
-      <span className="flex items-start gap-1.5">
-        {task.done ? (
-          <span className="mt-0.5 shrink-0">
-            <Icon name="check" size={11} />
-          </span>
-        ) : task.overdue ? (
-          <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-red-400" />
-        ) : null}
+      <span className="mt-0.5 shrink-0 opacity-90">
+        <Icon name={task.done ? "check" : (task.icon ?? "edit")} size={12} />
+      </span>
+      <span className="flex min-w-0 flex-col">
         <span
-          className={`line-clamp-2 text-xs font-medium leading-snug ${
+          className={`line-clamp-2 text-[11px] font-semibold leading-tight ${
             task.done ? "line-through" : ""
           }`}
         >
           {task.title}
         </span>
+        {(task.section || task.follows || task.overdue) && (
+          <span className="mt-0.5 flex items-center gap-1.5 text-[9px] leading-tight opacity-60">
+            {task.overdue && (
+              <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-red-400" />
+            )}
+            {task.follows && <Icon name="subdirectory-right" size={10} />}
+            {task.section}
+          </span>
+        )}
       </span>
-      {(task.section || task.follows) && (
-        <span className="flex items-center gap-1.5 text-[10px] opacity-70">
-          {task.follows && <Icon name="subdirectory-right" size={10} />}
-          {task.section}
-        </span>
-      )}
     </div>
   );
 }
@@ -289,7 +290,7 @@ export function PlannerBoardPage() {
               {SAMPLE_DAYS.map((day, dayIndex) => (
                 <div
                   key={day.date}
-                  className={`flex min-h-[68px] flex-col gap-1.5 border-l border-line px-1.5 py-1.5 ${
+                  className={`flex min-h-[60px] flex-col gap-1.5 border-l border-line p-1.5 ${
                     day.date === SAMPLE_TODAY ? "bg-ink/[0.04]" : ""
                   }`}
                 >
