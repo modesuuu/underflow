@@ -83,15 +83,16 @@ type DragState = {
   invalid: boolean;
 };
 
-// Lane placement is GRAVITY (user rule): a pill always sits in
-// the lowest lane that is free for its whole day range — a pill
-// can never float with empty space above it. Recomputed for the
-// whole row after every move or resize: pills are processed in
-// their current stacking order (lane, then day) so the layout
-// stays stable, each taking the first lane its span fits into.
-// Rows grow only when spans genuinely overlap and shrink as soon
-// as space frees up.
-function applyGravity(tasks: BoardTask[]): BoardTask[] {
+// Lane placement combines the user's two rules. GRAVITY: a pill
+// can never float with empty space above it — after every change
+// each pill settles into the lowest lane free for its whole span.
+// INTENT: where the user drops a pill vertically still matters —
+// dropping onto an occupied lane inserts the pill there and
+// shifts the stack down, so pills can be reordered up and down
+// inside a stack; the gravity pass afterwards only removes
+// floats, it never undoes the chosen order (in a stack every lane
+// above is genuinely occupied, so nothing can rise).
+function gravityPass(tasks: BoardTask[]): BoardTask[] {
   const ordered = [...tasks].sort(
     (a, b) => (a.lane ?? 0) - (b.lane ?? 0) || a.day - b.day,
   );
@@ -112,6 +113,71 @@ function applyGravity(tasks: BoardTask[]): BoardTask[] {
   }
   const byTitle = new Map(placed.map((tk) => [tk.title, tk]));
   return tasks.map((tk) => byTitle.get(tk.title) ?? tk);
+}
+
+// Push same-lane overlaps downward until the row is clean again
+// (an insert shift can land a pill on a lane another pill holds).
+function resolveOverlaps(tasks: BoardTask[]): BoardTask[] {
+  const next = tasks.map((tk) => ({ ...tk }));
+  for (let guard = 0; guard < 64; guard++) {
+    let pushed = false;
+    const ordered = [...next].sort(
+      (a, b) => (a.lane ?? 0) - (b.lane ?? 0) || a.day - b.day,
+    );
+    for (let i = 0; i < ordered.length && !pushed; i++) {
+      for (let j = i + 1; j < ordered.length; j++) {
+        const a = ordered[i];
+        const b = ordered[j];
+        if (
+          (a.lane ?? 0) === (b.lane ?? 0) &&
+          a.day < b.day + (b.span ?? 1) &&
+          b.day < a.day + (a.span ?? 1)
+        ) {
+          const target = next.find((tk) => tk.title === b.title);
+          if (target) target.lane = (target.lane ?? 0) + 1;
+          pushed = true;
+          break;
+        }
+      }
+    }
+    if (!pushed) break;
+  }
+  return next;
+}
+
+// Place the moved pill at the day and lane the user dropped it
+// on: free lane → take it; occupied lane → insert and shift the
+// overlapping stack down; then gravity settles the whole row.
+function placeWithIntent(
+  tasks: BoardTask[],
+  title: string,
+  day: number,
+  dropLane: number,
+): BoardTask[] {
+  const moved = tasks.find((tk) => tk.title === title);
+  if (!moved) return tasks;
+  const span = moved.span ?? 1;
+  const movedNext: BoardTask = { ...moved, day };
+  let others = gravityPass(tasks.filter((tk) => tk.title !== title));
+  const hitsAt = (list: BoardTask[], tk: BoardTask, lane: number) =>
+    list.some(
+      (o) =>
+        (o.lane ?? 0) === lane &&
+        tk.day < o.day + (o.span ?? 1) &&
+        o.day < tk.day + (tk.span ?? 1),
+    );
+  if (hitsAt(others, movedNext, dropLane)) {
+    others = resolveOverlaps(
+      others.map((o) =>
+        (o.lane ?? 0) >= dropLane &&
+        movedNext.day < o.day + (o.span ?? 1) &&
+        o.day < movedNext.day + span
+          ? { ...o, lane: (o.lane ?? 0) + 1 }
+          : o,
+      ),
+    );
+  }
+  return gravityPass([...others, { ...movedNext, lane: dropLane }]);
 }
 
 const dayLabel = (day: number, span: number) =>
@@ -552,11 +618,7 @@ export function PlannerBoardPage() {
       const intoPast = verdict.day < TODAY_INDEX;
       const valid = !cancelled && !intoPast;
       const resolved = valid
-        ? applyGravity(
-            member.tasks.map((tk) =>
-              tk.title === task.title ? { ...tk, day: verdict.day } : tk,
-            ),
-          )
+        ? placeWithIntent(member.tasks, task.title, verdict.day, verdict.lane)
         : null;
       const placed = resolved?.find((tk) => tk.title === task.title);
       const targetDx = placed ? (placed.day - task.day) * DAY_W : 0;
@@ -703,7 +765,7 @@ export function PlannerBoardPage() {
                 ? m
                 : {
                     ...m,
-                    tasks: applyGravity(
+                    tasks: gravityPass(
                       m.tasks.map((tk) =>
                         tk.title === task.title
                           ? { ...tk, day: newDay, span: newSpan }
