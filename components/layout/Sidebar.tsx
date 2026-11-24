@@ -18,12 +18,18 @@ import { Badge } from "@/components/ui/Badge";
 import { Icon } from "@/components/ui/Icon";
 import { useInboxUnreadCount } from "@/features/inbox/store";
 import { useMyTaskOpenCount } from "@/features/planner/store";
+import {
+  openTaskCount,
+  setCreateBoardOpen,
+  useBoards,
+} from "@/features/planner/boards";
+import { CreateBoardDialog } from "@/features/planner/components/CreateBoardDialog";
 import { setMobileNav, useMobileNavOpen } from "./mobile-nav";
 import {
   CURRENT_USER,
   DEFAULT_ACTIVE_ID,
-  FOOTER_LINKS,
   NAV_SECTIONS,
+  type NavChild,
   type NavItem,
   type NavSection,
 } from "./nav";
@@ -329,7 +335,8 @@ interface NavSectionBlockProps {
   openMenus: Record<string, boolean>;
   activeChild: string | null;
   onToggleMenu: (id: string) => void;
-  onSelectChild: (id: string) => void;
+  onSelectChild?: (id: string) => void;
+  onNewBoard: () => void;
 }
 
 function NavSectionBlock({
@@ -346,6 +353,7 @@ function NavSectionBlock({
   activeChild,
   onToggleMenu,
   onSelectChild,
+  onNewBoard,
 }: NavSectionBlockProps) {
   const { t } = useLanguage();
   // On the icon rail the section header becomes a hairline divider
@@ -435,8 +443,8 @@ function NavSectionBlock({
                         return (
                           <Link
                             key={child.id}
-                            href={item.href ?? "/tasks"}
-                            onClick={() => onSelectChild(child.id)}
+                            href={child.href ?? item.href ?? "/tasks"}
+                            onClick={() => onSelectChild?.(child.id)}
                             className={clsx(
                               "flex items-center gap-2 rounded-md px-2 py-1.5 text-xs",
                               childActive
@@ -458,9 +466,10 @@ function NavSectionBlock({
                           </Link>
                         );
                       })}
-                      <Link
-                        href="/collaborations"
-                        className="nav-row-hoverable flex items-center gap-2 rounded-md px-2 py-1.5 text-xs font-medium text-muted"
+                      <button
+                        type="button"
+                        onClick={onNewBoard}
+                        className="nav-row-hoverable flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs font-medium text-muted"
                       >
                         <Icon
                           name="plus"
@@ -470,7 +479,7 @@ function NavSectionBlock({
                         <span className="min-w-0 flex-1 truncate">
                           {t("nav.newBoard")}
                         </span>
-                      </Link>
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -506,7 +515,11 @@ export function Sidebar() {
   const [activeId, setActiveId] = useState(() => routeToNavId(pathname));
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({});
-  const [activeChild, setActiveChild] = useState<string | null>(null);
+  // The highlighted board in the Tasks submenu is whichever
+  // board the URL names.
+  const activeChild = pathname.startsWith("/tasks/")
+    ? (pathname.split("/")[2] ?? null)
+    : null;
   const [miniPref, setMiniPref] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   useEffect(() => {
@@ -648,6 +661,14 @@ export function Sidebar() {
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
   }, []);
+
+  const boards = useBoards();
+  const boardChildren: NavChild[] = boards.map((b) => ({
+    id: b.id,
+    label: b.name,
+    count: openTaskCount(b),
+    href: `/tasks/${b.id}`,
+  }));
 
   const badgeFor = (id: string) =>
     id === "inbox" && inboxUnread > 0
@@ -876,6 +897,25 @@ export function Sidebar() {
                   title: SECTION_TITLE_KEYS[section.id]
                     ? t(SECTION_TITLE_KEYS[section.id])
                     : section.title,
+                  items: section.items
+                    .map((item) =>
+                      item.id === "tasks"
+                        ? { ...item, children: boardChildren }
+                        : item,
+                    )
+                    .concat(
+                      section.id === "tools" && isAdminTier
+                        ? [
+                            {
+                              id: "admin",
+                              label: "Admin",
+                              icon: "shield",
+                              href: "/admin",
+                              hard: true,
+                            },
+                          ]
+                        : [],
+                    ),
                 }}
                 activeId={activeId}
                 collapsed={!!collapsed[section.id]}
@@ -888,34 +928,9 @@ export function Sidebar() {
                 openMenus={openMenus}
                 activeChild={activeChild}
                 onToggleMenu={toggleMenu}
-                onSelectChild={setActiveChild}
+                onNewBoard={() => setCreateBoardOpen(true)}
               />
             ))}
-            {/* Admin + Setting scroll along with the menu;
-                only the profile card stays pinned below. */}
-            <div className="flex flex-col gap-1">
-              {isAdminTier && (
-                <NavRow
-                  item={{ id: "admin", label: "Admin", icon: "shield", href: "/admin", hard: true }}
-                  active={false}
-                  mini={mini}
-                  animate={animateWidth}
-                  onSelect={setActiveId}
-                  registerRef={registerRow}
-                />
-              )}
-              {FOOTER_LINKS.map((link) => (
-                <NavRow
-                  key={link.id}
-                  item={link}
-                  active={link.id === activeId}
-                  mini={mini}
-                  animate={animateWidth}
-                  onSelect={setActiveId}
-                  registerRef={registerRow}
-                />
-              ))}
-            </div>
           </nav>
 
         {/* Profile footer: pinned under the scrolling nav. */}
@@ -981,6 +996,7 @@ export function Sidebar() {
           </div>
         </div>
       </div>
+      <CreateBoardDialog />
     </aside>
   );
 }

@@ -3,6 +3,8 @@ import { getSessionUser } from "@/features/auth/session";
 export interface NavChild {
   id: string;
   label: string;
+  /** Where the row leads; defaults to the parent's href. */
+  href?: string;
   /** Open-task count, shown as a quiet trailing chip. */
   count?: number;
 }
@@ -11,7 +13,8 @@ export interface NavItem {
   id: string;
   label: string;
   icon: string;
-  /** Expandable submenu rows (Tasks lists its boards). */
+  /** Expandable submenu rows; the Sidebar fills the Tasks
+   * item's children from the boards store at render time. */
   children?: NavChild[];
   /** Optional route path. When set, clicking the nav item navigates here. */
   href?: string;
@@ -36,20 +39,7 @@ export const NAV_SECTIONS: NavSection[] = [
       { id: "feeds", label: "Feeds", icon: "grid-alt", href: "/" },
       { id: "collaborations", label: "Collaborations", icon: "group", href: "/collaborations" },
       { id: "my-collab", label: "My Collaborations", icon: "layout", href: "/my-collaborations" },
-      {
-        id: "tasks",
-        label: "Tasks",
-        icon: "task",
-        href: "/tasks",
-        // Sample boards from the /tasks board's sample world;
-        // this list becomes the planner API's per-collab list
-        // when the wiring lands.
-        children: [
-          { id: "board-underflow", label: "Underflow", count: 15 },
-          { id: "board-lombakampus", label: "LombaKampus", count: 3 },
-          { id: "board-portfolio", label: "Portfolio", count: 1 },
-        ],
-      },
+      { id: "tasks", label: "Tasks", icon: "task", href: "/tasks" },
       { id: "circle", label: "Circle", icon: "conversation", href: "/circle" },
     ],
   },
@@ -59,15 +49,14 @@ export const NAV_SECTIONS: NavSection[] = [
     items: [
       { id: "search", label: "Search", icon: "search", href: "/search" },
       { id: "inbox", label: "Inbox", icon: "envelope", href: "/inbox" },
+      { id: "settings", label: "Setting", icon: "cog", href: "/settings" },
     ],
   },
 ];
 
 // Help Center used to live here; removed 2026-11-07 (user's plan:
-// it moves to the Settings page later).
-export const FOOTER_LINKS: NavItem[] = [
-  { id: "settings", label: "Setting", icon: "cog", href: "/settings" },
-];
+// it moves to the Settings page later). Setting itself moved
+// into the Tools section on 2026-11-25, so no footer links remain.
 
 // TODO(backend): replace with GET /api/me once auth lands.
 // Until then the identity is session-aware: the signed-in user's name
