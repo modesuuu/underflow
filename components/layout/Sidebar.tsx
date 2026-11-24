@@ -444,11 +444,9 @@ function NavSectionBlock({
                                 : "nav-row-hoverable text-muted",
                             )}
                           >
-                            <Icon
-                              name={child.icon}
-                              size={15}
-                              className="shrink-0 leading-none"
-                            />
+                            <span className="flex w-[15px] shrink-0 items-center justify-center">
+                              <span className="size-1.5 rounded-full bg-current" />
+                            </span>
                             <span className="min-w-0 flex-1 truncate">
                               {child.label}
                             </span>
@@ -533,7 +531,7 @@ export function Sidebar() {
   const taskOpenCount = useMyTaskOpenCount();
 
   const areaRef = useRef<HTMLDivElement>(null);
-  const stackRef = useRef<HTMLDivElement>(null);
+  const stackRef = useRef<HTMLElement>(null);
   const pillRef = useRef<HTMLDivElement>(null);
   const rowRefs = useRef(new Map<string, HTMLElement>());
   const placedRef = useRef(false);
@@ -682,6 +680,18 @@ export function Sidebar() {
       return;
     }
     const y = row.getBoundingClientRect().top - area.getBoundingClientRect().top;
+    // While the nav is scrolled so the active row sits outside
+    // its viewport, the pill hides instead of floating over
+    // the brand or the profile footer.
+    const stack = stackRef.current;
+    if (stack) {
+      const sr = stack.getBoundingClientRect();
+      const rr = row.getBoundingClientRect();
+      if (rr.bottom <= sr.top || rr.top >= sr.bottom) {
+        pill.style.opacity = "0";
+        return;
+      }
+    }
     // Snap only the very first placement: this instance is
     // persistent (RootShell, root layout), so after mount the
     // pill glides everywhere — in-page and across page changes
@@ -719,8 +729,10 @@ export function Sidebar() {
     return () => observer.disconnect();
   }, []);
 
-  const toggleMenu = (id: string) =>
+  const toggleMenu = (id: string) => {
     setOpenMenus((prev) => ({ ...prev, [id]: !prev[id] }));
+    window.setTimeout(() => positionPillRef.current(), 320);
+  };
 
   const toggleSection = (id: string) => {
     const isCollapsed = !!collapsed[id];
@@ -753,7 +765,7 @@ export function Sidebar() {
       <div
         ref={areaRef}
         className={clsx(
-          "relative flex h-full flex-col justify-between py-6",
+          "relative flex h-full flex-col py-6",
           mini ? "px-3" : "px-6",
           animateWidth &&
             "transition-[padding] duration-[380ms] ease-(--uf-ease-out) motion-reduce:transition-none",
@@ -769,7 +781,7 @@ export function Sidebar() {
           style={{ opacity: 0 }}
         />
 
-        <div ref={stackRef} className="flex flex-col gap-6">
+
           {/* Brand + rail toggle: the panel-glyph button sits at
               the row's right edge, icon only (user placement). On
               the rail the brand cluster clips away and the button
@@ -829,7 +841,11 @@ export function Sidebar() {
           </div>
 
           {/* Nav sections */}
-          <nav className="flex flex-col gap-6">
+          <nav
+            ref={stackRef}
+            onScroll={() => positionPillRef.current()}
+            className="mt-6 flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          >
             {NAV_SECTIONS.map((section) => (
               <NavSectionBlock
                 key={section.id}
@@ -854,10 +870,9 @@ export function Sidebar() {
               />
             ))}
           </nav>
-        </div>
 
-        {/* Footer */}
-        <div className="flex flex-col gap-3">
+        {/* Footer: pinned under the scrolling nav. */}
+        <div className="mt-6 flex shrink-0 flex-col gap-3">
           <div className="flex flex-col gap-3">
             {isAdminTier && (
               <NavRow

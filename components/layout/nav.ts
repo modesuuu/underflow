@@ -3,7 +3,6 @@ import { getSessionUser } from "@/features/auth/session";
 export interface NavChild {
   id: string;
   label: string;
-  icon: string;
   /** Open-task count, shown as a quiet trailing chip. */
   count?: number;
 }
@@ -46,9 +45,9 @@ export const NAV_SECTIONS: NavSection[] = [
         // this list becomes the planner API's per-collab list
         // when the wiring lands.
         children: [
-          { id: "board-underflow", label: "Underflow", icon: "layout", count: 15 },
-          { id: "board-lombakampus", label: "LombaKampus", icon: "trophy", count: 3 },
-          { id: "board-portfolio", label: "Portfolio", icon: "briefcase", count: 1 },
+          { id: "board-underflow", label: "Underflow", count: 15 },
+          { id: "board-lombakampus", label: "LombaKampus", count: 3 },
+          { id: "board-portfolio", label: "Portfolio", count: 1 },
         ],
       },
       { id: "circle", label: "Circle", icon: "conversation", href: "/circle" },
