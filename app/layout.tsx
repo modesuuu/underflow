@@ -10,7 +10,10 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL(getSiteUrl()),
-  title: "Underflow",
+  title: {
+    default: "Underflow",
+    template: "%s | Underflow",
+  },
   description:
     "Student collaboration hub: find portfolio projects, apply, and build together.",
   openGraph: {

@@ -26,8 +26,8 @@ export async function generateMetadata({
   const person = await getPerson(userId);
   if (!person) return { title: "Profile" };
   return {
-    title: `${person.name} — Underflow`,
-    description: `${person.name} (@${person.username}) on Underflow`,
+    title: person.name,
+    description: person.name,
   };
 }
 

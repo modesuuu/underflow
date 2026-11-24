@@ -1,6 +1,12 @@
 import { AppShell } from "@/components/layout/AppShell";
 import { SettingsDetail } from "@/features/settings/components/SettingsDetail";
 import { NotificationsSection } from "@/features/settings/components/NotificationsSection";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Notification Settings",
+};
+
 
 export default function SettingsNotificationsPage() {
   return (

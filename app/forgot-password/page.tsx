@@ -4,7 +4,7 @@ import { RedirectIfAuthed } from "@/features/auth/components/AuthGate";
 import { ForgotPasswordForm } from "@/features/auth/components/ForgotPasswordForm";
 
 export const metadata: Metadata = {
-  title: "Reset password — Underflow",
+  title: "Reset password",
   description: "Request a password reset link for your Underflow account.",
 };
 

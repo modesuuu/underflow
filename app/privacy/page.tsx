@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { LegalSection, LegalShell } from "@/components/legal/LegalShell";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy · Underflow",
+  title: "Privacy Policy",
   description: "What Underflow collects, why, and what you can do about it.",
 };
 

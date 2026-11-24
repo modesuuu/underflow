@@ -23,7 +23,7 @@ export async function generateMetadata({
   if (!post) return { title: "Post" };
   const excerpt = post.text.length > 60 ? `${post.text.slice(0, 60)}…` : post.text;
   return {
-    title: `${post.author.name} — Underflow`,
+    title: post.author.name,
     description: excerpt,
   };
 }
