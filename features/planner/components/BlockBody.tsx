@@ -151,6 +151,7 @@ export function BlockBody({
   const [focusReq, setFocusReq] = useState<{ id: string; pos: number } | null>(
     null,
   );
+  const slashMenuRef = useRef<HTMLDivElement | null>(null);
   const taRefs = useRef(new Map<string, HTMLTextAreaElement>());
   const rowRefs = useRef(new Map<string, HTMLDivElement>());
   const slashOff = useRef<string | null>(null);
@@ -185,6 +186,15 @@ export function BlockBody({
       }
     }
   }
+
+  // While the slash menu is open, keep the highlighted item
+  // scrolled into view (the menu itself is height-capped).
+  useEffect(() => {
+    if (!slash) return;
+    slashMenuRef.current
+      ?.querySelector('[data-active="true"]')
+      ?.scrollIntoView({ block: "nearest" });
+  }, [slash]);
 
   // Focus a block after a structural change (insert, split,
   // delete, convert), placing the caret where the user expects.
@@ -665,11 +675,15 @@ export function BlockBody({
             <div className="px-1 py-0.5">{renderContent(b)}</div>
 
             {editable && slash?.id === b.id && (
-              <div className="absolute top-full left-8 z-50 mt-1 w-64 overflow-hidden rounded-lg border border-line bg-surface shadow-2xl">
+              <div
+                ref={slashMenuRef}
+                className="absolute top-full left-8 z-50 mt-1 max-h-72 w-64 overflow-y-auto rounded-lg border border-line bg-surface shadow-2xl [scrollbar-width:thin]"
+              >
                 {slashDefs(b).map((d, di) => (
                   <button
                     key={d.type}
                     type="button"
+                    data-active={di === slash.index}
                     onMouseDown={(e) => {
                       e.preventDefault();
                       chooseSlash(b, d.type);
@@ -696,7 +710,7 @@ export function BlockBody({
             )}
 
             {editable && menuFor === b.id && (
-              <div className="absolute top-6 left-8 z-50 w-56 rounded-lg border border-line bg-surface py-1 shadow-2xl">
+              <div className="absolute top-6 left-8 z-50 max-h-80 w-56 overflow-y-auto rounded-lg border border-line bg-surface py-1 shadow-2xl [scrollbar-width:thin]">
                 <div className="px-3 pt-1.5 pb-1 font-mono text-[10px] font-medium tracking-wider text-muted uppercase">
                   Turn into
                 </div>
