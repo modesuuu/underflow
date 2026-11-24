@@ -47,6 +47,7 @@ import { BlockBody, makeBlock } from "./BlockBody";
 import type { Block } from "./BlockBody";
 import { Avatar } from "@/components/ui/Avatar";
 import { Icon } from "@/components/ui/Icon";
+import { DateField } from "@/components/ui/DateField";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 
 // Sample month: November 2026 (Nov 1 is a Sunday). "Today" is
@@ -59,6 +60,25 @@ const SAMPLE_DAYS = Array.from({ length: 30 }, (_, i) => ({
 }));
 const SAMPLE_TODAY = 17;
 const TODAY_INDEX = SAMPLE_TODAY - 1;
+
+// The board's month is November 2026; its date fields speak
+// ISO dates at the boundary and day indices inside. The
+// DateField calendar is told the board's "today" so its
+// past-day disabling matches the board's past zone; once the
+// board runs on real data the override can go away.
+const BOARD_TODAY = new Date(2026, 10, SAMPLE_TODAY);
+const isoForDay = (day: number) =>
+  `2026-11-${String(day + 1).padStart(2, "0")}`;
+const clampDayForIso = (iso: string): { day: number; clamped: boolean } => {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
+  if (!m) return { day: TODAY_INDEX, clamped: true };
+  const picked = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+  const first = new Date(2026, 10, 1);
+  const last = new Date(2026, 10, SAMPLE_DAYS.length);
+  if (picked < first) return { day: 0, clamped: true };
+  if (picked > last) return { day: SAMPLE_DAYS.length - 1, clamped: true };
+  return { day: Number(m[3]) - 1, clamped: false };
+};
 
 // Icons a task pill can carry, chosen from the detail panel.
 // Names are Boxicons glyphs, rendered by the Icon component.
@@ -710,6 +730,14 @@ export function PlannerBoardPage() {
     setConfirmDelete(false);
     closeDetail();
     showToast("ok", t("planner.taskDeleted"));
+  };
+
+  // Due-date picks come back as ISO dates; anything outside
+  // the board's month clamps to its nearest edge with a note.
+  const pickDay = (iso: string): number => {
+    const { day, clamped } = clampDayForIso(iso);
+    if (clamped) showToast("warn", t("planner.toastDateRange"));
+    return day;
   };
 
   // A grab during another pill's glide home commits that move
@@ -1682,29 +1710,32 @@ export function PlannerBoardPage() {
                 </DetailRow>
                 <DetailRow icon="calendar" label={t("planner.dueDate")}>
                   {detailCanEdit ? (
-                    <span className="flex items-center gap-1.5">
-                      <MenuSelect
-                        className="w-28"
-                        value={String(detailTask.day)}
-                        onChange={(v) => changeDetailDay(Number(v))}
-                        options={SAMPLE_DAYS.slice(TODAY_INDEX).map((d) => ({
-                          value: String(d.date - 1),
-                          label: `${d.dow} ${d.date}`,
-                        }))}
-                      />
+                    <div className="flex w-full items-center gap-2">
+                      <div className="min-w-0 flex-1">
+                        <DateField
+                          value={isoForDay(detailTask.day)}
+                          todayOverride={BOARD_TODAY}
+                          onChange={(v) => {
+                            if (v) changeDetailDay(pickDay(v));
+                          }}
+                        />
+                      </div>
                       <span className="text-muted">→</span>
-                      <MenuSelect
-                        className="w-28"
-                        value={String(detailTask.day + detailSpan - 1)}
-                        onChange={(v) =>
-                          changeDetailSpan(Number(v) - detailTask.day + 1)
-                        }
-                        options={SAMPLE_DAYS.slice(detailTask.day).map((d) => ({
-                          value: String(d.date - 1),
-                          label: `${d.dow} ${d.date}`,
-                        }))}
-                      />
-                    </span>
+                      <div className="min-w-0 flex-1">
+                        <DateField
+                          value={isoForDay(detailTask.day + detailSpan - 1)}
+                          todayOverride={BOARD_TODAY}
+                          onChange={(v) => {
+                            if (!v) return;
+                            const endDay = Math.max(
+                              detailTask.day,
+                              pickDay(v),
+                            );
+                            changeDetailSpan(endDay - detailTask.day + 1);
+                          }}
+                        />
+                      </div>
+                    </div>
                   ) : (
                     detailDateText
                   )}
@@ -1888,31 +1919,30 @@ export function PlannerBoardPage() {
                   <span className="font-mono text-2xs font-medium uppercase tracking-wider text-muted">
                     {t("planner.dueDate")}
                   </span>
-                  <span className="flex items-center gap-1.5">
-                    <MenuSelect
-                      className="flex-1"
-                      value={String(addStart)}
-                      onChange={(v) => {
-                        const n = Number(v);
-                        setAddStart(n);
-                        if (addEnd < n) setAddEnd(n);
-                      }}
-                      options={SAMPLE_DAYS.slice(TODAY_INDEX).map((d) => ({
-                        value: String(d.date - 1),
-                        label: `${d.dow} ${d.date}`,
-                      }))}
-                    />
+                  <div className="flex items-center gap-2">
+                    <div className="min-w-0 flex-1">
+                      <DateField
+                        value={isoForDay(addStart)}
+                        todayOverride={BOARD_TODAY}
+                        onChange={(v) => {
+                          if (!v) return;
+                          const n = pickDay(v);
+                          setAddStart(n);
+                          if (addEnd < n) setAddEnd(n);
+                        }}
+                      />
+                    </div>
                     <span className="text-muted">-</span>
-                    <MenuSelect
-                      className="flex-1"
-                      value={String(addEnd)}
-                      onChange={(v) => setAddEnd(Number(v))}
-                      options={SAMPLE_DAYS.slice(addStart).map((d) => ({
-                        value: String(d.date - 1),
-                        label: `${d.dow} ${d.date}`,
-                      }))}
-                    />
-                  </span>
+                    <div className="min-w-0 flex-1">
+                      <DateField
+                        value={isoForDay(addEnd)}
+                        todayOverride={BOARD_TODAY}
+                        onChange={(v) => {
+                          if (v) setAddEnd(Math.max(addStart, pickDay(v)));
+                        }}
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
               <div className="mt-5 flex items-center justify-end gap-2">

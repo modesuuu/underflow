@@ -22,6 +22,13 @@ interface DateFieldProps {
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
+  /**
+   * Overrides the day treated as "today" (past-day disabling,
+   * the Today shortcut, the calendar's initial month). The
+   * planner board passes its sample-world today until it runs
+   * on real data; other callers get the real today by default.
+   */
+  todayOverride?: Date;
 }
 
 const MONTHS_SHORT = [
@@ -52,11 +59,12 @@ export function DateField({
   value,
   onChange,
   placeholder = "Select date",
+  todayOverride,
 }: DateFieldProps) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const selected = parseValue(value);
-  const today = todayStart();
+  const today = todayOverride ?? todayStart();
 
   // Close on an outside click. Escape closes ONLY the calendar: the
   // capture-phase listener + stopPropagation keep the surrounding
