@@ -84,7 +84,7 @@ export function MakeCollabModal({
   const [deletingSkillId, setDeletingSkillId] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const sessionUser = useSessionUser();
-  const ownerName = sessionUser?.username ?? "You";
+  const ownerName = sessionUser?.name ?? "You";
   const [roleCount, setRoleCount] = useState(2);
   const [submitting, setSubmitting] = useState(false);
   const [photos, setPhotos] = useState<PhotoDraft[]>([]);

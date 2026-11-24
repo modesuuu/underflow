@@ -114,6 +114,34 @@ export function LivePoller() {
     })();
   }, [isAuthed]);
 
+  // Display-name backfill: sessions saved before display names
+  // were wired carry the username as their name. While the session
+  // name still equals the username, pick the editable profile
+  // full_name up from /api/profiles/me once per mount — the same
+  // source the photo and role backfills use. New logins get the
+  // name straight from the login response.
+  const nameRefreshDone = useRef(false);
+  useEffect(() => {
+    if (!isAuthed || nameRefreshDone.current) return;
+    const current = getSessionUser();
+    if (!current || current.name !== current.username) {
+      nameRefreshDone.current = true;
+      return;
+    }
+    nameRefreshDone.current = true;
+    (async () => {
+      try {
+        const res = await apiFetch<ApiEnvelope<{ full_name?: string | null }>>("/api/profiles/me");
+        const fullName = res.data?.full_name?.trim();
+        const sess = getSession();
+        if (!fullName || !sess) return;
+        setSession({ ...sess, user: { ...sess.user, name: fullName } });
+      } catch {
+        // Best-effort: the username keeps showing as the name.
+      }
+    })();
+  }, [isAuthed]);
+
   // Email-verification backfill: sessions saved before verification
   // existed learn the flag from /api/profiles/me so the reminder
   // banner shows (or stays hidden) correctly. One shot per mount,

@@ -84,6 +84,7 @@ function throwIfSuspended(data: unknown, googleIdToken?: string): void {
 function toAuthUser(record: {
   id: string;
   username: string;
+  full_name?: string | null;
   email?: string | null;
   photo_profile_url?: string | null;
   role?: string | null;
@@ -93,7 +94,7 @@ function toAuthUser(record: {
     id: record.id,
     username: record.username,
     email: record.email ?? "",
-    name: record.username,
+    name: record.full_name?.trim() || record.username,
     photo: record.photo_profile_url ?? undefined,
     role: (record.role ?? "user") as AuthUser["role"],
     emailVerified: record.email_verified ?? undefined,
