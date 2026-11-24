@@ -432,6 +432,7 @@ export function BlockBody({
                 <div
                   tabIndex={editable ? 0 : -1}
                   title={editable ? "Divider — Backspace deletes it" : undefined}
+                  onClick={(e) => e.currentTarget.focus()}
                   onKeyDown={(e) => {
                     if (!editable) return;
                     if (e.key === "Backspace" || e.key === "Delete") {
@@ -444,8 +445,10 @@ export function BlockBody({
                       setFocusReq({ id: nid, pos: 0 });
                     }
                   }}
-                  className="my-2 border-t border-line outline-none focus:border-ink"
-                />
+                  className="group my-1 cursor-pointer rounded-md px-1 py-[7px] outline-none hover:bg-active focus:bg-active"
+                >
+                  <div className="border-t border-line group-focus:border-ink" />
+                </div>
               ) : b.type === "todo" ? (
                 <div className="flex items-start gap-2">
                   <button
