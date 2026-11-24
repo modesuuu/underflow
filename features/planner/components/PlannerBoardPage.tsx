@@ -340,7 +340,6 @@ const SAMPLE_MEMBERS: SampleMember[] = [
   },
 ];
 
-const SAMPLE_SECTIONS = ["Desain", "Frontend", "Backend", "Riset"];
 
 // Row geometry for the background layer: header height + each
 // member row's height (lanes * LANE_H). The horizontal separators
@@ -349,10 +348,6 @@ const SAMPLE_SECTIONS = ["Desain", "Frontend", "Backend", "Riset"];
 // Heights are recomputed from the live task state on every render:
 // rows are dynamic and follow their tasks.
 const HEADER_H = 48;
-const SAMPLE_UNDATED: SampleTask[] = [
-  { title: "Ide board mingguan per anggota", section: "Desain" },
-  { title: "Cek lisensi font", section: "Riset" },
-];
 
 function SamplePill({
   task,
@@ -465,7 +460,7 @@ export function PlannerBoardPage() {
   const dragRafRef = useRef<number | null>(null);
   const settleTimerRef = useRef<number | null>(null);
   const pendingCommitRef = useRef<(() => void) | null>(null);
-  const [viewerKey, setViewerKey] = useState<ViewerKey>("owner");
+  const [viewerKey] = useState<ViewerKey>("owner");
   const viewer = PERSONAS.find((p) => p.key === viewerKey) ?? PERSONAS[0];
   const [toast, setToast] = useState<{
     id: number;
@@ -1162,7 +1157,7 @@ export function PlannerBoardPage() {
         </div>
       </div>
 
-      {/* Section filters */}
+      {/* Board controls */}
       <div className="flex flex-wrap items-center gap-3">
         <button
           type="button"
@@ -1171,58 +1166,6 @@ export function PlannerBoardPage() {
         >
           {t("planner.today")}
         </button>
-        <div className="flex items-center gap-2">
-          <span className="font-mono text-2xs font-medium uppercase tracking-wider text-muted">
-            {t("planner.viewAs")}
-          </span>
-          <div className="flex rounded-full border border-line bg-surface p-0.5">
-            {PERSONAS.map((persona) => (
-              <button
-                key={persona.key}
-                type="button"
-                onClick={() => setViewerKey(persona.key)}
-                className={`rounded-full px-3 py-1.5 text-xs font-medium ${
-                  viewerKey === persona.key
-                    ? "bg-ink text-surface"
-                    : "text-muted"
-                }`}
-              >
-                {t(
-                  persona.key === "owner"
-                    ? "planner.roleOwner"
-                    : persona.key === "pm"
-                      ? "planner.rolePm"
-                      : "planner.roleMember",
-                )}{" "}
-                · {SAMPLE_MEMBERS[persona.member].name.split(" ")[0]}
-              </button>
-            ))}
-          </div>
-        </div>
-        <div className="flex-1" />
-        <div className="flex flex-wrap items-center gap-1.5">
-          <button
-            type="button"
-            className="rounded-full bg-ink px-3.5 py-2 text-xs font-medium text-surface"
-          >
-            {t("planner.filterAll")}
-          </button>
-          {SAMPLE_SECTIONS.map((section) => (
-            <button
-              key={section}
-              type="button"
-              className="rounded-full border border-line bg-surface px-3.5 py-2 text-xs font-medium text-ink"
-            >
-              {section}
-            </button>
-          ))}
-          <button
-            type="button"
-            className="rounded-full border border-line bg-surface px-3.5 py-2 text-xs font-medium text-ink"
-          >
-            {t("planner.noSection")}
-          </button>
-        </div>
       </div>
 
       {/* Board: full month, sideways pan, Who column is the sticky
@@ -1460,37 +1403,7 @@ export function PlannerBoardPage() {
 
       </div>
 
-      {/* Undated strip */}
-      <div className="flex flex-col gap-2 rounded-lg border border-dashed border-line px-4 py-3">
-        <span className="font-mono text-2xs font-medium uppercase tracking-wider text-muted">
-          {t("planner.noDateRow")}
-        </span>
-        <div className="flex flex-wrap gap-2">
-          {SAMPLE_UNDATED.map((task) => (
-            <SamplePill key={task.title} task={task} className="h-11 w-56" />
-          ))}
-        </div>
-      </div>
 
-      {/* Legend */}
-      <div className="flex flex-wrap items-center gap-4 text-xs text-muted">
-        <span className="flex items-center gap-1.5">
-          <span className="h-3 w-6 rounded-full bg-ink" />
-          Booked
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span className="h-3 w-6 rounded-full border border-line bg-surface" />
-          Pencilled
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span className="h-3 w-6 rounded-full bg-active" />
-          Done
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span className="h-0.5 w-4 bg-ink" />
-          Follows
-        </span>
-      </div>
 
       {/* Task detail: a Notion-style panel sliding in from the
           right when a pill is clicked. Properties read like a
