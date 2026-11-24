@@ -20,6 +20,10 @@
 // row stands in for the signed-in user while this page runs on
 // sample data. Clicking a pill (a press that does not turn into
 // a drag) opens its Notion-style detail panel from the right.
+// Commits animate: pills pushed by gravity or an insert glide
+// to their new day/lane, row heights ease open and closed, and
+// the background row lines and Who cells follow the same curve,
+// so a drop reads as one continuous rearrangement.
 //
 // Board structure mirrors the reference: the grid is a BACKGROUND
 // layer (continuous vertical lines, weekend bands, today's band and
@@ -397,6 +401,11 @@ export function PlannerBoardPage() {
   const [panning, setPanning] = useState(false);
   const [members, setMembers] = useState<SampleMember[]>(SAMPLE_MEMBERS);
   const [drag, setDrag] = useState<DragState | null>(null);
+  // The pill whose drop just committed: its own left/top must
+  // not animate in the commit render (its settle glide already
+  // carried it there), while every OTHER pill glides to its new
+  // day/lane. Cleared again on the next frame.
+  const [settleKey, setSettleKey] = useState<string | null>(null);
   const dragRafRef = useRef<number | null>(null);
   const settleTimerRef = useRef<number | null>(null);
   const pendingCommitRef = useRef<(() => void) | null>(null);
@@ -510,6 +519,12 @@ export function PlannerBoardPage() {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [detail]);
+
+  useEffect(() => {
+    if (!settleKey) return;
+    const raf = requestAnimationFrame(() => setSettleKey(null));
+    return () => cancelAnimationFrame(raf);
+  }, [settleKey]);
 
   const stopMomentum = () => {
     if (momentumRef.current) cancelAnimationFrame(momentumRef.current);
@@ -766,6 +781,7 @@ export function PlannerBoardPage() {
       setDrag({ ...live, dx: targetDx, dy: targetDy, settling: true });
       pendingCommitRef.current = () => {
         if (resolved && placed) {
+          setSettleKey(`${mi}:${task.title}`);
           setMembers((prev) =>
             prev.map((m, i) => (i === mi ? { ...m, tasks: resolved } : m)),
           );
@@ -907,6 +923,7 @@ export function PlannerBoardPage() {
       setDrag({ ...live, dx: targetDx, settling: true });
       pendingCommitRef.current = () => {
         if (changed) {
+          setSettleKey(`${mi}:${task.title}`);
           setMembers((prev) =>
             prev.map((m, i) =>
               i !== mi
@@ -1088,11 +1105,14 @@ export function PlannerBoardPage() {
                   style={{ left: WHO_W + i * DAY_W }}
                 />
               ))}
-              {rowBoundaries.map((top) => (
+              {rowBoundaries.map((top, i) => (
                 <div
-                  key={top}
+                  key={i}
                   className="absolute right-0 left-0 h-px bg-line"
-                  style={{ top: top - 1 }}
+                  style={{
+                    top: top - 1,
+                    transition: "top 260ms cubic-bezier(0.22, 1, 0.36, 1)",
+                  }}
                 />
               ))}
             </div>
@@ -1112,7 +1132,11 @@ export function PlannerBoardPage() {
                 <div
                   key={member.name}
                   className="flex items-center gap-3 border-t border-line px-4"
-                  style={{ height: rowHeights[mi] }}
+                  style={{
+                    height: rowHeights[mi],
+                    transition:
+                      "height 260ms cubic-bezier(0.22, 1, 0.36, 1)",
+                  }}
                 >
                   <Avatar alt={member.name} size={30} />
                   <div className="flex min-w-0 flex-col">
@@ -1197,6 +1221,8 @@ export function PlannerBoardPage() {
                   style={{
                     width: SAMPLE_DAYS.length * DAY_W,
                     height: lanes * LANE_H,
+                    transition:
+                      "height 260ms cubic-bezier(0.22, 1, 0.36, 1)",
                   }}
                 >
                     <div
@@ -1253,7 +1279,11 @@ export function PlannerBoardPage() {
                               ? d.kind === "move"
                                 ? "transform 200ms cubic-bezier(0.22, 1, 0.36, 1)"
                                 : "left 150ms cubic-bezier(0.22, 1, 0.36, 1), width 150ms cubic-bezier(0.22, 1, 0.36, 1)"
-                              : undefined,
+                              : d
+                                ? undefined
+                                : settleKey === `${mi}:${task.title}`
+                                  ? undefined
+                                  : "left 260ms cubic-bezier(0.22, 1, 0.36, 1), top 260ms cubic-bezier(0.22, 1, 0.36, 1)",
                             boxShadow: d?.active
                               ? d.kind === "move"
                                 ? "0 16px 32px rgba(0, 0, 0, 0.28)"
