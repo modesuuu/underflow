@@ -18,7 +18,8 @@
 // lowest lane free for its span, so nothing ever floats with
 // empty space above it. A small "view as" preview in the filter
 // row stands in for the signed-in user while this page runs on
-// sample data.
+// sample data. Clicking a pill (a press that does not turn into
+// a drag) opens its Notion-style detail panel from the right.
 //
 // Board structure mirrors the reference: the grid is a BACKGROUND
 // layer (continuous vertical lines, weekend bands, today's band and
@@ -30,7 +31,11 @@
 // visible scrollbar at all — the native one is hidden.
 
 import { useEffect, useRef, useState } from "react";
-import type { CSSProperties, PointerEvent as ReactPointerEvent } from "react";
+import type {
+  CSSProperties,
+  PointerEvent as ReactPointerEvent,
+  ReactNode,
+} from "react";
 
 import { Avatar } from "@/components/ui/Avatar";
 import { Icon } from "@/components/ui/Icon";
@@ -182,6 +187,12 @@ function placeWithIntent(
 
 const dayLabel = (day: number, span: number) =>
   span > 1 ? `${day + 1}–${day + span} Nov` : `${day + 1} Nov`;
+
+// Sample follower pairing shown in the detail panel (the real
+// wiring reads the relation from the planner API later).
+const SAMPLE_FOLLOWS: Record<string, string> = {
+  "Implementasi board": "Review PR backend",
+};
 
 // Sample-phase stand-in for the signed-in user: who is looking at
 // the board decides whose pills may move.
@@ -347,6 +358,30 @@ function SamplePill({
   );
 }
 
+// One Notion-style property row in the task detail panel: an
+// icon + muted label column, the value beside it.
+function DetailRow({
+  icon,
+  label,
+  children,
+}: {
+  icon: string;
+  label: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="flex items-center gap-3 py-2">
+      <span className="flex w-36 shrink-0 items-center gap-2 text-sm text-muted">
+        <Icon name={icon} size={15} />
+        {label}
+      </span>
+      <div className="flex min-w-0 items-center gap-2 text-sm text-ink">
+        {children}
+      </div>
+    </div>
+  );
+}
+
 export function PlannerBoardPage() {
   const { t } = useLanguage();
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -412,6 +447,26 @@ export function PlannerBoardPage() {
       t(gate === "done" ? "planner.toastDone" : "planner.toastOwnOnly"),
     );
 
+  // Task detail panel (Notion-style, slides in from the right).
+  const [detail, setDetail] = useState<{ member: number; title: string } | null>(
+    null,
+  );
+  const [detailLeaving, setDetailLeaving] = useState(false);
+  const detailTimerRef = useRef<number | null>(null);
+  const openDetail = (member: number, title: string) => {
+    if (detailTimerRef.current) window.clearTimeout(detailTimerRef.current);
+    setDetailLeaving(false);
+    setDetail({ member, title });
+  };
+  const closeDetail = () => {
+    setDetailLeaving(true);
+    if (detailTimerRef.current) window.clearTimeout(detailTimerRef.current);
+    detailTimerRef.current = window.setTimeout(() => {
+      setDetail(null);
+      setDetailLeaving(false);
+    }, 250);
+  };
+
   // A grab during another pill's glide home commits that move
   // instantly, so the new drag starts from rest.
   const flushPending = () => {
@@ -443,12 +498,41 @@ export function PlannerBoardPage() {
       if (dragRafRef.current) cancelAnimationFrame(dragRafRef.current);
       if (settleTimerRef.current) window.clearTimeout(settleTimerRef.current);
       clearToastTimers();
+      if (detailTimerRef.current) window.clearTimeout(detailTimerRef.current);
     };
   }, []);
+
+  useEffect(() => {
+    if (!detail) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") closeDetail();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [detail]);
 
   const stopMomentum = () => {
     if (momentumRef.current) cancelAnimationFrame(momentumRef.current);
     momentumRef.current = null;
+  };
+
+  const toggleDetailDone = () => {
+    if (!detail) return;
+    setMembers((prev) =>
+      prev.map((m, i) =>
+        i !== detail.member
+          ? m
+          : {
+              ...m,
+              tasks: m.tasks.map((tk) =>
+                tk.title === detail.title
+                  ? { ...tk, done: !tk.done, overdue: false }
+                  : tk,
+              ),
+            },
+      ),
+    );
+    showToast("ok", t("planner.taskUpdated"));
   };
 
   const scrollToTodayWeek = () => {
@@ -586,11 +670,10 @@ export function PlannerBoardPage() {
   ) => {
     if (e.button !== 0) return;
     e.stopPropagation();
+    // The gate is enforced the moment a press turns into a drag
+    // (in applyMove below); a plain click on any pill, gated or
+    // not, just opens its detail panel.
     const gate = dragGate(mi, task);
-    if (gate) {
-      gateToast(gate);
-      return;
-    }
     stopMomentum();
     flushPending();
     const member = members[mi];
@@ -606,6 +689,14 @@ export function PlannerBoardPage() {
     const minDy = -lane0 * LANE_H;
     const maxDy = (lanes - lane0) * LANE_H;
     let live: DragState | null = null;
+    let rejected = false;
+    let stopEdgeFn: () => void = () => {};
+    const detach = () => {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUpFalse);
+      window.removeEventListener("pointercancel", onUpTrue);
+      stopEdgeFn();
+    };
 
     const judge = (dx: number, dy: number) => {
       const day = Math.round(task.day + dx / DAY_W);
@@ -619,6 +710,7 @@ export function PlannerBoardPage() {
     let lastY = startY;
     const startScroll = scrollRef.current?.scrollLeft ?? 0;
     const applyMove = () => {
+      if (rejected) return;
       const scrollComp = (scrollRef.current?.scrollLeft ?? 0) - startScroll;
       let dx = Math.min(maxDx, Math.max(minDx, lastX - startX + scrollComp));
       let dy = lastY - startY;
@@ -626,7 +718,15 @@ export function PlannerBoardPage() {
       // the row above it. Downward overshoot keeps the rubber band.
       if (dy < minDy) dy = minDy;
       if (dy > maxDy) dy = maxDy + (dy - maxDy) * 0.35;
-      if (!live && Math.hypot(dx, dy) < 5) return;
+      if (!live) {
+        if (Math.hypot(dx, dy) < 5) return;
+        if (gate) {
+          rejected = true;
+          gateToast(gate);
+          detach();
+          return;
+        }
+      }
       const verdict = judge(dx, dy);
       live = {
         member: mi,
@@ -640,18 +740,19 @@ export function PlannerBoardPage() {
       };
       setDrag({ ...live });
     };
-    const stopEdge = runEdgeScroll(() => lastX, applyMove);
+    stopEdgeFn = runEdgeScroll(() => lastX, applyMove);
     const onMove = (ev: PointerEvent) => {
       lastX = ev.clientX;
       lastY = ev.clientY;
       applyMove();
     };
     const onUp = (cancelled: boolean) => {
-      window.removeEventListener("pointermove", onMove);
-      window.removeEventListener("pointerup", onUpFalse);
-      window.removeEventListener("pointercancel", onUpTrue);
-      stopEdge();
-      if (!live) return;
+      detach();
+      if (rejected) return;
+      if (!live) {
+        if (!cancelled) openDetail(mi, task);
+        return;
+      }
       const { dx, dy } = live;
       const verdict = judge(dx, dy);
       const intoPast = verdict.day < TODAY_INDEX;
@@ -842,6 +943,20 @@ export function PlannerBoardPage() {
     window.addEventListener("pointerup", onUpFalse);
     window.addEventListener("pointercancel", onUpTrue);
   };
+
+  const detailMember = detail ? members[detail.member] : undefined;
+  const detailTask = detailMember?.tasks.find(
+    (tk) => tk.title === detail?.title,
+  );
+  const detailSpan = detailTask?.span ?? 1;
+  const detailDateText = detailTask
+    ? detailSpan > 1
+      ? `${SAMPLE_DAYS[detailTask.day].dow} ${detailTask.day + 1} – ${SAMPLE_DAYS[detailTask.day + detailSpan - 1].dow} ${detailTask.day + detailSpan} Nov 2026`
+      : `${SAMPLE_DAYS[detailTask.day].dow}, ${detailTask.day + 1} Nov 2026`
+    : "";
+  const detailCanEdit =
+    detail != null &&
+    (viewer.key !== "member" || viewer.member === detail.member);
 
   return (
     <div className="flex flex-col gap-5">
@@ -1189,6 +1304,120 @@ export function PlannerBoardPage() {
           Follows
         </span>
       </div>
+
+      {/* Task detail: a Notion-style panel sliding in from the
+          right when a pill is clicked. Properties read like a
+          Notion page (icon + label column, value beside it); the
+          one live action for now is marking done / reopening. */}
+      {detail && detailMember && detailTask && (
+        <>
+          <div
+            aria-hidden
+            onClick={closeDetail}
+            className="fixed inset-0 z-[80]"
+            style={{
+              backgroundColor: "rgba(0, 0, 0, 0.32)",
+              animation: detailLeaving
+                ? "planner-fade-out 250ms ease-in forwards"
+                : "planner-fade-in 250ms ease-out both",
+            }}
+          />
+          <aside
+            className="fixed inset-y-0 right-0 z-[90] flex w-[420px] max-w-[92vw] flex-col border-l border-line bg-surface shadow-2xl"
+            style={{
+              animation: detailLeaving
+                ? "planner-detail-out 250ms cubic-bezier(0.5, 0, 0.75, 0) forwards"
+                : "planner-detail-in 300ms cubic-bezier(0.22, 1, 0.36, 1) both",
+            }}
+          >
+            <style>{`@keyframes planner-detail-in { from { transform: translateX(100%); } to { transform: translateX(0); } } @keyframes planner-detail-out { from { transform: translateX(0); } to { transform: translateX(100%); } } @keyframes planner-fade-in { from { opacity: 0; } to { opacity: 1; } } @keyframes planner-fade-out { from { opacity: 1; } to { opacity: 0; } }`}</style>
+            <div className="flex items-center justify-between px-6 pt-5">
+              <span className="font-mono text-2xs font-medium uppercase tracking-wider text-muted">
+                {t("planner.title")} ·{" "}
+                {detailTask.section ?? t("planner.noSection")}
+              </span>
+              <button
+                type="button"
+                onClick={closeDetail}
+                aria-label="Close"
+                className="flex h-8 w-8 items-center justify-center rounded-full text-muted hover:bg-active hover:text-ink"
+              >
+                <Icon name="x" size={16} />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto px-6 pt-3 pb-6">
+              <h2 className="text-2xl leading-snug font-semibold text-ink">
+                {detailTask.title}
+              </h2>
+              <div className="mt-4 flex flex-col">
+                <DetailRow icon="flag" label={t("planner.status")}>
+                  <span
+                    className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+                      detailTask.done
+                        ? "bg-active text-ink/70"
+                        : detailTask.pencilled
+                          ? "border border-line text-ink/85"
+                          : "bg-ink text-surface"
+                    }`}
+                  >
+                    {detailTask.done
+                      ? "Done"
+                      : detailTask.pencilled
+                        ? "Pencilled"
+                        : "Booked"}
+                  </span>
+                  {detailTask.overdue && !detailTask.done && (
+                    <span
+                      className="text-xs font-semibold"
+                      style={{ color: "#b3261e" }}
+                    >
+                      {t("planner.overdue")}
+                    </span>
+                  )}
+                </DetailRow>
+                <DetailRow icon="user" label={t("planner.assignee")}>
+                  <Avatar alt={detailMember.name} size={22} />
+                  <span>{detailMember.name}</span>
+                  <span className="text-muted">· {detailMember.role}</span>
+                </DetailRow>
+                <DetailRow icon="folder" label={t("planner.section")}>
+                  <span className="rounded-full border border-line px-2.5 py-0.5 text-xs font-medium">
+                    {detailTask.section ?? t("planner.noSection")}
+                  </span>
+                </DetailRow>
+                <DetailRow icon="calendar" label={t("planner.dueDate")}>
+                  {detailDateText}
+                </DetailRow>
+                <DetailRow icon="time" label={t("planner.duration")}>
+                  {t("planner.daysCount").replace("{n}", String(detailSpan))}
+                </DetailRow>
+                {detailTask.follows && SAMPLE_FOLLOWS[detailTask.title] && (
+                  <DetailRow icon="link" label={t("planner.follows")}>
+                    {SAMPLE_FOLLOWS[detailTask.title]}
+                  </DetailRow>
+                )}
+              </div>
+              <div className="mt-6">
+                <button
+                  type="button"
+                  disabled={!detailCanEdit}
+                  onClick={toggleDetailDone}
+                  className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium ${
+                    detailTask.done
+                      ? "border border-line text-ink"
+                      : "bg-ink text-surface"
+                  } ${!detailCanEdit ? "cursor-not-allowed opacity-50" : ""}`}
+                >
+                  <Icon name="check" size={15} />
+                  {detailTask.done
+                    ? t("planner.reopen")
+                    : t("planner.markDone")}
+                </button>
+              </div>
+            </div>
+          </aside>
+        </>
+      )}
 
       {/* Move feedback: every successful move or resize confirms
           itself here, and every rejected grab explains why. When
