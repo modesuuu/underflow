@@ -793,6 +793,12 @@ export const en = {
   "post.commentOnThisPost": "Comment on this post",
   "post.reportComment": "Report comment",
   "post.commentOptions": "Comment options",
+  "post.deleteComment": "Delete comment",
+  "post.deleteCommentTitle": "Delete this comment?",
+  "post.deleteCommentBody":
+    "This comment will be removed for everyone. This can't be undone.",
+  "post.commentDeleted": "Comment deleted",
+  "post.couldntDeleteComment": "Couldn't delete this comment. Try again.",
   "feed.writeCommentFirst": "Write a comment first",
   "feed.couldntPostComment": "Couldn't post your comment. Try again.",
 
@@ -2028,6 +2034,12 @@ export const id: Record<DictKey, string> = {
   "post.commentOnThisPost": "Komentari postingan ini",
   "post.reportComment": "Laporkan komentar",
   "post.commentOptions": "Opsi komentar",
+  "post.deleteComment": "Hapus komentar",
+  "post.deleteCommentTitle": "Hapus komentar ini?",
+  "post.deleteCommentBody":
+    "Komentar ini akan dihapus untuk semua orang. Ini tidak bisa dibatalkan.",
+  "post.commentDeleted": "Komentar dihapus",
+  "post.couldntDeleteComment": "Tidak dapat menghapus komentar ini. Coba lagi.",
   "feed.writeCommentFirst": "Tulis komentar dulu",
   "feed.couldntPostComment": "Tidak bisa mengirim komentarmu. Coba lagi.",
 

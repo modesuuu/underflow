@@ -8,10 +8,18 @@ import { useLanguage } from "@/lib/i18n/LanguageProvider";
  * The ••• menu on a comment (byline row, right side) — the same
  * glyph, dropdown and close behaviour as PostOptionsMenu, one step
  * quieter to match the comment surface. Holds the comment-level
- * actions: Report (the parent turns it into the report form, then
- * the reported notice). Closes on outside click and on Escape.
+ * actions: Report on other people's comments (the parent turns it
+ * into the report form, then the reported notice), Delete on your
+ * own (the parent confirms first). Closes on outside click and on
+ * Escape.
  */
-export function CommentOptionsMenu({ onReport }: { onReport: () => void }) {
+export function CommentOptionsMenu({
+  onReport,
+  onDelete,
+}: {
+  onReport?: () => void;
+  onDelete?: () => void;
+}) {
   const { t } = useLanguage();
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -52,18 +60,34 @@ export function CommentOptionsMenu({ onReport }: { onReport: () => void }) {
           aria-label={t("post.commentOptions")}
           className="absolute top-full right-0 z-30 mt-1 min-w-44 rounded-lg border border-line bg-surface p-1 shadow-lg"
         >
-          <button
-            type="button"
-            role="menuitem"
-            onClick={() => {
-              setOpen(false);
-              onReport();
-            }}
-            className="flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-medium text-ink transition-colors hover:bg-bg"
-          >
-            <Icon name="flag" size={18} />
-            {t("post.reportComment")}
-          </button>
+          {onReport && (
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => {
+                setOpen(false);
+                onReport();
+              }}
+              className="flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-medium text-ink transition-colors hover:bg-bg"
+            >
+              <Icon name="flag" size={18} />
+              {t("post.reportComment")}
+            </button>
+          )}
+          {onDelete && (
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => {
+                setOpen(false);
+                onDelete();
+              }}
+              className="flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-medium text-badge transition-colors hover:bg-bg"
+            >
+              <Icon name="trash" size={18} />
+              {t("post.deleteComment")}
+            </button>
+          )}
         </div>
       )}
     </div>

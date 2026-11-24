@@ -317,6 +317,20 @@ export async function recordView(postId: string): Promise<{ viewCount: number }>
   return { viewCount: res.data.view_count };
 }
 
+/**
+ * DELETE /api/posts/:postId/comments/:commentId (auth required,
+ * owner only — the backend answers 403 for someone else's comment;
+ * soft delete, and the comment's notification is removed with it).
+ */
+export async function deleteComment(
+  postId: string,
+  commentId: string
+): Promise<void> {
+  await apiFetch("/api/posts/" + postId + "/comments/" + commentId, {
+    method: "DELETE",
+  });
+}
+
 /** POST /api/posts/:postId/comments (auth required). */
 export async function postComment(
   postId: string,

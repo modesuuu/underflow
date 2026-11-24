@@ -6,6 +6,8 @@ import { Avatar } from "@/components/ui/Avatar";
 import { useSessionUser } from "@/features/auth/store";
 import type { PostComment } from "../types";
 import { reportComment, withdrawReport } from "../api";
+import { ConfirmDialog } from "@/features/inbox/components/ConfirmDialog";
+import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import { LikeButton } from "./LikeButton";
 import { CommentOptionsMenu } from "./CommentOptionsMenu";
 import { ReportForm } from "./ReportForm";
@@ -15,6 +17,9 @@ interface CommentItemProps {
   comment: PostComment;
   innerRef?: Ref<HTMLDivElement>;
   isNew?: boolean;
+  /** Fired after the delete confirm — the parent owns the list
+   *  state, the API call and the toasts. */
+  onDelete?: () => void;
 }
 
 /**
@@ -27,12 +32,21 @@ interface CommentItemProps {
  * Other people's comments carry a ••• menu on the byline row:
  * Report swaps the comment body for the reason form and then the
  * reported notice, the same flow as reporting a post (the report
- * goes to the admin queue; Undo withdraws it).
+ * goes to the admin queue; Undo withdraws it). Your own comments
+ * carry the same menu with Delete instead, behind the same confirm
+ * dialog a post delete uses.
  */
-function CommentItem({ comment, innerRef, isNew = false }: CommentItemProps) {
+function CommentItem({
+  comment,
+  innerRef,
+  isNew = false,
+  onDelete,
+}: CommentItemProps) {
+  const { t } = useLanguage();
   const profileHref = `/profile/${comment.author.id}`;
   const sessionUser = useSessionUser();
   const isOwn = sessionUser !== null && sessionUser.id === comment.author.id;
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [reportFormOpen, setReportFormOpen] = useState(false);
   const [reported, setReported] = useState(false);
   const [reportedId, setReportedId] = useState<string | null>(null);
@@ -100,11 +114,32 @@ function CommentItem({ comment, innerRef, isNew = false }: CommentItemProps) {
         ) : (
           <div className="flex items-center gap-1.5">{byline}</div>
         )}
-        {!isOwn && !reportFormOpen && !reported ? (
+        {!reportFormOpen && !reported && (!isOwn || onDelete) ? (
           <div className="absolute top-0 right-0">
-            <CommentOptionsMenu onReport={() => setReportFormOpen(true)} />
+            <CommentOptionsMenu
+              onReport={
+                !isOwn ? () => setReportFormOpen(true) : undefined
+              }
+              onDelete={
+                isOwn && onDelete
+                  ? () => setConfirmingDelete(true)
+                  : undefined
+              }
+            />
           </div>
         ) : null}
+        {confirmingDelete && (
+          <ConfirmDialog
+            title={t("post.deleteCommentTitle")}
+            description={t("post.deleteCommentBody")}
+            confirmLabel={t("common.delete")}
+            onConfirm={() => {
+              setConfirmingDelete(false);
+              onDelete?.();
+            }}
+            onCancel={() => setConfirmingDelete(false)}
+          />
+        )}
 
         {reportFormOpen ? (
           <ReportForm
@@ -140,9 +175,15 @@ interface CommentThreadProps {
   comments: PostComment[];
   newCommentId?: string | null;
   newCommentRef?: Ref<HTMLDivElement>;
+  onDeleteComment?: (comment: PostComment) => void;
 }
 
-export function CommentThread({ comments, newCommentId, newCommentRef }: CommentThreadProps) {
+export function CommentThread({
+  comments,
+  newCommentId,
+  newCommentRef,
+  onDeleteComment,
+}: CommentThreadProps) {
   if (comments.length === 0) {
     return (
       <p className="text-sm text-muted">
@@ -163,6 +204,9 @@ export function CommentThread({ comments, newCommentId, newCommentRef }: Comment
             comment={comment}
             innerRef={comment.id === newCommentId ? newCommentRef : undefined}
             isNew={comment.id === newCommentId}
+            onDelete={
+              onDeleteComment ? () => onDeleteComment(comment) : undefined
+            }
           />
         </div>
       ))}
