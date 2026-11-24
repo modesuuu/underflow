@@ -617,6 +617,16 @@ export function BlockBody({
           onClick={() => setMenuFor(null)}
         />
       )}
+      {slash && (
+        <div
+          aria-hidden
+          className="fixed inset-0 z-40"
+          onClick={() => {
+            slashOff.current = slash.id;
+            setSlash(null);
+          }}
+        />
+      )}
       {entries.map((entry, i) => {
         const b = entry.b;
         const isDragged = drag?.id === b.id;
