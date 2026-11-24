@@ -221,9 +221,13 @@ const SAMPLE_BLOCKS: Record<string, Block[]> = {
     seedBlock("todo", "Geser pill antar hari + snap", { checked: true }),
     seedBlock("todo", "Resize dari tepi pill", { checked: true }),
     seedBlock("todo", "Panel detail ala Notion"),
-    seedBlock("toggle", "Catatan teknis", {
-      body: "Lane dihitung ulang pakai gravity; drop di lane yang terisi jadi insert dan menggeser tumpukan ke bawah.",
-    }),
+    seedBlock("toggle", "Catatan teknis"),
+    seedBlock(
+      "text",
+      "Lane dihitung ulang pakai gravity; drop di lane yang terisi jadi insert dan menggeser tumpukan ke bawah.",
+      { level: 1 },
+    ),
+    seedBlock("todo", "Cek ulang rasa drag di layar kecil", { level: 1 }),
     seedBlock("divider", ""),
     seedBlock("text", "Target: rasa dulu, baru fungsi penuh."),
   ],

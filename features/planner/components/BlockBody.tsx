@@ -7,18 +7,22 @@ import type {
 } from "react";
 import { Icon } from "@/components/ui/Icon";
 
-// A Notion-style block body for the task detail panel, v1.
-// One flat list of blocks per task. Implemented mechanics (from
-// the hands-on Notion REA, 2026-11-24): slash menu insert with
-// type-to-filter, markdown autoformat (#, ##, ###, [], >, ---),
-// Enter splits a block, Enter on an empty to-do turns it back
-// into text, Backspace on an empty block deletes it and joins
-// the previous one, hover gutter with a + button (insert below
-// and browse blocks) and a drag handle (pointer drag reorders
-// with a live gap; a plain click opens the block menu with Turn
-// into / Duplicate / Delete). Deliberately out of v1: nested
-// children (a toggle carries one plain body text instead),
-// indent, columns, rich text marks.
+// A Notion-style block body for the task detail panel.
+// One flat list of blocks per task; nesting is a level field on
+// each block, so a block's children are the following blocks
+// with a deeper level (a toggle hides its children while it is
+// closed). Implemented mechanics (from the hands-on Notion REA,
+// 2026-11-24): slash menu insert with type-to-filter, markdown
+// autoformat (#, ##, ###, [], >, -, 1., ---), Enter splits a
+// block (lists continue, Enter on an empty list item outdents
+// or turns it back into text), Backspace merges into the block
+// above (a divider above is deleted instead), Tab / Shift+Tab
+// indent and outdent whole subtrees, hover gutter with a +
+// button and a drag handle (pointer drag reorders, a toggle
+// travels with its children; a plain click opens the block menu
+// with Turn into / Duplicate / Delete), click below the last
+// block to append text. Still out of scope: columns and rich
+// text marks (they need a contentEditable rewrite).
 
 export type BlockType =
   | "text"
@@ -26,16 +30,19 @@ export type BlockType =
   | "h2"
   | "h3"
   | "todo"
+  | "bullet"
+  | "numbered"
   | "toggle"
+  | "callout"
   | "divider";
 
 export type Block = {
   id: string;
   type: BlockType;
   text: string;
+  level?: number;
   checked?: boolean;
   open?: boolean;
-  body?: string;
 };
 
 const BLOCK_DEFS: {
@@ -49,9 +56,27 @@ const BLOCK_DEFS: {
   { type: "h2", glyph: "H2", label: "Heading 2", hint: "Medium title" },
   { type: "h3", glyph: "H3", label: "Heading 3", hint: "Small title" },
   { type: "todo", glyph: "✓", label: "To-do", hint: "Checkbox item" },
-  { type: "toggle", glyph: "▸", label: "Toggle", hint: "Collapsible note" },
+  { type: "bullet", glyph: "•", label: "Bulleted list", hint: "Dot list item" },
+  { type: "numbered", glyph: "1.", label: "Numbered list", hint: "Auto-numbered item" },
+  { type: "toggle", glyph: "▸", label: "Toggle", hint: "Collapsible children" },
+  { type: "callout", glyph: "!", label: "Callout", hint: "Highlighted note" },
   { type: "divider", glyph: "―", label: "Divider", hint: "Horizontal rule" },
 ];
+
+const NESTABLE: ReadonlySet<BlockType> = new Set([
+  "text",
+  "todo",
+  "bullet",
+  "numbered",
+  "toggle",
+  "callout",
+]);
+
+const LIST_TYPES: ReadonlySet<BlockType> = new Set([
+  "todo",
+  "bullet",
+  "numbered",
+]);
 
 let blockSeq = 0;
 export function makeBlock(type: BlockType, text = ""): Block {
@@ -60,9 +85,19 @@ export function makeBlock(type: BlockType, text = ""): Block {
     id: `b${blockSeq}-${Math.random().toString(36).slice(2, 7)}`,
     type,
     text,
+    level: 0,
     ...(type === "todo" ? { checked: false } : {}),
-    ...(type === "toggle" ? { open: true, body: "" } : {}),
+    ...(type === "toggle" ? { open: true } : {}),
   };
+}
+
+// Index just past a block's subtree: the block itself plus the
+// following blocks with a deeper level.
+function subtreeEnd(blocks: Block[], i: number): number {
+  const lvl = blocks[i]?.level ?? 0;
+  let j = i + 1;
+  while (j < blocks.length && (blocks[j].level ?? 0) > lvl) j++;
+  return j;
 }
 
 const TEXT_CLASS: Record<string, string> = {
@@ -71,7 +106,10 @@ const TEXT_CLASS: Record<string, string> = {
   h2: "text-[21px] font-semibold leading-snug",
   h3: "text-[17px] font-semibold leading-snug",
   todo: "text-[15px] leading-relaxed",
+  bullet: "text-[15px] leading-relaxed",
+  numbered: "text-[15px] leading-relaxed",
   toggle: "text-[15px] font-medium leading-relaxed",
+  callout: "text-[15px] leading-relaxed",
 };
 
 const PLACEHOLDER: Record<string, string> = {
@@ -80,7 +118,10 @@ const PLACEHOLDER: Record<string, string> = {
   h2: "Heading 2",
   h3: "Heading 3",
   todo: "To-do",
+  bullet: "List",
+  numbered: "List",
   toggle: "Toggle",
+  callout: "Callout",
 };
 
 type DragBlocks = {
@@ -90,6 +131,8 @@ type DragBlocks = {
   dy: number;
   heights: number[];
 };
+
+type Entry = { b: Block; index: number };
 
 export function BlockBody({
   blocks,
@@ -112,6 +155,37 @@ export function BlockBody({
   const rowRefs = useRef(new Map<string, HTMLDivElement>());
   const slashOff = useRef<string | null>(null);
 
+  // Visible rows: a block inside a closed toggle is not
+  // rendered. Entries keep the block's index in the full list.
+  const entries: Entry[] = [];
+  {
+    const stack: { level: number; closed: boolean }[] = [];
+    blocks.forEach((b, index) => {
+      const lvl = b.level ?? 0;
+      while (stack.length && stack[stack.length - 1].level >= lvl) stack.pop();
+      if (!stack.some((t) => t.closed)) entries.push({ b, index });
+      if (b.type === "toggle") stack.push({ level: lvl, closed: !b.open });
+    });
+  }
+
+  // Numbered-list counters per level, reset when another block
+  // type interrupts at the same level.
+  const numbers = new Map<string, number>();
+  {
+    const counters = new Map<number, number>();
+    for (const { b } of entries) {
+      const lvl = b.level ?? 0;
+      for (const k of [...counters.keys()]) if (k > lvl) counters.delete(k);
+      if (b.type === "numbered") {
+        const n = (counters.get(lvl) ?? 0) + 1;
+        counters.set(lvl, n);
+        numbers.set(b.id, n);
+      } else {
+        counters.delete(lvl);
+      }
+    }
+  }
+
   // Focus a block after a structural change (insert, split,
   // delete, convert), placing the caret where the user expects.
   useEffect(() => {
@@ -132,7 +206,9 @@ export function BlockBody({
     onChange(blocks.map((b) => (b.id === id ? { ...b, ...p } : b)));
 
   const insertAfter = (id: string, type: BlockType, text = ""): string => {
+    const src = blocks.find((b) => b.id === id);
     const nb = makeBlock(type, text);
+    nb.level = src?.level ?? 0;
     const i = blocks.findIndex((b) => b.id === id);
     const next = [...blocks];
     next.splice(i + 1, 0, nb);
@@ -154,11 +230,30 @@ export function BlockBody({
       type,
       text: type === "divider" ? "" : b.text,
       ...(type === "todo" ? { checked: b.checked ?? false } : {}),
-      ...(type === "toggle" ? { open: b.open ?? true, body: b.body ?? "" } : {}),
+      ...(type === "toggle" ? { open: b.open ?? true } : {}),
     });
     setMenuFor(null);
     setSlash(null);
     if (type !== "divider") setFocusReq({ id, pos: -1 });
+  };
+
+  const changeLevel = (b: Block, delta: number) => {
+    if (!NESTABLE.has(b.type)) return;
+    const i = blocks.findIndex((x) => x.id === b.id);
+    if (i < 0) return;
+    if (delta > 0) {
+      const prev = blocks[i - 1];
+      const maxLvl = prev ? (prev.level ?? 0) + 1 : 0;
+      if ((b.level ?? 0) >= Math.min(maxLvl, 4)) return;
+    }
+    const end = subtreeEnd(blocks, i);
+    onChange(
+      blocks.map((x, j) =>
+        j < i || j >= end
+          ? x
+          : { ...x, level: Math.max(0, Math.min(4, (x.level ?? 0) + delta)) },
+      ),
+    );
   };
 
   // Typing: markdown autoformat for text blocks, plus opening
@@ -171,6 +266,8 @@ export function BlockBody({
         ["### ", "h3"],
         ["[] ", "todo"],
         ["> ", "toggle"],
+        ["- ", "bullet"],
+        ["1. ", "numbered"],
       ];
       for (const [prefix, type] of conv) {
         if (value === prefix) {
@@ -227,6 +324,12 @@ export function BlockBody({
         return;
       }
     }
+    if (e.key === "Tab") {
+      if (!NESTABLE.has(b.type)) return;
+      e.preventDefault();
+      changeLevel(b, e.shiftKey ? -1 : 1);
+      return;
+    }
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       if (b.text === "---" && b.type === "text") {
@@ -238,12 +341,13 @@ export function BlockBody({
       const caret = ta.selectionStart ?? b.text.length;
       const before = b.text.slice(0, caret);
       const after = b.text.slice(caret);
-      if (b.type === "todo" && before === "" && after === "") {
-        convertBlock(b.id, "text");
+      if (LIST_TYPES.has(b.type) && before === "" && after === "") {
+        if ((b.level ?? 0) > 0) changeLevel(b, -1);
+        else convertBlock(b.id, "text");
         return;
       }
       patch(b.id, { text: before });
-      const nextType: BlockType = b.type === "todo" ? "todo" : "text";
+      const nextType: BlockType = LIST_TYPES.has(b.type) ? b.type : "text";
       const nid = insertAfter(b.id, nextType, after);
       setFocusReq({ id: nid, pos: 0 });
       return;
@@ -258,7 +362,7 @@ export function BlockBody({
       if (caret === 0) {
         const i = blocks.findIndex((x) => x.id === b.id);
         const prev = blocks[i - 1];
-        if (!prev) return;
+        if (!prev || prev.type === "toggle") return;
         e.preventDefault();
         if (prev.type === "divider") {
           onChange(blocks.filter((x) => x.id !== prev.id));
@@ -292,20 +396,27 @@ export function BlockBody({
   };
 
   // Pointer drag on the handle: the row follows the pointer and
-  // the others shift to open the gap. A press that barely moves
-  // counts as a click and opens the block menu instead.
+  // the others shift to open the gap. On drop the block travels
+  // with its whole subtree. A press that barely moves counts as
+  // a click and opens the block menu instead.
   const onHandleDown = (
     e: ReactPointerEvent<HTMLButtonElement>,
-    b: Block,
-    index: number,
+    entry: Entry,
+    entryIndex: number,
   ) => {
     if (!editable || e.button !== 0) return;
     e.preventDefault();
-    const heights = blocks.map(
-      (x) => rowRefs.current.get(x.id)?.offsetHeight ?? 30,
+    const heights = entries.map(
+      (x) => rowRefs.current.get(x.b.id)?.offsetHeight ?? 30,
     );
     const startY = e.clientY;
-    let cur: DragBlocks = { id: b.id, from: index, target: index, dy: 0, heights };
+    let cur: DragBlocks = {
+      id: entry.b.id,
+      from: entryIndex,
+      target: entryIndex,
+      dy: 0,
+      heights,
+    };
     setDrag(cur);
     const onMove = (ev: PointerEvent) => {
       const dy = ev.clientY - startY;
@@ -315,7 +426,7 @@ export function BlockBody({
         tops.push(acc);
         acc += h;
       }
-      const center = tops[index] + dy + heights[index] / 2;
+      const center = tops[entryIndex] + dy + heights[entryIndex] / 2;
       let target = heights.length - 1;
       for (let i = 0; i < heights.length; i++) {
         if (center < tops[i] + heights[i]) {
@@ -331,14 +442,23 @@ export function BlockBody({
       window.removeEventListener("pointerup", onUp);
       setDrag(null);
       if (Math.abs(cur.dy) < 4 && cur.target === cur.from) {
-        setMenuFor(b.id);
+        setMenuFor(entry.b.id);
         return;
       }
       if (cur.target !== cur.from) {
-        const next = [...blocks];
-        const [moved] = next.splice(cur.from, 1);
-        next.splice(cur.target, 0, moved);
-        onChange(next);
+        const fromArr = entries[cur.from].index;
+        const end = subtreeEnd(blocks, fromArr);
+        const moving = blocks.slice(fromArr, end);
+        const rest = [...blocks.slice(0, fromArr), ...blocks.slice(end)];
+        const targetId = entries[cur.target].b.id;
+        const tIdx = rest.findIndex((x) => x.id === targetId);
+        const insertPos =
+          cur.target > cur.from ? subtreeEnd(rest, tIdx) : tIdx;
+        onChange([
+          ...rest.slice(0, insertPos),
+          ...moving,
+          ...rest.slice(insertPos),
+        ]);
       }
     };
     window.addEventListener("pointermove", onMove);
@@ -357,12 +477,125 @@ export function BlockBody({
     const copy = makeBlock(b.type, b.text);
     copy.checked = b.checked;
     copy.open = b.open;
-    copy.body = b.body;
+    copy.level = b.level;
     const i = blocks.findIndex((x) => x.id === b.id);
     const next = [...blocks];
     next.splice(i + 1, 0, copy);
     onChange(next);
     setMenuFor(null);
+  };
+
+  const editor = (b: Block, inCallout = false) => (
+    <GrowTextarea
+      regRef={(el) => {
+        if (el) taRefs.current.set(b.id, el);
+        else taRefs.current.delete(b.id);
+      }}
+      value={b.text}
+      placeholder={PLACEHOLDER[b.type]}
+      onChange={(v) => handleText(b, v)}
+      onKeyDown={(e) => handleKey(b, e)}
+      className={`w-full bg-transparent text-ink outline-none placeholder:text-subtle ${TEXT_CLASS[b.type]} ${
+        b.type === "todo" && b.checked ? "text-muted line-through" : ""
+      } ${inCallout ? "placeholder:text-muted" : ""}`}
+    />
+  );
+
+  const staticText = (b: Block) => (
+    <p
+      className={`${TEXT_CLASS[b.type]} ${
+        b.type === "todo" && b.checked ? "text-muted line-through" : "text-ink"
+      }`}
+    >
+      {b.text}
+    </p>
+  );
+
+  const renderContent = (b: Block) => {
+    if (b.type === "divider") {
+      return (
+        <div
+          tabIndex={editable ? 0 : -1}
+          title={editable ? "Divider — Backspace deletes it" : undefined}
+          onClick={(e) => e.currentTarget.focus()}
+          onKeyDown={(e) => {
+            if (!editable) return;
+            if (e.key === "Backspace" || e.key === "Delete") {
+              e.preventDefault();
+              removeBlock(b.id);
+            }
+            if (e.key === "Enter") {
+              e.preventDefault();
+              const nid = insertAfter(b.id, "text");
+              setFocusReq({ id: nid, pos: 0 });
+            }
+          }}
+          className="group my-1 cursor-pointer rounded-md px-1 py-[7px] outline-none hover:bg-active focus:bg-active"
+        >
+          <div className="border-t border-line group-focus:border-ink" />
+        </div>
+      );
+    }
+    if (b.type === "todo") {
+      return (
+        <div className="flex items-start gap-2">
+          <button
+            type="button"
+            disabled={!editable}
+            aria-label="Toggle to-do"
+            onClick={() => patch(b.id, { checked: !b.checked })}
+            className={`mt-[5px] flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-[4px] border ${
+              b.checked
+                ? "border-ink bg-ink text-surface"
+                : "border-line bg-surface"
+            }`}
+          >
+            {b.checked && <Icon name="check" size={12} />}
+          </button>
+          {editable ? editor(b) : staticText(b)}
+        </div>
+      );
+    }
+    if (b.type === "bullet" || b.type === "numbered") {
+      return (
+        <div className="flex items-start gap-2">
+          <span className="mt-[3px] w-6 shrink-0 text-center text-[15px] text-muted select-none">
+            {b.type === "bullet" ? "•" : `${numbers.get(b.id) ?? 1}.`}
+          </span>
+          {editable ? editor(b) : staticText(b)}
+        </div>
+      );
+    }
+    if (b.type === "toggle") {
+      return (
+        <div className="flex items-start gap-1">
+          <button
+            type="button"
+            aria-label="Expand toggle"
+            onClick={() => patch(b.id, { open: !b.open })}
+            className="mt-[3px] flex h-5 w-5 shrink-0 items-center justify-center rounded text-muted hover:bg-active hover:text-ink"
+          >
+            <span
+              className={`flex transition-transform duration-200 ${b.open ? "rotate-90" : ""}`}
+            >
+              <Icon name="chevron-right" size={14} />
+            </span>
+          </button>
+          {editable ? editor(b) : staticText(b)}
+        </div>
+      );
+    }
+    if (b.type === "callout") {
+      return (
+        <div className="flex items-start gap-2.5 rounded-lg bg-active px-3 py-2.5">
+          <span className="mt-[3px] shrink-0 text-muted">
+            <Icon name="bulb" size={16} />
+          </span>
+          {editable ? editor(b, true) : staticText(b)}
+        </div>
+      );
+    }
+    return editable ? editor(b) : staticText(b);
   };
 
   return (
@@ -374,7 +607,8 @@ export function BlockBody({
           onClick={() => setMenuFor(null)}
         />
       )}
-      {blocks.map((b, i) => {
+      {entries.map((entry, i) => {
+        const b = entry.b;
         const isDragged = drag?.id === b.id;
         return (
           <div
@@ -385,6 +619,7 @@ export function BlockBody({
             }}
             className={`group relative ${isDragged ? "z-20 rounded-md bg-surface shadow-xl" : ""}`}
             style={{
+              marginLeft: (b.level ?? 0) * 24,
               transform: isDragged
                 ? `translateY(${drag.dy}px)`
                 : `translateY(${rowShift(i)}px)`,
@@ -413,7 +648,7 @@ export function BlockBody({
                   type="button"
                   aria-label="Drag to reorder, click for menu"
                   className="flex h-6 w-4 cursor-grab items-center justify-center rounded text-muted hover:bg-active hover:text-ink"
-                  onPointerDown={(e) => onHandleDown(e, b, i)}
+                  onPointerDown={(e) => onHandleDown(e, entry, i)}
                 >
                   <span className="grid grid-cols-2 gap-[2px]">
                     {Array.from({ length: 6 }).map((_, d) => (
@@ -427,133 +662,7 @@ export function BlockBody({
               </div>
             )}
 
-            <div className="px-1 py-0.5">
-              {b.type === "divider" ? (
-                <div
-                  tabIndex={editable ? 0 : -1}
-                  title={editable ? "Divider — Backspace deletes it" : undefined}
-                  onClick={(e) => e.currentTarget.focus()}
-                  onKeyDown={(e) => {
-                    if (!editable) return;
-                    if (e.key === "Backspace" || e.key === "Delete") {
-                      e.preventDefault();
-                      removeBlock(b.id);
-                    }
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      const nid = insertAfter(b.id, "text");
-                      setFocusReq({ id: nid, pos: 0 });
-                    }
-                  }}
-                  className="group my-1 cursor-pointer rounded-md px-1 py-[7px] outline-none hover:bg-active focus:bg-active"
-                >
-                  <div className="border-t border-line group-focus:border-ink" />
-                </div>
-              ) : b.type === "todo" ? (
-                <div className="flex items-start gap-2">
-                  <button
-                    type="button"
-                    disabled={!editable}
-                    aria-label="Toggle to-do"
-                    onClick={() => patch(b.id, { checked: !b.checked })}
-                    className={`mt-[5px] flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-[4px] border ${
-                      b.checked
-                        ? "border-ink bg-ink text-surface"
-                        : "border-line bg-surface"
-                    }`}
-                  >
-                    {b.checked && <Icon name="check" size={12} />}
-                  </button>
-                  {editable ? (
-                    <GrowTextarea
-                      regRef={(el) => {
-                        if (el) taRefs.current.set(b.id, el);
-                        else taRefs.current.delete(b.id);
-                      }}
-                      value={b.text}
-                      placeholder={PLACEHOLDER.todo}
-                      onChange={(v) => handleText(b, v)}
-                      onKeyDown={(e) => handleKey(b, e)}
-                      className={`w-full bg-transparent text-ink outline-none placeholder:text-subtle ${TEXT_CLASS.todo} ${b.checked ? "text-muted line-through" : ""}`}
-                    />
-                  ) : (
-                    <p
-                      className={`${TEXT_CLASS.todo} ${b.checked ? "text-muted line-through" : "text-ink"}`}
-                    >
-                      {b.text}
-                    </p>
-                  )}
-                </div>
-              ) : b.type === "toggle" ? (
-                <div>
-                  <div className="flex items-start gap-1">
-                    <button
-                      type="button"
-                      aria-label="Expand toggle"
-                      onClick={() => patch(b.id, { open: !b.open })}
-                      className="mt-[3px] flex h-5 w-5 shrink-0 items-center justify-center rounded text-muted hover:bg-active hover:text-ink"
-                    >
-                      <span
-                        className={`flex transition-transform duration-200 ${b.open ? "rotate-90" : ""}`}
-                      >
-                        <Icon name="chevron-right" size={14} />
-                      </span>
-                    </button>
-                    {editable ? (
-                      <GrowTextarea
-                        regRef={(el) => {
-                          if (el) taRefs.current.set(b.id, el);
-                          else taRefs.current.delete(b.id);
-                        }}
-                        value={b.text}
-                        placeholder={PLACEHOLDER.toggle}
-                        onChange={(v) => handleText(b, v)}
-                        onKeyDown={(e) => handleKey(b, e)}
-                        className={`w-full bg-transparent text-ink outline-none placeholder:text-subtle ${TEXT_CLASS.toggle}`}
-                      />
-                    ) : (
-                      <p className={`${TEXT_CLASS.toggle} text-ink`}>{b.text}</p>
-                    )}
-                  </div>
-                  {b.open &&
-                    (editable ? (
-                      <div className="ml-6">
-                        <GrowTextarea
-                          regRef={(el) => {
-                            if (el) taRefs.current.set(`${b.id}:body`, el);
-                            else taRefs.current.delete(`${b.id}:body`);
-                          }}
-                          value={b.body ?? ""}
-                          placeholder="Toggle content"
-                          onChange={(v) => patch(b.id, { body: v })}
-                          onKeyDown={() => {}}
-                          className="w-full bg-transparent text-[15px] leading-relaxed text-ink outline-none placeholder:text-subtle"
-                        />
-                      </div>
-                    ) : (
-                      b.body && (
-                        <p className="ml-6 text-[15px] leading-relaxed text-ink">
-                          {b.body}
-                        </p>
-                      )
-                    ))}
-                </div>
-              ) : editable ? (
-                <GrowTextarea
-                  regRef={(el) => {
-                    if (el) taRefs.current.set(b.id, el);
-                    else taRefs.current.delete(b.id);
-                  }}
-                  value={b.text}
-                  placeholder={PLACEHOLDER[b.type]}
-                  onChange={(v) => handleText(b, v)}
-                  onKeyDown={(e) => handleKey(b, e)}
-                  className={`w-full bg-transparent text-ink outline-none placeholder:text-subtle ${TEXT_CLASS[b.type]}`}
-                />
-              ) : (
-                <p className={`${TEXT_CLASS[b.type]} text-ink`}>{b.text}</p>
-              )}
-            </div>
+            <div className="px-1 py-0.5">{renderContent(b)}</div>
 
             {editable && slash?.id === b.id && (
               <div className="absolute top-full left-8 z-50 mt-1 w-64 overflow-hidden rounded-lg border border-line bg-surface shadow-2xl">
