@@ -1,0 +1,380 @@
+"use client";
+
+// features/planner/boards.ts
+// Boards own the planner's data in this phase. A board is
+// either a team board attached to a collaboration (opt-in,
+// like Circle: a collab may or may not have one) or a
+// personal board owned by one user. Boards persist locally
+// (localStorage, versioned key) until the planner API grows
+// a boards concept; the shapes are written the way the API
+// would return them, so the later swap is a data-source
+// change, not a remodel.
+
+import { useSyncExternalStore } from "react";
+import { makeBlock } from "./components/BlockBody";
+import type { Block } from "./components/BlockBody";
+
+export type PlannerTaskData = {
+  title: string;
+  section?: string;
+  icon?: string;
+  done?: boolean;
+  pencilled?: boolean;
+  overdue?: boolean;
+  follows?: boolean;
+  blocks?: Block[];
+};
+
+export type PlannerBoardTask = PlannerTaskData & {
+  day: number;
+  span?: number;
+  lane?: number;
+};
+
+export type PlannerBoardMember = {
+  name: string;
+  role: string;
+  pm?: boolean;
+  tasks: PlannerBoardTask[];
+};
+
+export interface PlannerBoard {
+  id: string;
+  name: string;
+  kind: "team" | "personal";
+  /** Team boards only: the collaboration it belongs to. */
+  collabName?: string;
+  members: PlannerBoardMember[];
+}
+
+/** Collaborations the user belongs to (sample list this
+ * phase); the team-board picker chooses from these. */
+export const SAMPLE_COLLABS: string[] = [
+  "Underflow",
+  "LombaKampus",
+  "TechnoSpark",
+  "Orbit",
+];
+
+const seedBlock = (
+  type: Block["type"],
+  text: string,
+  extra?: Partial<Block>,
+): Block => ({ ...makeBlock(type, text), ...extra });
+
+// Starter block bodies for the detail panel, in the task's own
+// language like the sample titles.
+const SAMPLE_BLOCKS: Record<string, Block[]> = {
+  "Implementasi board": [
+    seedBlock("h2", "Rencana pengerjaan"),
+    seedBlock(
+      "text",
+      "Board /tasks versi UI dulu, data masih sampel. Fokus ke rasa drag-nya sebelum wiring API.",
+    ),
+    seedBlock("todo", "Geser pill antar hari + snap", { checked: true }),
+    seedBlock("todo", "Resize dari tepi pill", { checked: true }),
+    seedBlock("todo", "Panel detail ala Notion"),
+    seedBlock("toggle", "Catatan teknis"),
+    seedBlock(
+      "text",
+      "Lane dihitung ulang pakai gravity; drop di lane yang terisi jadi insert dan menggeser tumpukan ke bawah.",
+      { level: 1 },
+    ),
+    seedBlock("todo", "Cek ulang rasa drag di layar kecil", { level: 1 }),
+    seedBlock("divider", ""),
+    seedBlock("text", "Target: rasa dulu, baru fungsi penuh."),
+  ],
+  "Review PR backend": [
+    seedBlock("text", "Cek PR endpoint planner dari Faiz sebelum merge."),
+    seedBlock("todo", "Endpoint GET /planner/tasks", { checked: true }),
+    seedBlock("todo", "Event planner-task di realtime server"),
+  ],
+};
+
+export const defaultBlocksFor = (title: string): Block[] => [
+  seedBlock(
+    "text",
+    `Catatan untuk "${title}" masih kosong. Klik di sini dan mulai tulis, atau tekan / untuk menambah block.`,
+  ),
+  seedBlock("todo", "Langkah pertama"),
+];
+
+const SAMPLE_MEMBERS: PlannerBoardMember[] = [
+  {
+    name: "Raka Alfarezi",
+    role: "Frontend",
+    tasks: [
+      { title: "Desain board planner", section: "Desain", icon: "edit", day: 16 },
+      { title: "Review PR backend", section: "Frontend", done: true, day: 17 },
+      {
+        title: "Implementasi board",
+        section: "Frontend",
+        follows: true,
+        icon: "group",
+        day: 17,
+        span: 2,
+        lane: 1,
+      },
+      { title: "Polish halaman profil", section: "Frontend", icon: "palette", day: 24 },
+    ],
+  },
+  {
+    name: "Faiz Aghitsna",
+    role: "Backend",
+    pm: true,
+    tasks: [
+      { title: "Audit endpoint lama", section: "Backend", icon: "search", day: 3 },
+      { title: "Endpoint GET planner", section: "Backend", icon: "code-alt", day: 15 },
+      {
+        title: "Perbaiki CORS deploy",
+        section: "Backend",
+        overdue: true,
+        icon: "wrench",
+        day: 16,
+      },
+      { title: "Setup Cloudflare Tunnel", section: "Backend", icon: "server", day: 19 },
+    ],
+  },
+  {
+    name: "Fadilah Yasin",
+    role: "Database",
+    tasks: [
+      { title: "Backup database", section: "Backend", icon: "server", day: 11 },
+      { title: "Skema tabel collab_tasks", section: "Backend", done: true, day: 16 },
+      {
+        title: "Seed data demo",
+        section: "Backend",
+        pencilled: true,
+        icon: "edit",
+        day: 18,
+        span: 2,
+      },
+    ],
+  },
+  {
+    name: "Alifah Syarifah",
+    role: "Research",
+    tasks: [
+      { title: "Survei pengguna", section: "Riset", icon: "group", day: 8 },
+      { title: "Riset referensi Talmo", section: "Riset", icon: "search", day: 16 },
+      {
+        title: "Copywriting halaman Tasks",
+        section: "Desain",
+        pencilled: true,
+        icon: "edit",
+        day: 17,
+      },
+    ],
+  },
+  {
+    name: "Alvina Putri",
+    role: "Research",
+    tasks: [
+      { title: "Uji alur apply", section: "Riset", icon: "map-pin", day: 16 },
+      { title: "Catatan rilis", section: "Riset", icon: "edit", day: 21 },
+      { title: "Dokumentasi rilis", section: "Riset", icon: "edit", day: 26 },
+    ],
+  },
+];
+const withBlocks = (
+  members: PlannerBoardMember[],
+): PlannerBoardMember[] =>
+  members.map((m) => ({
+    ...m,
+    tasks: m.tasks.map((tk) => ({
+      ...tk,
+      blocks:
+        tk.blocks ?? SAMPLE_BLOCKS[tk.title] ?? defaultBlocksFor(tk.title),
+    })),
+  }));
+
+export function seedBoards(): PlannerBoard[] {
+  return [
+    {
+      id: "board-underflow",
+      name: "Underflow",
+      kind: "team",
+      collabName: "Underflow",
+      members: withBlocks(SAMPLE_MEMBERS),
+    },
+    {
+      id: "board-lombakampus",
+      name: "LombaKampus",
+      kind: "team",
+      collabName: "LombaKampus",
+      members: withBlocks([
+        {
+          name: "Raka Alfarezi",
+          role: "Project Lead",
+          tasks: [
+            { title: "Desain poster lomba", section: "Desain", day: 18 },
+            {
+              title: "Rekap pendaftaran peserta",
+              section: "Operasional",
+              day: 22,
+            },
+            { title: "Booking aula final", section: "Operasional", day: 25 },
+          ],
+        },
+        {
+          name: "Gunawan",
+          role: "Database",
+          tasks: [
+            {
+              title: "Skema database lomba",
+              section: "Backend",
+              done: true,
+              day: 15,
+            },
+          ],
+        },
+      ]),
+    },
+    {
+      id: "board-portfolio",
+      name: "Portfolio",
+      kind: "personal",
+      members: withBlocks([
+        {
+          name: "Raka Alfarezi",
+          role: "Owner",
+          tasks: [
+            { title: "Update case study planner", section: "Konten", day: 19 },
+            { title: "Rapikan CV", section: "Konten", done: true, day: 12 },
+          ],
+        },
+      ]),
+    },
+  ];
+}
+
+export function openTaskCount(board: PlannerBoard): number {
+  return board.members.reduce(
+    (sum, m) => sum + m.tasks.filter((tk) => !tk.done).length,
+    0,
+  );
+}
+
+// ---- Store ------------------------------------------------
+
+const STORAGE_KEY = "uf-planner-boards-v1";
+const SERVER_SEED = seedBoards();
+let boards: PlannerBoard[] | null = null;
+const listeners = new Set<() => void>();
+
+function emit(): void {
+  listeners.forEach((listener) => listener());
+}
+
+function load(): PlannerBoard[] {
+  if (boards) return boards;
+  let initial = seedBoards();
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw) as PlannerBoard[];
+      if (
+        Array.isArray(parsed) &&
+        parsed.length > 0 &&
+        parsed.every(
+          (b) => b && typeof b.id === "string" && Array.isArray(b.members),
+        )
+      ) {
+        initial = parsed;
+      }
+    }
+  } catch {
+    // Corrupt or unavailable storage: fall back to the seeds.
+  }
+  boards = initial;
+  return boards;
+}
+
+function persist(): void {
+  try {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(boards));
+  } catch {
+    // Storage full or blocked: the in-memory store still works.
+  }
+}
+
+function subscribe(listener: () => void): () => void {
+  listeners.add(listener);
+  if (!boards) {
+    load();
+    emit();
+  }
+  return () => {
+    listeners.delete(listener);
+  };
+}
+
+export function useBoards(): PlannerBoard[] {
+  return useSyncExternalStore(
+    subscribe,
+    () => boards ?? SERVER_SEED,
+    () => SERVER_SEED,
+  );
+}
+
+export function updateBoardMembers(
+  id: string,
+  members: PlannerBoardMember[],
+): void {
+  if (!boards) return;
+  const idx = boards.findIndex((b) => b.id === id);
+  if (idx < 0 || boards[idx].members === members) return;
+  boards = boards.map((b, i) => (i === idx ? { ...b, members } : b));
+  persist();
+  emit();
+}
+
+export function createBoard(input: {
+  kind: "team" | "personal";
+  collabName?: string;
+  name?: string;
+  ownerName: string;
+}): PlannerBoard {
+  const current = load();
+  const board: PlannerBoard = {
+    id: `board-${Date.now().toString(36)}`,
+    name:
+      input.kind === "team"
+        ? (input.collabName ?? "Team board")
+        : input.name?.trim() || "Personal board",
+    kind: input.kind,
+    collabName: input.kind === "team" ? input.collabName : undefined,
+    members: [{ name: input.ownerName, role: "Owner", tasks: [] }],
+  };
+  boards = [...current, board];
+  persist();
+  emit();
+  return board;
+}
+
+// ---- Create-board dialog visibility -----------------------
+// Opened from the sidebar's New board row and from the board
+// page's board switcher; the dialog itself is rendered once
+// by the sidebar.
+
+let createOpen = false;
+const createListeners = new Set<() => void>();
+
+export function setCreateBoardOpen(next: boolean): void {
+  if (createOpen === next) return;
+  createOpen = next;
+  createListeners.forEach((listener) => listener());
+}
+
+export function useCreateBoardOpen(): boolean {
+  return useSyncExternalStore(
+    (listener) => {
+      createListeners.add(listener);
+      return () => {
+        createListeners.delete(listener);
+      };
+    },
+    () => createOpen,
+    () => false,
+  );
+}

@@ -44,10 +44,24 @@ import type {
 } from "react";
 
 import { BlockBody, makeBlock } from "./BlockBody";
+import {
+  defaultBlocksFor,
+  setCreateBoardOpen,
+  updateBoardMembers,
+  useBoards,
+} from "../boards";
+import type {
+  PlannerBoard,
+  PlannerBoardMember,
+  PlannerBoardTask,
+  PlannerTaskData,
+} from "../boards";
 import type { Block } from "./BlockBody";
 import { Avatar } from "@/components/ui/Avatar";
 import { Icon } from "@/components/ui/Icon";
 import { DateField } from "@/components/ui/DateField";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 
 // Sample month: November 2026 (Nov 1 is a Sunday). "Today" is
@@ -110,21 +124,10 @@ const DAY_W = 132;
 const LANE_H = 52;
 const BOARD_W = WHO_W + SAMPLE_DAYS.length * DAY_W;
 
-type SampleTask = {
-  title: string;
-  section?: string;
-  icon?: string;
-  done?: boolean;
-  pencilled?: boolean;
-  overdue?: boolean;
-  follows?: boolean;
-  blocks?: Block[];
-};
-
-// A board task sits on the day area by day index (0 = Nov 1), can
-// span several days, and stacks into a lane when two tasks share a
-// day for the same member.
-type BoardTask = SampleTask & { day: number; span?: number; lane?: number };
+// Board data shapes live in the boards store (../boards);
+// these aliases keep the canvas's local naming.
+type SampleTask = PlannerTaskData;
+type BoardTask = PlannerBoardTask;
 
 // One pill in flight: deltas are px from its home position.
 type DragState = {
@@ -244,48 +247,7 @@ const SAMPLE_FOLLOWS: Record<string, string> = {
   "Implementasi board": "Review PR backend",
 };
 
-const seedBlock = (
-  type: Block["type"],
-  text: string,
-  extra?: Partial<Block>,
-): Block => ({ ...makeBlock(type, text), ...extra });
 
-// Starter block bodies for the detail panel, in the task's own
-// language like the sample titles.
-const SAMPLE_BLOCKS: Record<string, Block[]> = {
-  "Implementasi board": [
-    seedBlock("h2", "Rencana pengerjaan"),
-    seedBlock(
-      "text",
-      "Board /tasks versi UI dulu, data masih sampel. Fokus ke rasa drag-nya sebelum wiring API.",
-    ),
-    seedBlock("todo", "Geser pill antar hari + snap", { checked: true }),
-    seedBlock("todo", "Resize dari tepi pill", { checked: true }),
-    seedBlock("todo", "Panel detail ala Notion"),
-    seedBlock("toggle", "Catatan teknis"),
-    seedBlock(
-      "text",
-      "Lane dihitung ulang pakai gravity; drop di lane yang terisi jadi insert dan menggeser tumpukan ke bawah.",
-      { level: 1 },
-    ),
-    seedBlock("todo", "Cek ulang rasa drag di layar kecil", { level: 1 }),
-    seedBlock("divider", ""),
-    seedBlock("text", "Target: rasa dulu, baru fungsi penuh."),
-  ],
-  "Review PR backend": [
-    seedBlock("text", "Cek PR endpoint planner dari Faiz sebelum merge."),
-    seedBlock("todo", "Endpoint GET /planner/tasks", { checked: true }),
-    seedBlock("todo", "Event planner-task di realtime server"),
-  ],
-};
-
-const defaultBlocksFor = (title: string): Block[] => [
-  seedBlock(
-    "text",
-    `Catatan untuk "${title}" masih kosong. Klik di sini dan mulai tulis, atau tekan / untuk menambah block.`,
-  ),
-  seedBlock("todo", "Langkah pertama"),
-];
 
 // Sample-phase stand-in for the signed-in user: who is looking at
 // the board decides whose pills may move.
@@ -296,90 +258,8 @@ const PERSONAS = [
 ] as const;
 type ViewerKey = (typeof PERSONAS)[number]["key"];
 
-type SampleMember = {
-  name: string;
-  role: string;
-  pm?: boolean;
-  tasks: BoardTask[];
-};
+type SampleMember = PlannerBoardMember;
 
-const SAMPLE_MEMBERS: SampleMember[] = [
-  {
-    name: "Raka Alfarezi",
-    role: "Frontend",
-    tasks: [
-      { title: "Desain board planner", section: "Desain", icon: "edit", day: 16 },
-      { title: "Review PR backend", section: "Frontend", done: true, day: 17 },
-      {
-        title: "Implementasi board",
-        section: "Frontend",
-        follows: true,
-        icon: "group",
-        day: 17,
-        span: 2,
-        lane: 1,
-      },
-      { title: "Polish halaman profil", section: "Frontend", icon: "palette", day: 24 },
-    ],
-  },
-  {
-    name: "Faiz Aghitsna",
-    role: "Backend",
-    pm: true,
-    tasks: [
-      { title: "Audit endpoint lama", section: "Backend", icon: "search", day: 3 },
-      { title: "Endpoint GET planner", section: "Backend", icon: "code-alt", day: 15 },
-      {
-        title: "Perbaiki CORS deploy",
-        section: "Backend",
-        overdue: true,
-        icon: "wrench",
-        day: 16,
-      },
-      { title: "Setup Cloudflare Tunnel", section: "Backend", icon: "server", day: 19 },
-    ],
-  },
-  {
-    name: "Fadilah Yasin",
-    role: "Database",
-    tasks: [
-      { title: "Backup database", section: "Backend", icon: "server", day: 11 },
-      { title: "Skema tabel collab_tasks", section: "Backend", done: true, day: 16 },
-      {
-        title: "Seed data demo",
-        section: "Backend",
-        pencilled: true,
-        icon: "edit",
-        day: 18,
-        span: 2,
-      },
-    ],
-  },
-  {
-    name: "Alifah Syarifah",
-    role: "Research",
-    tasks: [
-      { title: "Survei pengguna", section: "Riset", icon: "group", day: 8 },
-      { title: "Riset referensi Talmo", section: "Riset", icon: "search", day: 16 },
-      {
-        title: "Copywriting halaman Tasks",
-        section: "Desain",
-        pencilled: true,
-        icon: "edit",
-        day: 17,
-      },
-    ],
-  },
-  {
-    name: "Alvina Putri",
-    role: "Research",
-    tasks: [
-      { title: "Uji alur apply", section: "Riset", icon: "map-pin", day: 16 },
-      { title: "Catatan rilis", section: "Riset", icon: "edit", day: 21 },
-      { title: "Dokumentasi rilis", section: "Riset", icon: "edit", day: 26 },
-    ],
-  },
-];
 
 
 // Row geometry for the background layer: header height + each
@@ -530,8 +410,48 @@ function DetailRow({
   );
 }
 
-export function PlannerBoardPage() {
+export function PlannerBoardPage({ boardId }: { boardId: string }) {
   const { t } = useLanguage();
+  const boards = useBoards();
+  const board = boards.find((b) => b.id === boardId);
+  if (!board) {
+    return (
+      <div className="flex flex-col items-start gap-3 py-16">
+        <h1 className="text-2xl font-medium tracking-tight text-ink">
+          {t("planner.boardNotFound")}
+        </h1>
+        <p className="max-w-md text-sm text-muted">
+          {t("planner.boardNotFoundBody")}
+        </p>
+        <Link
+          href="/tasks"
+          className="rounded-full border border-line bg-surface px-4 py-2 text-sm font-medium text-ink"
+        >
+          {t("planner.backToTasks")}
+        </Link>
+      </div>
+    );
+  }
+  return (
+    <BoardCanvas
+      key={board.id}
+      board={board}
+      onMembersChange={(ms) => updateBoardMembers(board.id, ms)}
+    />
+  );
+}
+
+function BoardCanvas({
+  board,
+  onMembersChange,
+}: {
+  board: PlannerBoard;
+  onMembersChange: (members: SampleMember[]) => void;
+}) {
+  const { t } = useLanguage();
+  const router = useRouter();
+  const boards = useBoards();
+  const [switchOpen, setSwitchOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const panRef = useRef<{
     startX: number;
@@ -544,14 +464,17 @@ export function PlannerBoardPage() {
   const momentumRef = useRef<number | null>(null);
   const [panning, setPanning] = useState(false);
   const [members, setMembers] = useState<SampleMember[]>(() =>
-    SAMPLE_MEMBERS.map((m) => ({
+    board.members.map((m) => ({
       ...m,
-      tasks: m.tasks.map((tk) => ({
-        ...tk,
-        blocks: SAMPLE_BLOCKS[tk.title] ?? defaultBlocksFor(tk.title),
-      })),
+      tasks: m.tasks.map((tk) => ({ ...tk })),
     })),
   );
+  // Every edit flows back to the boards store, so the sidebar
+  // counts and the next visit to this board see the same state.
+  useEffect(() => {
+    onMembersChange(members);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [members]);
   const [drag, setDrag] = useState<DragState | null>(null);
   // The pill whose drop just committed: its own left/top must
   // not animate in the commit render (its settle glide already
@@ -1347,13 +1270,73 @@ export function PlannerBoardPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <button
-            type="button"
-            className="flex max-w-[240px] items-center gap-2 rounded-full border border-line bg-surface px-4 py-2 text-sm text-ink"
-          >
-            <span className="truncate">Underflow — Web App</span>
-            <Icon name="chevron-down" size={14} />
-          </button>
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setSwitchOpen((v) => !v)}
+              className="flex max-w-[240px] items-center gap-2 rounded-full border border-line bg-surface px-4 py-2 text-sm text-ink"
+            >
+            <span className="truncate">{board.name}</span>
+              <Icon name="chevron-down" size={14} />
+            </button>
+            {switchOpen && (
+              <>
+                <div
+                  className="fixed inset-0 z-40"
+                  onClick={() => setSwitchOpen(false)}
+                />
+                <div className="absolute right-0 top-full z-50 mt-2 w-64 rounded-lg border border-line bg-surface p-1.5 shadow-2xl">
+                  {boards.map((b) => (
+                    <button
+                      key={b.id}
+                      type="button"
+                      onClick={() => {
+                        setSwitchOpen(false);
+                        if (b.id !== board.id) {
+                          router.push(`/tasks/${b.id}`);
+                        }
+                      }}
+                      className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-sm hover:bg-active"
+                    >
+                      <span
+                        className={`size-1.5 shrink-0 rounded-full ${
+                          b.id === board.id ? "bg-accent" : "bg-line"
+                        }`}
+                      />
+                      <span className="min-w-0 flex-1 truncate font-medium text-ink">
+                        {b.name}
+                      </span>
+                      <span className="text-xs text-muted">
+                        {b.kind === "team"
+                          ? t("planner.kindTeam")
+                          : t("planner.kindPersonal")}
+                      </span>
+                      {b.id === board.id && (
+                        <Icon
+                          name="check"
+                          size={16}
+                          className="shrink-0 text-accent"
+                        />
+                      )}
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSwitchOpen(false);
+                      setCreateBoardOpen(true);
+                    }}
+                    className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-sm font-medium text-ink hover:bg-active"
+                  >
+                    <Icon name="plus" size={15} className="shrink-0" />
+                    <span className="min-w-0 flex-1 truncate">
+                      {t("nav.newBoard")}
+                    </span>
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
           <button
             type="button"
             onClick={openAdd}

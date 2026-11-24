@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { AppShell } from "@/components/layout/AppShell";
-import { PlannerBoardPage } from "@/features/planner/components/PlannerBoardPage";
+import { TasksIndexRedirect } from "@/features/planner/components/TasksIndexRedirect";
 
 export const metadata: Metadata = {
   title: "Tasks",
@@ -17,7 +17,7 @@ export default function TasksPage() {
   return (
     <AppShell breadcrumbRoot="Dashboard" breadcrumbLeaf="Tasks">
       <div className="page-enter px-4 py-6 sm:px-6 sm:py-8">
-        <PlannerBoardPage />
+        <TasksIndexRedirect />
       </div>
     </AppShell>
   );
