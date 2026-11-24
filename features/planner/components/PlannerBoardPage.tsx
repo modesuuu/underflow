@@ -750,7 +750,7 @@ export function PlannerBoardPage() {
       detach();
       if (rejected) return;
       if (!live) {
-        if (!cancelled) openDetail(mi, task);
+        if (!cancelled) openDetail(mi, task.title);
         return;
       }
       const { dx, dy } = live;
