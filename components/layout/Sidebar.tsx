@@ -103,9 +103,12 @@ interface NavRowProps {
   animate?: boolean;
   onSelect: (id: string) => void;
   registerRef: RegisterRef<HTMLElement>;
+  expandable?: boolean;
+  expanded?: boolean;
+  onToggleExpand?: () => void;
 }
 
-function NavRow({ item, active, badge, mini, animate, onSelect, registerRef }: NavRowProps) {
+function NavRow({ item, active, badge, mini, animate, onSelect, registerRef, expandable, expanded, onToggleExpand }: NavRowProps) {
   const { t } = useLanguage();
   const labelKey = NAV_LABEL_KEYS[item.id];
   const label = labelKey ? t(labelKey) : item.label;
@@ -210,6 +213,27 @@ function NavRow({ item, active, badge, mini, animate, onSelect, registerRef }: N
       {!mini && badge !== undefined && badge > 0 && (
         <Badge count={badge} tone="danger" className="ml-auto" />
       )}
+      {/* Submenu chevron: toggles the item's child list
+          without navigating; the row itself stays the link. */}
+      {!mini && expandable && (
+        <span
+          role="button"
+          aria-label={expanded ? "Collapse submenu" : "Expand submenu"}
+          aria-expanded={expanded}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onToggleExpand?.();
+          }}
+          className={
+            "chevron-rot inline-flex shrink-0 cursor-pointer items-center justify-center rounded-sm p-0.5 text-muted " +
+            (badge !== undefined && badge > 0 ? "ml-1" : "ml-auto") +
+            (expanded ? " rotate-0" : " -rotate-90")
+          }
+        >
+          <Icon name="chevron-down" size={16} className="leading-none" />
+        </span>
+      )}
       {/* Tooltip — only on the icon rail; portaled so the
           accordion's overflow clip cannot eat it (see showTip). */}
       {mini &&
@@ -302,6 +326,10 @@ interface NavSectionBlockProps {
   onToggle: (id: string) => void;
   onSelect: (id: string) => void;
   registerRowRef: RegisterRef<HTMLElement>;
+  openMenus: Record<string, boolean>;
+  activeChild: string | null;
+  onToggleMenu: (id: string) => void;
+  onSelectChild: (id: string) => void;
 }
 
 function NavSectionBlock({
@@ -314,7 +342,12 @@ function NavSectionBlock({
   onToggle,
   onSelect,
   registerRowRef,
+  openMenus,
+  activeChild,
+  onToggleMenu,
+  onSelectChild,
 }: NavSectionBlockProps) {
+  const { t } = useLanguage();
   // On the icon rail the section header becomes a hairline divider
   // and the rows are always shown (an accordion makes no sense at
   // 76px — there is nothing to read).
@@ -373,16 +406,78 @@ function NavSectionBlock({
       <div className={sectionCollapsed ? "acc-wrap [grid-template-rows:0fr]" : "acc-wrap [grid-template-rows:1fr]"}>
         <div className="acc-inner flex flex-col gap-1">
           {section.items.map((item) => (
-            <NavRow
-              key={item.id}
-              item={item}
-              active={item.id === activeId}
-              badge={badgeFor(item.id)}
-              mini={mini}
-              animate={animate}
-              onSelect={onSelect}
-              registerRef={registerRowRef}
-            />
+            <div key={item.id} className="flex flex-col">
+              <NavRow
+                item={item}
+                active={item.id === activeId}
+                badge={badgeFor(item.id)}
+                mini={mini}
+                animate={animate}
+                onSelect={onSelect}
+                registerRef={registerRowRef}
+                expandable={!!item.children?.length}
+                expanded={!!openMenus[item.id]}
+                onToggleExpand={() => onToggleMenu(item.id)}
+              />
+              {item.children && !mini && (
+                <div
+                  className={
+                    openMenus[item.id]
+                      ? "acc-wrap [grid-template-rows:1fr]"
+                      : "acc-wrap [grid-template-rows:0fr]"
+                  }
+                >
+                  <div className="acc-inner">
+                    <div className="mt-1 ml-[13px] flex flex-col gap-0.5 border-l border-line pl-3">
+                      {item.children.map((child) => {
+                        const childActive =
+                          (activeChild ?? item.children?.[0]?.id) === child.id;
+                        return (
+                          <Link
+                            key={child.id}
+                            href={item.href ?? "/tasks"}
+                            onClick={() => onSelectChild(child.id)}
+                            className={clsx(
+                              "flex items-center gap-2 rounded-md px-2 py-1.5 text-xs",
+                              childActive
+                                ? "bg-active font-medium text-ink"
+                                : "nav-row-hoverable text-muted",
+                            )}
+                          >
+                            <Icon
+                              name={child.icon}
+                              size={15}
+                              className="shrink-0 leading-none"
+                            />
+                            <span className="min-w-0 flex-1 truncate">
+                              {child.label}
+                            </span>
+                            {child.count !== undefined && (
+                              <span className="rounded-full bg-surface px-1.5 py-px text-[10px] font-semibold text-muted">
+                                {child.count}
+                              </span>
+                            )}
+                          </Link>
+                        );
+                      })}
+                      <Link
+                        href="/collaborations"
+                        className="nav-row-hoverable flex items-center gap-2 rounded-md px-2 py-1.5 text-xs font-medium text-muted"
+                      >
+                        <Icon
+                          name="plus"
+                          size={15}
+                          className="shrink-0 leading-none"
+                        />
+                        <span className="min-w-0 flex-1 truncate">
+                          {t("nav.newBoard")}
+                        </span>
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
           ))}
         </div>
       </div>
@@ -397,6 +492,7 @@ function routeToNavId(pathname: string): string {
   if (pathname.startsWith("/collaborations")) return "collaborations";
   if (pathname.startsWith("/search")) return "search";
   if (pathname.startsWith("/inbox")) return "inbox";
+  if (pathname.startsWith("/tasks")) return "tasks";
   if (pathname.startsWith("/settings")) return "settings";
   if (pathname === "/" || pathname.startsWith("/dashboard")) return "feeds";
   return DEFAULT_ACTIVE_ID;
@@ -411,6 +507,8 @@ export function Sidebar() {
   // Route-aware active state: init from URL, sync on navigation.
   const [activeId, setActiveId] = useState(() => routeToNavId(pathname));
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+  const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({});
+  const [activeChild, setActiveChild] = useState<string | null>(null);
   const [miniPref, setMiniPref] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   useEffect(() => {
@@ -443,6 +541,13 @@ export function Sidebar() {
   // Sync activeId with pathname on navigation.
   useEffect(() => {
     setActiveId(routeToNavId(pathname));
+  }, [pathname]);
+
+  // The Tasks submenu opens on its own page.
+  useEffect(() => {
+    if (pathname.startsWith("/tasks")) {
+      setOpenMenus((prev) => (prev.tasks ? prev : { ...prev, tasks: true }));
+    }
   }, [pathname]);
 
   // Apply the stored rail preference BEFORE the browser paints
@@ -614,6 +719,9 @@ export function Sidebar() {
     return () => observer.disconnect();
   }, []);
 
+  const toggleMenu = (id: string) =>
+    setOpenMenus((prev) => ({ ...prev, [id]: !prev[id] }));
+
   const toggleSection = (id: string) => {
     const isCollapsed = !!collapsed[id];
     setCollapsed((prev) => ({ ...prev, [id]: !isCollapsed }));
@@ -739,6 +847,10 @@ export function Sidebar() {
                 onToggle={toggleSection}
                 onSelect={setActiveId}
                 registerRowRef={registerRow}
+                openMenus={openMenus}
+                activeChild={activeChild}
+                onToggleMenu={toggleMenu}
+                onSelectChild={setActiveChild}
               />
             ))}
           </nav>

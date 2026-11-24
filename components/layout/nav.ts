@@ -1,9 +1,19 @@
 import { getSessionUser } from "@/features/auth/session";
 
+export interface NavChild {
+  id: string;
+  label: string;
+  icon: string;
+  /** Open-task count, shown as a quiet trailing chip. */
+  count?: number;
+}
+
 export interface NavItem {
   id: string;
   label: string;
   icon: string;
+  /** Expandable submenu rows (Tasks lists its boards). */
+  children?: NavChild[];
   /** Optional route path. When set, clicking the nav item navigates here. */
   href?: string;
   /** Cross-frame destinations (e.g. Admin) load a fresh document
@@ -27,7 +37,20 @@ export const NAV_SECTIONS: NavSection[] = [
       { id: "feeds", label: "Feeds", icon: "grid-alt", href: "/" },
       { id: "collaborations", label: "Collaborations", icon: "group", href: "/collaborations" },
       { id: "my-collab", label: "My Collaborations", icon: "layout", href: "/my-collaborations" },
-      { id: "tasks", label: "Tasks", icon: "task", href: "/tasks" },
+      {
+        id: "tasks",
+        label: "Tasks",
+        icon: "task",
+        href: "/tasks",
+        // Sample boards from the /tasks board's sample world;
+        // this list becomes the planner API's per-collab list
+        // when the wiring lands.
+        children: [
+          { id: "board-underflow", label: "Underflow", icon: "layout", count: 15 },
+          { id: "board-lombakampus", label: "LombaKampus", icon: "trophy", count: 3 },
+          { id: "board-portfolio", label: "Portfolio", icon: "briefcase", count: 1 },
+        ],
+      },
       { id: "circle", label: "Circle", icon: "conversation", href: "/circle" },
     ],
   },
