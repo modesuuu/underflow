@@ -494,17 +494,29 @@ export function PlannerBoardPage() {
     );
   };
 
-  // Who may move a pill: done tasks never move; a member moves
-  // only their own; the owner and PMs move anyone's.
-  const dragGate = (mi: number, task: BoardTask): "done" | "own" | null => {
+  // Who may move a pill: done tasks never move; a task whose
+  // last day has passed is locked in place (its dates can still
+  // be rescued from the detail panel); a member moves only
+  // their own; the owner and PMs move anyone's.
+  const dragGate = (
+    mi: number,
+    task: BoardTask,
+  ): "done" | "past" | "own" | null => {
     if (task.done) return "done";
+    if (task.day + (task.span ?? 1) - 1 < TODAY_INDEX) return "past";
     if (viewer.key === "member" && viewer.member !== mi) return "own";
     return null;
   };
-  const gateToast = (gate: "done" | "own") =>
+  const gateToast = (gate: "done" | "past" | "own") =>
     showToast(
       "warn",
-      t(gate === "done" ? "planner.toastDone" : "planner.toastOwnOnly"),
+      t(
+        gate === "done"
+          ? "planner.toastDone"
+          : gate === "past"
+            ? "planner.toastPastLocked"
+            : "planner.toastOwnOnly",
+      ),
     );
 
   // Task detail panel (Notion-style, slides in from the right).
@@ -527,6 +539,55 @@ export function PlannerBoardPage() {
       setDetail(null);
       setDetailLeaving(false);
     }, 250);
+  };
+
+  // Add task dialog. The board is dynamic now: a new pill is
+  // created in state, lands on the chosen member's row, and
+  // gravity assigns its lane. A member viewer only ever adds
+  // to their own row; the owner and PMs may assign anyone.
+  const [addOpen, setAddOpen] = useState(false);
+  const [addTitle, setAddTitle] = useState("");
+  const [addMember, setAddMember] = useState(0);
+  const [addStart, setAddStart] = useState(TODAY_INDEX);
+  const [addEnd, setAddEnd] = useState(TODAY_INDEX);
+  const [addSection, setAddSection] = useState("");
+  const [addPencilled, setAddPencilled] = useState(false);
+  const openAdd = () => {
+    setAddTitle("");
+    setAddMember(viewer.key === "member" ? viewer.member : 0);
+    setAddStart(TODAY_INDEX);
+    setAddEnd(TODAY_INDEX);
+    setAddSection("");
+    setAddPencilled(false);
+    setAddOpen(true);
+  };
+  const submitAdd = () => {
+    const title = addTitle.trim();
+    if (!title) {
+      showToast("warn", t("planner.toastNeedTitle"));
+      return;
+    }
+    const target = viewer.key === "member" ? viewer.member : addMember;
+    if (members[target].tasks.some((tk) => tk.title === title)) {
+      showToast("warn", t("planner.toastDupTitle"));
+      return;
+    }
+    const task: BoardTask = {
+      title,
+      section: addSection || undefined,
+      day: addStart,
+      span: addEnd - addStart + 1,
+      pencilled: addPencilled ? true : undefined,
+      blocks: defaultBlocksFor(title),
+    };
+    setMembers((prev) =>
+      prev.map((m, i) =>
+        i === target ? { ...m, tasks: gravityPass([...m.tasks, task]) } : m,
+      ),
+    );
+    setAddOpen(false);
+    showToast("ok", t("planner.toastAdded"));
+    openDetail(target, title);
   };
 
   // A grab during another pill's glide home commits that move
@@ -572,6 +633,15 @@ export function PlannerBoardPage() {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [detail]);
+
+  useEffect(() => {
+    if (!addOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setAddOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [addOpen]);
 
   useEffect(() => {
     if (!settleKey) return;
@@ -1126,6 +1196,13 @@ export function PlannerBoardPage() {
   const detailCanEdit =
     detail != null &&
     (viewer.key !== "member" || viewer.member === detail.member);
+  const sectionOptions = Array.from(
+    new Set(
+      members.flatMap((m) =>
+        m.tasks.map((tk) => tk.section).filter((s): s is string => !!s),
+      ),
+    ),
+  );
 
   return (
     <div className="flex flex-col gap-5">
@@ -1149,6 +1226,7 @@ export function PlannerBoardPage() {
           </button>
           <button
             type="button"
+            onClick={openAdd}
             className="flex items-center gap-1.5 rounded-full bg-ink px-4 py-2 text-sm font-medium text-surface"
           >
             <Icon name="plus" size={14} />
@@ -1611,6 +1689,147 @@ export function PlannerBoardPage() {
               </div>
             </div>
           </aside>
+        </>
+      )}
+
+      {/* Add task dialog: sits above the board (below the
+          toast), closes on backdrop click or Escape. */}
+      {addOpen && (
+        <>
+          <div
+            aria-hidden
+            onClick={() => setAddOpen(false)}
+            className="fixed inset-0 z-[95]"
+            style={{ backgroundColor: "rgba(0, 0, 0, 0.32)" }}
+          />
+          <div className="fixed inset-0 z-[96] flex items-center justify-center p-4">
+            <div className="w-full max-w-md rounded-lg border border-line bg-surface p-6 shadow-2xl">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-semibold text-ink">
+                  {t("planner.addTask")}
+                </h2>
+                <button
+                  type="button"
+                  onClick={() => setAddOpen(false)}
+                  aria-label="Close"
+                  className="flex h-8 w-8 items-center justify-center rounded-full text-muted hover:bg-active hover:text-ink"
+                >
+                  <Icon name="x" size={16} />
+                </button>
+              </div>
+              <div className="mt-4 flex flex-col gap-3">
+                <input
+                  autoFocus
+                  value={addTitle}
+                  onChange={(e) => setAddTitle(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") submitAdd();
+                  }}
+                  placeholder={t("planner.taskTitlePlaceholder")}
+                  className="w-full rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink"
+                />
+                <label className="flex flex-col gap-1">
+                  <span className="font-mono text-2xs font-medium uppercase tracking-wider text-muted">
+                    {t("planner.assignee")}
+                  </span>
+                  <select
+                    value={viewer.key === "member" ? viewer.member : addMember}
+                    disabled={viewer.key === "member"}
+                    onChange={(e) => setAddMember(Number(e.target.value))}
+                    className="w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm text-ink disabled:opacity-50"
+                  >
+                    {members.map((m, i) => (
+                      <option key={m.name} value={i}>
+                        {m.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="flex flex-col gap-1">
+                  <span className="font-mono text-2xs font-medium uppercase tracking-wider text-muted">
+                    {t("planner.section")}
+                  </span>
+                  <select
+                    value={addSection}
+                    onChange={(e) => setAddSection(e.target.value)}
+                    className="w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm text-ink"
+                  >
+                    <option value="">{t("planner.noSection")}</option>
+                    {sectionOptions.map((s) => (
+                      <option key={s} value={s}>
+                        {s}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <div className="flex flex-col gap-1">
+                  <span className="font-mono text-2xs font-medium uppercase tracking-wider text-muted">
+                    {t("planner.dueDate")}
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <select
+                      value={addStart}
+                      onChange={(e) => {
+                        const v = Number(e.target.value);
+                        setAddStart(v);
+                        if (addEnd < v) setAddEnd(v);
+                      }}
+                      className="rounded-md border border-line bg-surface px-1.5 py-1 text-sm text-ink"
+                    >
+                      {SAMPLE_DAYS.slice(TODAY_INDEX).map((d) => (
+                        <option key={d.date} value={d.date - 1}>
+                          {d.dow} {d.date}
+                        </option>
+                      ))}
+                    </select>
+                    <span className="text-muted">-</span>
+                    <select
+                      value={addEnd}
+                      onChange={(e) => setAddEnd(Number(e.target.value))}
+                      className="rounded-md border border-line bg-surface px-1.5 py-1 text-sm text-ink"
+                    >
+                      {SAMPLE_DAYS.slice(addStart).map((d) => (
+                        <option key={d.date} value={d.date - 1}>
+                          {d.dow} {d.date}
+                        </option>
+                      ))}
+                    </select>
+                  </span>
+                </div>
+                <label className="flex flex-col gap-1">
+                  <span className="font-mono text-2xs font-medium uppercase tracking-wider text-muted">
+                    {t("planner.status")}
+                  </span>
+                  <select
+                    value={addPencilled ? "pencilled" : "booked"}
+                    onChange={(e) =>
+                      setAddPencilled(e.target.value === "pencilled")
+                    }
+                    className="w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm text-ink"
+                  >
+                    <option value="booked">Booked</option>
+                    <option value="pencilled">Pencilled</option>
+                  </select>
+                </label>
+              </div>
+              <div className="mt-5 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setAddOpen(false)}
+                  className="rounded-full border border-line px-4 py-2 text-sm font-medium text-ink"
+                >
+                  {t("common.cancel")}
+                </button>
+                <button
+                  type="button"
+                  onClick={submitAdd}
+                  className="rounded-full bg-ink px-4 py-2 text-sm font-medium text-surface"
+                >
+                  {t("planner.addTask")}
+                </button>
+              </div>
+            </div>
+          </div>
         </>
       )}
 
