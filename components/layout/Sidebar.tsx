@@ -844,7 +844,7 @@ export function Sidebar() {
           <nav
             ref={stackRef}
             onScroll={() => positionPillRef.current()}
-            className="mt-6 flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            className="no-scrollbar mt-6 flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto"
           >
             {NAV_SECTIONS.map((section) => (
               <NavSectionBlock
@@ -869,33 +869,35 @@ export function Sidebar() {
                 onSelectChild={setActiveChild}
               />
             ))}
+            {/* Admin + Setting scroll along with the menu;
+                only the profile card stays pinned below. */}
+            <div className="flex flex-col gap-1">
+              {isAdminTier && (
+                <NavRow
+                  item={{ id: "admin", label: "Admin", icon: "shield", href: "/admin", hard: true }}
+                  active={false}
+                  mini={mini}
+                  animate={animateWidth}
+                  onSelect={setActiveId}
+                  registerRef={registerRow}
+                />
+              )}
+              {FOOTER_LINKS.map((link) => (
+                <NavRow
+                  key={link.id}
+                  item={link}
+                  active={link.id === activeId}
+                  mini={mini}
+                  animate={animateWidth}
+                  onSelect={setActiveId}
+                  registerRef={registerRow}
+                />
+              ))}
+            </div>
           </nav>
 
-        {/* Footer: pinned under the scrolling nav. */}
+        {/* Profile footer: pinned under the scrolling nav. */}
         <div className="mt-6 flex shrink-0 flex-col gap-3">
-          <div className="flex flex-col gap-3">
-            {isAdminTier && (
-              <NavRow
-                item={{ id: "admin", label: "Admin", icon: "shield", href: "/admin", hard: true }}
-                active={false}
-                mini={mini}
-                animate={animateWidth}
-                onSelect={setActiveId}
-                registerRef={registerRow}
-              />
-            )}
-            {FOOTER_LINKS.map((link) => (
-              <NavRow
-                key={link.id}
-                item={link}
-                active={link.id === activeId}
-                mini={mini}
-                animate={animateWidth}
-                onSelect={setActiveId}
-                registerRef={registerRow}
-              />
-            ))}
-          </div>
           <div className="h-px w-full bg-line" />
 
           {/* Profile card — links to the current user's own profile,
