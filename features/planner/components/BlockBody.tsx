@@ -248,9 +248,46 @@ export function BlockBody({
       setFocusReq({ id: nid, pos: 0 });
       return;
     }
-    if (e.key === "Backspace" && b.text === "") {
-      e.preventDefault();
-      removeBlock(b.id);
+    if (e.key === "Backspace" && ta.selectionStart === ta.selectionEnd) {
+      const caret = ta.selectionStart ?? 0;
+      if (b.text === "") {
+        e.preventDefault();
+        removeBlock(b.id);
+        return;
+      }
+      if (caret === 0) {
+        const i = blocks.findIndex((x) => x.id === b.id);
+        const prev = blocks[i - 1];
+        if (!prev) return;
+        e.preventDefault();
+        if (prev.type === "divider") {
+          onChange(blocks.filter((x) => x.id !== prev.id));
+          setFocusReq({ id: b.id, pos: 0 });
+        } else {
+          const junction = prev.text.length;
+          onChange(
+            blocks
+              .filter((x) => x.id !== b.id)
+              .map((x) =>
+                x.id === prev.id ? { ...x, text: x.text + b.text } : x,
+              ),
+          );
+          setFocusReq({ id: prev.id, pos: junction });
+        }
+      }
+      return;
+    }
+    if (
+      e.key === "Delete" &&
+      ta.selectionStart === ta.selectionEnd &&
+      (ta.selectionStart ?? 0) === b.text.length
+    ) {
+      const i = blocks.findIndex((x) => x.id === b.id);
+      const next = blocks[i + 1];
+      if (next?.type === "divider") {
+        e.preventDefault();
+        onChange(blocks.filter((x) => x.id !== next.id));
+      }
     }
   };
 
@@ -392,7 +429,23 @@ export function BlockBody({
 
             <div className="px-1 py-0.5">
               {b.type === "divider" ? (
-                <div className="my-2 border-t border-line" />
+                <div
+                  tabIndex={editable ? 0 : -1}
+                  title={editable ? "Divider — Backspace deletes it" : undefined}
+                  onKeyDown={(e) => {
+                    if (!editable) return;
+                    if (e.key === "Backspace" || e.key === "Delete") {
+                      e.preventDefault();
+                      removeBlock(b.id);
+                    }
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      const nid = insertAfter(b.id, "text");
+                      setFocusReq({ id: nid, pos: 0 });
+                    }
+                  }}
+                  className="my-2 border-t border-line outline-none focus:border-ink"
+                />
               ) : b.type === "todo" ? (
                 <div className="flex items-start gap-2">
                   <button
