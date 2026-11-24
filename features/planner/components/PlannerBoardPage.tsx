@@ -59,6 +59,27 @@ const SAMPLE_DAYS = Array.from({ length: 30 }, (_, i) => ({
 }));
 const SAMPLE_TODAY = 17;
 const TODAY_INDEX = SAMPLE_TODAY - 1;
+
+// Icons a task pill can carry, chosen from the detail panel.
+// Names are Boxicons glyphs, rendered by the Icon component.
+const TASK_ICONS = [
+  "task",
+  "code-alt",
+  "palette",
+  "search",
+  "wrench",
+  "server",
+  "bug",
+  "rocket",
+  "layout",
+  "data",
+  "cloud",
+  "file",
+  "image",
+  "link",
+  "cog",
+  "book",
+];
 // The board opens on the week of "today": Monday Nov 16.
 const OPEN_SCROLL_DAYS = 15;
 
@@ -524,12 +545,14 @@ export function PlannerBoardPage() {
     null,
   );
   const [detailLeaving, setDetailLeaving] = useState(false);
-  const [statusMenuOpen, setStatusMenuOpen] = useState(false);
+  const [iconMenuOpen, setIconMenuOpen] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const detailTimerRef = useRef<number | null>(null);
   const openDetail = (member: number, title: string) => {
     if (detailTimerRef.current) window.clearTimeout(detailTimerRef.current);
     setDetailLeaving(false);
-    setStatusMenuOpen(false);
+    setIconMenuOpen(false);
+    setConfirmDelete(false);
     setDetail({ member, title });
   };
   const closeDetail = () => {
@@ -551,14 +574,12 @@ export function PlannerBoardPage() {
   const [addStart, setAddStart] = useState(TODAY_INDEX);
   const [addEnd, setAddEnd] = useState(TODAY_INDEX);
   const [addSection, setAddSection] = useState("");
-  const [addPencilled, setAddPencilled] = useState(false);
   const openAdd = () => {
     setAddTitle("");
     setAddMember(viewer.key === "member" ? viewer.member : 0);
     setAddStart(TODAY_INDEX);
     setAddEnd(TODAY_INDEX);
     setAddSection("");
-    setAddPencilled(false);
     setAddOpen(true);
   };
   const submitAdd = () => {
@@ -577,7 +598,6 @@ export function PlannerBoardPage() {
       section: addSection || undefined,
       day: addStart,
       span: addEnd - addStart + 1,
-      pencilled: addPencilled ? true : undefined,
       blocks: defaultBlocksFor(title),
     };
     setMembers((prev) =>
@@ -588,6 +608,48 @@ export function PlannerBoardPage() {
     setAddOpen(false);
     showToast("ok", t("planner.toastAdded"));
     openDetail(target, title);
+  };
+
+  const setDetailIcon = (icon: string) => {
+    if (!detail) return;
+    setMembers((prev) =>
+      prev.map((m, i) =>
+        i !== detail.member
+          ? m
+          : {
+              ...m,
+              tasks: m.tasks.map((tk) =>
+                tk.title === detail.title ? { ...tk, icon } : tk,
+              ),
+            },
+      ),
+    );
+    setIconMenuOpen(false);
+    showToast("ok", t("planner.taskUpdated"));
+  };
+
+  // Delete follows the same gate as editing: the owner and
+  // PMs may delete anyone's task, a member only their own
+  // (the button is not rendered at all otherwise).
+  const deleteDetailTask = () => {
+    if (!detail) return;
+    const targetMember = detail.member;
+    const targetTitle = detail.title;
+    setMembers((prev) =>
+      prev.map((m, i) =>
+        i !== targetMember
+          ? m
+          : {
+              ...m,
+              tasks: gravityPass(
+                m.tasks.filter((tk) => tk.title !== targetTitle),
+              ),
+            },
+      ),
+    );
+    setConfirmDelete(false);
+    closeDetail();
+    showToast("ok", t("planner.taskDeleted"));
   };
 
   // A grab during another pill's glide home commits that move
@@ -673,30 +735,6 @@ export function PlannerBoardPage() {
     showToast("ok", t("planner.taskUpdated"));
   };
 
-  const setDetailStatus = (key: "booked" | "pencilled" | "done") => {
-    if (!detail) return;
-    setMembers((prev) =>
-      prev.map((m, i) =>
-        i !== detail.member
-          ? m
-          : {
-              ...m,
-              tasks: m.tasks.map((tk) =>
-                tk.title === detail.title
-                  ? {
-                      ...tk,
-                      done: key === "done",
-                      pencilled: key === "pencilled",
-                      overdue: key === "done" ? false : tk.overdue,
-                    }
-                  : tk,
-              ),
-            },
-      ),
-    );
-    setStatusMenuOpen(false);
-    showToast("ok", t("planner.taskUpdated"));
-  };
 
   const changeDetailDay = (newDay: number) => {
     if (!detail) return;
@@ -1183,11 +1221,6 @@ export function PlannerBoardPage() {
     (tk) => tk.title === detail?.title,
   );
   const detailSpan = detailTask?.span ?? 1;
-  const detailStatusKey = detailTask?.done
-    ? "done"
-    : detailTask?.pencilled
-      ? "pencilled"
-      : "booked";
   const detailDateText = detailTask
     ? detailSpan > 1
       ? `${SAMPLE_DAYS[detailTask.day].dow} ${detailTask.day + 1} – ${SAMPLE_DAYS[detailTask.day + detailSpan - 1].dow} ${detailTask.day + detailSpan} Nov 2026`
@@ -1512,8 +1545,7 @@ export function PlannerBoardPage() {
             <style>{`@keyframes planner-detail-in { from { transform: translateX(100%); } to { transform: translateX(0); } } @keyframes planner-detail-out { from { transform: translateX(0); } to { transform: translateX(100%); } } @keyframes planner-fade-in { from { opacity: 0; } to { opacity: 1; } } @keyframes planner-fade-out { from { opacity: 1; } to { opacity: 0; } }`}</style>
             <div className="flex items-center justify-between px-6 pt-5">
               <span className="font-mono text-2xs font-medium uppercase tracking-wider text-muted">
-                {t("planner.title")} ·{" "}
-                {detailTask.section ?? t("planner.noSection")}
+                {t("planner.task")}
               </span>
               <button
                 type="button"
@@ -1529,52 +1561,39 @@ export function PlannerBoardPage() {
                 {detailTask.title}
               </h2>
               <div className="mt-4 flex flex-col">
-                <DetailRow icon="flag" label={t("planner.status")}>
+                <DetailRow icon="user" label={t("planner.assignee")}>
+                  <Avatar alt={detailMember.name} size={22} />
+                  <span>{detailMember.name}</span>
+                  <span className="text-muted">· {detailMember.role}</span>
+                </DetailRow>
+                <DetailRow icon="shapes" label={t("planner.icon")}>
                   {detailCanEdit ? (
                     <div className="relative">
                       <button
                         type="button"
-                        onClick={() => setStatusMenuOpen((v) => !v)}
-                        className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${
-                          detailStatusKey === "done"
-                            ? "bg-active text-ink/70"
-                            : detailStatusKey === "pencilled"
-                              ? "border border-line text-ink/85"
-                              : "bg-ink text-surface"
-                        }`}
+                        onClick={() => setIconMenuOpen((v) => !v)}
+                        className="flex items-center gap-1.5 rounded-md border border-line px-2.5 py-1 text-sm text-ink hover:bg-active"
                       >
-                        {detailStatusKey === "done"
-                          ? "Done"
-                          : detailStatusKey === "pencilled"
-                            ? "Pencilled"
-                            : "Booked"}
+                        <Icon name={detailTask.icon ?? "edit"} size={15} />
                         <Icon name="chevron-down" size={12} />
                       </button>
-                      {statusMenuOpen && (
+                      {iconMenuOpen && (
                         <>
                           <div
                             aria-hidden
                             className="fixed inset-0 z-40"
-                            onClick={() => setStatusMenuOpen(false)}
+                            onClick={() => setIconMenuOpen(false)}
                           />
-                          <div className="absolute top-full left-0 z-50 mt-1 w-44 rounded-lg border border-line bg-surface py-1 shadow-2xl">
-                            {(
-                              [
-                                ["booked", "Booked"],
-                                ["pencilled", "Pencilled"],
-                                ["done", "Done"],
-                              ] as const
-                            ).map(([key, label]) => (
+                          <div className="absolute top-full left-0 z-50 mt-1 grid w-52 grid-cols-4 gap-1 rounded-lg border border-line bg-surface p-2 shadow-2xl">
+                            {TASK_ICONS.map((name) => (
                               <button
-                                key={key}
+                                key={name}
                                 type="button"
-                                onClick={() => setDetailStatus(key)}
-                                className="flex w-full items-center justify-between px-3 py-1.5 text-left text-sm text-ink hover:bg-active"
+                                onClick={() => setDetailIcon(name)}
+                                aria-label={name}
+                                className={`flex h-9 items-center justify-center rounded-md text-ink hover:bg-active ${(detailTask.icon ?? "edit") === name ? "bg-active" : ""}`}
                               >
-                                {label}
-                                {detailStatusKey === key && (
-                                  <Icon name="check" size={13} />
-                                )}
+                                <Icon name={name} size={17} />
                               </button>
                             ))}
                           </div>
@@ -1582,35 +1601,10 @@ export function PlannerBoardPage() {
                       )}
                     </div>
                   ) : (
-                    <span
-                      className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
-                        detailStatusKey === "done"
-                          ? "bg-active text-ink/70"
-                          : detailStatusKey === "pencilled"
-                            ? "border border-line text-ink/85"
-                            : "bg-ink text-surface"
-                      }`}
-                    >
-                      {detailStatusKey === "done"
-                        ? "Done"
-                        : detailStatusKey === "pencilled"
-                          ? "Pencilled"
-                          : "Booked"}
+                    <span className="flex items-center gap-1.5 rounded-md border border-line px-2.5 py-1 text-sm text-ink">
+                      <Icon name={detailTask.icon ?? "edit"} size={15} />
                     </span>
                   )}
-                  {detailTask.overdue && !detailTask.done && (
-                    <span
-                      className="text-xs font-semibold"
-                      style={{ color: "#b3261e" }}
-                    >
-                      {t("planner.overdue")}
-                    </span>
-                  )}
-                </DetailRow>
-                <DetailRow icon="user" label={t("planner.assignee")}>
-                  <Avatar alt={detailMember.name} size={22} />
-                  <span>{detailMember.name}</span>
-                  <span className="text-muted">· {detailMember.role}</span>
                 </DetailRow>
                 <DetailRow icon="folder" label={t("planner.section")}>
                   <span className="rounded-full border border-line px-2.5 py-0.5 text-xs font-medium">
@@ -1653,6 +1647,14 @@ export function PlannerBoardPage() {
                   ) : (
                     detailDateText
                   )}
+                  {detailTask.overdue && !detailTask.done && (
+                    <span
+                      className="text-xs font-semibold"
+                      style={{ color: "#b3261e" }}
+                    >
+                      {t("planner.overdue")}
+                    </span>
+                  )}
                 </DetailRow>
                 <DetailRow icon="time" label={t("planner.duration")}>
                   {t("planner.daysCount").replace("{n}", String(detailSpan))}
@@ -1663,7 +1665,7 @@ export function PlannerBoardPage() {
                   </DetailRow>
                 )}
               </div>
-              <div className="mt-6">
+              <div className="mt-6 flex items-center justify-between gap-2">
                 <button
                   type="button"
                   disabled={!detailCanEdit}
@@ -1679,6 +1681,17 @@ export function PlannerBoardPage() {
                     ? t("planner.reopen")
                     : t("planner.markDone")}
                 </button>
+                {detailCanEdit && (
+                  <button
+                    type="button"
+                    onClick={() => setConfirmDelete(true)}
+                    className="flex items-center gap-2 rounded-full border border-line px-4 py-2 text-sm font-medium hover:bg-active"
+                    style={{ color: "#b3261e" }}
+                  >
+                    <Icon name="trash" size={15} />
+                    {t("planner.deleteTask")}
+                  </button>
+                )}
               </div>
               <div className="mt-6 border-t border-line pt-4">
                 <BlockBody
@@ -1689,6 +1702,47 @@ export function PlannerBoardPage() {
               </div>
             </div>
           </aside>
+        </>
+      )}
+
+      {/* Delete confirmation: destructive, so it always asks
+          first. Rendered only when a detail is open; the
+          delete button itself is gated by detailCanEdit. */}
+      {confirmDelete && detailTask && (
+        <>
+          <div
+            aria-hidden
+            onClick={() => setConfirmDelete(false)}
+            className="fixed inset-0 z-[97]"
+            style={{ backgroundColor: "rgba(0, 0, 0, 0.32)" }}
+          />
+          <div className="fixed inset-0 z-[98] flex items-center justify-center p-4">
+            <div className="w-full max-w-sm rounded-lg border border-line bg-surface p-6 shadow-2xl">
+              <h2 className="text-lg font-semibold text-ink">
+                {t("planner.deleteTaskTitle")}
+              </h2>
+              <p className="mt-2 text-sm text-muted">
+                {t("planner.deleteTaskBody")}
+              </p>
+              <div className="mt-5 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setConfirmDelete(false)}
+                  className="rounded-full border border-line px-4 py-2 text-sm font-medium text-ink"
+                >
+                  {t("common.cancel")}
+                </button>
+                <button
+                  type="button"
+                  onClick={deleteDetailTask}
+                  className="rounded-full px-4 py-2 text-sm font-medium text-white"
+                  style={{ backgroundColor: "#b3261e" }}
+                >
+                  {t("planner.deleteTask")}
+                </button>
+              </div>
+            </div>
+          </div>
         </>
       )}
 
@@ -1796,21 +1850,6 @@ export function PlannerBoardPage() {
                     </select>
                   </span>
                 </div>
-                <label className="flex flex-col gap-1">
-                  <span className="font-mono text-2xs font-medium uppercase tracking-wider text-muted">
-                    {t("planner.status")}
-                  </span>
-                  <select
-                    value={addPencilled ? "pencilled" : "booked"}
-                    onChange={(e) =>
-                      setAddPencilled(e.target.value === "pencilled")
-                    }
-                    className="w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm text-ink"
-                  >
-                    <option value="booked">Booked</option>
-                    <option value="pencilled">Pencilled</option>
-                  </select>
-                </label>
               </div>
               <div className="mt-5 flex items-center justify-end gap-2">
                 <button
