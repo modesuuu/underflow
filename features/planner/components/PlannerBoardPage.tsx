@@ -1855,7 +1855,7 @@ export function PlannerBoardPage() {
                   placeholder={t("planner.taskTitlePlaceholder")}
                   className="w-full rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink"
                 />
-                <label className="flex flex-col gap-1">
+                <div className="flex flex-col gap-1">
                   <span className="font-mono text-2xs font-medium uppercase tracking-wider text-muted">
                     {t("planner.assignee")}
                   </span>
@@ -1870,8 +1870,8 @@ export function PlannerBoardPage() {
                       label: m.name,
                     }))}
                   />
-                </label>
-                <label className="flex flex-col gap-1">
+                </div>
+                <div className="flex flex-col gap-1">
                   <span className="font-mono text-2xs font-medium uppercase tracking-wider text-muted">
                     {t("planner.section")}
                   </span>
@@ -1883,7 +1883,7 @@ export function PlannerBoardPage() {
                       ...sectionOptions.map((s) => ({ value: s, label: s })),
                     ]}
                   />
-                </label>
+                </div>
                 <div className="flex flex-col gap-1">
                   <span className="font-mono text-2xs font-medium uppercase tracking-wider text-muted">
                     {t("planner.dueDate")}
