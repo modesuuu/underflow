@@ -20,6 +20,8 @@
 // row stands in for the signed-in user while this page runs on
 // sample data. Clicking a pill (a press that does not turn into
 // a drag) opens its Notion-style detail panel from the right.
+// The panel is half the viewport wide and hosts a Notion-style
+// block body (BlockBody.tsx) under its properties.
 // Commits animate: pills pushed by gravity or an insert glide
 // to their new day/lane, row heights ease open and closed, and
 // the background row lines and Who cells follow the same curve,
@@ -41,6 +43,8 @@ import type {
   ReactNode,
 } from "react";
 
+import { BlockBody, makeBlock } from "./BlockBody";
+import type { Block } from "./BlockBody";
 import { Avatar } from "@/components/ui/Avatar";
 import { Icon } from "@/components/ui/Icon";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
@@ -73,6 +77,7 @@ type SampleTask = {
   pencilled?: boolean;
   overdue?: boolean;
   follows?: boolean;
+  blocks?: Block[];
 };
 
 // A board task sits on the day area by day index (0 = Nov 1), can
@@ -197,6 +202,45 @@ const dayLabel = (day: number, span: number) =>
 const SAMPLE_FOLLOWS: Record<string, string> = {
   "Implementasi board": "Review PR backend",
 };
+
+const seedBlock = (
+  type: Block["type"],
+  text: string,
+  extra?: Partial<Block>,
+): Block => ({ ...makeBlock(type, text), ...extra });
+
+// Starter block bodies for the detail panel, in the task's own
+// language like the sample titles.
+const SAMPLE_BLOCKS: Record<string, Block[]> = {
+  "Implementasi board": [
+    seedBlock("h2", "Rencana pengerjaan"),
+    seedBlock(
+      "text",
+      "Board /tasks versi UI dulu, data masih sampel. Fokus ke rasa drag-nya sebelum wiring API.",
+    ),
+    seedBlock("todo", "Geser pill antar hari + snap", { checked: true }),
+    seedBlock("todo", "Resize dari tepi pill", { checked: true }),
+    seedBlock("todo", "Panel detail ala Notion"),
+    seedBlock("toggle", "Catatan teknis", {
+      body: "Lane dihitung ulang pakai gravity; drop di lane yang terisi jadi insert dan menggeser tumpukan ke bawah.",
+    }),
+    seedBlock("divider", ""),
+    seedBlock("text", "Target: rasa dulu, baru fungsi penuh."),
+  ],
+  "Review PR backend": [
+    seedBlock("text", "Cek PR endpoint planner dari Faiz sebelum merge."),
+    seedBlock("todo", "Endpoint GET /planner/tasks", { checked: true }),
+    seedBlock("todo", "Event planner-task di realtime server"),
+  ],
+};
+
+const defaultBlocksFor = (title: string): Block[] => [
+  seedBlock(
+    "text",
+    `Catatan untuk "${title}" masih kosong. Klik di sini dan mulai tulis, atau tekan / untuk menambah block.`,
+  ),
+  seedBlock("todo", "Langkah pertama"),
+];
 
 // Sample-phase stand-in for the signed-in user: who is looking at
 // the board decides whose pills may move.
@@ -399,7 +443,15 @@ export function PlannerBoardPage() {
   const rafRef = useRef<number | null>(null);
   const momentumRef = useRef<number | null>(null);
   const [panning, setPanning] = useState(false);
-  const [members, setMembers] = useState<SampleMember[]>(SAMPLE_MEMBERS);
+  const [members, setMembers] = useState<SampleMember[]>(() =>
+    SAMPLE_MEMBERS.map((m) => ({
+      ...m,
+      tasks: m.tasks.map((tk) => ({
+        ...tk,
+        blocks: SAMPLE_BLOCKS[tk.title] ?? defaultBlocksFor(tk.title),
+      })),
+    })),
+  );
   const [drag, setDrag] = useState<DragState | null>(null);
   // The pill whose drop just committed: its own left/top must
   // not animate in the commit render (its settle glide already
@@ -461,10 +513,12 @@ export function PlannerBoardPage() {
     null,
   );
   const [detailLeaving, setDetailLeaving] = useState(false);
+  const [statusMenuOpen, setStatusMenuOpen] = useState(false);
   const detailTimerRef = useRef<number | null>(null);
   const openDetail = (member: number, title: string) => {
     if (detailTimerRef.current) window.clearTimeout(detailTimerRef.current);
     setDetailLeaving(false);
+    setStatusMenuOpen(false);
     setDetail({ member, title });
   };
   const closeDetail = () => {
@@ -548,6 +602,100 @@ export function PlannerBoardPage() {
       ),
     );
     showToast("ok", t("planner.taskUpdated"));
+  };
+
+  const setDetailStatus = (key: "booked" | "pencilled" | "done") => {
+    if (!detail) return;
+    setMembers((prev) =>
+      prev.map((m, i) =>
+        i !== detail.member
+          ? m
+          : {
+              ...m,
+              tasks: m.tasks.map((tk) =>
+                tk.title === detail.title
+                  ? {
+                      ...tk,
+                      done: key === "done",
+                      pencilled: key === "pencilled",
+                      overdue: key === "done" ? false : tk.overdue,
+                    }
+                  : tk,
+              ),
+            },
+      ),
+    );
+    setStatusMenuOpen(false);
+    showToast("ok", t("planner.taskUpdated"));
+  };
+
+  const changeDetailDay = (newDay: number) => {
+    if (!detail) return;
+    const task = members[detail.member]?.tasks.find(
+      (tk) => tk.title === detail.title,
+    );
+    if (!task) return;
+    const span = Math.min(task.span ?? 1, SAMPLE_DAYS.length - newDay);
+    setMembers((prev) =>
+      prev.map((m, i) =>
+        i !== detail.member
+          ? m
+          : {
+              ...m,
+              tasks: gravityPass(
+                m.tasks.map((tk) =>
+                  tk.title === detail.title ? { ...tk, day: newDay, span } : tk,
+                ),
+              ),
+            },
+      ),
+    );
+    showToast(
+      "ok",
+      `${t("planner.dateMoved")} · "${detail.title}" → ${dayLabel(newDay, span)}`,
+    );
+  };
+
+  const changeDetailSpan = (newSpan: number) => {
+    if (!detail) return;
+    const task = members[detail.member]?.tasks.find(
+      (tk) => tk.title === detail.title,
+    );
+    if (!task) return;
+    setMembers((prev) =>
+      prev.map((m, i) =>
+        i !== detail.member
+          ? m
+          : {
+              ...m,
+              tasks: gravityPass(
+                m.tasks.map((tk) =>
+                  tk.title === detail.title ? { ...tk, span: newSpan } : tk,
+                ),
+              ),
+            },
+      ),
+    );
+    showToast(
+      "ok",
+      `${t("planner.dateMoved")} · "${detail.title}" → ${dayLabel(task.day, newSpan)}`,
+    );
+  };
+
+  const updateDetailBlocks = (blocks: Block[]) => {
+    if (!detail) return;
+    setMembers((prev) =>
+      prev.map((m, i) =>
+        i !== detail.member
+          ? m
+          : {
+              ...m,
+              tasks: m.tasks.map((tk) =>
+                tk.title === detail.title ? { ...tk, blocks } : tk,
+              ),
+            },
+      ),
+    );
   };
 
   const scrollToTodayWeek = () => {
@@ -966,6 +1114,11 @@ export function PlannerBoardPage() {
     (tk) => tk.title === detail?.title,
   );
   const detailSpan = detailTask?.span ?? 1;
+  const detailStatusKey = detailTask?.done
+    ? "done"
+    : detailTask?.pencilled
+      ? "pencilled"
+      : "booked";
   const detailDateText = detailTask
     ? detailSpan > 1
       ? `${SAMPLE_DAYS[detailTask.day].dow} ${detailTask.day + 1} – ${SAMPLE_DAYS[detailTask.day + detailSpan - 1].dow} ${detailTask.day + detailSpan} Nov 2026`
@@ -1353,8 +1506,9 @@ export function PlannerBoardPage() {
             }}
           />
           <aside
-            className="fixed inset-y-0 right-0 z-[90] flex w-[420px] max-w-[92vw] flex-col border-l border-line bg-surface shadow-2xl"
+            className="fixed inset-y-0 right-0 z-[90] flex flex-col border-l border-line bg-surface shadow-2xl"
             style={{
+              width: "clamp(320px, 50vw, 900px)",
               animation: detailLeaving
                 ? "planner-detail-out 250ms cubic-bezier(0.5, 0, 0.75, 0) forwards"
                 : "planner-detail-in 300ms cubic-bezier(0.22, 1, 0.36, 1) both",
@@ -1381,21 +1535,74 @@ export function PlannerBoardPage() {
               </h2>
               <div className="mt-4 flex flex-col">
                 <DetailRow icon="flag" label={t("planner.status")}>
-                  <span
-                    className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
-                      detailTask.done
-                        ? "bg-active text-ink/70"
-                        : detailTask.pencilled
-                          ? "border border-line text-ink/85"
-                          : "bg-ink text-surface"
-                    }`}
-                  >
-                    {detailTask.done
-                      ? "Done"
-                      : detailTask.pencilled
-                        ? "Pencilled"
-                        : "Booked"}
-                  </span>
+                  {detailCanEdit ? (
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={() => setStatusMenuOpen((v) => !v)}
+                        className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${
+                          detailStatusKey === "done"
+                            ? "bg-active text-ink/70"
+                            : detailStatusKey === "pencilled"
+                              ? "border border-line text-ink/85"
+                              : "bg-ink text-surface"
+                        }`}
+                      >
+                        {detailStatusKey === "done"
+                          ? "Done"
+                          : detailStatusKey === "pencilled"
+                            ? "Pencilled"
+                            : "Booked"}
+                        <Icon name="chevron-down" size={12} />
+                      </button>
+                      {statusMenuOpen && (
+                        <>
+                          <div
+                            aria-hidden
+                            className="fixed inset-0 z-40"
+                            onClick={() => setStatusMenuOpen(false)}
+                          />
+                          <div className="absolute top-full left-0 z-50 mt-1 w-44 rounded-lg border border-line bg-surface py-1 shadow-2xl">
+                            {(
+                              [
+                                ["booked", "Booked"],
+                                ["pencilled", "Pencilled"],
+                                ["done", "Done"],
+                              ] as const
+                            ).map(([key, label]) => (
+                              <button
+                                key={key}
+                                type="button"
+                                onClick={() => setDetailStatus(key)}
+                                className="flex w-full items-center justify-between px-3 py-1.5 text-left text-sm text-ink hover:bg-active"
+                              >
+                                {label}
+                                {detailStatusKey === key && (
+                                  <Icon name="check" size={13} />
+                                )}
+                              </button>
+                            ))}
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  ) : (
+                    <span
+                      className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+                        detailStatusKey === "done"
+                          ? "bg-active text-ink/70"
+                          : detailStatusKey === "pencilled"
+                            ? "border border-line text-ink/85"
+                            : "bg-ink text-surface"
+                      }`}
+                    >
+                      {detailStatusKey === "done"
+                        ? "Done"
+                        : detailStatusKey === "pencilled"
+                          ? "Pencilled"
+                          : "Booked"}
+                    </span>
+                  )}
                   {detailTask.overdue && !detailTask.done && (
                     <span
                       className="text-xs font-semibold"
@@ -1416,7 +1623,41 @@ export function PlannerBoardPage() {
                   </span>
                 </DetailRow>
                 <DetailRow icon="calendar" label={t("planner.dueDate")}>
-                  {detailDateText}
+                  {detailCanEdit ? (
+                    <span className="flex items-center gap-1.5">
+                      <select
+                        value={detailTask.day}
+                        onChange={(e) =>
+                          changeDetailDay(Number(e.target.value))
+                        }
+                        className="rounded-md border border-line bg-surface px-1.5 py-1 text-sm text-ink"
+                      >
+                        {SAMPLE_DAYS.slice(TODAY_INDEX).map((d) => (
+                          <option key={d.date} value={d.date - 1}>
+                            {d.dow} {d.date}
+                          </option>
+                        ))}
+                      </select>
+                      <span className="text-muted">→</span>
+                      <select
+                        value={detailTask.day + detailSpan - 1}
+                        onChange={(e) =>
+                          changeDetailSpan(
+                            Number(e.target.value) - detailTask.day + 1,
+                          )
+                        }
+                        className="rounded-md border border-line bg-surface px-1.5 py-1 text-sm text-ink"
+                      >
+                        {SAMPLE_DAYS.slice(detailTask.day).map((d) => (
+                          <option key={d.date} value={d.date - 1}>
+                            {d.dow} {d.date}
+                          </option>
+                        ))}
+                      </select>
+                    </span>
+                  ) : (
+                    detailDateText
+                  )}
                 </DetailRow>
                 <DetailRow icon="time" label={t("planner.duration")}>
                   {t("planner.daysCount").replace("{n}", String(detailSpan))}
@@ -1443,6 +1684,13 @@ export function PlannerBoardPage() {
                     ? t("planner.reopen")
                     : t("planner.markDone")}
                 </button>
+              </div>
+              <div className="mt-6 border-t border-line pt-4">
+                <BlockBody
+                  blocks={detailTask.blocks ?? []}
+                  editable={detailCanEdit}
+                  onChange={updateDetailBlocks}
+                />
               </div>
             </div>
           </aside>
