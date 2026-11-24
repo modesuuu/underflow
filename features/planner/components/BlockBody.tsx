@@ -627,7 +627,7 @@ export function BlockBody({
               if (el) rowRefs.current.set(b.id, el);
               else rowRefs.current.delete(b.id);
             }}
-            className={`group relative ${isDragged ? "z-20 rounded-md bg-surface shadow-xl" : ""}`}
+            className={`group relative ${isDragged ? "z-20 rounded-md bg-surface shadow-xl" : ""} ${slash?.id === b.id || menuFor === b.id ? "z-50" : ""}`}
             style={{
               marginLeft: (b.level ?? 0) * 24,
               transform: isDragged
