@@ -535,6 +535,7 @@ export function Sidebar() {
   const pillRef = useRef<HTMLDivElement>(null);
   const rowRefs = useRef(new Map<string, HTMLElement>());
   const placedRef = useRef(false);
+  const scrollSettleRef = useRef<number | undefined>(undefined);
 
   // Sync activeId with pathname on navigation.
   useEffect(() => {
@@ -712,6 +713,27 @@ export function Sidebar() {
   const positionPillRef = useRef(positionPill);
   positionPillRef.current = positionPill;
 
+  // While the nav scrolls, the pill has to track its row
+  // instantly. Its 220ms glide transition exists for page
+  // changes; left on during a scroll, every re-measure starts
+  // a fresh glide toward the latest position, so the pill
+  // trails behind the row the whole way down. Suspend the
+  // transition while scrolling, restore it once settled.
+  const handleNavScroll = () => {
+    const pill = pillRef.current;
+    if (pill) pill.style.transition = "none";
+    positionPillRef.current();
+    window.clearTimeout(scrollSettleRef.current);
+    scrollSettleRef.current = window.setTimeout(() => {
+      if (pillRef.current) pillRef.current.style.transition = "";
+    }, 120);
+  };
+
+  useEffect(
+    () => () => window.clearTimeout(scrollSettleRef.current),
+    [],
+  );
+
   useLayoutEffect(() => {
     positionPillRef.current();
   }, [activeId, activeVisible, mini]);
@@ -843,7 +865,7 @@ export function Sidebar() {
           {/* Nav sections */}
           <nav
             ref={stackRef}
-            onScroll={() => positionPillRef.current()}
+            onScroll={handleNavScroll}
             className="no-scrollbar mt-6 flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto"
           >
             {NAV_SECTIONS.map((section) => (
