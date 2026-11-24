@@ -1809,11 +1809,11 @@ export function PlannerBoardPage() {
             style={{ backgroundColor: "rgba(0, 0, 0, 0.32)" }}
           />
           <div
-            className="fixed inset-0 z-[98] flex items-center justify-center p-4"
+            className="fixed inset-0 z-[98] flex overflow-y-auto p-4"
             onClick={() => setConfirmDelete(false)}
           >
             <div
-              className="w-full max-w-sm rounded-lg border border-line bg-surface p-6 shadow-2xl"
+              className="m-auto w-full max-w-sm rounded-lg border border-line bg-surface p-6 shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
               <h2 className="text-lg font-semibold text-ink">
@@ -1855,11 +1855,11 @@ export function PlannerBoardPage() {
             style={{ backgroundColor: "rgba(0, 0, 0, 0.32)" }}
           />
           <div
-            className="fixed inset-0 z-[96] flex items-center justify-center p-4"
+            className="fixed inset-0 z-[96] flex overflow-y-auto p-4"
             onClick={() => setAddOpen(false)}
           >
             <div
-              className="w-full max-w-md rounded-lg border border-line bg-surface p-6 shadow-2xl"
+              className="m-auto w-full max-w-md rounded-lg border border-line bg-surface p-6 shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-center justify-between">
@@ -1924,6 +1924,7 @@ export function PlannerBoardPage() {
                       <DateField
                         value={isoForDay(addStart)}
                         todayOverride={BOARD_TODAY}
+                        popoverSide="top"
                         onChange={(v) => {
                           if (!v) return;
                           const n = pickDay(v);
@@ -1937,6 +1938,8 @@ export function PlannerBoardPage() {
                       <DateField
                         value={isoForDay(addEnd)}
                         todayOverride={BOARD_TODAY}
+                        popoverSide="top"
+                        popoverAlign="right"
                         onChange={(v) => {
                           if (v) setAddEnd(Math.max(addStart, pickDay(v)));
                         }}
