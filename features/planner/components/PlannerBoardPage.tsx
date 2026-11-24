@@ -1890,7 +1890,7 @@ export function PlannerBoardPage() {
                   </span>
                   <span className="flex items-center gap-1.5">
                     <MenuSelect
-                      className="w-28"
+                      className="flex-1"
                       value={String(addStart)}
                       onChange={(v) => {
                         const n = Number(v);
@@ -1904,7 +1904,7 @@ export function PlannerBoardPage() {
                     />
                     <span className="text-muted">-</span>
                     <MenuSelect
-                      className="w-28"
+                      className="flex-1"
                       value={String(addEnd)}
                       onChange={(v) => setAddEnd(Number(v))}
                       options={SAMPLE_DAYS.slice(addStart).map((d) => ({
