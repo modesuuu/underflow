@@ -426,6 +426,66 @@ function SamplePill({
   );
 }
 
+// A select that renders its options as an Astryx-style menu
+// instead of the browser's native dropdown, so option lists
+// inside dialogs and the detail panel match the design
+// system: surface card, line border, 12px radius, a check on
+// the current value, and a scroll cap for long lists (dates).
+function MenuSelect({
+  value,
+  options,
+  onChange,
+  disabled,
+  className = "",
+}: {
+  value: string;
+  options: { value: string; label: string }[];
+  onChange: (value: string) => void;
+  disabled?: boolean;
+  className?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const current = options.find((o) => o.value === value);
+  return (
+    <div className={`relative ${className}`}>
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-center justify-between gap-1.5 rounded-md border border-line bg-surface px-2 py-1.5 text-sm text-ink hover:bg-active disabled:opacity-50"
+      >
+        <span className="truncate">{current?.label ?? ""}</span>
+        <Icon name="chevron-down" size={12} />
+      </button>
+      {open && (
+        <>
+          <div
+            aria-hidden
+            className="fixed inset-0 z-40"
+            onClick={() => setOpen(false)}
+          />
+          <div className="absolute top-full left-0 z-50 mt-1 max-h-56 w-full overflow-y-auto rounded-lg border border-line bg-surface py-1 shadow-2xl">
+            {options.map((o) => (
+              <button
+                key={o.value}
+                type="button"
+                onClick={() => {
+                  onChange(o.value);
+                  setOpen(false);
+                }}
+                className="flex w-full items-center justify-between gap-2 px-3 py-1.5 text-left text-sm whitespace-nowrap text-ink hover:bg-active"
+              >
+                {o.label}
+                {o.value === value && <Icon name="check" size={13} />}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 // One Notion-style property row in the task detail panel: an
 // icon + muted label column, the value beside it.
 function DetailRow({
@@ -704,6 +764,15 @@ export function PlannerBoardPage() {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [addOpen]);
+
+  useEffect(() => {
+    if (!confirmDelete) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setConfirmDelete(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [confirmDelete]);
 
   useEffect(() => {
     if (!settleKey) return;
@@ -1614,35 +1683,27 @@ export function PlannerBoardPage() {
                 <DetailRow icon="calendar" label={t("planner.dueDate")}>
                   {detailCanEdit ? (
                     <span className="flex items-center gap-1.5">
-                      <select
-                        value={detailTask.day}
-                        onChange={(e) =>
-                          changeDetailDay(Number(e.target.value))
-                        }
-                        className="rounded-md border border-line bg-surface px-1.5 py-1 text-sm text-ink"
-                      >
-                        {SAMPLE_DAYS.slice(TODAY_INDEX).map((d) => (
-                          <option key={d.date} value={d.date - 1}>
-                            {d.dow} {d.date}
-                          </option>
-                        ))}
-                      </select>
+                      <MenuSelect
+                        className="w-28"
+                        value={String(detailTask.day)}
+                        onChange={(v) => changeDetailDay(Number(v))}
+                        options={SAMPLE_DAYS.slice(TODAY_INDEX).map((d) => ({
+                          value: String(d.date - 1),
+                          label: `${d.dow} ${d.date}`,
+                        }))}
+                      />
                       <span className="text-muted">→</span>
-                      <select
-                        value={detailTask.day + detailSpan - 1}
-                        onChange={(e) =>
-                          changeDetailSpan(
-                            Number(e.target.value) - detailTask.day + 1,
-                          )
+                      <MenuSelect
+                        className="w-28"
+                        value={String(detailTask.day + detailSpan - 1)}
+                        onChange={(v) =>
+                          changeDetailSpan(Number(v) - detailTask.day + 1)
                         }
-                        className="rounded-md border border-line bg-surface px-1.5 py-1 text-sm text-ink"
-                      >
-                        {SAMPLE_DAYS.slice(detailTask.day).map((d) => (
-                          <option key={d.date} value={d.date - 1}>
-                            {d.dow} {d.date}
-                          </option>
-                        ))}
-                      </select>
+                        options={SAMPLE_DAYS.slice(detailTask.day).map((d) => ({
+                          value: String(d.date - 1),
+                          label: `${d.dow} ${d.date}`,
+                        }))}
+                      />
                     </span>
                   ) : (
                     detailDateText
@@ -1716,8 +1777,14 @@ export function PlannerBoardPage() {
             className="fixed inset-0 z-[97]"
             style={{ backgroundColor: "rgba(0, 0, 0, 0.32)" }}
           />
-          <div className="fixed inset-0 z-[98] flex items-center justify-center p-4">
-            <div className="w-full max-w-sm rounded-lg border border-line bg-surface p-6 shadow-2xl">
+          <div
+            className="fixed inset-0 z-[98] flex items-center justify-center p-4"
+            onClick={() => setConfirmDelete(false)}
+          >
+            <div
+              className="w-full max-w-sm rounded-lg border border-line bg-surface p-6 shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
               <h2 className="text-lg font-semibold text-ink">
                 {t("planner.deleteTaskTitle")}
               </h2>
@@ -1756,8 +1823,14 @@ export function PlannerBoardPage() {
             className="fixed inset-0 z-[95]"
             style={{ backgroundColor: "rgba(0, 0, 0, 0.32)" }}
           />
-          <div className="fixed inset-0 z-[96] flex items-center justify-center p-4">
-            <div className="w-full max-w-md rounded-lg border border-line bg-surface p-6 shadow-2xl">
+          <div
+            className="fixed inset-0 z-[96] flex items-center justify-center p-4"
+            onClick={() => setAddOpen(false)}
+          >
+            <div
+              className="w-full max-w-md rounded-lg border border-line bg-surface p-6 shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
               <div className="flex items-center justify-between">
                 <h2 className="text-lg font-semibold text-ink">
                   {t("planner.addTask")}
@@ -1786,68 +1859,59 @@ export function PlannerBoardPage() {
                   <span className="font-mono text-2xs font-medium uppercase tracking-wider text-muted">
                     {t("planner.assignee")}
                   </span>
-                  <select
-                    value={viewer.key === "member" ? viewer.member : addMember}
+                  <MenuSelect
+                    value={String(
+                      viewer.key === "member" ? viewer.member : addMember,
+                    )}
                     disabled={viewer.key === "member"}
-                    onChange={(e) => setAddMember(Number(e.target.value))}
-                    className="w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm text-ink disabled:opacity-50"
-                  >
-                    {members.map((m, i) => (
-                      <option key={m.name} value={i}>
-                        {m.name}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(v) => setAddMember(Number(v))}
+                    options={members.map((m, i) => ({
+                      value: String(i),
+                      label: m.name,
+                    }))}
+                  />
                 </label>
                 <label className="flex flex-col gap-1">
                   <span className="font-mono text-2xs font-medium uppercase tracking-wider text-muted">
                     {t("planner.section")}
                   </span>
-                  <select
+                  <MenuSelect
                     value={addSection}
-                    onChange={(e) => setAddSection(e.target.value)}
-                    className="w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm text-ink"
-                  >
-                    <option value="">{t("planner.noSection")}</option>
-                    {sectionOptions.map((s) => (
-                      <option key={s} value={s}>
-                        {s}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={setAddSection}
+                    options={[
+                      { value: "", label: t("planner.noSection") },
+                      ...sectionOptions.map((s) => ({ value: s, label: s })),
+                    ]}
+                  />
                 </label>
                 <div className="flex flex-col gap-1">
                   <span className="font-mono text-2xs font-medium uppercase tracking-wider text-muted">
                     {t("planner.dueDate")}
                   </span>
                   <span className="flex items-center gap-1.5">
-                    <select
-                      value={addStart}
-                      onChange={(e) => {
-                        const v = Number(e.target.value);
-                        setAddStart(v);
-                        if (addEnd < v) setAddEnd(v);
+                    <MenuSelect
+                      className="w-28"
+                      value={String(addStart)}
+                      onChange={(v) => {
+                        const n = Number(v);
+                        setAddStart(n);
+                        if (addEnd < n) setAddEnd(n);
                       }}
-                      className="rounded-md border border-line bg-surface px-1.5 py-1 text-sm text-ink"
-                    >
-                      {SAMPLE_DAYS.slice(TODAY_INDEX).map((d) => (
-                        <option key={d.date} value={d.date - 1}>
-                          {d.dow} {d.date}
-                        </option>
-                      ))}
-                    </select>
+                      options={SAMPLE_DAYS.slice(TODAY_INDEX).map((d) => ({
+                        value: String(d.date - 1),
+                        label: `${d.dow} ${d.date}`,
+                      }))}
+                    />
                     <span className="text-muted">-</span>
-                    <select
-                      value={addEnd}
-                      onChange={(e) => setAddEnd(Number(e.target.value))}
-                      className="rounded-md border border-line bg-surface px-1.5 py-1 text-sm text-ink"
-                    >
-                      {SAMPLE_DAYS.slice(addStart).map((d) => (
-                        <option key={d.date} value={d.date - 1}>
-                          {d.dow} {d.date}
-                        </option>
-                      ))}
-                    </select>
+                    <MenuSelect
+                      className="w-28"
+                      value={String(addEnd)}
+                      onChange={(v) => setAddEnd(Number(v))}
+                      options={SAMPLE_DAYS.slice(addStart).map((d) => ({
+                        value: String(d.date - 1),
+                        label: `${d.dow} ${d.date}`,
+                      }))}
+                    />
                   </span>
                 </div>
               </div>
