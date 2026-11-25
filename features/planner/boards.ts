@@ -271,7 +271,6 @@ function load(): PlannerBoard[] {
       const parsed = JSON.parse(raw) as PlannerBoard[];
       if (
         Array.isArray(parsed) &&
-        parsed.length > 0 &&
         parsed.every(
           (b) => b && typeof b.id === "string" && Array.isArray(b.members),
         )
@@ -283,6 +282,7 @@ function load(): PlannerBoard[] {
     // Corrupt or unavailable storage: fall back to the seeds.
   }
   boards = initial;
+  boardsLoaded = true;
   return boards;
 }
 
@@ -311,6 +311,23 @@ export function useBoards(): PlannerBoard[] {
     () => boards ?? SERVER_SEED,
     () => SERVER_SEED,
   );
+}
+
+let boardsLoaded = false;
+
+export function useBoardsLoaded(): boolean {
+  return useSyncExternalStore(
+    subscribe,
+    () => boardsLoaded,
+    () => false,
+  );
+}
+
+export function deleteBoard(id: string): void {
+  if (!boards) return;
+  boards = boards.filter((b) => b.id !== id);
+  persist();
+  emit();
 }
 
 export function updateBoardMembers(

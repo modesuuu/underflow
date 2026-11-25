@@ -97,7 +97,7 @@ export function CreateBoardDialog() {
   return createPortal(
     <div className="fixed inset-0 z-[96]">
       <div
-        className="absolute inset-0"
+        className="absolute inset-0 backdrop-blur-sm"
         style={{ backgroundColor: "rgba(0, 0, 0, 0.32)" }}
         onClick={() => setCreateBoardOpen(false)}
       />

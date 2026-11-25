@@ -46,9 +46,11 @@ import type {
 import { BlockBody, makeBlock } from "./BlockBody";
 import {
   defaultBlocksFor,
+  deleteBoard,
   setCreateBoardOpen,
   updateBoardMembers,
   useBoards,
+  useBoardsLoaded,
 } from "../boards";
 import type {
   PlannerBoard,
@@ -414,12 +416,14 @@ function DetailRow({
 export function PlannerBoardPage({ boardId }: { boardId: string }) {
   const { t } = useLanguage();
   const boards = useBoards();
+  const loaded = useBoardsLoaded();
   const board = boards.find((b) => b.id === boardId);
   const { list: ownedCollabs } = useOwnedCollabs();
   const boardDone =
     board !== undefined &&
     board.kind === "team" &&
     isCollabCompleted(ownedCollabs, board.collabId, board.collabName);
+  if (!loaded) return null;
   if (!board) {
     return (
       <div className="flex flex-col items-start gap-3 py-16">
@@ -480,6 +484,7 @@ function BoardCanvas({
   const boards = useBoards();
   const { list: ownedCollabs } = useOwnedCollabs();
   const [switchOpen, setSwitchOpen] = useState(false);
+  const [confirmDeleteBoard, setConfirmDeleteBoard] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const panRef = useRef<{
     startX: number;
@@ -1294,7 +1299,7 @@ function BoardCanvas({
             {t("planner.title")}
           </h1>
           <p className="text-sm text-muted">
-            {t("planner.monthLabel")} · {t("planner.boardSubtitle")}
+            {board.name}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -1383,6 +1388,17 @@ function BoardCanvas({
             <Icon name="plus" size={14} />
             {t("planner.addTask")}
           </button>
+          {viewer.key === "owner" && (
+            <button
+              type="button"
+              onClick={() => setConfirmDeleteBoard(true)}
+              className="flex items-center gap-1.5 rounded-full border border-line bg-surface px-4 py-2 text-sm font-medium"
+              style={{ color: "#b3261e" }}
+            >
+              <Icon name="trash" size={14} />
+              {t("planner.deleteBoard")}
+            </button>
+          )}
         </div>
       </div>
 
@@ -1643,7 +1659,7 @@ function BoardCanvas({
           <div
             aria-hidden
             onClick={closeDetail}
-            className="fixed inset-0 z-[80]"
+            className="fixed inset-0 z-[80] backdrop-blur-sm"
             style={{
               backgroundColor: "rgba(0, 0, 0, 0.32)",
               animation: detailLeaving
@@ -1826,7 +1842,7 @@ function BoardCanvas({
           <div
             aria-hidden
             onClick={() => setConfirmDelete(false)}
-            className="fixed inset-0 z-[97]"
+            className="fixed inset-0 z-[97] backdrop-blur-sm"
             style={{ backgroundColor: "rgba(0, 0, 0, 0.32)" }}
           />
           <div
@@ -1865,6 +1881,59 @@ function BoardCanvas({
         </>
       )}
 
+      {/* Delete board confirmation: owner only, destructive,
+          so it always asks first. */}
+      {confirmDeleteBoard && (
+        <>
+          <div
+            aria-hidden
+            onClick={() => setConfirmDeleteBoard(false)}
+            className="fixed inset-0 z-[97] backdrop-blur-sm"
+            style={{ backgroundColor: "rgba(0, 0, 0, 0.32)" }}
+          />
+          <div
+            className="fixed inset-0 z-[98] flex overflow-y-auto p-4"
+            onClick={() => setConfirmDeleteBoard(false)}
+          >
+            <div
+              className="m-auto w-full max-w-sm rounded-lg border border-line bg-surface p-6 shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h2 className="text-lg font-semibold text-ink">
+                {t("planner.deleteBoardTitle")}
+              </h2>
+              <p className="mt-2 text-sm text-muted">
+                {t("planner.deleteBoardBody")}
+              </p>
+              <div className="mt-5 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setConfirmDeleteBoard(false)}
+                  className="rounded-full border border-line px-4 py-2 text-sm font-medium text-ink"
+                >
+                  {t("common.cancel")}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const rest = boards.filter((b) => b.id !== board.id);
+                    deleteBoard(board.id);
+                    setConfirmDeleteBoard(false);
+                    router.push(
+                      rest.length > 0 ? `/tasks/${rest[0].id}` : "/tasks",
+                    );
+                  }}
+                  className="rounded-full px-4 py-2 text-sm font-medium text-white"
+                  style={{ backgroundColor: "#b3261e" }}
+                >
+                  {t("planner.deleteBoard")}
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
       {/* Add task dialog: sits above the board (below the
           toast), closes on backdrop click or Escape. */}
       {addOpen && (
@@ -1872,7 +1941,7 @@ function BoardCanvas({
           <div
             aria-hidden
             onClick={() => setAddOpen(false)}
-            className="fixed inset-0 z-[95]"
+            className="fixed inset-0 z-[95] backdrop-blur-sm"
             style={{ backgroundColor: "rgba(0, 0, 0, 0.32)" }}
           />
           <div
