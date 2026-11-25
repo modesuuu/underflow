@@ -16,12 +16,12 @@ import { Icon } from "@/components/ui/Icon";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import { getSessionUser } from "@/features/auth/session";
 import {
-  SAMPLE_COLLABS,
   createBoard,
   setCreateBoardOpen,
   useBoards,
   useCreateBoardOpen,
 } from "../boards";
+import { getMyCollabProjects } from "@/features/my-collaborations/api";
 
 export function CreateBoardDialog() {
   const open = useCreateBoardOpen();
@@ -31,6 +31,11 @@ export function CreateBoardDialog() {
   const [kind, setKind] = useState<"team" | "personal">("team");
   const [collab, setCollab] = useState<string | null>(null);
   const [name, setName] = useState("");
+  const [owned, setOwned] = useState<{ id: string; title: string }[] | null>(
+    null,
+  );
+  const [collabsFailed, setCollabsFailed] = useState(false);
+  const [collabsNonce, setCollabsNonce] = useState(0);
 
   // Fresh choices every time the dialog opens.
   useEffect(() => {
@@ -40,6 +45,32 @@ export function CreateBoardDialog() {
       setName("");
     }
   }, [open]);
+
+  // The team picker reads the user's own collaborations
+  // (GET /api/my-collaborations) and keeps only the ones
+  // they own, same rule as the My Collaborations Owned column.
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    setOwned(null);
+    setCollabsFailed(false);
+    const me = getSessionUser()?.id ?? null;
+    getMyCollabProjects()
+      .then((projects) => {
+        if (cancelled) return;
+        setOwned(
+          projects
+            .filter((p) => me !== null && p.owner.id === me)
+            .map((p) => ({ id: p.id, title: p.title })),
+        );
+      })
+      .catch(() => {
+        if (!cancelled) setCollabsFailed(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [open, collabsNonce]);
 
   useEffect(() => {
     if (!open) return;
@@ -52,23 +83,33 @@ export function CreateBoardDialog() {
 
   if (!open) return null;
 
-  const teamedCollabs = new Set(
+  // Team boards are keyed by the collab id; the name fallback
+  // covers the seeded boards, which predate collab ids.
+  const teamedKeys = new Set(
     boards
       .filter((b) => b.kind === "team")
-      .map((b) => b.collabName)
+      .flatMap((b) => [b.collabId, b.collabName])
       .filter((c): c is string => !!c),
   );
+  const selectedCollab = owned?.find((c) => c.id === collab) ?? null;
   const canCreate =
     kind === "team"
-      ? !!collab && !teamedCollabs.has(collab)
+      ? selectedCollab !== null &&
+        !teamedKeys.has(selectedCollab.id) &&
+        !teamedKeys.has(selectedCollab.title)
       : name.trim().length > 0;
 
   const submit = () => {
     if (!canCreate) return;
     const ownerName = getSessionUser()?.name ?? "Raka Alfarezi";
     const board = createBoard(
-      kind === "team"
-        ? { kind, collabName: collab ?? undefined, ownerName }
+      kind === "team" && selectedCollab
+        ? {
+            kind,
+            collabId: selectedCollab.id,
+            collabName: selectedCollab.title,
+            ownerName,
+          }
         : { kind, name: name.trim(), ownerName },
     );
     setCreateBoardOpen(false);
@@ -166,42 +207,69 @@ export function CreateBoardDialog() {
                   {t("planner.pickCollab")}
                 </span>
                 <div className="flex flex-col gap-1">
-                  {SAMPLE_COLLABS.map((c) => {
-                    const has = teamedCollabs.has(c);
-                    const selected = collab === c;
-                    return (
+                  {collabsFailed ? (
+                    <div className="flex flex-col items-start gap-2 rounded-md border border-line px-3 py-3">
+                      <span className="text-sm text-ink">
+                        {t("planner.collabsError")}
+                      </span>
                       <button
-                        key={c}
                         type="button"
-                        disabled={has}
-                        onClick={() => setCollab(c)}
-                        className={`flex items-center gap-2 rounded-md border px-3 py-2.5 text-left text-sm ${
-                          selected
-                            ? "border-ink bg-active font-medium text-ink"
-                            : "border-line text-ink"
-                        } ${has ? "cursor-not-allowed opacity-50" : ""}`}
+                        onClick={() => setCollabsNonce((n) => n + 1)}
+                        className="rounded-full border border-line px-3 py-1.5 text-xs font-medium text-ink"
                       >
-                        <span
-                          className={`size-1.5 shrink-0 rounded-full ${
-                            selected ? "bg-accent" : "bg-line"
-                          }`}
-                        />
-                        <span className="min-w-0 flex-1 truncate">{c}</span>
-                        {has && (
-                          <span className="text-xs text-muted">
-                            {t("planner.boardExists")}
-                          </span>
-                        )}
-                        {selected && !has && (
-                          <Icon
-                            name="check"
-                            size={16}
-                            className="shrink-0 text-accent"
-                          />
-                        )}
+                        {t("planner.collabsRetry")}
                       </button>
-                    );
-                  })}
+                    </div>
+                  ) : owned === null ? (
+                    <>
+                      <div className="h-10 animate-pulse rounded-md bg-active" />
+                      <div className="h-10 animate-pulse rounded-md bg-active" />
+                    </>
+                  ) : owned.length === 0 ? (
+                    <p className="rounded-md border border-line px-3 py-3 text-sm text-muted">
+                      {t("planner.collabsEmpty")}
+                    </p>
+                  ) : (
+                    owned.map((c) => {
+                      const has =
+                        teamedKeys.has(c.id) || teamedKeys.has(c.title);
+                      const selected = collab === c.id;
+                      return (
+                        <button
+                          key={c.id}
+                          type="button"
+                          disabled={has}
+                          onClick={() => setCollab(c.id)}
+                          className={`flex items-center gap-2 rounded-md border px-3 py-2.5 text-left text-sm ${
+                            selected
+                              ? "border-ink bg-active font-medium text-ink"
+                              : "border-line text-ink"
+                          } ${has ? "cursor-not-allowed opacity-50" : ""}`}
+                        >
+                          <span
+                            className={`size-1.5 shrink-0 rounded-full ${
+                              selected ? "bg-accent" : "bg-line"
+                            }`}
+                          />
+                          <span className="min-w-0 flex-1 truncate">
+                            {c.title}
+                          </span>
+                          {has && (
+                            <span className="text-xs text-muted">
+                              {t("planner.boardExists")}
+                            </span>
+                          )}
+                          {selected && !has && (
+                            <Icon
+                              name="check"
+                              size={16}
+                              className="shrink-0 text-accent"
+                            />
+                          )}
+                        </button>
+                      );
+                    })
+                  )}
                 </div>
               </div>
             ) : (

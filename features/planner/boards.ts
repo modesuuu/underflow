@@ -44,17 +44,13 @@ export interface PlannerBoard {
   kind: "team" | "personal";
   /** Team boards only: the collaboration it belongs to. */
   collabName?: string;
+  /** Team boards only: the collaboration's id (the board
+   * key; the seeded boards predate it and fall back to the name). */
+  collabId?: string;
   members: PlannerBoardMember[];
 }
 
-/** Collaborations the user belongs to (sample list this
- * phase); the team-board picker chooses from these. */
-export const SAMPLE_COLLABS: string[] = [
-  "Underflow",
-  "LombaKampus",
-  "TechnoSpark",
-  "Orbit",
-];
+
 
 const seedBlock = (
   type: Block["type"],
@@ -332,6 +328,7 @@ export function updateBoardMembers(
 export function createBoard(input: {
   kind: "team" | "personal";
   collabName?: string;
+  collabId?: string;
   name?: string;
   ownerName: string;
 }): PlannerBoard {
@@ -344,6 +341,7 @@ export function createBoard(input: {
         : input.name?.trim() || "Personal board",
     kind: input.kind,
     collabName: input.kind === "team" ? input.collabName : undefined,
+    collabId: input.kind === "team" ? input.collabId : undefined,
     members: [{ name: input.ownerName, role: "Owner", tasks: [] }],
   };
   boards = [...current, board];
