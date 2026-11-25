@@ -254,6 +254,43 @@ const SAMPLE_FOLLOWS: Record<string, string> = {
 
 // Sample-phase stand-in for the signed-in user: who is looking at
 // the board decides whose pills may move.
+// Job roles: the world''s occupations, fetched live from the
+// public corpora dataset (976 titles) and cached for the
+// page lifetime. Board-local roles always come first; if
+// the fetch fails the panel falls back to local roles only.
+const OCCUPATIONS_URL =
+  "https://raw.githubusercontent.com/dariusk/corpora/master/data/humans/occupations.json";
+let occupationsPromise: Promise<string[]> | null = null;
+function loadOccupations(): Promise<string[]> {
+  if (!occupationsPromise) {
+    occupationsPromise = fetch(OCCUPATIONS_URL)
+      .then((r) => {
+        if (!r.ok) throw new Error("occupations fetch failed");
+        return r.json();
+      })
+      .then((d: { occupations?: unknown }) => {
+        const list = Array.isArray(d.occupations) ? d.occupations : [];
+        return list.filter(
+          (x): x is string => typeof x === "string" && x.length > 0,
+        );
+      })
+      .catch(() => {
+        occupationsPromise = null;
+        return [];
+      });
+  }
+  return occupationsPromise;
+}
+const toTitleCase = (s: string) =>
+  s
+    .split(/\s+/)
+    .map((w) =>
+      w === w.toUpperCase()
+        ? w
+        : w.charAt(0).toUpperCase() + w.slice(1),
+    )
+    .join(" ");
+
 const PERSONAS = [
   { key: "owner", member: 0 },
   { key: "pm", member: 1 },
@@ -625,12 +662,16 @@ function BoardCanvas({
   const [memberPanel, setMemberPanel] = useState<number | null>(null);
   const [memberLeaving, setMemberLeaving] = useState(false);
   const [roleDraft, setRoleDraft] = useState("");
+  const [apiRoles, setApiRoles] = useState<string[] | null>(null);
   const memberTimerRef = useRef<number | null>(null);
   const rowDownRef = useRef<{ x: number; y: number } | null>(null);
   const openMemberPanel = (mi: number) => {
     if (memberTimerRef.current) window.clearTimeout(memberTimerRef.current);
     setMemberLeaving(false);
     setRoleDraft(members[mi]?.role ?? "");
+    if (apiRoles === null) {
+      loadOccupations().then((list) => setApiRoles(list.map(toTitleCase)));
+    }
     setMemberPanel(mi);
   };
   const closeMemberPanel = () => {
@@ -643,7 +684,7 @@ function BoardCanvas({
   };
   const commitJobRole = (role: string) => {
     if (memberPanel === null) return;
-    const trimmed = role.trim();
+    const trimmed = toTitleCase(role.trim());
     const member = members[memberPanel];
     if (!member || trimmed === "" || trimmed === member.role) return;
     setMembers((prev) =>
@@ -1344,11 +1385,16 @@ function BoardCanvas({
   const roleOptions = [
     ...new Set(boards.flatMap((b) => b.members.map((m) => m.role))),
   ].filter(Boolean);
-  const filteredRoles = roleOptions
-    .filter((r) =>
-      r.toLowerCase().includes(roleDraft.trim().toLowerCase()),
-    )
-    .slice(0, 6);
+  const draft = roleDraft.trim().toLowerCase();
+  const combinedRoles = [
+    ...roleOptions,
+    ...(apiRoles ?? []).filter(
+      (r) => !roleOptions.some((o) => o.toLowerCase() === r.toLowerCase()),
+    ),
+  ];
+  const filteredRoles = combinedRoles
+    .filter((r) => r.toLowerCase().includes(draft))
+    .slice(0, 8);
   const detailTask = detailMember?.tasks.find(
     (tk) => tk.title === detail?.title,
   );
@@ -1418,14 +1464,14 @@ function BoardCanvas({
                           router.push(`/tasks/${b.id}`);
                         }
                       }}
-                      className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-sm hover:bg-active"
+                      className="flex w-full items-center justify-between gap-2 px-3 py-1.5 text-left text-sm text-ink hover:bg-active"
                     >
                       <span
                         className={`size-1.5 shrink-0 rounded-full ${
                           b.id === board.id ? "bg-accent" : "bg-line"
                         }`}
                       />
-                      <span className="min-w-0 flex-1 truncate font-medium text-ink">
+                      <span className="min-w-0 flex-1 truncate">
                         {b.name}
                       </span>
                       <span className="text-xs text-muted">
@@ -1783,22 +1829,16 @@ function BoardCanvas({
           <div
             aria-hidden
             onClick={closeMemberPanel}
-            className="fixed inset-0 z-[80] backdrop-blur-sm"
-            style={{
-              backgroundColor: "rgba(0, 0, 0, 0.32)",
-              animation: memberLeaving
-                ? "planner-fade-out 250ms ease-in forwards"
-                : "planner-fade-in 250ms ease-out both",
-            }}
+            className={`fixed inset-0 z-[80] backdrop-blur-sm ${
+              memberLeaving ? "modal-overlay-out" : "modal-overlay-in"
+            }`}
+            style={{ backgroundColor: "rgba(0, 0, 0, 0.32)" }}
           />
           <aside
-            className="fixed inset-y-0 right-0 z-[90] flex flex-col border-l border-line bg-surface shadow-2xl"
-            style={{
-              width: "clamp(320px, 50vw, 900px)",
-              animation: memberLeaving
-                ? "planner-detail-out 250ms cubic-bezier(0.5, 0, 0.75, 0) forwards"
-                : "planner-detail-in 300ms cubic-bezier(0.22, 1, 0.36, 1) both",
-            }}
+            className={`fixed inset-y-0 right-0 z-[90] flex flex-col border-l border-line bg-surface shadow-2xl ${
+              memberLeaving ? "sheet-out" : "sheet-in"
+            }`}
+            style={{ width: "clamp(320px, 50vw, 900px)" }}
           >
             <div className="flex items-center justify-between px-6 pt-5">
               <span className="font-mono text-2xs font-medium uppercase tracking-wider text-muted">
@@ -1813,8 +1853,11 @@ function BoardCanvas({
                 <Icon name="x" size={16} />
               </button>
             </div>
-            <div className="flex-1 overflow-y-auto px-6 pt-3 pb-6">
-              <div className="flex items-center gap-3">
+            <div className="flex-1 overflow-y-auto px-6 pt-3 pb-6 card-stagger" style={{ "--stagger-i": 0 } as CSSProperties}>
+              <div
+                className="flex items-center gap-3 card-stagger"
+                style={{ "--stagger-i": 0 } as CSSProperties}
+              >
                 <Avatar alt={panelMember.name} size={44} />
                 <div className="flex min-w-0 flex-col">
                   <h2 className="truncate text-xl font-semibold text-ink">
@@ -1840,7 +1883,10 @@ function BoardCanvas({
               </p>
 
               {/* Job role: type it, or pick one already used. */}
-              <div className="mt-6 flex flex-col gap-2">
+              <div
+                className="mt-6 flex flex-col gap-2 card-stagger"
+                style={{ "--stagger-i": 1 } as CSSProperties}
+              >
                 <label
                   htmlFor="member-role-input"
                   className="font-mono text-2xs font-medium uppercase tracking-wider text-muted"
@@ -1858,17 +1904,17 @@ function BoardCanvas({
                         if (e.key === "Enter") commitJobRole(roleDraft);
                       }}
                       placeholder={t("planner.rolePlaceholder")}
-                      className="w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink outline-none placeholder:text-subtle focus:border-ink"
+                      className="w-full rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink outline-none placeholder:text-subtle focus:ring-2 focus:ring-accent"
                     />
-                    <div className="flex flex-col">
+                    <div className="mt-1 flex max-h-56 flex-col overflow-y-auto py-1">
                       {filteredRoles.map((r) => (
                         <button
                           key={r}
                           type="button"
                           onClick={() => commitJobRole(r)}
-                          className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-sm hover:bg-active"
+                          className="flex w-full items-center justify-between gap-2 px-3 py-1.5 text-left text-sm text-ink hover:bg-active"
                         >
-                          <span className="min-w-0 flex-1 truncate font-medium text-ink">
+                          <span className="min-w-0 flex-1 truncate">
                             {r}
                           </span>
                           {r === panelMember.role && (
@@ -1889,11 +1935,11 @@ function BoardCanvas({
                           <button
                             type="button"
                             onClick={() => commitJobRole(roleDraft.trim())}
-                            className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-sm hover:bg-active"
+                            className="flex w-full items-center justify-between gap-2 px-3 py-1.5 text-left text-sm text-ink hover:bg-active"
                           >
-                            <span className="min-w-0 flex-1 truncate font-medium text-ink">
+                            <span className="min-w-0 flex-1 truncate">
                               {t("planner.useRole", {
-                                role: roleDraft.trim(),
+                                role: toTitleCase(roleDraft.trim()),
                               })}
                             </span>
                           </button>
@@ -1907,7 +1953,10 @@ function BoardCanvas({
 
               {/* Board role: PM / Member, owner locked. */}
               {board.kind === "team" && (
-                <div className="mt-6 flex flex-col gap-2">
+                <div
+                  className="mt-6 flex flex-col gap-2 card-stagger"
+                  style={{ "--stagger-i": 2 } as CSSProperties}
+                >
                   <span className="font-mono text-2xs font-medium uppercase tracking-wider text-muted">
                     {t("planner.boardRole")}
                   </span>
@@ -1927,9 +1976,9 @@ function BoardCanvas({
                       <button
                         type="button"
                         onClick={() => setMemberRole(memberPanel, true)}
-                        className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-sm hover:bg-active"
+                        className="flex w-full items-center justify-between gap-2 px-3 py-1.5 text-left text-sm text-ink hover:bg-active"
                       >
-                        <span className="min-w-0 flex-1 truncate font-medium text-ink">
+                        <span className="min-w-0 flex-1 truncate">
                           {t("planner.rolePm")}
                         </span>
                         {panelMember.pm && (
@@ -1943,9 +1992,9 @@ function BoardCanvas({
                       <button
                         type="button"
                         onClick={() => setMemberRole(memberPanel, false)}
-                        className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-sm hover:bg-active"
+                        className="flex w-full items-center justify-between gap-2 px-3 py-1.5 text-left text-sm text-ink hover:bg-active"
                       >
-                        <span className="min-w-0 flex-1 truncate font-medium text-ink">
+                        <span className="min-w-0 flex-1 truncate">
                           {t("planner.roleMember")}
                         </span>
                         {!panelMember.pm && (
@@ -1976,24 +2025,17 @@ function BoardCanvas({
           <div
             aria-hidden
             onClick={closeDetail}
-            className="fixed inset-0 z-[80] backdrop-blur-sm"
-            style={{
-              backgroundColor: "rgba(0, 0, 0, 0.32)",
-              animation: detailLeaving
-                ? "planner-fade-out 250ms ease-in forwards"
-                : "planner-fade-in 250ms ease-out both",
-            }}
+            className={`fixed inset-0 z-[80] backdrop-blur-sm ${
+              detailLeaving ? "modal-overlay-out" : "modal-overlay-in"
+            }`}
+            style={{ backgroundColor: "rgba(0, 0, 0, 0.32)" }}
           />
           <aside
-            className="fixed inset-y-0 right-0 z-[90] flex flex-col border-l border-line bg-surface shadow-2xl"
-            style={{
-              width: "clamp(320px, 50vw, 900px)",
-              animation: detailLeaving
-                ? "planner-detail-out 250ms cubic-bezier(0.5, 0, 0.75, 0) forwards"
-                : "planner-detail-in 300ms cubic-bezier(0.22, 1, 0.36, 1) both",
-            }}
+            className={`fixed inset-y-0 right-0 z-[90] flex flex-col border-l border-line bg-surface shadow-2xl ${
+              detailLeaving ? "sheet-out" : "sheet-in"
+            }`}
+            style={{ width: "clamp(320px, 50vw, 900px)" }}
           >
-            <style>{`@keyframes planner-detail-in { from { transform: translateX(100%); } to { transform: translateX(0); } } @keyframes planner-detail-out { from { transform: translateX(0); } to { transform: translateX(100%); } } @keyframes planner-fade-in { from { opacity: 0; } to { opacity: 1; } } @keyframes planner-fade-out { from { opacity: 1; } to { opacity: 0; } }`}</style>
             <div className="flex items-center justify-between px-6 pt-5">
               <span className="font-mono text-2xs font-medium uppercase tracking-wider text-muted">
                 {t("planner.task")}
@@ -2007,7 +2049,7 @@ function BoardCanvas({
                 <Icon name="x" size={16} />
               </button>
             </div>
-            <div className="flex-1 overflow-y-auto px-6 pt-3 pb-6">
+            <div className="flex-1 overflow-y-auto px-6 pt-3 pb-6 card-stagger" style={{ "--stagger-i": 0 } as CSSProperties}>
               <h2 className="text-2xl leading-snug font-semibold text-ink">
                 {detailTask.title}
               </h2>
