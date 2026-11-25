@@ -65,6 +65,8 @@ import { Avatar } from "@/components/ui/Avatar";
 import { Icon } from "@/components/ui/Icon";
 import { DateField } from "@/components/ui/DateField";
 import { useSessionUser } from "@/features/auth/store";
+import { getCollabProjectAuthed } from "@/features/collaborations/api";
+import type { CollabMember } from "@/features/collaborations/types";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
@@ -543,12 +545,55 @@ function BoardCanvas({
     })),
   );
   const sessionUser = useSessionUser();
+  // The real collab roster (names + profile photos) for team
+  // boards, fetched once from the collab detail. Seeded boards
+  // predate collabId, so the id resolves through the owned
+  // collabs list by title; a failed or missing fetch just
+  // leaves the stored names and initial avatars in place.
+  // (ownedCollabs is already subscribed above, for the
+  // board switcher.)
+  const collabId =
+    board.kind === "team"
+      ? (board.collabId ??
+        ownedCollabs?.find((c) => c.title === board.collabName)?.id)
+      : undefined;
+  const [collabMembers, setCollabMembers] = useState<
+    CollabMember[] | null
+  >(null);
+  useEffect(() => {
+    if (!collabId) return;
+    let cancelled = false;
+    getCollabProjectAuthed(collabId)
+      .then((project) => {
+        if (!cancelled && project) setCollabMembers(project.members);
+      })
+      .catch(() => {
+        // Backend down or unknown collab: keep initials.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [collabId]);
   // Member 0 is the board owner, i.e. the signed-in user: the
-  // name shown for that row comes from their profile
-  // (AuthUser.name = editable full_name, username fallback),
-  // never from the stored seed string.
-  const displayName = (mi: number): string =>
-    mi === 0 && sessionUser?.name ? sessionUser.name : members[mi].name;
+  // name and photo shown for that row come from their profile
+  // (AuthUser.name = editable full_name, username fallback;
+  // AuthUser.photo), never from the stored seed values. Other
+  // members resolve against the collab roster by profile name.
+  const collabMemberFor = (mi: number): CollabMember | undefined => {
+    const name = members[mi]?.name;
+    if (!name || !collabMembers) return undefined;
+    return collabMembers.find(
+      (cm) => cm.name.toLowerCase() === name.toLowerCase(),
+    );
+  };
+  const displayName = (mi: number): string => {
+    if (mi === 0 && sessionUser?.name) return sessionUser.name;
+    return collabMemberFor(mi)?.name ?? members[mi].name;
+  };
+  const photoFor = (mi: number): string | undefined => {
+    if (mi === 0) return sessionUser?.photo;
+    return collabMemberFor(mi)?.avatarUrl;
+  };
   // Every edit flows back to the boards store, so the sidebar
   // counts and the next visit to this board see the same state.
   useEffect(() => {
@@ -1636,7 +1681,11 @@ function BoardCanvas({
                       "height 260ms cubic-bezier(0.22, 1, 0.36, 1)",
                   }}
                 >
-                  <Avatar alt={displayName(mi)} size={30} />
+                  <Avatar
+                    alt={displayName(mi)}
+                    size={30}
+                    src={photoFor(mi)}
+                  />
                   <div className="flex min-w-0 flex-col">
                     <span className="flex items-start gap-1.5 text-sm font-medium leading-tight text-ink">
                       <span className="min-w-0 break-words">
@@ -1863,7 +1912,11 @@ function BoardCanvas({
                 className="flex items-center gap-3 card-stagger"
                 style={{ "--stagger-i": 0 } as CSSProperties}
               >
-                <Avatar alt={displayName(memberPanel)} size={44} />
+                <Avatar
+                  alt={displayName(memberPanel)}
+                  size={44}
+                  src={photoFor(memberPanel)}
+                />
                 <div className="flex min-w-0 flex-col">
                   <h2 className="truncate text-xl font-semibold text-ink">
                     {displayName(memberPanel)}
@@ -2061,7 +2114,11 @@ function BoardCanvas({
               </h2>
               <div className="mt-4 flex flex-col">
                 <DetailRow icon="user" label={t("planner.assignee")}>
-                  <Avatar alt={displayName(detail.member)} size={22} />
+                  <Avatar
+                    alt={displayName(detail.member)}
+                    size={22}
+                    src={photoFor(detail.member)}
+                  />
                   <span>{displayName(detail.member)}</span>
                   <span className="text-muted">· {detailMember.role}</span>
                 </DetailRow>
