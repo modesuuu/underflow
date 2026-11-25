@@ -1556,18 +1556,28 @@ function BoardCanvas({
                 <div
                   key={member.name}
                   onPointerDown={(e) => {
+                    if (e.button !== 0) return;
+                    // Like a pill press: stop the pan scroller
+                    // from capturing this pointer, or the panel
+                    // would never open. onPanDown calls
+                    // setPointerCapture on every press, which
+                    // retargets the click to the scroller.
+                    e.stopPropagation();
+                    stopMomentum();
                     rowDownRef.current = { x: e.clientX, y: e.clientY };
                   }}
-                  onClick={(e) => {
+                  onPointerUp={(e) => {
                     const d = rowDownRef.current;
                     rowDownRef.current = null;
                     if (
                       d &&
-                      Math.hypot(e.clientX - d.x, e.clientY - d.y) > 6
+                      Math.hypot(e.clientX - d.x, e.clientY - d.y) < 6
                     ) {
-                      return;
+                      openMemberPanel(mi);
                     }
-                    openMemberPanel(mi);
+                  }}
+                  onPointerCancel={() => {
+                    rowDownRef.current = null;
                   }}
                   className="flex cursor-pointer items-center gap-3 border-t border-line px-4 hover:bg-active/50"
                   style={{
