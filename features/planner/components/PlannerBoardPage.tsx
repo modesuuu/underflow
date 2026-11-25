@@ -47,6 +47,7 @@ import { BlockBody, makeBlock } from "./BlockBody";
 import {
   defaultBlocksFor,
   deleteBoard,
+  isReservedOwnerRole,
   setCreateBoardOpen,
   updateBoardMembers,
   useBoards,
@@ -687,6 +688,10 @@ function BoardCanvas({
     const trimmed = toTitleCase(role.trim());
     const member = members[memberPanel];
     if (!member || trimmed === "" || trimmed === member.role) return;
+    if (isReservedOwnerRole(trimmed)) {
+      showToast("warn", t("planner.toastOwnerNotJob"));
+      return;
+    }
     setMembers((prev) =>
       prev.map((m, i) => (i === memberPanel ? { ...m, role: trimmed } : m)),
     );
@@ -1391,7 +1396,7 @@ function BoardCanvas({
     ...(apiRoles ?? []).filter(
       (r) => !roleOptions.some((o) => o.toLowerCase() === r.toLowerCase()),
     ),
-  ];
+  ].filter((r) => !isReservedOwnerRole(r));
   const filteredRoles = combinedRoles
     .filter((r) => r.toLowerCase().includes(draft))
     .slice(0, 8);
@@ -1650,10 +1655,9 @@ function BoardCanvas({
                       )}
                     </span>
                     
-                      <span className="truncate text-2xs text-muted">
-                        {member.role}
-                        {mi === 0 ? ` Â· ${t("planner.roleOwner")}` : ""}
-                      </span>
+                                          <span className="truncate text-2xs text-muted">
+                      {member.role}
+                    </span>
                   </div>
                   <Icon
                     name="chevron-right"
@@ -1927,6 +1931,7 @@ function BoardCanvas({
                         </button>
                       ))}
                       {roleDraft.trim() !== "" &&
+                        !isReservedOwnerRole(roleDraft.trim()) &&
                         !filteredRoles.some(
                           (r) =>
                             r.toLowerCase() ===

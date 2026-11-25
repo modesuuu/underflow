@@ -233,7 +233,7 @@ export function seedBoards(): PlannerBoard[] {
       members: withBlocks([
         {
           name: "Raka Alfarezi",
-          role: "Owner",
+          role: "Frontend",
           tasks: [
             { title: "Update case study planner", section: "Konten", day: 19 },
             { title: "Rapikan CV", section: "Konten", done: true, day: 12 },
@@ -262,6 +262,12 @@ function emit(): void {
   listeners.forEach((listener) => listener());
 }
 
+// "Owner" is a board role (member 0 by construction), never
+// a job role. Anything that reads or writes job roles must
+// exclude it.
+export const isReservedOwnerRole = (role: string): boolean =>
+  role.trim().toLowerCase() === "owner";
+
 function load(): PlannerBoard[] {
   if (boards) return boards;
   let initial = seedBoards();
@@ -281,8 +287,28 @@ function load(): PlannerBoard[] {
   } catch {
     // Corrupt or unavailable storage: fall back to the seeds.
   }
+  // One-time repair (2026-11-25): "Owner" leaked into job
+  // roles (the portfolio seed and createBoard wrote it, and
+  // the panel offered it as an option). A job role of
+  // "Owner" is never valid: the board owner is member 0 by
+  // construction. Restore the seed role by name, else empty.
+  const seeds = seedBoards();
+  let repaired = false;
+  initial = initial.map((b) => {
+    const seed = seeds.find((s) => s.id === b.id);
+    const members = b.members.map((m) => {
+      if (!isReservedOwnerRole(m.role)) return m;
+      repaired = true;
+      const seedRole = seed?.members.find(
+        (sm) => sm.name === m.name,
+      )?.role;
+      return { ...m, role: seedRole ?? "" };
+    });
+    return { ...b, members };
+  });
   boards = initial;
   boardsLoaded = true;
+  if (repaired) persist();
   return boards;
 }
 
@@ -359,7 +385,7 @@ export function createBoard(input: {
     kind: input.kind,
     collabName: input.kind === "team" ? input.collabName : undefined,
     collabId: input.kind === "team" ? input.collabId : undefined,
-    members: [{ name: input.ownerName, role: "Owner", tasks: [] }],
+    members: [{ name: input.ownerName, role: "", tasks: [] }],
   };
   boards = [...current, board];
   persist();
