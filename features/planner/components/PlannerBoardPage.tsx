@@ -485,6 +485,11 @@ function BoardCanvas({
   const { list: ownedCollabs } = useOwnedCollabs();
   const [switchOpen, setSwitchOpen] = useState(false);
   const [confirmDeleteBoard, setConfirmDeleteBoard] = useState(false);
+  const [roleMenu, setRoleMenu] = useState<{
+    mi: number;
+    x: number;
+    y: number;
+  } | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const panRef = useRef<{
     startX: number;
@@ -508,6 +513,43 @@ function BoardCanvas({
     onMembersChange(members);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [members]);
+
+  // Role picker: the owner taps a member's role line in the
+  // Who column. The menu is fixed to the click position
+  // because the board's pan scroller would clip an in-flow
+  // menu. Member 0 is the board owner (PERSONAS convention)
+  // and is never changeable; personal boards have no picker.
+  const openRoleMenu = (rect: DOMRect, mi: number) => {
+    const w = 176;
+    const h = 96;
+    setRoleMenu({
+      mi,
+      x: Math.max(8, Math.min(rect.left, window.innerWidth - w - 8)),
+      y:
+        rect.bottom + 6 + h > window.innerHeight
+          ? Math.max(8, rect.top - h - 6)
+          : rect.bottom + 6,
+    });
+  };
+
+  const setMemberRole = (mi: number, pm: boolean) => {
+    const member = members[mi];
+    if (!member) return;
+    if (member.pm === pm) {
+      setRoleMenu(null);
+      return;
+    }
+    setMembers((prev) =>
+      prev.map((m, i) => (i === mi ? { ...m, pm } : m)),
+    );
+    showToast(
+      "ok",
+      t(pm ? "planner.madePm" : "planner.removedPm", {
+        name: member.name,
+      }),
+    );
+    setRoleMenu(null);
+  };
   const [drag, setDrag] = useState<DragState | null>(null);
   // The pill whose drop just committed: its own left/top must
   // not animate in the commit render (its settle glide already
@@ -1419,6 +1461,7 @@ function BoardCanvas({
         <div
           ref={scrollRef}
           onPointerDown={onPanDown}
+          onScroll={() => setRoleMenu(null)}
           onPointerMove={onPanMove}
           onPointerUp={onPanEnd}
           onPointerCancel={onPanEnd}
@@ -1487,13 +1530,45 @@ function BoardCanvas({
                   <div className="flex min-w-0 flex-col">
                     <span className="flex items-center gap-1.5 truncate text-sm font-medium leading-tight text-ink">
                       {member.name}
+                      {mi === 0 && (
+                        <Icon
+                          name="crown"
+                          size={13}
+                          className="shrink-0 text-accent"
+                        />
+                      )}
                       {member.pm && (
                         <span className="rounded-full bg-accent-soft px-1.5 py-px text-[10px] font-semibold text-accent">
                           {t("planner.rolePm")}
                         </span>
                       )}
                     </span>
-                    <span className="text-2xs text-muted">{member.role}</span>
+                    {viewer.key === "owner" &&
+                    board.kind === "team" &&
+                    mi !== 0 ? (
+                      <button
+                        type="button"
+                        onClick={(e) =>
+                          openRoleMenu(
+                            e.currentTarget.getBoundingClientRect(),
+                            mi,
+                          )
+                        }
+                        className="flex items-center gap-1 text-left text-2xs text-muted hover:text-ink"
+                      >
+                        <span className="truncate">{member.role}</span>
+                        <Icon
+                          name="chevron-down"
+                          size={12}
+                          className="shrink-0"
+                        />
+                      </button>
+                    ) : (
+                      <span className="truncate text-2xs text-muted">
+                        {member.role}
+                        {mi === 0 ? ` Â· ${t("planner.roleOwner")}` : ""}
+                      </span>
+                    )}
                   </div>
                 </div>
               ))}
@@ -1654,6 +1729,55 @@ function BoardCanvas({
           right when a pill is clicked. Properties read like a
           Notion page (icon + label column, value beside it); the
           one live action for now is marking done / reopening. */}
+      {/* Role menu: PM / Member for one member, fixed to the
+          click position, dismissed by the backdrop or a pan. */}
+      {roleMenu && (
+        <>
+          <div
+            aria-hidden
+            onClick={() => setRoleMenu(null)}
+            className="fixed inset-0 z-[95]"
+          />
+          <div
+            className="fixed z-[96] w-44 rounded-lg border border-line bg-surface p-1.5 shadow-2xl"
+            style={{ left: roleMenu.x, top: roleMenu.y }}
+          >
+            <button
+              type="button"
+              onClick={() => setMemberRole(roleMenu.mi, true)}
+              className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-sm hover:bg-active"
+            >
+              <span className="min-w-0 flex-1 truncate font-medium text-ink">
+                {t("planner.rolePm")}
+              </span>
+              {members[roleMenu.mi]?.pm && (
+                <Icon
+                  name="check"
+                  size={16}
+                  className="shrink-0 text-accent"
+                />
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={() => setMemberRole(roleMenu.mi, false)}
+              className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-sm hover:bg-active"
+            >
+              <span className="min-w-0 flex-1 truncate font-medium text-ink">
+                {t("planner.roleMember")}
+              </span>
+              {!members[roleMenu.mi]?.pm && (
+                <Icon
+                  name="check"
+                  size={16}
+                  className="shrink-0 text-accent"
+                />
+              )}
+            </button>
+          </div>
+        </>
+      )}
+
       {detail && detailMember && detailTask && (
         <>
           <div
