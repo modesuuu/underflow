@@ -56,6 +56,7 @@ import type {
   PlannerBoardTask,
   PlannerTaskData,
 } from "../boards";
+import { isCollabCompleted, useOwnedCollabs } from "../collab-status";
 import type { Block } from "./BlockBody";
 import { Avatar } from "@/components/ui/Avatar";
 import { Icon } from "@/components/ui/Icon";
@@ -414,6 +415,11 @@ export function PlannerBoardPage({ boardId }: { boardId: string }) {
   const { t } = useLanguage();
   const boards = useBoards();
   const board = boards.find((b) => b.id === boardId);
+  const { list: ownedCollabs } = useOwnedCollabs();
+  const boardDone =
+    board !== undefined &&
+    board.kind === "team" &&
+    isCollabCompleted(ownedCollabs, board.collabId, board.collabName);
   if (!board) {
     return (
       <div className="flex flex-col items-start gap-3 py-16">
@@ -422,6 +428,27 @@ export function PlannerBoardPage({ boardId }: { boardId: string }) {
         </h1>
         <p className="max-w-md text-sm text-muted">
           {t("planner.boardNotFoundBody")}
+        </p>
+        <Link
+          href="/tasks"
+          className="rounded-full border border-line bg-surface px-4 py-2 text-sm font-medium text-ink"
+        >
+          {t("planner.backToTasks")}
+        </Link>
+      </div>
+    );
+  }
+  // The board's data stays in the store; the board itself is
+  // hidden while its collaboration is completed, and returns
+  // when the collab is reopened.
+  if (boardDone) {
+    return (
+      <div className="flex flex-col items-start gap-3 py-16">
+        <h1 className="text-2xl font-medium tracking-tight text-ink">
+          {t("planner.boardCompleted")}
+        </h1>
+        <p className="max-w-md text-sm text-muted">
+          {t("planner.boardCompletedBody")}
         </p>
         <Link
           href="/tasks"
@@ -451,6 +478,7 @@ function BoardCanvas({
   const { t } = useLanguage();
   const router = useRouter();
   const boards = useBoards();
+  const { list: ownedCollabs } = useOwnedCollabs();
   const [switchOpen, setSwitchOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const panRef = useRef<{
@@ -1286,7 +1314,17 @@ function BoardCanvas({
                   onClick={() => setSwitchOpen(false)}
                 />
                 <div className="absolute right-0 top-full z-50 mt-2 w-64 rounded-lg border border-line bg-surface p-1.5 shadow-2xl">
-                  {boards.map((b) => (
+                  {boards
+                    .filter(
+                      (b) =>
+                        b.kind !== "team" ||
+                        !isCollabCompleted(
+                          ownedCollabs,
+                          b.collabId,
+                          b.collabName,
+                        ),
+                    )
+                    .map((b) => (
                     <button
                       key={b.id}
                       type="button"

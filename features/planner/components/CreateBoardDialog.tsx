@@ -21,21 +21,20 @@ import {
   useBoards,
   useCreateBoardOpen,
 } from "../boards";
-import { getMyCollabProjects } from "@/features/my-collaborations/api";
+import {
+  refreshOwnedCollabs,
+  useOwnedCollabs,
+} from "../collab-status";
 
 export function CreateBoardDialog() {
   const open = useCreateBoardOpen();
   const { t } = useLanguage();
   const router = useRouter();
   const boards = useBoards();
+  const { list: owned, failed: collabsFailed } = useOwnedCollabs();
   const [kind, setKind] = useState<"team" | "personal">("team");
   const [collab, setCollab] = useState<string | null>(null);
   const [name, setName] = useState("");
-  const [owned, setOwned] = useState<{ id: string; title: string }[] | null>(
-    null,
-  );
-  const [collabsFailed, setCollabsFailed] = useState(false);
-  const [collabsNonce, setCollabsNonce] = useState(0);
 
   // Fresh choices every time the dialog opens.
   useEffect(() => {
@@ -46,31 +45,7 @@ export function CreateBoardDialog() {
     }
   }, [open]);
 
-  // The team picker reads the user's own collaborations
-  // (GET /api/my-collaborations) and keeps only the ones
-  // they own, same rule as the My Collaborations Owned column.
-  useEffect(() => {
-    if (!open) return;
-    let cancelled = false;
-    setOwned(null);
-    setCollabsFailed(false);
-    const me = getSessionUser()?.id ?? null;
-    getMyCollabProjects()
-      .then((projects) => {
-        if (cancelled) return;
-        setOwned(
-          projects
-            .filter((p) => me !== null && p.owner.id === me)
-            .map((p) => ({ id: p.id, title: p.title })),
-        );
-      })
-      .catch(() => {
-        if (!cancelled) setCollabsFailed(true);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [open, collabsNonce]);
+
 
   useEffect(() => {
     if (!open) return;
@@ -91,7 +66,10 @@ export function CreateBoardDialog() {
       .flatMap((b) => [b.collabId, b.collabName])
       .filter((c): c is string => !!c),
   );
-  const selectedCollab = owned?.find((c) => c.id === collab) ?? null;
+  // Completed collabs are not offered: their boards are
+  // hidden until the collab is reopened.
+  const pickable = owned?.filter((c) => c.status !== "completed") ?? null;
+  const selectedCollab = pickable?.find((c) => c.id === collab) ?? null;
   const canCreate =
     kind === "team"
       ? selectedCollab !== null &&
@@ -214,23 +192,25 @@ export function CreateBoardDialog() {
                       </span>
                       <button
                         type="button"
-                        onClick={() => setCollabsNonce((n) => n + 1)}
+                        onClick={() => void refreshOwnedCollabs()}
                         className="rounded-full border border-line px-3 py-1.5 text-xs font-medium text-ink"
                       >
                         {t("planner.collabsRetry")}
                       </button>
                     </div>
-                  ) : owned === null ? (
+                  ) : pickable === null ? (
                     <>
                       <div className="h-10 animate-pulse rounded-md bg-active" />
                       <div className="h-10 animate-pulse rounded-md bg-active" />
                     </>
-                  ) : owned.length === 0 ? (
+                  ) : pickable.length === 0 ? (
                     <p className="rounded-md border border-line px-3 py-3 text-sm text-muted">
-                      {t("planner.collabsEmpty")}
+                      {owned !== null && owned.length > 0
+                        ? t("planner.collabsAllDone")
+                        : t("planner.collabsEmpty")}
                     </p>
                   ) : (
-                    owned.map((c) => {
+                    pickable.map((c) => {
                       const has =
                         teamedKeys.has(c.id) || teamedKeys.has(c.title);
                       const selected = collab === c.id;

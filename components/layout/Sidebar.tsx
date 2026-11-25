@@ -24,6 +24,7 @@ import {
   useBoards,
 } from "@/features/planner/boards";
 import { CreateBoardDialog } from "@/features/planner/components/CreateBoardDialog";
+import { isCollabCompleted, useOwnedCollabs } from "@/features/planner/collab-status";
 import { setMobileNav, useMobileNavOpen } from "./mobile-nav";
 import {
   CURRENT_USER,
@@ -663,12 +664,21 @@ export function Sidebar() {
   }, []);
 
   const boards = useBoards();
-  const boardChildren: NavChild[] = boards.map((b) => ({
-    id: b.id,
-    label: b.name,
-    count: openTaskCount(b),
-    href: `/tasks/${b.id}`,
-  }));
+  const { list: ownedCollabs } = useOwnedCollabs();
+  // A team board whose collaboration is completed stays
+  // hidden until the collab is reopened; its data is kept.
+  const boardChildren: NavChild[] = boards
+    .filter(
+      (b) =>
+        b.kind !== "team" ||
+        !isCollabCompleted(ownedCollabs, b.collabId, b.collabName),
+    )
+    .map((b) => ({
+      id: b.id,
+      label: b.name,
+      count: openTaskCount(b),
+      href: `/tasks/${b.id}`,
+    }));
 
   const badgeFor = (id: string) =>
     id === "inbox" && inboxUnread > 0
