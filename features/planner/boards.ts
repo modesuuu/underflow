@@ -113,7 +113,7 @@ const SAMPLE_MEMBERS: PlannerBoardMember[] = [
     ],
   },
   {
-    name: "Faiz Aghitsna",
+    name: "Faiz Atha Aghitsna",
     role: "Backend",
     pm: true,
     tasks: [
@@ -129,7 +129,7 @@ const SAMPLE_MEMBERS: PlannerBoardMember[] = [
     ],
   },
   {
-    name: "Fadilah Yasin",
+    name: "Fadilah Nur Yasin",
     role: "Database",
     tasks: [
       { title: "Backup database", icon: "server", day: 11 },
@@ -144,7 +144,7 @@ const SAMPLE_MEMBERS: PlannerBoardMember[] = [
     ],
   },
   {
-    name: "Alifah Syarifah",
+    name: "Alifah Nailatusy Syarifah",
     role: "Research",
     tasks: [
       { title: "Survei pengguna", icon: "group", day: 8 },
@@ -158,7 +158,7 @@ const SAMPLE_MEMBERS: PlannerBoardMember[] = [
     ],
   },
   {
-    name: "Alvina Putri",
+    name: "Alvina Chalista Putri",
     role: "Research",
     tasks: [
       { title: "Uji alur apply", icon: "map-pin", day: 16 },
@@ -261,6 +261,15 @@ function emit(): void {
 export const isReservedOwnerRole = (role: string): boolean =>
   role.trim().toLowerCase() === "owner";
 
+// Seed member names were shortened ("Alvina Putri"); the board
+// shows the profile name, so these restore the full name.
+const FULL_NAMES: Record<string, string> = {
+  "Faiz Aghitsna": "Faiz Atha Aghitsna",
+  "Fadilah Yasin": "Fadilah Nur Yasin",
+  "Alifah Syarifah": "Alifah Nailatusy Syarifah",
+  "Alvina Putri": "Alvina Chalista Putri",
+};
+
 function load(): PlannerBoard[] {
   if (boards) return boards;
   let initial = seedBoards();
@@ -305,6 +314,11 @@ function load(): PlannerBoard[] {
             return clean as PlannerBoardTask;
           }),
         };
+      }
+      const fullName = FULL_NAMES[next.name];
+      if (fullName) {
+        repaired = true;
+        next = { ...next, name: fullName };
       }
       if (!isReservedOwnerRole(next.role)) return next;
       repaired = true;

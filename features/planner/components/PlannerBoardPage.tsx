@@ -64,6 +64,7 @@ import type { Block } from "./BlockBody";
 import { Avatar } from "@/components/ui/Avatar";
 import { Icon } from "@/components/ui/Icon";
 import { DateField } from "@/components/ui/DateField";
+import { useSessionUser } from "@/features/auth/store";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
@@ -123,7 +124,7 @@ const OPEN_SCROLL_DAYS = 15;
 
 // Who column width (px), one day column (px), and one pill lane
 // (px). Pills are 44px tall (h-11) with 4px of air in a lane.
-const WHO_W = 180;
+const WHO_W = 220;
 const DAY_W = 132;
 const LANE_H = 52;
 const BOARD_W = WHO_W + SAMPLE_DAYS.length * DAY_W;
@@ -541,6 +542,13 @@ function BoardCanvas({
       tasks: m.tasks.map((tk) => ({ ...tk })),
     })),
   );
+  const sessionUser = useSessionUser();
+  // Member 0 is the board owner, i.e. the signed-in user: the
+  // name shown for that row comes from their profile
+  // (AuthUser.name = editable full_name, username fallback),
+  // never from the stored seed string.
+  const displayName = (mi: number): string =>
+    mi === 0 && sessionUser?.name ? sessionUser.name : members[mi].name;
   // Every edit flows back to the boards store, so the sidebar
   // counts and the next visit to this board see the same state.
   useEffect(() => {
@@ -562,7 +570,7 @@ function BoardCanvas({
     showToast(
       "ok",
       t(pm ? "planner.madePm" : "planner.removedPm", {
-        name: member.name,
+        name: displayName(mi),
       }),
     );
   };
@@ -697,7 +705,7 @@ function BoardCanvas({
     );
     showToast(
       "ok",
-      t("planner.roleSetTo", { name: member.name, role: trimmed }),
+      t("planner.roleSetTo", { name: displayName(memberPanel), role: trimmed }),
     );
   };
 
@@ -1628,19 +1636,21 @@ function BoardCanvas({
                       "height 260ms cubic-bezier(0.22, 1, 0.36, 1)",
                   }}
                 >
-                  <Avatar alt={member.name} size={30} />
+                  <Avatar alt={displayName(mi)} size={30} />
                   <div className="flex min-w-0 flex-col">
-                    <span className="flex items-center gap-1.5 truncate text-sm font-medium leading-tight text-ink">
-                      {member.name}
+                    <span className="flex items-start gap-1.5 text-sm font-medium leading-tight text-ink">
+                      <span className="min-w-0 break-words">
+                        {displayName(mi)}
+                      </span>
                       {mi === 0 && (
                         <Icon
                           name="crown"
                           size={13}
-                          className="shrink-0 text-accent"
+                          className="mt-0.5 shrink-0 text-accent"
                         />
                       )}
                       {member.pm && (
-                        <span className="rounded-full bg-accent-soft px-1.5 py-px text-[10px] font-semibold text-accent">
+                        <span className="mt-0.5 shrink-0 rounded-full bg-accent-soft px-1.5 py-px text-[10px] font-semibold text-accent">
                           {t("planner.rolePm")}
                         </span>
                       )}
@@ -1853,10 +1863,10 @@ function BoardCanvas({
                 className="flex items-center gap-3 card-stagger"
                 style={{ "--stagger-i": 0 } as CSSProperties}
               >
-                <Avatar alt={panelMember.name} size={44} />
+                <Avatar alt={displayName(memberPanel)} size={44} />
                 <div className="flex min-w-0 flex-col">
                   <h2 className="truncate text-xl font-semibold text-ink">
-                    {panelMember.name}
+                    {displayName(memberPanel)}
                   </h2>
                   <span className="flex items-center gap-1.5 text-sm text-muted">
                     {panelMember.role}
@@ -2051,8 +2061,8 @@ function BoardCanvas({
               </h2>
               <div className="mt-4 flex flex-col">
                 <DetailRow icon="user" label={t("planner.assignee")}>
-                  <Avatar alt={detailMember.name} size={22} />
-                  <span>{detailMember.name}</span>
+                  <Avatar alt={displayName(detail.member)} size={22} />
+                  <span>{displayName(detail.member)}</span>
                   <span className="text-muted">· {detailMember.role}</span>
                 </DetailRow>
                 <DetailRow icon="shapes" label={t("planner.icon")}>
@@ -2339,7 +2349,7 @@ function BoardCanvas({
                     onChange={(v) => setAddMember(Number(v))}
                     options={members.map((m, i) => ({
                       value: String(i),
-                      label: m.name,
+                      label: displayName(i),
                     }))}
                   />
                 </div>
