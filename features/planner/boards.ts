@@ -16,7 +16,6 @@ import type { Block } from "./components/BlockBody";
 
 export type PlannerTaskData = {
   title: string;
-  section?: string;
   icon?: string;
   done?: boolean;
   pencilled?: boolean;
@@ -100,18 +99,17 @@ const SAMPLE_MEMBERS: PlannerBoardMember[] = [
     name: "Raka Alfarezi",
     role: "Frontend",
     tasks: [
-      { title: "Desain board planner", section: "Desain", icon: "edit", day: 16 },
-      { title: "Review PR backend", section: "Frontend", done: true, day: 17 },
+      { title: "Desain board planner", icon: "edit", day: 16 },
+      { title: "Review PR backend", done: true, day: 17 },
       {
         title: "Implementasi board",
-        section: "Frontend",
         follows: true,
         icon: "group",
         day: 17,
         span: 2,
         lane: 1,
       },
-      { title: "Polish halaman profil", section: "Frontend", icon: "palette", day: 24 },
+      { title: "Polish halaman profil", icon: "palette", day: 24 },
     ],
   },
   {
@@ -119,27 +117,25 @@ const SAMPLE_MEMBERS: PlannerBoardMember[] = [
     role: "Backend",
     pm: true,
     tasks: [
-      { title: "Audit endpoint lama", section: "Backend", icon: "search", day: 3 },
-      { title: "Endpoint GET planner", section: "Backend", icon: "code-alt", day: 15 },
+      { title: "Audit endpoint lama", icon: "search", day: 3 },
+      { title: "Endpoint GET planner", icon: "code-alt", day: 15 },
       {
         title: "Perbaiki CORS deploy",
-        section: "Backend",
         overdue: true,
         icon: "wrench",
         day: 16,
       },
-      { title: "Setup Cloudflare Tunnel", section: "Backend", icon: "server", day: 19 },
+      { title: "Setup Cloudflare Tunnel", icon: "server", day: 19 },
     ],
   },
   {
     name: "Fadilah Yasin",
     role: "Database",
     tasks: [
-      { title: "Backup database", section: "Backend", icon: "server", day: 11 },
-      { title: "Skema tabel collab_tasks", section: "Backend", done: true, day: 16 },
+      { title: "Backup database", icon: "server", day: 11 },
+      { title: "Skema tabel collab_tasks", done: true, day: 16 },
       {
         title: "Seed data demo",
-        section: "Backend",
         pencilled: true,
         icon: "edit",
         day: 18,
@@ -151,11 +147,10 @@ const SAMPLE_MEMBERS: PlannerBoardMember[] = [
     name: "Alifah Syarifah",
     role: "Research",
     tasks: [
-      { title: "Survei pengguna", section: "Riset", icon: "group", day: 8 },
-      { title: "Riset referensi Talmo", section: "Riset", icon: "search", day: 16 },
+      { title: "Survei pengguna", icon: "group", day: 8 },
+      { title: "Riset referensi Talmo", icon: "search", day: 16 },
       {
         title: "Copywriting halaman Tasks",
-        section: "Desain",
         pencilled: true,
         icon: "edit",
         day: 17,
@@ -166,9 +161,9 @@ const SAMPLE_MEMBERS: PlannerBoardMember[] = [
     name: "Alvina Putri",
     role: "Research",
     tasks: [
-      { title: "Uji alur apply", section: "Riset", icon: "map-pin", day: 16 },
-      { title: "Catatan rilis", section: "Riset", icon: "edit", day: 21 },
-      { title: "Dokumentasi rilis", section: "Riset", icon: "edit", day: 26 },
+      { title: "Uji alur apply", icon: "map-pin", day: 16 },
+      { title: "Catatan rilis", icon: "edit", day: 21 },
+      { title: "Dokumentasi rilis", icon: "edit", day: 26 },
     ],
   },
 ];
@@ -203,13 +198,12 @@ export function seedBoards(): PlannerBoard[] {
           name: "Raka Alfarezi",
           role: "Project Lead",
           tasks: [
-            { title: "Desain poster lomba", section: "Desain", day: 18 },
+            { title: "Desain poster lomba", day: 18 },
             {
               title: "Rekap pendaftaran peserta",
-              section: "Operasional",
               day: 22,
             },
-            { title: "Booking aula final", section: "Operasional", day: 25 },
+            { title: "Booking aula final", day: 25 },
           ],
         },
         {
@@ -218,7 +212,6 @@ export function seedBoards(): PlannerBoard[] {
           tasks: [
             {
               title: "Skema database lomba",
-              section: "Backend",
               done: true,
               day: 15,
             },
@@ -235,8 +228,8 @@ export function seedBoards(): PlannerBoard[] {
           name: "Raka Alfarezi",
           role: "Frontend",
           tasks: [
-            { title: "Update case study planner", section: "Konten", day: 19 },
-            { title: "Rapikan CV", section: "Konten", done: true, day: 12 },
+            { title: "Update case study planner", day: 19 },
+            { title: "Rapikan CV", done: true, day: 12 },
           ],
         },
       ]),
@@ -292,17 +285,33 @@ function load(): PlannerBoard[] {
   // the panel offered it as an option). A job role of
   // "Owner" is never valid: the board owner is member 0 by
   // construction. Restore the seed role by name, else empty.
+  // Section keys are stripped too: the section field was
+  // removed the same day, so saved tasks stop carrying it.
   const seeds = seedBoards();
   let repaired = false;
   initial = initial.map((b) => {
     const seed = seeds.find((s) => s.id === b.id);
     const members = b.members.map((m) => {
-      if (!isReservedOwnerRole(m.role)) return m;
+      let next = m;
+      if (m.tasks.some((tk) => "section" in tk)) {
+        repaired = true;
+        next = {
+          ...m,
+          tasks: m.tasks.map((tk) => {
+            const clean = { ...tk } as PlannerBoardTask & {
+              section?: string;
+            };
+            delete clean.section;
+            return clean as PlannerBoardTask;
+          }),
+        };
+      }
+      if (!isReservedOwnerRole(next.role)) return next;
       repaired = true;
       const seedRole = seed?.members.find(
-        (sm) => sm.name === m.name,
+        (sm) => sm.name === next.name,
       )?.role;
-      return { ...m, role: seedRole ?? "" };
+      return { ...next, role: seedRole ?? "" };
     });
     return { ...b, members };
   });

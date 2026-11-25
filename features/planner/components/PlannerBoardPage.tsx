@@ -710,13 +710,11 @@ function BoardCanvas({
   const [addMember, setAddMember] = useState(0);
   const [addStart, setAddStart] = useState(TODAY_INDEX);
   const [addEnd, setAddEnd] = useState(TODAY_INDEX);
-  const [addSection, setAddSection] = useState("");
   const openAdd = () => {
     setAddTitle("");
     setAddMember(viewer.key === "member" ? viewer.member : 0);
     setAddStart(TODAY_INDEX);
     setAddEnd(TODAY_INDEX);
-    setAddSection("");
     setAddOpen(true);
   };
   const submitAdd = () => {
@@ -732,7 +730,6 @@ function BoardCanvas({
     }
     const task: BoardTask = {
       title,
-      section: addSection || undefined,
       day: addStart,
       span: addEnd - addStart + 1,
       blocks: defaultBlocksFor(title),
@@ -1412,13 +1409,7 @@ function BoardCanvas({
   const detailCanEdit =
     detail != null &&
     (viewer.key !== "member" || viewer.member === detail.member);
-  const sectionOptions = Array.from(
-    new Set(
-      members.flatMap((m) =>
-        m.tasks.map((tk) => tk.section).filter((s): s is string => !!s),
-      ),
-    ),
-  );
+
 
   return (
     <div className="flex flex-col gap-5">
@@ -2104,11 +2095,7 @@ function BoardCanvas({
                     </span>
                   )}
                 </DetailRow>
-                <DetailRow icon="folder" label={t("planner.section")}>
-                  <span className="rounded-full border border-line px-2.5 py-0.5 text-xs font-medium">
-                    {detailTask.section ?? t("planner.noSection")}
-                  </span>
-                </DetailRow>
+
                 <DetailRow icon="calendar" label={t("planner.dueDate")}>
                   {detailCanEdit ? (
                     <div className="flex w-full items-center gap-2">
@@ -2356,19 +2343,7 @@ function BoardCanvas({
                     }))}
                   />
                 </div>
-                <div className="flex flex-col gap-1">
-                  <span className="font-mono text-2xs font-medium uppercase tracking-wider text-muted">
-                    {t("planner.section")}
-                  </span>
-                  <MenuSelect
-                    value={addSection}
-                    onChange={setAddSection}
-                    options={[
-                      { value: "", label: t("planner.noSection") },
-                      ...sectionOptions.map((s) => ({ value: s, label: s })),
-                    ]}
-                  />
-                </div>
+
                 <div className="flex flex-col gap-1">
                   <span className="font-mono text-2xs font-medium uppercase tracking-wider text-muted">
                     {t("planner.dueDate")}
