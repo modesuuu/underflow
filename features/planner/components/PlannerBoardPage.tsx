@@ -485,11 +485,7 @@ function BoardCanvas({
   const { list: ownedCollabs } = useOwnedCollabs();
   const [switchOpen, setSwitchOpen] = useState(false);
   const [confirmDeleteBoard, setConfirmDeleteBoard] = useState(false);
-  const [roleMenu, setRoleMenu] = useState<{
-    mi: number;
-    x: number;
-    y: number;
-  } | null>(null);
+
   const scrollRef = useRef<HTMLDivElement>(null);
   const panRef = useRef<{
     startX: number;
@@ -514,31 +510,14 @@ function BoardCanvas({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [members]);
 
-  // Role picker: the owner taps a member's role line in the
-  // Who column. The menu is fixed to the click position
-  // because the board's pan scroller would clip an in-flow
-  // menu. Member 0 is the board owner (PERSONAS convention)
-  // and is never changeable; personal boards have no picker.
-  const openRoleMenu = (rect: DOMRect, mi: number) => {
-    const w = 176;
-    const h = 96;
-    setRoleMenu({
-      mi,
-      x: Math.max(8, Math.min(rect.left, window.innerWidth - w - 8)),
-      y:
-        rect.bottom + 6 + h > window.innerHeight
-          ? Math.max(8, rect.top - h - 6)
-          : rect.bottom + 6,
-    });
-  };
-
+  // Role picker lives in the member panel now (same Side
+  // Peek pattern as the task detail). Member 0 is the board
+  // owner (PERSONAS convention) and is never changeable;
+  // personal boards have no board role.
   const setMemberRole = (mi: number, pm: boolean) => {
     const member = members[mi];
     if (!member) return;
-    if (member.pm === pm) {
-      setRoleMenu(null);
-      return;
-    }
+    if (member.pm === pm) return;
     setMembers((prev) =>
       prev.map((m, i) => (i === mi ? { ...m, pm } : m)),
     );
@@ -548,7 +527,6 @@ function BoardCanvas({
         name: member.name,
       }),
     );
-    setRoleMenu(null);
   };
   const [drag, setDrag] = useState<DragState | null>(null);
   // The pill whose drop just committed: its own left/top must
@@ -640,6 +618,41 @@ function BoardCanvas({
       setDetail(null);
       setDetailLeaving(false);
     }, 250);
+  };
+
+  // Member panel: slides in from the right when a Who row
+  // is clicked; same Side Peek pattern as the task detail.
+  const [memberPanel, setMemberPanel] = useState<number | null>(null);
+  const [memberLeaving, setMemberLeaving] = useState(false);
+  const [roleDraft, setRoleDraft] = useState("");
+  const memberTimerRef = useRef<number | null>(null);
+  const rowDownRef = useRef<{ x: number; y: number } | null>(null);
+  const openMemberPanel = (mi: number) => {
+    if (memberTimerRef.current) window.clearTimeout(memberTimerRef.current);
+    setMemberLeaving(false);
+    setRoleDraft(members[mi]?.role ?? "");
+    setMemberPanel(mi);
+  };
+  const closeMemberPanel = () => {
+    setMemberLeaving(true);
+    if (memberTimerRef.current) window.clearTimeout(memberTimerRef.current);
+    memberTimerRef.current = window.setTimeout(() => {
+      setMemberPanel(null);
+      setMemberLeaving(false);
+    }, 250);
+  };
+  const commitJobRole = (role: string) => {
+    if (memberPanel === null) return;
+    const trimmed = role.trim();
+    const member = members[memberPanel];
+    if (!member || trimmed === "" || trimmed === member.role) return;
+    setMembers((prev) =>
+      prev.map((m, i) => (i === memberPanel ? { ...m, role: trimmed } : m)),
+    );
+    showToast(
+      "ok",
+      t("planner.roleSetTo", { name: member.name, role: trimmed }),
+    );
   };
 
   // Add task dialog. The board is dynamic now: a new pill is
@@ -770,6 +783,7 @@ function BoardCanvas({
       if (settleTimerRef.current) window.clearTimeout(settleTimerRef.current);
       clearToastTimers();
       if (detailTimerRef.current) window.clearTimeout(detailTimerRef.current);
+      if (memberTimerRef.current) window.clearTimeout(memberTimerRef.current);
     };
   }, []);
 
@@ -781,6 +795,15 @@ function BoardCanvas({
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [detail]);
+
+  useEffect(() => {
+    if (memberPanel === null) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") closeMemberPanel();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [memberPanel]);
 
   useEffect(() => {
     if (!addOpen) return;
@@ -1312,6 +1335,20 @@ function BoardCanvas({
   };
 
   const detailMember = detail ? members[detail.member] : undefined;
+  const panelMember =
+    memberPanel !== null ? members[memberPanel] : undefined;
+  const panelOpenCount = panelMember
+    ? panelMember.tasks.filter((tk) => !tk.done).length
+    : 0;
+  const canEditRoles = viewer.key === "owner";
+  const roleOptions = [
+    ...new Set(boards.flatMap((b) => b.members.map((m) => m.role))),
+  ].filter(Boolean);
+  const filteredRoles = roleOptions
+    .filter((r) =>
+      r.toLowerCase().includes(roleDraft.trim().toLowerCase()),
+    )
+    .slice(0, 6);
   const detailTask = detailMember?.tasks.find(
     (tk) => tk.title === detail?.title,
   );
@@ -1461,7 +1498,6 @@ function BoardCanvas({
         <div
           ref={scrollRef}
           onPointerDown={onPanDown}
-          onScroll={() => setRoleMenu(null)}
           onPointerMove={onPanMove}
           onPointerUp={onPanEnd}
           onPointerCancel={onPanEnd}
@@ -1519,7 +1555,21 @@ function BoardCanvas({
               {members.map((member, mi) => (
                 <div
                   key={member.name}
-                  className="flex items-center gap-3 border-t border-line px-4"
+                  onPointerDown={(e) => {
+                    rowDownRef.current = { x: e.clientX, y: e.clientY };
+                  }}
+                  onClick={(e) => {
+                    const d = rowDownRef.current;
+                    rowDownRef.current = null;
+                    if (
+                      d &&
+                      Math.hypot(e.clientX - d.x, e.clientY - d.y) > 6
+                    ) {
+                      return;
+                    }
+                    openMemberPanel(mi);
+                  }}
+                  className="flex cursor-pointer items-center gap-3 border-t border-line px-4 hover:bg-active/50"
                   style={{
                     height: rowHeights[mi],
                     transition:
@@ -1543,33 +1593,17 @@ function BoardCanvas({
                         </span>
                       )}
                     </span>
-                    {viewer.key === "owner" &&
-                    board.kind === "team" &&
-                    mi !== 0 ? (
-                      <button
-                        type="button"
-                        onClick={(e) =>
-                          openRoleMenu(
-                            e.currentTarget.getBoundingClientRect(),
-                            mi,
-                          )
-                        }
-                        className="flex items-center gap-1 text-left text-2xs text-muted hover:text-ink"
-                      >
-                        <span className="truncate">{member.role}</span>
-                        <Icon
-                          name="chevron-down"
-                          size={12}
-                          className="shrink-0"
-                        />
-                      </button>
-                    ) : (
+                    
                       <span className="truncate text-2xs text-muted">
                         {member.role}
                         {mi === 0 ? ` Â· ${t("planner.roleOwner")}` : ""}
                       </span>
-                    )}
                   </div>
+                  <Icon
+                    name="chevron-right"
+                    size={16}
+                    className="ml-auto shrink-0 text-muted"
+                  />
                 </div>
               ))}
             </div>
@@ -1729,52 +1763,201 @@ function BoardCanvas({
           right when a pill is clicked. Properties read like a
           Notion page (icon + label column, value beside it); the
           one live action for now is marking done / reopening. */}
-      {/* Role menu: PM / Member for one member, fixed to the
-          click position, dismissed by the backdrop or a pan. */}
-      {roleMenu && (
+      {/* Member panel: slides in from the right when a Who
+          row is clicked; same Side Peek pattern as the task
+          detail. The job role can be typed or picked from
+          the roles already used across boards; the board
+          role is PM / Member, owner locked. */}
+      {memberPanel !== null && panelMember && (
         <>
           <div
             aria-hidden
-            onClick={() => setRoleMenu(null)}
-            className="fixed inset-0 z-[95]"
+            onClick={closeMemberPanel}
+            className="fixed inset-0 z-[80] backdrop-blur-sm"
+            style={{
+              backgroundColor: "rgba(0, 0, 0, 0.32)",
+              animation: memberLeaving
+                ? "planner-fade-out 250ms ease-in forwards"
+                : "planner-fade-in 250ms ease-out both",
+            }}
           />
-          <div
-            className="fixed z-[96] w-44 rounded-lg border border-line bg-surface p-1.5 shadow-2xl"
-            style={{ left: roleMenu.x, top: roleMenu.y }}
+          <aside
+            className="fixed inset-y-0 right-0 z-[90] flex flex-col border-l border-line bg-surface shadow-2xl"
+            style={{
+              width: "clamp(320px, 50vw, 900px)",
+              animation: memberLeaving
+                ? "planner-detail-out 250ms cubic-bezier(0.5, 0, 0.75, 0) forwards"
+                : "planner-detail-in 300ms cubic-bezier(0.22, 1, 0.36, 1) both",
+            }}
           >
-            <button
-              type="button"
-              onClick={() => setMemberRole(roleMenu.mi, true)}
-              className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-sm hover:bg-active"
-            >
-              <span className="min-w-0 flex-1 truncate font-medium text-ink">
-                {t("planner.rolePm")}
+            <div className="flex items-center justify-between px-6 pt-5">
+              <span className="font-mono text-2xs font-medium uppercase tracking-wider text-muted">
+                {t("planner.member")}
               </span>
-              {members[roleMenu.mi]?.pm && (
-                <Icon
-                  name="check"
-                  size={16}
-                  className="shrink-0 text-accent"
-                />
+              <button
+                type="button"
+                onClick={closeMemberPanel}
+                aria-label="Close"
+                className="flex h-8 w-8 items-center justify-center rounded-full text-muted hover:bg-active hover:text-ink"
+              >
+                <Icon name="x" size={16} />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto px-6 pt-3 pb-6">
+              <div className="flex items-center gap-3">
+                <Avatar alt={panelMember.name} size={44} />
+                <div className="flex min-w-0 flex-col">
+                  <h2 className="truncate text-xl font-semibold text-ink">
+                    {panelMember.name}
+                  </h2>
+                  <span className="flex items-center gap-1.5 text-sm text-muted">
+                    {panelMember.role}
+                    {panelMember.pm && (
+                      <span className="rounded-full bg-accent-soft px-1.5 py-px text-[10px] font-semibold text-accent">
+                        {t("planner.rolePm")}
+                      </span>
+                    )}
+                    {memberPanel === 0 && (
+                      <span className="text-sm text-muted">
+                        {t("planner.roleOwner")}
+                      </span>
+                    )}
+                  </span>
+                </div>
+              </div>
+              <p className="mt-3 text-xs text-muted">
+                {t("planner.memberOpenTasks", { count: panelOpenCount })}
+              </p>
+
+              {/* Job role: type it, or pick one already used. */}
+              <div className="mt-6 flex flex-col gap-2">
+                <label
+                  htmlFor="member-role-input"
+                  className="font-mono text-2xs font-medium uppercase tracking-wider text-muted"
+                >
+                  {t("planner.jobRole")}
+                </label>
+                {canEditRoles ? (
+                  <>
+                    <input
+                      id="member-role-input"
+                      type="text"
+                      value={roleDraft}
+                      onChange={(e) => setRoleDraft(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") commitJobRole(roleDraft);
+                      }}
+                      placeholder={t("planner.rolePlaceholder")}
+                      className="w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink outline-none placeholder:text-subtle focus:border-ink"
+                    />
+                    <div className="flex flex-col">
+                      {filteredRoles.map((r) => (
+                        <button
+                          key={r}
+                          type="button"
+                          onClick={() => commitJobRole(r)}
+                          className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-sm hover:bg-active"
+                        >
+                          <span className="min-w-0 flex-1 truncate font-medium text-ink">
+                            {r}
+                          </span>
+                          {r === panelMember.role && (
+                            <Icon
+                              name="check"
+                              size={16}
+                              className="shrink-0 text-accent"
+                            />
+                          )}
+                        </button>
+                      ))}
+                      {roleDraft.trim() !== "" &&
+                        !filteredRoles.some(
+                          (r) =>
+                            r.toLowerCase() ===
+                            roleDraft.trim().toLowerCase(),
+                        ) && (
+                          <button
+                            type="button"
+                            onClick={() => commitJobRole(roleDraft.trim())}
+                            className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-sm hover:bg-active"
+                          >
+                            <span className="min-w-0 flex-1 truncate font-medium text-ink">
+                              {t("planner.useRole", {
+                                role: roleDraft.trim(),
+                              })}
+                            </span>
+                          </button>
+                        )}
+                    </div>
+                  </>
+                ) : (
+                  <p className="text-sm text-ink">{panelMember.role}</p>
+                )}
+              </div>
+
+              {/* Board role: PM / Member, owner locked. */}
+              {board.kind === "team" && (
+                <div className="mt-6 flex flex-col gap-2">
+                  <span className="font-mono text-2xs font-medium uppercase tracking-wider text-muted">
+                    {t("planner.boardRole")}
+                  </span>
+                  {memberPanel === 0 ? (
+                    <div className="flex items-center gap-2 rounded-md px-2.5 py-2 text-sm">
+                      <Icon
+                        name="crown"
+                        size={15}
+                        className="shrink-0 text-accent"
+                      />
+                      <span className="font-medium text-ink">
+                        {t("planner.roleOwner")}
+                      </span>
+                    </div>
+                  ) : canEditRoles ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => setMemberRole(memberPanel, true)}
+                        className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-sm hover:bg-active"
+                      >
+                        <span className="min-w-0 flex-1 truncate font-medium text-ink">
+                          {t("planner.rolePm")}
+                        </span>
+                        {panelMember.pm && (
+                          <Icon
+                            name="check"
+                            size={16}
+                            className="shrink-0 text-accent"
+                          />
+                        )}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setMemberRole(memberPanel, false)}
+                        className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-sm hover:bg-active"
+                      >
+                        <span className="min-w-0 flex-1 truncate font-medium text-ink">
+                          {t("planner.roleMember")}
+                        </span>
+                        {!panelMember.pm && (
+                          <Icon
+                            name="check"
+                            size={16}
+                            className="shrink-0 text-accent"
+                          />
+                        )}
+                      </button>
+                    </>
+                  ) : (
+                    <p className="text-sm text-ink">
+                      {panelMember.pm
+                        ? t("planner.rolePm")
+                        : t("planner.roleMember")}
+                    </p>
+                  )}
+                </div>
               )}
-            </button>
-            <button
-              type="button"
-              onClick={() => setMemberRole(roleMenu.mi, false)}
-              className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-sm hover:bg-active"
-            >
-              <span className="min-w-0 flex-1 truncate font-medium text-ink">
-                {t("planner.roleMember")}
-              </span>
-              {!members[roleMenu.mi]?.pm && (
-                <Icon
-                  name="check"
-                  size={16}
-                  className="shrink-0 text-accent"
-                />
-              )}
-            </button>
-          </div>
+            </div>
+          </aside>
         </>
       )}
 
