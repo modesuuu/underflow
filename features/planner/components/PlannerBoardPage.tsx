@@ -372,13 +372,21 @@ function toLocalMembers(
   todayIso: string,
   unassignedLabel: string,
 ): PlannerBoardMember[] {
-  const members: PlannerBoardMember[] = data.members.map((m) => ({
-    name: m.name,
-    role: m.jobRole ?? "",
-    pm: m.role === "pm",
-    userId: m.id,
-    tasks: [],
-  }));
+  const members: PlannerBoardMember[] = [];
+  const seenUserIds = new Set<string>();
+  for (const m of data.members) {
+    // The backend must not return the same user twice, but guard
+    // anyway: two rows with one id would break React's keys.
+    if (seenUserIds.has(m.id)) continue;
+    seenUserIds.add(m.id);
+    members.push({
+      name: m.name,
+      role: m.jobRole ?? "",
+      pm: m.role === "pm",
+      userId: m.id,
+      tasks: [],
+    });
+  }
   const memberIndex = new Map(data.members.map((m, i) => [m.id, i]));
   const unassigned: PlannerBoardTask[] = [];
   for (const task of data.tasks) {
@@ -1101,9 +1109,21 @@ function BoardCanvas({
     if (!collabMembers) return;
     setMembers((prev) => {
       const known = new Set(prev.map((m) => m.name.toLowerCase()));
-      const missing = collabMembers.filter(
-        (cm) => cm.name !== "" && !known.has(cm.name.toLowerCase()),
+      const seenIds = new Set(
+        prev.map((m) => m.userId).filter((id): id is string => !!id),
       );
+      const missing = collabMembers.filter((cm) => {
+        // Open slots are placeholders for unfilled seats, not
+        // people: they never get a board row.
+        if (cm.isOpenSlot) return false;
+        if (cm.name === "" || known.has(cm.name.toLowerCase())) return false;
+        // Same person twice in one roster batch (or already on
+        // the board under another name): keep the first only.
+        if (seenIds.has(cm.id)) return false;
+        seenIds.add(cm.id);
+        known.add(cm.name.toLowerCase());
+        return true;
+      });
       if (missing.length === 0) return prev;
       return [
         ...prev,
@@ -2373,7 +2393,7 @@ function BoardCanvas({
               </div>
               {members.map((member, mi) => (
                 <div
-                  key={member.name}
+                  key={member.userId ?? member.name}
                   onPointerDown={(e) => {
                     if (e.button !== 0) return;
                     // Like a pill press: stop the pan scroller
@@ -2508,7 +2528,7 @@ function BoardCanvas({
               const lanes = rowHeights[mi] / LANE_H;
               return (
                 <div
-                  key={member.name}
+                  key={member.userId ?? member.name}
                   className="relative"
                   style={{
                     width: SAMPLE_DAYS.length * DAY_W,
