@@ -108,6 +108,24 @@ function initialsOf(name: string): string {
     .join("");
 }
 
+/** Curved tree elbow joining a submenu row to the spine above
+ * it: the vertical runs down from the row above and curves right
+ * into this row. Middle rows hang their elbow half a row above
+ * themselves so the spine stays continuous; the first and last
+ * rows stop at their own middle, so the spine starts and ends
+ * exactly at the outer rows. */
+function SubmenuElbow({ edge }: { edge: boolean }) {
+  return (
+    <span
+      aria-hidden="true"
+      className={clsx(
+        "absolute -left-[13px] w-[13px] rounded-bl-[10px] border-b border-l border-line",
+        edge ? "top-0 h-1/2" : "-top-1/2 h-full",
+      )}
+    />
+  );
+}
+
 type RegisterRef<T> = (id: string, el: T | null) => void;
 
 /** When the last rail tooltip closed — a glide reuses a short delay. */
@@ -450,22 +468,23 @@ function NavSectionBlock({
                   }
                 >
                   <div className="acc-inner">
-                    <div className="mt-1 ml-[13px] flex flex-col gap-0.5 border-l border-line pl-3">
-                      {item.children.map((child) => {
+                    <div className="mt-1 ml-[13px] flex flex-col pl-3">
+                      {item.children.map((child, i) => {
                         const childActive =
                           (activeChild ?? item.children?.[0]?.id) === child.id;
                         return (
-                          <Link
-                            key={child.id}
-                            href={child.href ?? item.href ?? "/tasks"}
-                            onClick={() => onSelectChild?.(child.id)}
-                            className={clsx(
-                              "flex items-center gap-2 rounded-md px-2 py-1.5 text-xs",
-                              childActive
-                                ? "bg-active font-medium text-ink"
-                                : "nav-row-hoverable text-muted",
-                            )}
-                          >
+                          <div key={child.id} className="relative">
+                            <SubmenuElbow edge={i === 0} />
+                            <Link
+                              href={child.href ?? item.href ?? "/tasks"}
+                              onClick={() => onSelectChild?.(child.id)}
+                              className={clsx(
+                                "flex items-center gap-2 rounded-md px-2 py-1.5 text-xs",
+                                childActive
+                                  ? "bg-active font-medium text-ink"
+                                  : "nav-row-hoverable text-muted",
+                              )}
+                            >
                             {child.photoUrl !== undefined ? (
                               <span
                                 className={clsx(
@@ -499,27 +518,31 @@ function NavSectionBlock({
                                 {child.count}
                               </span>
                             )}
-                          </Link>
+                            </Link>
+                          </div>
                         );
                       })}
-                      <button
-                        type="button"
-                        onClick={
-                          item.id === "circle" ? onNewCircle : onNewBoard
-                        }
-                        className="nav-row-hoverable flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs font-medium text-muted"
-                      >
-                        <Icon
-                          name="plus"
-                          size={15}
-                          className="shrink-0 leading-none"
-                        />
-                        <span className="min-w-0 flex-1 truncate">
-                          {item.id === "circle"
-                            ? t("nav.newCircle")
-                            : t("nav.newBoard")}
-                        </span>
-                      </button>
+                      <div className="relative">
+                        <SubmenuElbow edge />
+                        <button
+                          type="button"
+                          onClick={
+                            item.id === "circle" ? onNewCircle : onNewBoard
+                          }
+                          className="nav-row-hoverable flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs font-medium text-muted"
+                        >
+                          <Icon
+                            name="plus"
+                            size={15}
+                            className="shrink-0 leading-none"
+                          />
+                          <span className="min-w-0 flex-1 truncate">
+                            {item.id === "circle"
+                              ? t("nav.newCircle")
+                              : t("nav.newBoard")}
+                          </span>
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>

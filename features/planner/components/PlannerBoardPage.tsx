@@ -574,6 +574,31 @@ function BoardCanvas({
       cancelled = true;
     };
   }, [collabId]);
+  // A member who joins the collab after the board was made never
+  // got a row: the board only ever held the members it was created
+  // with. Once the real roster loads, append every collab member
+  // the board does not know yet (empty lane, no role yet) so they
+  // can be assigned tasks. Rows are only ever added, never
+  // removed: removing a row would delete its tasks.
+  useEffect(() => {
+    if (!collabMembers) return;
+    setMembers((prev) => {
+      const known = new Set(prev.map((m) => m.name.toLowerCase()));
+      const missing = collabMembers.filter(
+        (cm) => cm.name !== "" && !known.has(cm.name.toLowerCase()),
+      );
+      if (missing.length === 0) return prev;
+      return [
+        ...prev,
+        ...missing.map((cm) => ({
+          name: cm.name,
+          role: "",
+          tasks: [],
+        })),
+      ];
+    });
+  }, [collabMembers]);
+
   // Member 0 is the board owner, i.e. the signed-in user: the
   // name and photo shown for that row come from their profile
   // (AuthUser.name = editable full_name, username fallback;
