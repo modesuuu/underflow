@@ -2003,10 +2003,6 @@ function BoardCanvas({
       setDrag({ ...live, dx: targetDx, dy: targetDy, settling: true });
       pendingCommitRef.current = () => {
         if (resolved && placed) {
-          setSettleKey(`${mi}:${task.title}`);
-          setMembers((prev) =>
-            prev.map((m, i) => (i === mi ? { ...m, tasks: resolved } : m)),
-          );
           // Persist the vertical order: renumber this row's tasks
           // by (lane, day) and save every position that changed,
           // so the lane a drag sets survives a board refresh.
@@ -2028,6 +2024,23 @@ function BoardCanvas({
           );
           const newPos = new Map(ordered.map((tk, i) => [tk.title, i]));
           const placedPos = newPos.get(task.title) ?? 0;
+          // Stamp the new positions onto the local tasks BEFORE
+          // setMembers: the resolved pills still carry their OLD
+          // positions, so any gravityPass that re-runs on local
+          // state (re-render, LivePoller refresh racing the save)
+          // would sort by the stale order and snap the pill back
+          // to its old lane even though the server already saved
+          // the new one. Local and server must agree.
+          const resolvedWithPos = resolved.map((tk) => ({
+            ...tk,
+            position: newPos.get(tk.title) ?? tk.position ?? 0,
+          }));
+          setSettleKey(`${mi}:${task.title}`);
+          setMembers((prev) =>
+            prev.map((m, i) =>
+              i === mi ? { ...m, tasks: resolvedWithPos } : m,
+            ),
+          );
           if (placed.day !== task.day) {
             void pushTask(task.id, {
               ...datesFor(placed.day, placed.span ?? 1),
