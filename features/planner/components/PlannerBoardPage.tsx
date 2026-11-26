@@ -1299,10 +1299,14 @@ function BoardCanvas({
     }
   };
   // The dates a day+span maps to: due = last day, start = first
-  // day (only when the task spans more than one day).
+  // day (only when the task spans more than one day). A
+  // single-day task sends startDate: null (NOT undefined):
+  // JSON.stringify drops undefined keys, so the backend would
+  // keep the old start_date and the range would invert
+  // (start after due) — the task then vanishes from the grid.
   const datesFor = (day: number, span: number) => ({
     dueDate: isoForDay(day + span - 1),
-    startDate: span > 1 ? isoForDay(day) : undefined,
+    startDate: span > 1 ? isoForDay(day) : null,
   });
 
   // Who may move a pill: done tasks never move; a task whose
