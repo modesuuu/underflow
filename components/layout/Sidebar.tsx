@@ -114,12 +114,16 @@ function initialsOf(name: string): string {
  * and runs right into the row. The spine itself is a single
  * element on the children container, so it stays continuous
  * across rows of different heights (the old per-row tiling
- * broke wherever the radius shortened the vertical). */
+ * broke wherever the radius shortened the vertical).
+ * Both use a 2px stroke so the tree reads clearly — set via
+ * inline borderWidth, not the border-l-2 utility, so it applies
+ * even when the dev server hasn't regenerated utilities yet. */
 function SubmenuCurve() {
   return (
     <span
       aria-hidden="true"
       className="pointer-events-none absolute -left-[13px] top-1/2 -mt-[10px] h-[10px] w-[21px] rounded-bl-[10px] border-b border-l border-line"
+      style={{ borderBottomWidth: 2, borderLeftWidth: 2 }}
     />
   );
 }
@@ -474,6 +478,7 @@ function NavSectionBlock({
                           top:
                             item.children[0]?.photoUrl !== undefined ? 18 : 14,
                           bottom: 14,
+                          borderLeftWidth: 2,
                         }}
                       />
                       {item.children.map((child) => {
