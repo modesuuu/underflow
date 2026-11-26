@@ -117,7 +117,9 @@ export function DateField({
           aria-expanded={open}
           className="flex min-w-0 flex-1 cursor-pointer items-center justify-between gap-2 bg-transparent text-left text-base font-medium outline-none"
         >
-          <span className={selected ? "text-ink" : "text-muted"}>
+          <span
+            className={`whitespace-nowrap ${selected ? "text-ink" : "text-muted"}`}
+          >
             {selected
               ? `${selected.getDate()} ${MONTHS_SHORT[selected.getMonth()]} ${selected.getFullYear()}`
               : placeholder}

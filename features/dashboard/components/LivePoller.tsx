@@ -32,6 +32,7 @@ import {
   applyRealtimeZoneMessageDeleted,
   applyRealtimeZoneMessageUpdated,
 } from "@/features/circle/store";
+import { updateCircle } from "@/features/circle/circles";
 import { applyRealtimePlannerTask } from "@/features/planner/store";
 import type { PlannerTask } from "@/features/planner/types";
 import {
@@ -437,6 +438,27 @@ export function LivePoller() {
               zoneId,
               message: message as unknown as ZoneMessage,
             });
+            // Live Circle sidebar badge: bump the list's unreadCount
+            // so the nav badge updates on every page, not only while
+            // the Circle page is open. CircleWorkspace owns the bump
+            // while on /circle (it also skips the zone being viewed),
+            // so this branch stays out of its way there. Own
+            // messages never count as unread.
+            const authorId = (message as { authorId?: unknown }).authorId;
+            const myId = getSessionUser()?.id;
+            const onCirclePage = (pathnameRef.current ?? "").startsWith(
+              "/circle",
+            );
+            if (
+              typeof authorId === "string" &&
+              authorId !== myId &&
+              !onCirclePage
+            ) {
+              updateCircle(circleId, (c) => ({
+                ...c,
+                unreadCount: c.unreadCount + 1,
+              }));
+            }
           }
           return;
         }
