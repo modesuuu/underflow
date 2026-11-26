@@ -21,7 +21,9 @@ import { useMyTaskOpenCount } from "@/features/planner/store";
 import {
   openTaskCount,
   setCreateBoardOpen,
+  teamBoardId,
   useBoards,
+  useServerTeamBoards,
 } from "@/features/planner/boards";
 import { CreateBoardDialog } from "@/features/planner/components/CreateBoardDialog";
 import { setCreateCircleOpen, useCircles } from "@/features/circle/circles";
@@ -739,22 +741,41 @@ export function Sidebar() {
   }, []);
 
   const boards = useBoards();
+  const serverBoards = useServerTeamBoards();
   const circles = useCircles();
   const { list: ownedCollabs } = useOwnedCollabs();
   // A team board whose collaboration is completed stays
   // hidden until the collab is reopened; its data is kept.
-  const boardChildren: NavChild[] = boards
-    .filter(
-      (b) =>
-        b.kind !== "team" ||
-        !isCollabCompleted(ownedCollabs, b.collabId, b.collabName),
-    )
-    .map((b) => ({
-      id: b.id,
-      label: b.name,
-      count: openTaskCount(b),
-      href: `/tasks/${b.id}`,
-    }));
+  // Server boards come first; a local team board whose collab
+  // is already on the server is hidden (the shared board
+  // replaces it).
+  const boardChildren: NavChild[] = [
+    ...serverBoards
+      .filter((b) => !isCollabCompleted(ownedCollabs, b.collabId, b.name))
+      .map((b) => ({
+        id: teamBoardId(b.collabId),
+        label: b.name,
+        count: b.openCount > 0 ? b.openCount : undefined,
+        href: `/tasks/${teamBoardId(b.collabId)}`,
+      })),
+    ...boards
+      .filter(
+        (b) =>
+          (b.kind !== "team" ||
+            !isCollabCompleted(ownedCollabs, b.collabId, b.collabName)) &&
+          !(
+            b.kind === "team" &&
+            b.collabId &&
+            serverBoards.some((s) => s.collabId === b.collabId)
+          ),
+      )
+      .map((b) => ({
+        id: b.id,
+        label: b.name,
+        count: openTaskCount(b),
+        href: `/tasks/${b.id}`,
+      })),
+  ];
 
   // The Circle submenu mirrors the Tasks one: one row per circle
   // the user can open, with its unread count as the trailing chip.

@@ -1,6 +1,7 @@
 // features/planner/types.ts
-// Wire shapes for the collab Planner (Tasks Fase 1), mirroring
-// PlannerController::presentTask / presentMember / presentSection.
+// Wire shapes for the collab Planner (Tasks Fase 1 + wiring 2026-11-26),
+// mirroring PlannerController::presentTask / presentMember / presentSection.
+import type { Block } from "./components/BlockBody";
 
 export type PlannerRole = "owner" | "pm" | "member";
 
@@ -9,6 +10,8 @@ export interface PlannerMember {
   username: string;
   name: string;
   photo: string | null;
+  /** Job role shown in the Who column (not the planner role). */
+  jobRole: string | null;
   role: PlannerRole;
 }
 
@@ -34,6 +37,14 @@ export interface PlannerTask {
   createdBy: { id: string; username: string };
   /** YYYY-MM-DD or null. */
   dueDate: string | null;
+  /** Start of the pill (YYYY-MM-DD or null); dueDate is the end. */
+  startDate: string | null;
+  /** Boxicons icon name from the detail picker. */
+  icon: string | null;
+  /** BlockBody blocks (null when the task has none stored). */
+  blocks: Block[] | null;
+  /** Tentative pill style. */
+  pencilled: boolean;
   follows: { id: string; title: string } | null;
   gapDays: number | null;
   done: boolean;
@@ -59,11 +70,22 @@ export interface MyTasksData {
   today: string;
 }
 
+/** One team board the user can open (GET /api/me/planners). */
+export interface PlannerBoardSummary {
+  collabId: string;
+  title: string;
+  openCount: number;
+}
+
 export interface TaskInput {
   title: string;
   sectionId?: string | null;
   assigneeId?: string | null;
   dueDate?: string | null;
+  startDate?: string | null;
+  icon?: string | null;
+  blocks?: Block[] | null;
+  pencilled?: boolean;
   followsTaskId?: string | null;
 }
 
@@ -72,6 +94,10 @@ export interface TaskUpdate {
   sectionId?: string | null;
   assigneeId?: string | null;
   dueDate?: string | null;
+  startDate?: string | null;
+  icon?: string | null;
+  blocks?: Block[] | null;
+  pencilled?: boolean;
   followsTaskId?: string | null;
   done?: boolean;
 }

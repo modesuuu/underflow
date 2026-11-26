@@ -36,7 +36,7 @@
 // The Who column is the board's sticky sidebar, and there is no
 // visible scrollbar at all — the native one is hidden.
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type {
   CSSProperties,
   PointerEvent as ReactPointerEvent,
@@ -45,14 +45,29 @@ import type {
 
 import { BlockBody, makeBlock } from "./BlockBody";
 import {
+  collabIdFromTeamBoard,
   defaultBlocksFor,
   deleteBoard,
   isReservedOwnerRole,
+  refreshServerTeamBoards,
   setCreateBoardOpen,
+  teamBoardId,
   updateBoardMembers,
   useBoards,
   useBoardsLoaded,
+  useServerTeamBoards,
 } from "../boards";
+import {
+  createPlannerTask,
+  deletePlannerTask,
+  getPlanner,
+  setJobRole,
+  setPlannerEnabled,
+  setPlannerRole,
+  updatePlannerTask,
+} from "../api";
+import type { PlannerData, PlannerTask, TaskUpdate } from "../types";
+import { subscribePlannerTasks } from "../store";
 import type {
   PlannerBoard,
   PlannerBoardMember,
@@ -71,35 +86,95 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 
-// Sample month: November 2026 (Nov 1 is a Sunday). "Today" is
-// Tue 17, mirroring the FigCraft reference.
+// A month the board can render. The sample board is November
+// 2026 (Nov 1 is a Sunday, "today" is Tue 17, mirroring the
+// FigCraft reference); a wired board renders a real month with
+// the real today. Day indices are 0-based inside the month; the
+// API speaks ISO dates at the boundary, and the DateField
+// calendar is told the board's "today" so its past-day
+// disabling matches the board's past zone.
 const DOWS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-const SAMPLE_DAYS = Array.from({ length: 30 }, (_, i) => ({
-  dow: DOWS[i % 7],
-  date: i + 1,
-  weekend: i % 7 === 0 || i % 7 === 6,
-}));
-const SAMPLE_TODAY = 17;
-const TODAY_INDEX = SAMPLE_TODAY - 1;
+const MONTH_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const MONTH_LABEL = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
-// The board's month is November 2026; its date fields speak
-// ISO dates at the boundary and day indices inside. The
-// DateField calendar is told the board's "today" so its
-// past-day disabling matches the board's past zone; once the
-// board runs on real data the override can go away.
-const BOARD_TODAY = new Date(2026, 10, SAMPLE_TODAY);
-const isoForDay = (day: number) =>
-  `2026-11-${String(day + 1).padStart(2, "0")}`;
-const clampDayForIso = (iso: string): { day: number; clamped: boolean } => {
-  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
-  if (!m) return { day: TODAY_INDEX, clamped: true };
-  const picked = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
-  const first = new Date(2026, 10, 1);
-  const last = new Date(2026, 10, SAMPLE_DAYS.length);
-  if (picked < first) return { day: 0, clamped: true };
-  if (picked > last) return { day: SAMPLE_DAYS.length - 1, clamped: true };
-  return { day: Number(m[3]) - 1, clamped: false };
-};
+interface MonthDay {
+  dow: string;
+  date: number;
+  weekend: boolean;
+}
+
+interface MonthModel {
+  year: number;
+  month: number; // 0-based
+  days: MonthDay[];
+  /** Index of today in this month, or -1 when today is elsewhere. */
+  todayIndex: number;
+  /** Leading days that are past (the grey wash / the drop floor). */
+  pastCount: number;
+  boardToday: Date;
+  monthShort: string;
+  monthLabel: string;
+  openScrollDays: number;
+  isoForDay: (day: number) => string;
+  clampDayForIso: (iso: string) => { day: number; clamped: boolean };
+}
+
+function buildMonth(year: number, month: number, today: Date): MonthModel {
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const firstDow = new Date(year, month, 1).getDay();
+  const days: MonthDay[] = Array.from({ length: daysInMonth }, (_, i) => {
+    const dow = DOWS[(firstDow + i) % 7];
+    return { dow, date: i + 1, weekend: dow === "Sun" || dow === "Sat" };
+  });
+  const isTodayMonth =
+    today.getFullYear() === year && today.getMonth() === month;
+  const todayIndex = isTodayMonth ? today.getDate() - 1 : -1;
+  const monthStart = new Date(year, month, 1);
+  const todayStart = new Date(
+    today.getFullYear(),
+    today.getMonth(),
+    today.getDate(),
+  );
+  const pastCount = isTodayMonth
+    ? todayIndex
+    : monthStart < todayStart
+      ? daysInMonth
+      : 0;
+  const isoForDay = (day: number) =>
+    `${year}-${String(month + 1).padStart(2, "0")}-${String(day + 1).padStart(2, "0")}`;
+  const clampDayForIso = (
+    iso: string,
+  ): { day: number; clamped: boolean } => {
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
+    if (!m) return { day: Math.max(0, todayIndex), clamped: true };
+    const picked = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+    const first = new Date(year, month, 1);
+    const last = new Date(year, month, daysInMonth);
+    if (picked < first) return { day: 0, clamped: true };
+    if (picked > last) return { day: daysInMonth - 1, clamped: true };
+    return { day: Number(m[3]) - 1, clamped: false };
+  };
+  return {
+    year,
+    month,
+    days,
+    todayIndex,
+    pastCount,
+    boardToday: new Date(
+      today.getFullYear(),
+      today.getMonth(),
+      today.getDate(),
+    ),
+    monthShort: MONTH_SHORT[month],
+    monthLabel: `${MONTH_LABEL[month]} ${year}`,
+    openScrollDays: todayIndex >= 0 ? Math.max(0, todayIndex - 1) : 0,
+    isoForDay,
+    clampDayForIso,
+  };
+}
+
+// The sample board's month: November 2026, "today" Tue 17.
+const NOVEMBER_2026 = buildMonth(2026, 10, new Date(2026, 10, 17));
 
 // Icons a task pill can carry, chosen from the detail panel.
 // Names are Boxicons glyphs, rendered by the Icon component.
@@ -121,15 +196,13 @@ const TASK_ICONS = [
   "cog",
   "book",
 ];
-// The board opens on the week of "today": Monday Nov 16.
-const OPEN_SCROLL_DAYS = 15;
-
 // Who column width (px), one day column (px), and one pill lane
 // (px). Pills are 44px tall (h-11) with 4px of air in a lane.
 const WHO_W = 220;
 const DAY_W = 132;
 const LANE_H = 52;
-const BOARD_W = WHO_W + SAMPLE_DAYS.length * DAY_W;
+// (The board's width and open-scroll offset live in BoardCanvas
+// now, derived from the viewed month.)
 
 // Board data shapes live in the boards store (../boards);
 // these aliases keep the canvas's local naming.
@@ -245,8 +318,100 @@ function placeWithIntent(
   return gravityPass([...others, { ...movedNext, lane: dropLane }]);
 }
 
-const dayLabel = (day: number, span: number) =>
-  span > 1 ? `${day + 1}–${day + span} Nov` : `${day + 1} Nov`;
+const dayLabel = (month: MonthModel, day: number, span: number) =>
+  span > 1
+    ? `${day + 1}–${day + span} ${month.monthShort}`
+    : `${day + 1} ${month.monthShort}`;
+
+// Server data → board shapes. A server task lives on the grid by
+// its real dates: day = the start date's index in the viewed month
+// (or the due date when there is no start), span = the day count
+// between them. A task that only touches the month at an edge is
+// clamped to the part inside it; a task with no due date has no
+// day to sit on and is left off the grid (it still counts in the
+// sidebar). Lanes are settled by the same gravity pass as local
+// tasks, so a wired board keeps the drag feel of the sample one.
+function isoDayIndex(iso: string | null, month: MonthModel): number {
+  if (!iso) return -1;
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
+  if (!m) return -1;
+  const y = Number(m[1]);
+  const mo = Number(m[2]) - 1;
+  if (y !== month.year || mo !== month.month) return -1;
+  const d = Number(m[3]) - 1;
+  return d >= 0 && d < month.days.length ? d : -1;
+}
+
+function daySpanFor(
+  task: PlannerTask,
+  month: MonthModel,
+): { day: number; span: number } | null {
+  if (!task.dueDate) return null;
+  const dueIdx = isoDayIndex(task.dueDate, month);
+  const startIdx = isoDayIndex(task.startDate, month);
+  // Entirely outside this month: before it, or after it.
+  if (dueIdx === -1 && startIdx === -1) {
+    const due = new Date(task.dueDate);
+    const first = new Date(month.year, month.month, 1);
+    const last = new Date(month.year, month.month, month.days.length);
+    if (due < first || (task.startDate && new Date(task.startDate) > last)) {
+      return null;
+    }
+    // Spans the whole month: clamp to it.
+    return { day: 0, span: month.days.length };
+  }
+  const end = dueIdx === -1 ? month.days.length - 1 : dueIdx;
+  const start = startIdx === -1 ? 0 : startIdx;
+  if (start > end) return null;
+  return { day: start, span: end - start + 1 };
+}
+
+function toLocalMembers(
+  data: PlannerData,
+  month: MonthModel,
+  todayIso: string,
+  unassignedLabel: string,
+): PlannerBoardMember[] {
+  const members: PlannerBoardMember[] = data.members.map((m) => ({
+    name: m.name,
+    role: m.jobRole ?? "",
+    pm: m.role === "pm",
+    userId: m.id,
+    tasks: [],
+  }));
+  const memberIndex = new Map(data.members.map((m, i) => [m.id, i]));
+  const unassigned: PlannerBoardTask[] = [];
+  for (const task of data.tasks) {
+    const placed = daySpanFor(task, month);
+    if (!placed) continue;
+    const local: PlannerBoardTask = {
+      id: task.id,
+      title: task.title,
+      icon: task.icon ?? undefined,
+      done: task.done,
+      pencilled: task.pencilled,
+      overdue: !task.done && task.dueDate !== null && task.dueDate < todayIso,
+      follows: task.follows !== null,
+      followsTaskId: task.follows?.id,
+      followsTitle: task.follows?.title,
+      blocks: task.blocks ?? defaultBlocksFor(task.title),
+      day: placed.day,
+      span: placed.span,
+    };
+    const mi = task.assignee ? memberIndex.get(task.assignee.id) : undefined;
+    if (mi === undefined) unassigned.push(local);
+    else members[mi].tasks.push(local);
+  }
+  for (const m of members) m.tasks = gravityPass(m.tasks);
+  if (unassigned.length > 0) {
+    members.push({
+      name: unassignedLabel,
+      role: "",
+      tasks: gravityPass(unassigned),
+    });
+  }
+  return members;
+}
 
 // Sample follower pairing shown in the detail panel (the real
 // wiring reads the relation from the planner API later).
@@ -455,6 +620,289 @@ function DetailRow({
 }
 
 export function PlannerBoardPage({ boardId }: { boardId: string }) {
+  const serverCollabId = collabIdFromTeamBoard(boardId);
+  if (serverCollabId) {
+    return <ServerBoardCanvas key={boardId} collabId={serverCollabId} />;
+  }
+  return <LocalBoardPage boardId={boardId} />;
+}
+
+function shiftMonth(
+  year: number,
+  month: number,
+  delta: number,
+): { year: number; month: number } {
+  const total = year * 12 + month + delta;
+  return { year: Math.floor(total / 12), month: total % 12 };
+}
+
+// A wired team board: data comes from the planner API, the grid
+// shows a real month, and every change goes back to the server.
+// The board id is `team-<collabId>`, so the owner and every
+// collaborator open the same URL.
+function ServerBoardCanvas({ collabId }: { collabId: string }) {
+  const { t } = useLanguage();
+  const router = useRouter();
+  const [data, setData] = useState<PlannerData | null>(null);
+  const [error, setError] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const today = useMemo(() => new Date(), []);
+  const todayIso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+  const [viewYear, setViewYear] = useState<number | null>(null);
+  const [viewMonth, setViewMonth] = useState<number | null>(null);
+  const month = useMemo(
+    () =>
+      viewYear === null || viewMonth === null
+        ? null
+        : buildMonth(viewYear, viewMonth, today),
+    [viewYear, viewMonth, today],
+  );
+  const serverBoards = useServerTeamBoards();
+  const boardName =
+    serverBoards.find((b) => b.collabId === collabId)?.name ?? "Team board";
+
+  const load = useCallback(async () => {
+    try {
+      const d = await getPlanner(collabId);
+      setData(d);
+      setError(false);
+    } catch {
+      setError(true);
+    } finally {
+      setLoading(false);
+    }
+  }, [collabId]);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  useEffect(() => {
+    void refreshServerTeamBoards();
+  }, []);
+
+  // Default month: the earliest open task's month, else this month.
+  useEffect(() => {
+    if (!data || viewYear !== null) return;
+    const open = data.tasks
+      .filter((tk) => !tk.done && tk.dueDate)
+      .map((tk) => tk.dueDate as string)
+      .sort();
+    if (open.length > 0) {
+      const [y, m] = open[0].split("-").map(Number);
+      setViewYear(y);
+      setViewMonth(m - 1);
+    } else {
+      setViewYear(today.getFullYear());
+      setViewMonth(today.getMonth());
+    }
+  }, [data, viewYear, today]);
+
+  // Live sync: a planner-task push for this collab re-fetches.
+  useEffect(() => {
+    return subscribePlannerTasks((event) => {
+      if (event.collabId === collabId) void load();
+    });
+  }, [collabId, load]);
+
+  const members = useMemo(() => {
+    if (!data || !month) return [];
+    return toLocalMembers(data, month, todayIso, t("planner.unassigned"));
+  }, [data, month, todayIso, t]);
+
+  // Stable identity: BoardCanvas syncs its local state from this
+  // object, so it must not change on every render.
+  const serverProp = useMemo(
+    () =>
+      data
+        ? { collabId, myRole: data.myRole, refresh: load }
+        : undefined,
+    [collabId, data, load],
+  );
+
+  const shiftView = (delta: number) => {
+    if (viewYear === null || viewMonth === null) return;
+    const next = shiftMonth(viewYear, viewMonth, delta);
+    setViewYear(next.year);
+    setViewMonth(next.month);
+  };
+
+  if (loading) return null;
+  if (error || !data) {
+    return (
+      <div className="flex flex-col items-start gap-3 py-16">
+        <h1 className="text-2xl font-medium tracking-tight text-ink">
+          {t("planner.boardNotFound")}
+        </h1>
+        <p className="max-w-md text-sm text-muted">
+          {t("planner.boardLoadFailed")}
+        </p>
+        <Link
+          href="/tasks"
+          className="rounded-full border border-line bg-surface px-4 py-2 text-sm font-medium text-ink"
+        >
+          {t("planner.backToTasks")}
+        </Link>
+      </div>
+    );
+  }
+  if (!data.enabled) {
+    const isOwner = data.myRole === "owner";
+    return (
+      <div className="flex flex-col items-start gap-3 py-16">
+        <h1 className="text-2xl font-medium tracking-tight text-ink">
+          {boardName}
+        </h1>
+        <p className="max-w-md text-sm text-muted">
+          {t("planner.notEnabledMember")}
+        </p>
+        {isOwner && (
+          <button
+            type="button"
+            onClick={async () => {
+              await setPlannerEnabled(collabId, true);
+              await load();
+            }}
+            className="rounded-full bg-ink px-4 py-2 text-sm font-medium text-surface"
+          >
+            {t("planner.enableBtn")}
+          </button>
+        )}
+        <Link
+          href="/tasks"
+          className="rounded-full border border-line bg-surface px-4 py-2 text-sm font-medium text-ink"
+        >
+          {t("planner.backToTasks")}
+        </Link>
+      </div>
+    );
+  }
+  if (!month) return null;
+  const board: PlannerBoard = {
+    id: teamBoardId(collabId),
+    name: boardName,
+    kind: "team",
+    collabId,
+    members,
+  };
+  return (
+    <BoardCanvas
+      key={board.id}
+      board={board}
+      month={month}
+      server={serverProp}
+      onMembersChange={() => {}}
+      onPrevMonth={() => shiftView(-1)}
+      onNextMonth={() => shiftView(1)}
+      onTodayMonth={() => {
+        setViewYear(today.getFullYear());
+        setViewMonth(today.getMonth());
+      }}
+    />
+  );
+}
+
+// A local team board that carries a collabId moves to the server
+// the first time its owner opens it: the planner is enabled and
+// every local task is pushed once, then the local copy is deleted
+// and the owner lands on the shared board. A collaborator never
+// runs this — they open the shared board directly.
+function MigrateTeamBoard({ board }: { board: PlannerBoard }) {
+  const router = useRouter();
+  const { t } = useLanguage();
+  const sessionUser = useSessionUser();
+  const [failed, setFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+  const boardId = board.id;
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setFailed(false);
+      try {
+        const collabId = board.collabId as string;
+        const project = await getCollabProjectAuthed(collabId);
+        if (!project) throw new Error("roster");
+        const userIdByName = new Map<string, string>();
+        for (const m of project.members) {
+          if (m.name) userIdByName.set(m.name.toLowerCase(), m.id);
+        }
+        await setPlannerEnabled(collabId, true);
+        // Dedup: skip tasks already on the server (same title +
+        // assignee), so a retried migration never duplicates.
+        const existing = await getPlanner(collabId);
+        const seen = new Set(
+          existing.tasks.map(
+            (tk) => `${tk.assignee?.id ?? ""}:${tk.title.toLowerCase()}`,
+          ),
+        );
+        for (const member of board.members) {
+          const assigneeId =
+            userIdByName.get(member.name.toLowerCase()) ?? sessionUser?.id;
+          for (const task of member.tasks) {
+            const key = `${assigneeId ?? ""}:${task.title.toLowerCase()}`;
+            if (seen.has(key)) continue;
+            const startIso = NOVEMBER_2026.isoForDay(task.day);
+            const endIso = NOVEMBER_2026.isoForDay(
+              task.day + (task.span ?? 1) - 1,
+            );
+            await createPlannerTask(collabId, {
+              title: task.title,
+              assigneeId,
+              dueDate: endIso,
+              startDate: (task.span ?? 1) > 1 ? startIso : undefined,
+              icon: task.icon,
+              blocks: task.blocks ?? undefined,
+              pencilled: task.pencilled,
+            });
+            seen.add(key);
+          }
+        }
+        if (cancelled) return;
+        deleteBoard(boardId);
+        await refreshServerTeamBoards();
+        router.replace(`/tasks/${teamBoardId(collabId)}`);
+      } catch {
+        if (!cancelled) setFailed(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [boardId, attempt]);
+  if (failed) {
+    return (
+      <div className="flex flex-col items-start gap-3 py-16">
+        <h1 className="text-2xl font-medium tracking-tight text-ink">
+          {t("planner.migrateFailed")}
+        </h1>
+        <button
+          type="button"
+          onClick={() => setAttempt((n) => n + 1)}
+          className="rounded-full bg-ink px-4 py-2 text-sm font-medium text-surface"
+        >
+          {t("planner.collabsRetry")}
+        </button>
+        <Link
+          href="/tasks"
+          className="rounded-full border border-line bg-surface px-4 py-2 text-sm font-medium text-ink"
+        >
+          {t("planner.backToTasks")}
+        </Link>
+      </div>
+    );
+  }
+  return (
+    <div className="flex flex-col items-start gap-3 py-16">
+      <h1 className="text-2xl font-medium tracking-tight text-ink">
+        {board.name}
+      </h1>
+      <p className="max-w-md text-sm text-muted">{t("planner.migrating")}</p>
+    </div>
+  );
+}
+
+function LocalBoardPage({ boardId }: { boardId: string }) {
   const { t } = useLanguage();
   const boards = useBoards();
   const loaded = useBoardsLoaded();
@@ -504,10 +952,21 @@ export function PlannerBoardPage({ boardId }: { boardId: string }) {
       </div>
     );
   }
+  // A team board the owner made for a real collab moves to the
+  // server on first open; a collaborator's copy just renders
+  // locally until the owner migrates it.
+  if (
+    board.kind === "team" &&
+    board.collabId &&
+    ownedCollabs?.some((c) => c.id === board.collabId)
+  ) {
+    return <MigrateTeamBoard board={board} />;
+  }
   return (
     <BoardCanvas
       key={board.id}
       board={board}
+      month={NOVEMBER_2026}
       onMembersChange={(ms) => updateBoardMembers(board.id, ms)}
     />
   );
@@ -515,15 +974,59 @@ export function PlannerBoardPage({ boardId }: { boardId: string }) {
 
 function BoardCanvas({
   board,
+  month,
+  server,
   onMembersChange,
+  onPrevMonth,
+  onNextMonth,
+  onTodayMonth,
 }: {
   board: PlannerBoard;
+  month: MonthModel;
+  server?: {
+    collabId: string;
+    myRole: "owner" | "pm" | "member";
+    refresh: () => Promise<void>;
+  };
   onMembersChange: (members: SampleMember[]) => void;
+  onPrevMonth?: () => void;
+  onNextMonth?: () => void;
+  onTodayMonth?: () => void;
 }) {
   const { t } = useLanguage();
+  // The board renders a real month; these aliases keep the
+  // existing sample-board code untouched.
+  const SAMPLE_DAYS = month.days;
+  const TODAY_INDEX = month.pastCount;
+  const SAMPLE_TODAY = month.todayIndex;
+  const BOARD_TODAY = month.boardToday;
+  const isoForDay = month.isoForDay;
+  const clampDayForIso = month.clampDayForIso;
+  const BOARD_W = WHO_W + SAMPLE_DAYS.length * DAY_W;
+  const OPEN_SCROLL_DAYS = month.openScrollDays;
   const router = useRouter();
   const boards = useBoards();
   const { list: ownedCollabs } = useOwnedCollabs();
+  const serverBoards = useServerTeamBoards();
+  // Board switcher: server boards first, then local boards
+  // (a local team board whose collab is already on the server
+  // is hidden — the shared board replaces it).
+  const switchBoards = useMemo(() => {
+    const serverIds = new Set(serverBoards.map((b) => b.collabId));
+    const local = boards.filter(
+      (b) => !(b.kind === "team" && b.collabId && serverIds.has(b.collabId)),
+    );
+    return [
+      ...serverBoards.map((b) => ({
+        id: teamBoardId(b.collabId),
+        name: b.name,
+        kind: "team" as const,
+        collabId: b.collabId,
+        collabName: b.name,
+      })),
+      ...local,
+    ];
+  }, [serverBoards, boards]);
   const [switchOpen, setSwitchOpen] = useState(false);
   const [confirmDeleteBoard, setConfirmDeleteBoard] = useState(false);
 
@@ -544,6 +1047,20 @@ function BoardCanvas({
       tasks: m.tasks.map((tk) => ({ ...tk })),
     })),
   );
+  // Server mode: the board's members come from the API. When a
+  // re-fetch lands (failed push, shifted followers, live sync,
+  // month change), replace the local state with the server's
+  // version — it is the source of truth.
+  const boardMembers = board.members;
+  useEffect(() => {
+    if (!server) return;
+    setMembers(
+      boardMembers.map((m) => ({
+        ...m,
+        tasks: m.tasks.map((tk) => ({ ...tk })),
+      })),
+    );
+  }, [server, boardMembers]);
   const sessionUser = useSessionUser();
   // The real collab roster (names + profile photos) for team
   // boards, fetched once from the collab detail. Seeded boards
@@ -593,6 +1110,7 @@ function BoardCanvas({
         ...missing.map((cm) => ({
           name: cm.name,
           role: "",
+          userId: cm.id,
           tasks: [],
         })),
       ];
@@ -637,6 +1155,16 @@ function BoardCanvas({
     setMembers((prev) =>
       prev.map((m, i) => (i === mi ? { ...m, pm } : m)),
     );
+    if (server && member.userId) {
+      setPlannerRole(
+        server.collabId,
+        member.userId,
+        pm ? "pm" : "member",
+      ).catch(() => {
+        showToast("warn", t("planner.toastSyncFailed"));
+        void server.refresh();
+      });
+    }
     showToast(
       "ok",
       t(pm ? "planner.madePm" : "planner.removedPm", {
@@ -653,8 +1181,23 @@ function BoardCanvas({
   const dragRafRef = useRef<number | null>(null);
   const settleTimerRef = useRef<number | null>(null);
   const pendingCommitRef = useRef<(() => void) | null>(null);
-  const [viewerKey] = useState<ViewerKey>("owner");
-  const viewer = PERSONAS.find((p) => p.key === viewerKey) ?? PERSONAS[0];
+  // Local boards are always viewed as the owner; a wired board
+  // uses the viewer's real role (owner / PM / member) and their
+  // row in the roster.
+  const viewer: { key: ViewerKey; member: number } = server
+    ? {
+        key:
+          server.myRole === "owner"
+            ? "owner"
+            : server.myRole === "pm"
+              ? "pm"
+              : "member",
+        member: Math.max(
+          0,
+          members.findIndex((m) => m.userId === sessionUser?.id),
+        ),
+      }
+    : { key: "owner", member: 0 };
   const [toast, setToast] = useState<{
     id: number;
     kind: "ok" | "warn";
@@ -686,6 +1229,40 @@ function BoardCanvas({
       }, 3260),
     );
   };
+
+  // Server mode: push one task change to the API after the
+  // optimistic local update. A move that shifted followers
+  // re-fetches so the followers land where the server put
+  // them; on failure the board re-fetches (reverting the
+  // change) with a warning toast. Local boards skip this.
+  const pushTask = async (taskId: string | undefined, patch: TaskUpdate) => {
+    if (!server || !taskId) return;
+    try {
+      const updated = await updatePlannerTask(
+        server.collabId,
+        taskId,
+        patch,
+      );
+      if (updated.shiftedTaskIds && updated.shiftedTaskIds.length > 0) {
+        showToast(
+          "ok",
+          t("planner.shiftedNotice", {
+            n: updated.shiftedTaskIds.length,
+          }),
+        );
+        await server.refresh();
+      }
+    } catch {
+      showToast("warn", t("planner.toastSyncFailed"));
+      await server.refresh();
+    }
+  };
+  // The dates a day+span maps to: due = last day, start = first
+  // day (only when the task spans more than one day).
+  const datesFor = (day: number, span: number) => ({
+    dueDate: isoForDay(day + span - 1),
+    startDate: span > 1 ? isoForDay(day) : undefined,
+  });
 
   // Who may move a pill: done tasks never move; a task whose
   // last day has passed is locked in place (its dates can still
@@ -773,6 +1350,12 @@ function BoardCanvas({
     setMembers((prev) =>
       prev.map((m, i) => (i === memberPanel ? { ...m, role: trimmed } : m)),
     );
+    if (server && member.userId) {
+      setJobRole(server.collabId, member.userId, trimmed).catch(() => {
+        showToast("warn", t("planner.toastSyncFailed"));
+        void server.refresh();
+      });
+    }
     showToast(
       "ok",
       t("planner.roleSetTo", { name: displayName(memberPanel), role: trimmed }),
@@ -786,16 +1369,20 @@ function BoardCanvas({
   const [addOpen, setAddOpen] = useState(false);
   const [addTitle, setAddTitle] = useState("");
   const [addMember, setAddMember] = useState(0);
-  const [addStart, setAddStart] = useState(TODAY_INDEX);
-  const [addEnd, setAddEnd] = useState(TODAY_INDEX);
+  const [addStart, setAddStart] = useState(
+    Math.min(TODAY_INDEX, SAMPLE_DAYS.length - 1),
+  );
+  const [addEnd, setAddEnd] = useState(
+    Math.min(TODAY_INDEX, SAMPLE_DAYS.length - 1),
+  );
   const openAdd = () => {
     setAddTitle("");
     setAddMember(viewer.key === "member" ? viewer.member : 0);
-    setAddStart(TODAY_INDEX);
-    setAddEnd(TODAY_INDEX);
+    setAddStart(Math.min(TODAY_INDEX, SAMPLE_DAYS.length - 1));
+    setAddEnd(Math.min(TODAY_INDEX, SAMPLE_DAYS.length - 1));
     setAddOpen(true);
   };
-  const submitAdd = () => {
+  const submitAdd = async () => {
     const title = addTitle.trim();
     if (!title) {
       showToast("warn", t("planner.toastNeedTitle"));
@@ -806,7 +1393,26 @@ function BoardCanvas({
       showToast("warn", t("planner.toastDupTitle"));
       return;
     }
+    // Server mode: create first (the server owns the id), then
+    // add the pill with it. A failed create adds nothing.
+    let taskId: string | undefined;
+    if (server) {
+      try {
+        const created = await createPlannerTask(server.collabId, {
+          title,
+          assigneeId: members[target].userId,
+          dueDate: isoForDay(addEnd),
+          startDate: addEnd > addStart ? isoForDay(addStart) : undefined,
+          blocks: defaultBlocksFor(title),
+        });
+        taskId = created.id;
+      } catch {
+        showToast("warn", t("planner.toastSyncFailed"));
+        return;
+      }
+    }
     const task: BoardTask = {
+      id: taskId,
       title,
       day: addStart,
       span: addEnd - addStart + 1,
@@ -824,6 +1430,9 @@ function BoardCanvas({
 
   const setDetailIcon = (icon: string) => {
     if (!detail) return;
+    const task = members[detail.member]?.tasks.find(
+      (tk) => tk.title === detail.title,
+    );
     setMembers((prev) =>
       prev.map((m, i) =>
         i !== detail.member
@@ -836,6 +1445,7 @@ function BoardCanvas({
             },
       ),
     );
+    void pushTask(task?.id, { icon });
     setIconMenuOpen(false);
     showToast("ok", t("planner.taskUpdated"));
   };
@@ -847,6 +1457,9 @@ function BoardCanvas({
     if (!detail) return;
     const targetMember = detail.member;
     const targetTitle = detail.title;
+    const task = members[targetMember]?.tasks.find(
+      (tk) => tk.title === targetTitle,
+    );
     setMembers((prev) =>
       prev.map((m, i) =>
         i !== targetMember
@@ -859,6 +1472,12 @@ function BoardCanvas({
             },
       ),
     );
+    if (server && task?.id) {
+      deletePlannerTask(server.collabId, task.id).catch(() => {
+        showToast("warn", t("planner.toastSyncFailed"));
+        void server.refresh();
+      });
+    }
     setConfirmDelete(false);
     closeDetail();
     showToast("ok", t("planner.taskDeleted"));
@@ -868,7 +1487,8 @@ function BoardCanvas({
   // the board's month clamps to its nearest edge with a note.
   const pickDay = (iso: string): number => {
     const { day, clamped } = clampDayForIso(iso);
-    if (clamped) showToast("warn", t("planner.toastDateRange"));
+    if (clamped)
+      showToast("warn", t("planner.toastMonthRange", { month: month.monthLabel }));
     return day;
   };
 
@@ -957,6 +1577,9 @@ function BoardCanvas({
 
   const toggleDetailDone = () => {
     if (!detail) return;
+    const task = members[detail.member]?.tasks.find(
+      (tk) => tk.title === detail.title,
+    );
     setMembers((prev) =>
       prev.map((m, i) =>
         i !== detail.member
@@ -971,6 +1594,7 @@ function BoardCanvas({
             },
       ),
     );
+    void pushTask(task?.id, { done: task ? !task.done : undefined });
     showToast("ok", t("planner.taskUpdated"));
   };
 
@@ -996,9 +1620,10 @@ function BoardCanvas({
             },
       ),
     );
+    void pushTask(task.id, datesFor(newDay, span));
     showToast(
       "ok",
-      `${t("planner.dateMoved")} · "${detail.title}" → ${dayLabel(newDay, span)}`,
+      `${t("planner.dateMoved")} · "${detail.title}" → ${dayLabel(month, newDay, span)}`,
     );
   };
 
@@ -1022,14 +1647,52 @@ function BoardCanvas({
             },
       ),
     );
+    void pushTask(task.id, datesFor(task.day, newSpan));
     showToast(
       "ok",
-      `${t("planner.dateMoved")} · "${detail.title}" → ${dayLabel(task.day, newSpan)}`,
+      `${t("planner.dateMoved")} · "${detail.title}" → ${dayLabel(month, task.day, newSpan)}`,
     );
+  };
+
+  // Block edits keystroke often; the server push is debounced so
+  // a typing burst becomes one request.
+  const blocksTimerRef = useRef<number | null>(null);
+  const changeDetailFollows = (leaderId: string | null) => {
+    if (!detail) return;
+    const leader = leaderId
+      ? members.flatMap((m) => m.tasks).find((tk) => tk.id === leaderId)
+      : undefined;
+    const task = members[detail.member]?.tasks.find(
+      (tk) => tk.title === detail.title,
+    );
+    setMembers((prev) =>
+      prev.map((m, i) =>
+        i !== detail.member
+          ? m
+          : {
+              ...m,
+              tasks: m.tasks.map((tk) =>
+                tk.title === detail.title
+                  ? {
+                      ...tk,
+                      follows: !!leaderId,
+                      followsTaskId: leaderId ?? undefined,
+                      followsTitle: leader?.title,
+                    }
+                  : tk,
+              ),
+            },
+      ),
+    );
+    void pushTask(task?.id, { followsTaskId: leaderId });
+    showToast("ok", t("planner.taskUpdated"));
   };
 
   const updateDetailBlocks = (blocks: Block[]) => {
     if (!detail) return;
+    const task = members[detail.member]?.tasks.find(
+      (tk) => tk.title === detail.title,
+    );
     setMembers((prev) =>
       prev.map((m, i) =>
         i !== detail.member
@@ -1042,6 +1705,11 @@ function BoardCanvas({
             },
       ),
     );
+    if (blocksTimerRef.current) window.clearTimeout(blocksTimerRef.current);
+    blocksTimerRef.current = window.setTimeout(() => {
+      blocksTimerRef.current = null;
+      void pushTask(task?.id, { blocks });
+    }, 800);
   };
 
   const scrollToTodayWeek = () => {
@@ -1279,10 +1947,13 @@ function BoardCanvas({
           setMembers((prev) =>
             prev.map((m, i) => (i === mi ? { ...m, tasks: resolved } : m)),
           );
+          if (placed.day !== task.day) {
+            void pushTask(task.id, datesFor(placed.day, placed.span ?? 1));
+          }
           if (placed.day !== task.day || (placed.lane ?? 0) !== lane0) {
             showToast(
               "ok",
-              `${t("planner.dateMoved")} · "${task.title}" → ${dayLabel(placed.day, placed.span ?? 1)}`,
+              `${t("planner.dateMoved")} · "${task.title}" → ${dayLabel(month, placed.day, placed.span ?? 1)}`,
             );
           }
         } else if (!cancelled && intoPast) {
@@ -1434,9 +2105,10 @@ function BoardCanvas({
                   },
             ),
           );
+          void pushTask(task.id, datesFor(newDay, newSpan));
           showToast(
             "ok",
-            `${t("planner.toastResized")} · "${task.title}" → ${dayLabel(newDay, newSpan)}`,
+            `${t("planner.toastResized")} · "${task.title}" → ${dayLabel(month, newDay, newSpan)}`,
           );
         }
         setDrag(null);
@@ -1481,8 +2153,8 @@ function BoardCanvas({
   const detailSpan = detailTask?.span ?? 1;
   const detailDateText = detailTask
     ? detailSpan > 1
-      ? `${SAMPLE_DAYS[detailTask.day].dow} ${detailTask.day + 1} – ${SAMPLE_DAYS[detailTask.day + detailSpan - 1].dow} ${detailTask.day + detailSpan} Nov 2026`
-      : `${SAMPLE_DAYS[detailTask.day].dow}, ${detailTask.day + 1} Nov 2026`
+      ? `${SAMPLE_DAYS[detailTask.day].dow} ${detailTask.day + 1} – ${SAMPLE_DAYS[detailTask.day + detailSpan - 1].dow} ${detailTask.day + detailSpan} ${month.monthShort} ${month.year}`
+      : `${SAMPLE_DAYS[detailTask.day].dow}, ${detailTask.day + 1} ${month.monthShort} ${month.year}`
     : "";
   const detailCanEdit =
     detail != null &&
@@ -1518,7 +2190,7 @@ function BoardCanvas({
                   onClick={() => setSwitchOpen(false)}
                 />
                 <div className="absolute right-0 top-full z-50 mt-2 w-64 rounded-lg border border-line bg-surface p-1.5 shadow-2xl">
-                  {boards
+                  {switchBoards
                     .filter(
                       (b) =>
                         b.kind !== "team" ||
@@ -1610,6 +2282,33 @@ function BoardCanvas({
         >
           {t("planner.today")}
         </button>
+        {onPrevMonth && onNextMonth && onTodayMonth && (
+          <div className="flex items-center gap-1 rounded-full border border-line bg-surface px-1 py-1">
+            <button
+              type="button"
+              onClick={onPrevMonth}
+              aria-label={t("planner.prevMonth")}
+              className="flex h-7 w-7 items-center justify-center rounded-full text-ink hover:bg-active"
+            >
+              <Icon name="chevron-left" size={16} />
+            </button>
+            <button
+              type="button"
+              onClick={onTodayMonth}
+              className="px-2 text-xs font-medium text-ink"
+            >
+              {month.monthLabel}
+            </button>
+            <button
+              type="button"
+              onClick={onNextMonth}
+              aria-label={t("planner.nextMonth")}
+              className="flex h-7 w-7 items-center justify-center rounded-full text-ink hover:bg-active"
+            >
+              <Icon name="chevron-right" size={16} />
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Board: full month, sideways pan, Who column is the sticky
@@ -1785,18 +2484,22 @@ function BoardCanvas({
                   backgroundColor: "rgba(128, 128, 128, 0.32)",
                 }}
               />
-              <div
-                aria-hidden
-                className="pointer-events-none absolute inset-y-0 z-[15] w-[2px] bg-ink"
-                style={{ left: TODAY_INDEX * DAY_W }}
-              />
-              <div
-                aria-hidden
-                className="pointer-events-none absolute top-1.5 z-[15] -translate-x-1/2 rounded-full bg-ink px-2 py-0.5 text-[10px] font-semibold text-surface"
-                style={{ left: TODAY_INDEX * DAY_W }}
-              >
-                {SAMPLE_TODAY}
-              </div>
+              {SAMPLE_TODAY >= 0 && (
+                <>
+                  <div
+                    aria-hidden
+                    className="pointer-events-none absolute inset-y-0 z-[15] w-[2px] bg-ink"
+                    style={{ left: TODAY_INDEX * DAY_W }}
+                  />
+                  <div
+                    aria-hidden
+                    className="pointer-events-none absolute top-1.5 z-[15] -translate-x-1/2 rounded-full bg-ink px-2 py-0.5 text-[10px] font-semibold text-surface"
+                    style={{ left: TODAY_INDEX * DAY_W }}
+                  >
+                    {SAMPLE_TODAY}
+                  </div>
+                </>
+              )}
             </div>
 
             {/* Member day areas (their Who cells live in the
@@ -1822,11 +2525,13 @@ function BoardCanvas({
                         backgroundColor: "rgba(128, 128, 128, 0.32)",
                       }}
                     />
-                    <div
-                      aria-hidden
-                      className="pointer-events-none absolute inset-y-0 z-[15] w-[2px] bg-ink"
-                      style={{ left: TODAY_INDEX * DAY_W }}
-                    />
+                    {SAMPLE_TODAY >= 0 && (
+                      <div
+                        aria-hidden
+                        className="pointer-events-none absolute inset-y-0 z-[15] w-[2px] bg-ink"
+                        style={{ left: TODAY_INDEX * DAY_W }}
+                      />
+                    )}
                     {member.tasks.map((task) => {
                       const d =
                         drag && drag.member === mi && drag.title === task.title
@@ -2231,10 +2936,35 @@ function BoardCanvas({
                 <DetailRow icon="time" label={t("planner.duration")}>
                   {t("planner.daysCount").replace("{n}", String(detailSpan))}
                 </DetailRow>
-                {detailTask.follows && SAMPLE_FOLLOWS[detailTask.title] && (
+                {server ? (
                   <DetailRow icon="link" label={t("planner.follows")}>
-                    {SAMPLE_FOLLOWS[detailTask.title]}
+                    <MenuSelect
+                      value={detailTask.followsTaskId ?? ""}
+                      disabled={!detailCanEdit}
+                      onChange={(v) =>
+                        changeDetailFollows(v === "" ? null : v)
+                      }
+                      options={[
+                        { value: "", label: t("planner.followsNone") },
+                        ...members
+                          .flatMap((m) => m.tasks)
+                          .filter(
+                            (tk) => tk.id && tk.id !== detailTask.id,
+                          )
+                          .map((tk) => ({
+                            value: tk.id as string,
+                            label: tk.title,
+                          })),
+                      ]}
+                    />
                   </DetailRow>
+                ) : (
+                  detailTask.follows &&
+                  SAMPLE_FOLLOWS[detailTask.title] && (
+                    <DetailRow icon="link" label={t("planner.follows")}>
+                      {SAMPLE_FOLLOWS[detailTask.title]}
+                    </DetailRow>
+                  )
                 )}
               </div>
               <div className="mt-6 flex items-center justify-between gap-2">
@@ -2358,10 +3088,20 @@ function BoardCanvas({
                 </button>
                 <button
                   type="button"
-                  onClick={() => {
-                    const rest = boards.filter((b) => b.id !== board.id);
-                    deleteBoard(board.id);
+                  onClick={async () => {
+                    // Server boards are not deleted — the planner
+                    // is switched off (tasks stay in the database
+                    // and come back if it is enabled again).
+                    if (server) {
+                      await setPlannerEnabled(server.collabId, false);
+                      await refreshServerTeamBoards();
+                    } else {
+                      deleteBoard(board.id);
+                    }
                     setConfirmDeleteBoard(false);
+                    const rest = switchBoards.filter(
+                      (b) => b.id !== board.id,
+                    );
                     router.push(
                       rest.length > 0 ? `/tasks/${rest[0].id}` : "/tasks",
                     );

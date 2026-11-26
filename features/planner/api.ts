@@ -2,6 +2,7 @@
 import { ApiEnvelope, apiFetch, isApiConfigured } from "@/lib/api-client";
 import type {
   MyTasksData,
+  PlannerBoardSummary,
   PlannerData,
   PlannerSection,
   PlannerTask,
@@ -105,4 +106,25 @@ export async function getMyTasks(): Promise<MyTasksData | null> {
   if (!isApiConfigured()) return null;
   const res = await apiFetch<ApiEnvelope<MyTasksData>>("/api/me/tasks");
   return res.data;
+}
+
+/** GET /api/me/planners — team boards I can open (planner enabled). */
+export async function getMyPlanners(): Promise<PlannerBoardSummary[]> {
+  if (!isApiConfigured()) return [];
+  const res = await apiFetch<ApiEnvelope<PlannerBoardSummary[]>>(
+    "/api/me/planners"
+  );
+  return res.data;
+}
+
+/** PUT /api/collab/:id/planner/job-roles — job role per member. */
+export async function setJobRole(
+  collabId: string,
+  userId: string,
+  jobRole: string
+): Promise<void> {
+  await apiFetch(`${base(collabId)}/job-roles`, {
+    method: "PUT",
+    body: JSON.stringify({ userId, jobRole }),
+  });
 }

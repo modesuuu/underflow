@@ -13,6 +13,7 @@
 import { useSyncExternalStore } from "react";
 import { makeBlock } from "./components/BlockBody";
 import type { Block } from "./components/BlockBody";
+import { getMyPlanners } from "./api";
 
 export type PlannerTaskData = {
   title: string;
@@ -21,7 +22,13 @@ export type PlannerTaskData = {
   pencilled?: boolean;
   overdue?: boolean;
   follows?: boolean;
+  /** Server follow leader (server boards only): the task this
+   * one follows, so the detail panel can show and change it. */
+  followsTaskId?: string;
+  followsTitle?: string;
   blocks?: Block[];
+  /** Server task id (server boards only): the key for API calls. */
+  id?: string;
 };
 
 export type PlannerBoardTask = PlannerTaskData & {
@@ -35,6 +42,8 @@ export type PlannerBoardMember = {
   role: string;
   pm?: boolean;
   tasks: PlannerBoardTask[];
+  /** Server user id (server boards only): the key for API calls. */
+  userId?: string;
 };
 
 export interface PlannerBoard {
@@ -414,6 +423,89 @@ export function createBoard(input: {
   persist();
   emit();
   return board;
+}
+
+// ---- Server team boards -------------------------------------------
+// Team boards whose data lives on the server (GET /api/me/planners).
+// A server board's id is `team-<collabId>` — deterministic, so the
+// owner and every collaborator open the same URL. Seeded and
+// personal boards stay in the local store above.
+
+export const teamBoardId = (collabId: string): string => `team-${collabId}`;
+
+export const collabIdFromTeamBoard = (boardId: string): string | null =>
+  boardId.startsWith("team-") ? boardId.slice("team-".length) : null;
+
+export interface ServerTeamBoard {
+  id: string;
+  name: string;
+  collabId: string;
+  openCount: number;
+}
+
+let serverTeamBoards: ServerTeamBoard[] | null = null;
+let serverTeamBoardsLoaded = false;
+let serverTeamBoardsInflight: Promise<ServerTeamBoard[]> | null = null;
+const serverTeamBoardsListeners = new Set<() => void>();
+
+function emitServerTeamBoards(): void {
+  serverTeamBoardsListeners.forEach((l) => l());
+}
+
+export async function refreshServerTeamBoards(): Promise<void> {
+  if (serverTeamBoardsInflight) {
+    await serverTeamBoardsInflight;
+    return;
+  }
+  const p = getMyPlanners()
+    .then((list) => {
+      serverTeamBoards = list.map((b) => ({
+        id: teamBoardId(b.collabId),
+        name: b.title,
+        collabId: b.collabId,
+        openCount: b.openCount,
+      }));
+      serverTeamBoardsLoaded = true;
+      emitServerTeamBoards();
+      return serverTeamBoards;
+    })
+    .catch(() => {
+      // Backend down: keep the last known list (possibly empty).
+      serverTeamBoardsLoaded = true;
+      emitServerTeamBoards();
+      return serverTeamBoards ?? [];
+    })
+    .finally(() => {
+      serverTeamBoardsInflight = null;
+    });
+  serverTeamBoardsInflight = p;
+  await p;
+}
+
+function subscribeServerTeamBoards(listener: () => void): () => void {
+  serverTeamBoardsListeners.add(listener);
+  if (!serverTeamBoardsLoaded) {
+    void refreshServerTeamBoards();
+  }
+  return () => {
+    serverTeamBoardsListeners.delete(listener);
+  };
+}
+
+export function useServerTeamBoards(): ServerTeamBoard[] {
+  return useSyncExternalStore(
+    subscribeServerTeamBoards,
+    () => serverTeamBoards ?? [],
+    () => [],
+  );
+}
+
+export function useServerTeamBoardsLoaded(): boolean {
+  return useSyncExternalStore(
+    subscribeServerTeamBoards,
+    () => serverTeamBoardsLoaded,
+    () => false,
+  );
 }
 
 // ---- Create-board dialog visibility -----------------------

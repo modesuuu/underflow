@@ -11,20 +11,34 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
-import { setCreateBoardOpen, useBoards, useBoardsLoaded } from "../boards";
+import {
+  setCreateBoardOpen,
+  teamBoardId,
+  useBoards,
+  useBoardsLoaded,
+  useServerTeamBoards,
+  useServerTeamBoardsLoaded,
+} from "../boards";
 
 export function TasksIndexRedirect() {
   const boards = useBoards();
   const loaded = useBoardsLoaded();
+  const serverBoards = useServerTeamBoards();
+  const serverLoaded = useServerTeamBoardsLoaded();
   const router = useRouter();
   const { t } = useLanguage();
   useEffect(() => {
-    if (loaded && boards.length > 0) {
+    if (!loaded || !serverLoaded) return;
+    // A wired team board comes first (it is the shared one);
+    // otherwise the first local board, as before.
+    if (serverBoards.length > 0) {
+      router.replace(`/tasks/${teamBoardId(serverBoards[0].collabId)}`);
+    } else if (boards.length > 0) {
       router.replace(`/tasks/${boards[0].id}`);
     }
-  }, [loaded, boards, router]);
-  if (!loaded) return null;
-  if (boards.length === 0) {
+  }, [loaded, serverLoaded, boards, serverBoards, router]);
+  if (!loaded || !serverLoaded) return null;
+  if (serverBoards.length === 0 && boards.length === 0) {
     return (
       <div className="flex flex-col items-start gap-3 py-16">
         <h1 className="text-2xl font-medium tracking-tight text-ink">
