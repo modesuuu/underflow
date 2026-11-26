@@ -349,13 +349,19 @@ function daySpanFor(
 ): { day: number; span: number } | null {
   if (!task.dueDate) return null;
   const dueIdx = isoDayIndex(task.dueDate, month);
+  // No start date: a single-day task sitting on its due day.
+  // (Before this fix it fell through to `start = 0`, so a
+  // task due the 26th rendered as a 26-day pill from the 1st.)
+  if (!task.startDate) {
+    return dueIdx === -1 ? null : { day: dueIdx, span: 1 };
+  }
   const startIdx = isoDayIndex(task.startDate, month);
   // Entirely outside this month: before it, or after it.
   if (dueIdx === -1 && startIdx === -1) {
     const due = new Date(task.dueDate);
     const first = new Date(month.year, month.month, 1);
     const last = new Date(month.year, month.month, month.days.length);
-    if (due < first || (task.startDate && new Date(task.startDate) > last)) {
+    if (due < first || new Date(task.startDate) > last) {
       return null;
     }
     // Spans the whole month: clamp to it.
