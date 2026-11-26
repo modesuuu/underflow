@@ -447,6 +447,10 @@ let serverTeamBoards: ServerTeamBoard[] | null = null;
 let serverTeamBoardsLoaded = false;
 let serverTeamBoardsInflight: Promise<ServerTeamBoard[]> | null = null;
 const serverTeamBoardsListeners = new Set<() => void>();
+// Stable empty list: useSyncExternalStore requires getSnapshot to
+// return the same reference while nothing changed — a fresh []
+// on every call makes React loop forever.
+const EMPTY_SERVER_BOARDS: ServerTeamBoard[] = [];
 
 function emitServerTeamBoards(): void {
   serverTeamBoardsListeners.forEach((l) => l());
@@ -495,8 +499,8 @@ function subscribeServerTeamBoards(listener: () => void): () => void {
 export function useServerTeamBoards(): ServerTeamBoard[] {
   return useSyncExternalStore(
     subscribeServerTeamBoards,
-    () => serverTeamBoards ?? [],
-    () => [],
+    () => serverTeamBoards ?? EMPTY_SERVER_BOARDS,
+    () => EMPTY_SERVER_BOARDS,
   );
 }
 
