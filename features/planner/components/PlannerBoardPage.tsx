@@ -2008,14 +2008,23 @@ function BoardCanvas({
             prev.map((m, i) => (i === mi ? { ...m, tasks: resolved } : m)),
           );
           // Persist the vertical order: renumber this row's tasks
-          // by (day, lane) and save every position that changed,
+          // by (lane, day) and save every position that changed,
           // so the lane a drag sets survives a board refresh.
+          // Lane MUST be the primary key, not day: two overlapping
+          // pills can start on different days, and sorting by day
+          // first always puts the earlier-starting pill first no
+          // matter which lane the user chose, so a vertical move
+          // was silently reverted on refresh — the pill "cannot
+          // move" up or down. (oke vs t4es, 2026-11-26: both on
+          // Nov 27, t4es starts Nov 26 so day-first always ranked
+          // it above oke even after oke was dropped above it.)
           // Before this, a drag only saved dates (and only when
           // the day changed), so a pure vertical reorder was never
           // saved at all and a day move lost its lane order — the
           // pill jumped back to its old lane on refresh.
           const ordered = [...resolved].sort(
-            (a, b) => a.day - b.day || (a.lane ?? 0) - (b.lane ?? 0),
+            (a, b) =>
+              (a.lane ?? 0) - (b.lane ?? 0) || a.day - b.day,
           );
           const newPos = new Map(ordered.map((tk, i) => [tk.title, i]));
           const placedPos = newPos.get(task.title) ?? 0;
