@@ -29,6 +29,9 @@ export type PlannerTaskData = {
   blocks?: Block[];
   /** Server task id (server boards only): the key for API calls. */
   id?: string;
+  /** Server `position` (vertical order inside a day): carried
+   * locally so a drag can diff it and persist a new lane order. */
+  position?: number;
 };
 
 export type PlannerBoardTask = PlannerTaskData & {

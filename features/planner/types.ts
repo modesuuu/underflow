@@ -50,6 +50,10 @@ export interface PlannerTask {
   done: boolean;
   doneAt: string | null;
   createdAt: string | null;
+  /** Vertical order inside a day (server `position`): the tiebreaker
+   * the board's ORDER BY uses after due_date, so the lane order a
+   * drag sets survives a refresh. */
+  position: number;
   /** Only present on /api/me/tasks rows. */
   collabTitle?: string;
 }
@@ -100,6 +104,9 @@ export interface TaskUpdate {
   pencilled?: boolean;
   followsTaskId?: string | null;
   done?: boolean;
+  /** Vertical order inside a day: sent on drag so the lane order
+   * survives a board refresh (server ORDER BY: due_date, position). */
+  position?: number;
 }
 
 export interface UpdateTaskResult {

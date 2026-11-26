@@ -412,6 +412,7 @@ function toLocalMembers(
       blocks: task.blocks ?? defaultBlocksFor(task.title),
       day: placed.day,
       span: placed.span,
+      position: task.position ?? 0,
     };
     const mi = task.assignee ? memberIndex.get(task.assignee.id) : undefined;
     if (mi === undefined) unassigned.push(local);
@@ -1992,8 +1993,32 @@ function BoardCanvas({
           setMembers((prev) =>
             prev.map((m, i) => (i === mi ? { ...m, tasks: resolved } : m)),
           );
+          // Persist the vertical order: renumber this row's tasks
+          // by (day, lane) and save every position that changed,
+          // so the lane a drag sets survives a board refresh.
+          // Before this, a drag only saved dates (and only when
+          // the day changed), so a pure vertical reorder was never
+          // saved at all and a day move lost its lane order — the
+          // pill jumped back to its old lane on refresh.
+          const ordered = [...resolved].sort(
+            (a, b) => a.day - b.day || (a.lane ?? 0) - (b.lane ?? 0),
+          );
+          const newPos = new Map(ordered.map((tk, i) => [tk.title, i]));
+          const placedPos = newPos.get(task.title) ?? 0;
           if (placed.day !== task.day) {
-            void pushTask(task.id, datesFor(placed.day, placed.span ?? 1));
+            void pushTask(task.id, {
+              ...datesFor(placed.day, placed.span ?? 1),
+              position: placedPos,
+            });
+          } else if ((placed.lane ?? 0) !== lane0) {
+            void pushTask(task.id, { position: placedPos });
+          }
+          for (const tk of resolved) {
+            if (tk.title === task.title) continue;
+            const pos = newPos.get(tk.title) ?? 0;
+            if (pos !== (tk.position ?? 0)) {
+              void pushTask(tk.id, { position: pos });
+            }
           }
           if (placed.day !== task.day || (placed.lane ?? 0) !== lane0) {
             showToast(
