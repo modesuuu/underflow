@@ -32,7 +32,7 @@ import {
   applyRealtimeZoneMessageDeleted,
   applyRealtimeZoneMessageUpdated,
 } from "@/features/circle/store";
-import { updateCircle } from "@/features/circle/circles";
+import { refreshCircles, updateCircle } from "@/features/circle/circles";
 import { applyRealtimePlannerTask } from "@/features/planner/store";
 import type { PlannerTask } from "@/features/planner/types";
 import {
@@ -302,6 +302,11 @@ export function LivePoller() {
       void fetchNotifications();
       void fetchPostStats();
       void refreshConversations();
+      // Circle nav badge: re-fetch the list so its unread totals
+      // stay correct even if a realtime bump was missed (socket
+      // was down, tab was hidden, or the push arrived before the
+      // list loaded). Only runs while polling, i.e. while WS is down.
+      void refreshCircles();
     };
 
     const wsLive = () =>

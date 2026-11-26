@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  useCallback,
   useEffect,
   useLayoutEffect,
   useMemo,
@@ -109,22 +110,81 @@ function initialsOf(name: string): string {
     .join("");
 }
 
-/** Short curved stub joining one submenu row to the spine: a
- * 10px quarter-circle that leaves the spine at the row's middle
- * and runs right into the row. The spine itself is a single
- * element on the children container, so it stays continuous
- * across rows of different heights (the old per-row tiling
- * broke wherever the radius shortened the vertical).
- * Both use a 2px stroke so the tree reads clearly — set via
- * inline borderWidth, not the border-l-2 utility, so it applies
- * even when the dev server hasn't regenerated utilities yet. */
-function SubmenuCurve() {
+/** The submenu tree as ONE SVG path: a vertical spine plus a
+ * quarter-circle elbow per row, all in a single <path> so there
+ * is no seam where a separate spine and stub meet. Row centres
+ * are measured from the DOM (rows can differ in height) and a
+ * ResizeObserver re-measures when they change. The stroke is
+ * 2px so the tree reads clearly. */
+function SubmenuTree({ children }: { children: React.ReactNode }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [centers, setCenters] = useState<number[]>([]);
+
+  const measure = useCallback(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const next: number[] = [];
+    for (const child of Array.from(el.children)) {
+      // The svg itself is a child too; only the row divs count.
+      if (child.tagName !== "DIV") continue;
+      const row = child as HTMLElement;
+      next.push(row.offsetTop + row.offsetHeight / 2);
+    }
+    setCenters((prev) =>
+      prev.length === next.length &&
+      prev.every((v, i) => Math.abs(v - next[i]) < 0.5)
+        ? prev
+        : next,
+    );
+  }, []);
+
+  useLayoutEffect(() => {
+    measure();
+  });
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [measure]);
+
+  const d = useMemo(() => {
+    if (centers.length === 0) return "";
+    const r = 10;
+    const yFirst = centers[0];
+    const yLast = centers[centers.length - 1];
+    // Spine from the first elbow's top down to the last row centre.
+    let s = `M 0 ${yFirst - r} V ${yLast}`;
+    // One elbow per row: down the spine, quarter-circle right,
+    // then straight into the row's tile/dot (content starts at x=20).
+    for (const y of centers) {
+      s += ` M 0 ${y - r} Q 0 ${y} ${r} ${y} L 20 ${y}`;
+    }
+    return s;
+  }, [centers]);
+
   return (
-    <span
-      aria-hidden="true"
-      className="pointer-events-none absolute -left-[13px] top-1/2 -mt-[10px] h-[10px] w-[21px] rounded-bl-[10px] border-b border-l border-line"
-      style={{ borderBottomWidth: 2, borderLeftWidth: 2 }}
-    />
+    <div
+      ref={containerRef}
+      className="relative mt-1 ml-[13px] flex flex-col pl-3"
+    >
+      <svg
+        aria-hidden="true"
+        className="pointer-events-none absolute left-0 top-0 h-full w-full"
+        style={{ overflow: "visible" }}
+      >
+        <path
+          d={d}
+          fill="none"
+          strokeWidth={2}
+          strokeLinecap="round"
+          style={{ stroke: "var(--color-line)" }}
+        />
+      </svg>
+      {children}
+    </div>
   );
 }
 
@@ -470,23 +530,12 @@ function NavSectionBlock({
                   }
                 >
                   <div className="acc-inner">
-                    <div className="relative mt-1 ml-[13px] flex flex-col pl-3">
-                      <span
-                        aria-hidden="true"
-                        className="absolute -left-px border-l border-line"
-                        style={{
-                          top:
-                            item.children[0]?.photoUrl !== undefined ? 18 : 14,
-                          bottom: 14,
-                          borderLeftWidth: 2,
-                        }}
-                      />
+                    <SubmenuTree>
                       {item.children.map((child) => {
                         const childActive =
                           (activeChild ?? item.children?.[0]?.id) === child.id;
                         return (
                           <div key={child.id} className="relative">
-                            <SubmenuCurve />
                             <Link
                               href={child.href ?? item.href ?? "/tasks"}
                               onClick={() => onSelectChild?.(child.id)}
@@ -535,7 +584,6 @@ function NavSectionBlock({
                         );
                       })}
                       <div className="relative">
-                        <SubmenuCurve />
                         <button
                           type="button"
                           onClick={
@@ -555,7 +603,7 @@ function NavSectionBlock({
                           </span>
                         </button>
                       </div>
-                    </div>
+                    </SubmenuTree>
                   </div>
                 </div>
               )}
