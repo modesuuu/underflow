@@ -50,7 +50,7 @@ export function TasksIndexRedirect() {
         <button
           type="button"
           onClick={() => setCreateBoardOpen(true)}
-          className="rounded-full bg-ink px-4 py-2 text-sm font-medium text-surface"
+          className="rounded-full bg-accent px-4 py-2 text-sm font-medium text-on-accent"
         >
           {t("nav.newBoard")}
         </button>

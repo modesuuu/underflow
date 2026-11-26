@@ -782,7 +782,7 @@ function ServerBoardCanvas({ collabId }: { collabId: string }) {
               await setPlannerEnabled(collabId, true);
               await load();
             }}
-            className="rounded-full bg-ink px-4 py-2 text-sm font-medium text-surface"
+            className="rounded-full bg-accent px-4 py-2 text-sm font-medium text-on-accent"
           >
             {t("planner.enableBtn")}
           </button>
@@ -898,7 +898,7 @@ function MigrateTeamBoard({ board }: { board: PlannerBoard }) {
         <button
           type="button"
           onClick={() => setAttempt((n) => n + 1)}
-          className="rounded-full bg-ink px-4 py-2 text-sm font-medium text-surface"
+          className="rounded-full bg-accent px-4 py-2 text-sm font-medium text-on-accent"
         >
           {t("planner.collabsRetry")}
         </button>
@@ -2295,7 +2295,7 @@ function BoardCanvas({
           <button
             type="button"
             onClick={openAdd}
-            className="flex items-center gap-1.5 rounded-full bg-ink px-4 py-2 text-sm font-medium text-surface"
+            className="flex items-center gap-1.5 rounded-full bg-accent px-4 py-2 text-sm font-medium text-on-accent"
           >
             <Icon name="plus" size={14} />
             {t("planner.addTask")}
@@ -2529,12 +2529,12 @@ function BoardCanvas({
                 <>
                   <div
                     aria-hidden
-                    className="pointer-events-none absolute inset-y-0 z-[15] w-[2px] bg-ink"
+                    className="pointer-events-none absolute inset-y-0 z-[15] w-[2px] bg-accent"
                     style={{ left: TODAY_INDEX * DAY_W }}
                   />
                   <div
                     aria-hidden
-                    className="pointer-events-none absolute top-1.5 z-[15] -translate-x-1/2 rounded-full bg-ink px-2 py-0.5 text-[10px] font-semibold text-surface"
+                    className="pointer-events-none absolute top-1.5 z-[15] -translate-x-1/2 rounded-full bg-accent px-2 py-0.5 text-[10px] font-semibold text-on-accent"
                     style={{ left: TODAY_INDEX * DAY_W }}
                   >
                     {SAMPLE_TODAY}
@@ -2569,7 +2569,7 @@ function BoardCanvas({
                     {SAMPLE_TODAY >= 0 && (
                       <div
                         aria-hidden
-                        className="pointer-events-none absolute inset-y-0 z-[15] w-[2px] bg-ink"
+                        className="pointer-events-none absolute inset-y-0 z-[15] w-[2px] bg-accent"
                         style={{ left: TODAY_INDEX * DAY_W }}
                       />
                     )}
@@ -3017,7 +3017,7 @@ function BoardCanvas({
                   className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium ${
                     detailTask.done
                       ? "border border-line text-ink"
-                      : "bg-ink text-surface"
+                      : "bg-accent text-on-accent"
                   } ${!detailCanEdit ? "cursor-not-allowed opacity-50" : ""}`}
                 >
                   <Icon name="check" size={15} />
@@ -3266,7 +3266,7 @@ function BoardCanvas({
                 <button
                   type="button"
                   onClick={submitAdd}
-                  className="rounded-full bg-ink px-4 py-2 text-sm font-medium text-surface"
+                  className="rounded-full bg-accent px-4 py-2 text-sm font-medium text-on-accent"
                 >
                   {t("planner.addTask")}
                 </button>
