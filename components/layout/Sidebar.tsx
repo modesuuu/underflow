@@ -155,8 +155,10 @@ function SubmenuTree({ children }: { children: React.ReactNode }) {
     const r = 10;
     const yFirst = centers[0];
     const yLast = centers[centers.length - 1];
-    // Spine from the first elbow's top down to the last row centre.
-    let s = `M 0 ${yFirst - r} V ${yLast}`;
+    // Spine from the first elbow's top down to where the last
+    // elbow starts curving — the vertical line ends at the last
+    // row's curve, it never runs past it.
+    let s = `M 0 ${yFirst - r} V ${yLast - r}`;
     // One elbow per row: down the spine, quarter-circle right,
     // then straight into the row's tile/dot (content starts at x=20).
     for (const y of centers) {
