@@ -108,20 +108,17 @@ function initialsOf(name: string): string {
     .join("");
 }
 
-/** Curved tree elbow joining a submenu row to the spine above
- * it: the vertical runs down from the row above and curves right
- * into this row. Middle rows hang their elbow half a row above
- * themselves so the spine stays continuous; the first and last
- * rows stop at their own middle, so the spine starts and ends
- * exactly at the outer rows. */
-function SubmenuElbow({ edge }: { edge: boolean }) {
+/** Short curved stub joining one submenu row to the spine: a
+ * 10px quarter-circle that leaves the spine at the row's middle
+ * and runs right into the row. The spine itself is a single
+ * element on the children container, so it stays continuous
+ * across rows of different heights (the old per-row tiling
+ * broke wherever the radius shortened the vertical). */
+function SubmenuCurve() {
   return (
     <span
       aria-hidden="true"
-      className={clsx(
-        "absolute -left-[13px] w-[13px] rounded-bl-[10px] border-b border-l border-line",
-        edge ? "top-0 h-1/2" : "-top-1/2 h-full",
-      )}
+      className="pointer-events-none absolute -left-[13px] top-1/2 -mt-[10px] h-[10px] w-[21px] rounded-bl-[10px] border-b border-l border-line"
     />
   );
 }
@@ -468,13 +465,22 @@ function NavSectionBlock({
                   }
                 >
                   <div className="acc-inner">
-                    <div className="mt-1 ml-[13px] flex flex-col pl-3">
-                      {item.children.map((child, i) => {
+                    <div className="relative mt-1 ml-[13px] flex flex-col pl-3">
+                      <span
+                        aria-hidden="true"
+                        className="absolute -left-px border-l border-line"
+                        style={{
+                          top:
+                            item.children[0]?.photoUrl !== undefined ? 18 : 14,
+                          bottom: 14,
+                        }}
+                      />
+                      {item.children.map((child) => {
                         const childActive =
                           (activeChild ?? item.children?.[0]?.id) === child.id;
                         return (
                           <div key={child.id} className="relative">
-                            <SubmenuElbow edge={i === 0} />
+                            <SubmenuCurve />
                             <Link
                               href={child.href ?? item.href ?? "/tasks"}
                               onClick={() => onSelectChild?.(child.id)}
@@ -523,7 +529,7 @@ function NavSectionBlock({
                         );
                       })}
                       <div className="relative">
-                        <SubmenuElbow edge />
+                        <SubmenuCurve />
                         <button
                           type="button"
                           onClick={
