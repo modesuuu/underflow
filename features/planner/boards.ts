@@ -69,35 +69,6 @@ const seedBlock = (
   extra?: Partial<Block>,
 ): Block => ({ ...makeBlock(type, text), ...extra });
 
-// Starter block bodies for the detail panel, in the task's own
-// language like the sample titles.
-const SAMPLE_BLOCKS: Record<string, Block[]> = {
-  "Implementasi board": [
-    seedBlock("h2", "Rencana pengerjaan"),
-    seedBlock(
-      "text",
-      "Board /tasks versi UI dulu, data masih sampel. Fokus ke rasa drag-nya sebelum wiring API.",
-    ),
-    seedBlock("todo", "Geser pill antar hari + snap", { checked: true }),
-    seedBlock("todo", "Resize dari tepi pill", { checked: true }),
-    seedBlock("todo", "Panel detail ala Notion"),
-    seedBlock("toggle", "Catatan teknis"),
-    seedBlock(
-      "text",
-      "Lane dihitung ulang pakai gravity; drop di lane yang terisi jadi insert dan menggeser tumpukan ke bawah.",
-      { level: 1 },
-    ),
-    seedBlock("todo", "Cek ulang rasa drag di layar kecil", { level: 1 }),
-    seedBlock("divider", ""),
-    seedBlock("text", "Target: rasa dulu, baru fungsi penuh."),
-  ],
-  "Review PR backend": [
-    seedBlock("text", "Cek PR endpoint planner dari Faiz sebelum merge."),
-    seedBlock("todo", "Endpoint GET /planner/tasks", { checked: true }),
-    seedBlock("todo", "Event planner-task di realtime server"),
-  ],
-};
-
 export const defaultBlocksFor = (title: string): Block[] => [
   seedBlock(
     "text",
@@ -106,147 +77,13 @@ export const defaultBlocksFor = (title: string): Block[] => [
   seedBlock("todo", "Langkah pertama"),
 ];
 
-const SAMPLE_MEMBERS: PlannerBoardMember[] = [
-  {
-    name: "Raka Alfarezi",
-    role: "Frontend",
-    tasks: [
-      { title: "Desain board planner", icon: "edit", day: 16 },
-      { title: "Review PR backend", done: true, day: 17 },
-      {
-        title: "Implementasi board",
-        follows: true,
-        icon: "group",
-        day: 17,
-        span: 2,
-        lane: 1,
-      },
-      { title: "Polish halaman profil", icon: "palette", day: 24 },
-    ],
-  },
-  {
-    name: "Faiz Atha Aghitsna",
-    role: "Backend",
-    pm: true,
-    tasks: [
-      { title: "Audit endpoint lama", icon: "search", day: 3 },
-      { title: "Endpoint GET planner", icon: "code-alt", day: 15 },
-      {
-        title: "Perbaiki CORS deploy",
-        overdue: true,
-        icon: "wrench",
-        day: 16,
-      },
-      { title: "Setup Cloudflare Tunnel", icon: "server", day: 19 },
-    ],
-  },
-  {
-    name: "Fadilah Nur Yasin",
-    role: "Database",
-    tasks: [
-      { title: "Backup database", icon: "server", day: 11 },
-      { title: "Skema tabel collab_tasks", done: true, day: 16 },
-      {
-        title: "Seed data demo",
-        pencilled: true,
-        icon: "edit",
-        day: 18,
-        span: 2,
-      },
-    ],
-  },
-  {
-    name: "Alifah Nailatusy Syarifah",
-    role: "Research",
-    tasks: [
-      { title: "Survei pengguna", icon: "group", day: 8 },
-      { title: "Riset referensi Talmo", icon: "search", day: 16 },
-      {
-        title: "Copywriting halaman Tasks",
-        pencilled: true,
-        icon: "edit",
-        day: 17,
-      },
-    ],
-  },
-  {
-    name: "Alvina Chalista Putri",
-    role: "Research",
-    tasks: [
-      { title: "Uji alur apply", icon: "map-pin", day: 16 },
-      { title: "Catatan rilis", icon: "edit", day: 21 },
-      { title: "Dokumentasi rilis", icon: "edit", day: 26 },
-    ],
-  },
-];
-const withBlocks = (
-  members: PlannerBoardMember[],
-): PlannerBoardMember[] =>
-  members.map((m) => ({
-    ...m,
-    tasks: m.tasks.map((tk) => ({
-      ...tk,
-      blocks:
-        tk.blocks ?? SAMPLE_BLOCKS[tk.title] ?? defaultBlocksFor(tk.title),
-    })),
-  }));
-
 export function seedBoards(): PlannerBoard[] {
-  return [
-    {
-      id: "board-underflow",
-      name: "Underflow",
-      kind: "team",
-      collabName: "Underflow",
-      members: withBlocks(SAMPLE_MEMBERS),
-    },
-    {
-      id: "board-lombakampus",
-      name: "LombaKampus",
-      kind: "team",
-      collabName: "LombaKampus",
-      members: withBlocks([
-        {
-          name: "Raka Alfarezi",
-          role: "Project Lead",
-          tasks: [
-            { title: "Desain poster lomba", day: 18 },
-            {
-              title: "Rekap pendaftaran peserta",
-              day: 22,
-            },
-            { title: "Booking aula final", day: 25 },
-          ],
-        },
-        {
-          name: "Gunawan",
-          role: "Database",
-          tasks: [
-            {
-              title: "Skema database lomba",
-              done: true,
-              day: 15,
-            },
-          ],
-        },
-      ]),
-    },
-    {
-      id: "board-portfolio",
-      name: "Portfolio",
-      kind: "personal",
-      members: withBlocks([
-        {
-          name: "Raka Alfarezi",
-          role: "Frontend",
-          tasks: [
-            { title: "Update case study planner", day: 19 },
-            { title: "Rapikan CV", done: true, day: 12 },
-          ],
-        },
-      ]),
-    },
-  ];
+  // Seed boards removed (2026-11-27, production cleanup): the dummy
+  // mockup boards (Underflow / LombaKampus / Portfolio) kept coming
+  // back because load() fell back to these seeds whenever
+  // localStorage was empty. Production starts with no boards;
+  // real boards are created from collaborations or by the user.
+  return [];
 }
 
 export function openTaskCount(board: PlannerBoard): number {
@@ -301,6 +138,18 @@ function load(): PlannerBoard[] {
   } catch {
     // Corrupt or unavailable storage: fall back to the seeds.
   }
+  // Drop the removed seed boards wherever they still sit
+  // (2026-11-27): a browser that cached them in localStorage
+  // keeps showing the dummy boards even after the seeds are
+  // gone from the code. Filter them out once, on load.
+  const REMOVED_SEED_IDS = new Set([
+    "board-underflow",
+    "board-lombakampus",
+    "board-portfolio",
+  ]);
+  const beforeFilter = initial.length;
+  initial = initial.filter((b) => !REMOVED_SEED_IDS.has(b.id));
+  let repaired = initial.length !== beforeFilter;
   // One-time repair (2026-11-25): "Owner" leaked into job
   // roles (the portfolio seed and createBoard wrote it, and
   // the panel offered it as an option). A job role of
@@ -309,7 +158,6 @@ function load(): PlannerBoard[] {
   // Section keys are stripped too: the section field was
   // removed the same day, so saved tasks stop carrying it.
   const seeds = seedBoards();
-  let repaired = false;
   initial = initial.map((b) => {
     const seed = seeds.find((s) => s.id === b.id);
     const members = b.members.map((m) => {
