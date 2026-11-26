@@ -17,7 +17,6 @@ import { LogoMark } from "@/components/ui/LogoMark";
 import { Badge } from "@/components/ui/Badge";
 import { Icon } from "@/components/ui/Icon";
 import { useInboxUnreadCount } from "@/features/inbox/store";
-import { useMyTaskOpenCount } from "@/features/planner/store";
 import {
   openTaskCount,
   setCreateBoardOpen,
@@ -614,7 +613,6 @@ export function Sidebar() {
   };
   const [animateWidth, setAnimateWidth] = useState(false);
   const inboxUnread = useInboxUnreadCount();
-  const taskOpenCount = useMyTaskOpenCount();
 
   const areaRef = useRef<HTMLDivElement>(null);
   const stackRef = useRef<HTMLElement>(null);
@@ -787,11 +785,17 @@ export function Sidebar() {
     photoUrl: c.photoProfileUrl,
   }));
 
+  // Total unread across every circle, for the Circle nav badge.
+  const circleUnreadTotal = (circles ?? []).reduce(
+    (n, c) => n + (c.unreadCount ?? 0),
+    0,
+  );
+
   const badgeFor = (id: string) =>
     id === "inbox" && inboxUnread > 0
       ? inboxUnread
-      : id === "tasks" && taskOpenCount > 0
-        ? taskOpenCount
+      : id === "circle" && circleUnreadTotal > 0
+        ? circleUnreadTotal
         : undefined;
 
   const activeVisible = useMemo(() => {

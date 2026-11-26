@@ -184,7 +184,7 @@ export function NotificationsPanel({ className }: { className?: string }) {
 
   return (
     <div className={"page-enter flex flex-col gap-6 py-6" + (className ? " " + className : "")}>
-      <div className="flex flex-col gap-4">
+      <div className="sticky top-0 z-10 -mx-4 -mt-6 flex flex-col gap-4 border-b border-line bg-surface px-4 pt-6 pb-4 sm:-mx-6 sm:px-6">
         <div className="flex items-center justify-between">
           <h2 className="text-base font-semibold">{tr("notif.title")}</h2>
           {unreadCount > 0 && (

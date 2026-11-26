@@ -496,12 +496,14 @@ const HEADER_H = 48;
 
 function SamplePill({
   task,
+  editable = true,
   className = "",
   style,
   onPointerDown,
   onResizeDown,
 }: {
   task: SampleTask;
+  editable?: boolean;
   className?: string;
   style?: CSSProperties;
   onPointerDown?: (e: ReactPointerEvent<HTMLDivElement>) => void;
@@ -519,7 +521,9 @@ function SamplePill({
           ? "bg-active text-ink/70"
           : task.pencilled
             ? "border border-line bg-surface text-ink/85"
-            : "bg-ink text-surface"
+            : editable
+              ? "bg-accent text-on-accent"
+              : "bg-ink text-surface"
       } ${className}`}
     >
       <span className="shrink-0 opacity-90">
@@ -2581,6 +2585,7 @@ function BoardCanvas({
                         <SamplePill
                           key={task.title}
                           task={task}
+                          editable={gate === null}
                           onPointerDown={(e) => onPillDown(e, mi, task)}
                           onResizeDown={
                             gate
