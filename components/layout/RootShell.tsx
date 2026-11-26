@@ -24,10 +24,11 @@ import { applyThemeMode } from "@/components/ui/ThemeToggle";
  * 2026-11-19 they ride the standard frame like every other
  * app page (user request).
  *
- * Circle routes are the one exception (user request 2026-11-19):
- * the workspace is a full-height chat layout, so the frame drops
- * the Sidebar there and the Circle rail carries a back-to-feed
- * button pinned at its bottom instead.
+ * Circle routes used to be the one exception (user request
+ * 2026-11-19): the frame dropped the Sidebar there and the
+ * Circle rail carried the switcher. Since 2026-11-26 the sidebar
+ * is back on Circle pages and the circles live in its submenu,
+ * like the Tasks boards — the rail is gone.
  */
 export function RootShell({ children }: { children: ReactNode }) {
   const { t } = useLanguage();
@@ -98,17 +99,6 @@ export function RootShell({ children }: { children: ReactNode }) {
   }
   if (isLegalRoute) {
     return <>{children}</>;
-  }
-  if (pathname?.startsWith("/circle")) {
-    return (
-      <RequireAuth>
-        <LivePoller />
-        <div className="flex h-dvh w-full overflow-hidden">
-          <SkipLink label={t("common.skipToContent")} />
-          {children}
-        </div>
-      </RequireAuth>
-    );
   }
   if (pathname?.startsWith("/admin")) {
     return (

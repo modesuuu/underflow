@@ -12,7 +12,7 @@ import { useSessionUser } from "@/features/auth/store";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import type { PostComment } from "../types";
 import { CommentThread } from "./CommentThread";
-import { getComments, postComment } from "../api";
+import { deleteComment, getComments, postComment } from "../api";
 import { syncLikeCount, syncLiked } from "../like-store";
 import { isApiConfigured } from "@/lib/api-client";
 import { formatRelativeAgo } from "@/lib/i18n/format";
@@ -128,6 +128,22 @@ export function CommentSection({ postId, initialComments, autoFocusComment = fal
     scrollWithinContainer(newCommentRef.current);
   }, [lastAddedId]);
 
+  // Delete one of your own comments: the row leaves immediately,
+  // and comes back if the backend refuses (the endpoint is
+  // owner-only, so a refusal here means stale state, not a rule
+  // the UI should have hidden).
+  const handleDeleteComment = async (comment: PostComment) => {
+    const snapshot = comments;
+    setComments((prev) => prev.filter((c) => c.id !== comment.id));
+    try {
+      await deleteComment(postId, comment.id);
+      toast.success(t("post.commentDeleted"));
+    } catch {
+      setComments(snapshot);
+      toast(t("post.couldntDeleteComment"));
+    }
+  };
+
   return (
     <>
       {/* Comment input bar */}
@@ -188,6 +204,7 @@ export function CommentSection({ postId, initialComments, autoFocusComment = fal
         comments={comments}
         newCommentId={lastAddedId}
         newCommentRef={newCommentRef}
+        onDeleteComment={handleDeleteComment}
       />
     </>
   );

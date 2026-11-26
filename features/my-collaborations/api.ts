@@ -18,7 +18,7 @@ interface BackendMyCollab {
   skills_needed: { id: string; skill_name: string; scope: string }[];
   media_urls?: string[];
   media_public_ids?: (string | null)[];
-  owner: { id: string; username: string; photo_profile_url: string };
+  owner: { id: string; username: string; full_name?: string; photo_profile_url: string };
   /** Circle + external link, same wire fields as BackendCollab. */
   circle?: { id: string } | null;
   communication_url?: string | null;

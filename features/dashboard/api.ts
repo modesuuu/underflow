@@ -10,7 +10,7 @@ import { formatRelativeAgo } from "@/lib/i18n/format";
 /** Wire shape of GET /api/posts (PostModel::getAll). */
 interface BackendPost {
   id: string;
-  user_id: string | { id: string; username: string; photo_profile_url?: string };
+  user_id: string | { id: string; username: string; full_name?: string; photo_profile_url?: string };
   description: string;
   portfolio_type: "link" | "images";
   external_url?: string | null;
@@ -22,8 +22,19 @@ interface BackendPost {
   created_at: string;
   updated_at: string;
   username?: string;
+  full_name?: string;
   photo_profile_url?: string;
-  owner?: { id: string; username: string; photo_profile_url?: string };
+  owner?: { id: string; username: string; full_name?: string; photo_profile_url?: string };
+}
+
+/** Display-name rule (same as the profile page): the editable
+ *  profile full_name wins; the immutable @username is the fallback. */
+function displayName(
+  fullName: string | null | undefined,
+  username: string
+): string {
+  const trimmed = fullName?.trim();
+  return trimmed ? trimmed : username;
 }
 
 function relativeAgo(iso: string | undefined): string {
@@ -38,13 +49,14 @@ function mapBackendPost(b: BackendPost): Post {
       : b.owner ?? {
           id: typeof b.user_id === "string" ? b.user_id : "",
           username: b.username ?? "",
+          full_name: b.full_name,
           photo_profile_url: b.photo_profile_url,
         };
   return {
     id: b.id,
     author: {
       id: owner.id,
-      name: owner.username,
+      name: displayName(owner.full_name, owner.username),
       avatarUrl: owner.photo_profile_url || undefined,
     },
     postedAt: b.created_at,
@@ -210,9 +222,10 @@ interface BackendComment {
   content: string;
   created_at?: string;
   createdAt?: string;
-  userId?: { id: string; username: string; photo_profile_url?: string };
-  user?: { id: string; username: string; photo_profile_url?: string };
+  userId?: { id: string; username: string; full_name?: string; photo_profile_url?: string };
+  user?: { id: string; username: string; full_name?: string; photo_profile_url?: string };
   username?: string;
+  full_name?: string;
   photo_profile_url?: string;
   like_count?: number;
   is_liked?: boolean;
@@ -222,13 +235,14 @@ function mapBackendComment(c: BackendComment): PostComment {
   const author = c.userId ?? c.user ?? {
     id: "",
     username: c.username ?? "",
+    full_name: c.full_name,
     photo_profile_url: c.photo_profile_url,
   };
   return {
     id: c.id,
     author: {
       id: author.id,
-      name: author.username,
+      name: displayName(author.full_name, author.username),
       avatarUrl: author.photo_profile_url || undefined,
     },
     text: c.content,
@@ -315,6 +329,20 @@ export async function recordView(postId: string): Promise<{ viewCount: number }>
     { method: "POST" }
   );
   return { viewCount: res.data.view_count };
+}
+
+/**
+ * DELETE /api/posts/:postId/comments/:commentId (auth required,
+ * owner only — the backend answers 403 for someone else's comment;
+ * soft delete, and the comment's notification is removed with it).
+ */
+export async function deleteComment(
+  postId: string,
+  commentId: string
+): Promise<void> {
+  await apiFetch("/api/posts/" + postId + "/comments/" + commentId, {
+    method: "DELETE",
+  });
 }
 
 /** POST /api/posts/:postId/comments (auth required). */

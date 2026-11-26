@@ -1,4 +1,10 @@
 import { CircleWorkspace } from "@/features/circle/components/CircleWorkspace";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Circle",
+};
+
 
 /**
  * /circle/:circleId renders the one-page workspace with that circle

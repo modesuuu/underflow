@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { LegalSection, LegalShell } from "@/components/legal/LegalShell";
 
 export const metadata: Metadata = {
-  title: "Contact · Underflow",
+  title: "Contact",
   description: "How to reach the Underflow team.",
 };
 

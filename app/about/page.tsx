@@ -3,7 +3,7 @@ import Link from "next/link";
 import { LegalSection, LegalShell } from "@/components/legal/LegalShell";
 
 export const metadata: Metadata = {
-  title: "About · Underflow",
+  title: "About",
   description: "What Underflow is and how it works.",
 };
 

@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  useCallback,
   useEffect,
   useLayoutEffect,
   useMemo,
@@ -17,12 +18,22 @@ import { LogoMark } from "@/components/ui/LogoMark";
 import { Badge } from "@/components/ui/Badge";
 import { Icon } from "@/components/ui/Icon";
 import { useInboxUnreadCount } from "@/features/inbox/store";
+import {
+  openTaskCount,
+  setCreateBoardOpen,
+  teamBoardId,
+  useBoards,
+  useServerTeamBoards,
+} from "@/features/planner/boards";
+import { CreateBoardDialog } from "@/features/planner/components/CreateBoardDialog";
+import { setCreateCircleOpen, useCircles } from "@/features/circle/circles";
+import { isCollabCompleted, useOwnedCollabs } from "@/features/planner/collab-status";
 import { setMobileNav, useMobileNavOpen } from "./mobile-nav";
 import {
   CURRENT_USER,
   DEFAULT_ACTIVE_ID,
-  FOOTER_LINKS,
   NAV_SECTIONS,
+  type NavChild,
   type NavItem,
   type NavSection,
 } from "./nav";
@@ -89,6 +100,96 @@ function SidebarPanelIcon({ className }: { className?: string }) {
   );
 }
 
+/** First initials of a circle title, e.g. "BFF Team" -> "BT"
+ * (the same tile the old Circle rail showed). */
+function initialsOf(name: string): string {
+  return name
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? "")
+    .join("");
+}
+
+/** The submenu tree as ONE SVG path: a vertical spine plus a
+ * quarter-circle elbow per row, all in a single <path> so there
+ * is no seam where a separate spine and stub meet. Row centres
+ * are measured from the DOM (rows can differ in height) and a
+ * ResizeObserver re-measures when they change. The stroke is
+ * 2px so the tree reads clearly. */
+function SubmenuTree({ children }: { children: React.ReactNode }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [centers, setCenters] = useState<number[]>([]);
+
+  const measure = useCallback(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const next: number[] = [];
+    for (const child of Array.from(el.children)) {
+      // The svg itself is a child too; only the row divs count.
+      if (child.tagName !== "DIV") continue;
+      const row = child as HTMLElement;
+      next.push(row.offsetTop + row.offsetHeight / 2);
+    }
+    setCenters((prev) =>
+      prev.length === next.length &&
+      prev.every((v, i) => Math.abs(v - next[i]) < 0.5)
+        ? prev
+        : next,
+    );
+  }, []);
+
+  useLayoutEffect(() => {
+    measure();
+  });
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [measure]);
+
+  const d = useMemo(() => {
+    if (centers.length === 0) return "";
+    const r = 10;
+    const yFirst = centers[0];
+    const yLast = centers[centers.length - 1];
+    // Spine from the first elbow's top down to where the last
+    // elbow starts curving — the vertical line ends at the last
+    // row's curve, it never runs past it.
+    let s = `M 0 ${yFirst - r} V ${yLast - r}`;
+    // One elbow per row: down the spine, quarter-circle right,
+    // then straight into the row's tile/dot (content starts at x=20).
+    for (const y of centers) {
+      s += ` M 0 ${y - r} Q 0 ${y} ${r} ${y} L 20 ${y}`;
+    }
+    return s;
+  }, [centers]);
+
+  return (
+    <div
+      ref={containerRef}
+      className="relative mt-1 ml-[13px] flex flex-col pl-3"
+    >
+      <svg
+        aria-hidden="true"
+        className="pointer-events-none absolute left-0 top-0 h-full w-full"
+        style={{ overflow: "visible" }}
+      >
+        <path
+          d={d}
+          fill="none"
+          strokeWidth={2}
+          strokeLinecap="round"
+          style={{ stroke: "var(--color-line)" }}
+        />
+      </svg>
+      {children}
+    </div>
+  );
+}
+
 type RegisterRef<T> = (id: string, el: T | null) => void;
 
 /** When the last rail tooltip closed — a glide reuses a short delay. */
@@ -102,9 +203,12 @@ interface NavRowProps {
   animate?: boolean;
   onSelect: (id: string) => void;
   registerRef: RegisterRef<HTMLElement>;
+  expandable?: boolean;
+  expanded?: boolean;
+  onToggleExpand?: () => void;
 }
 
-function NavRow({ item, active, badge, mini, animate, onSelect, registerRef }: NavRowProps) {
+function NavRow({ item, active, badge, mini, animate, onSelect, registerRef, expandable, expanded, onToggleExpand }: NavRowProps) {
   const { t } = useLanguage();
   const labelKey = NAV_LABEL_KEYS[item.id];
   const label = labelKey ? t(labelKey) : item.label;
@@ -209,6 +313,27 @@ function NavRow({ item, active, badge, mini, animate, onSelect, registerRef }: N
       {!mini && badge !== undefined && badge > 0 && (
         <Badge count={badge} tone="danger" className="ml-auto" />
       )}
+      {/* Submenu chevron: toggles the item's child list
+          without navigating; the row itself stays the link. */}
+      {!mini && expandable && (
+        <span
+          role="button"
+          aria-label={expanded ? "Collapse submenu" : "Expand submenu"}
+          aria-expanded={expanded}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onToggleExpand?.();
+          }}
+          className={
+            "chevron-rot inline-flex shrink-0 cursor-pointer items-center justify-center rounded-sm p-0.5 text-muted " +
+            (badge !== undefined && badge > 0 ? "ml-1" : "ml-auto") +
+            (expanded ? " rotate-0" : " -rotate-90")
+          }
+        >
+          <Icon name="chevron-down" size={16} className="leading-none" />
+        </span>
+      )}
       {/* Tooltip — only on the icon rail; portaled so the
           accordion's overflow clip cannot eat it (see showTip). */}
       {mini &&
@@ -301,6 +426,12 @@ interface NavSectionBlockProps {
   onToggle: (id: string) => void;
   onSelect: (id: string) => void;
   registerRowRef: RegisterRef<HTMLElement>;
+  openMenus: Record<string, boolean>;
+  activeChild: string | null;
+  onToggleMenu: (id: string) => void;
+  onSelectChild?: (id: string) => void;
+  onNewBoard: () => void;
+  onNewCircle: () => void;
 }
 
 function NavSectionBlock({
@@ -313,7 +444,14 @@ function NavSectionBlock({
   onToggle,
   onSelect,
   registerRowRef,
+  openMenus,
+  activeChild,
+  onToggleMenu,
+  onSelectChild,
+  onNewBoard,
+  onNewCircle,
 }: NavSectionBlockProps) {
+  const { t } = useLanguage();
   // On the icon rail the section header becomes a hairline divider
   // and the rows are always shown (an accordion makes no sense at
   // 76px — there is nothing to read).
@@ -372,16 +510,106 @@ function NavSectionBlock({
       <div className={sectionCollapsed ? "acc-wrap [grid-template-rows:0fr]" : "acc-wrap [grid-template-rows:1fr]"}>
         <div className="acc-inner flex flex-col gap-1">
           {section.items.map((item) => (
-            <NavRow
-              key={item.id}
-              item={item}
-              active={item.id === activeId}
-              badge={badgeFor(item.id)}
-              mini={mini}
-              animate={animate}
-              onSelect={onSelect}
-              registerRef={registerRowRef}
-            />
+            <div key={item.id} className="flex flex-col">
+              <NavRow
+                item={item}
+                active={item.id === activeId}
+                badge={badgeFor(item.id)}
+                mini={mini}
+                animate={animate}
+                onSelect={onSelect}
+                registerRef={registerRowRef}
+                expandable={!!item.children?.length}
+                expanded={!!openMenus[item.id]}
+                onToggleExpand={() => onToggleMenu(item.id)}
+              />
+              {item.children && !mini && (
+                <div
+                  className={
+                    openMenus[item.id]
+                      ? "acc-wrap [grid-template-rows:1fr]"
+                      : "acc-wrap [grid-template-rows:0fr]"
+                  }
+                >
+                  <div className="acc-inner">
+                    <SubmenuTree>
+                      {item.children.map((child) => {
+                        const childActive =
+                          (activeChild ?? item.children?.[0]?.id) === child.id;
+                        return (
+                          <div key={child.id} className="relative">
+                            <Link
+                              href={child.href ?? item.href ?? "/tasks"}
+                              onClick={() => onSelectChild?.(child.id)}
+                              className={clsx(
+                                "flex items-center gap-2 rounded-md px-2 py-1.5 text-xs",
+                                childActive
+                                  ? "bg-active font-medium text-ink"
+                                  : "nav-row-hoverable text-muted",
+                              )}
+                            >
+                            {child.photoUrl !== undefined ? (
+                              <span
+                                className={clsx(
+                                  "flex size-6 shrink-0 items-center justify-center overflow-hidden rounded-lg text-[10px] font-semibold",
+                                  childActive
+                                    ? "bg-accent text-on-accent"
+                                    : "border border-line bg-surface text-ink"
+                                )}
+                              >
+                                {child.photoUrl ? (
+                                  // eslint-disable-next-line @next/next/no-img-element
+                                  <img
+                                    src={child.photoUrl}
+                                    alt=""
+                                    className="size-6 object-cover"
+                                  />
+                                ) : (
+                                  initialsOf(child.label)
+                                )}
+                              </span>
+                            ) : (
+                              <span className="flex w-[15px] shrink-0 items-center justify-center">
+                                <span className="size-1.5 rounded-full bg-current" />
+                              </span>
+                            )}
+                            <span className="min-w-0 flex-1 truncate">
+                              {child.label}
+                            </span>
+                            {child.count !== undefined && (
+                              <span className="rounded-full bg-surface px-1.5 py-px text-[10px] font-semibold text-muted">
+                                {child.count}
+                              </span>
+                            )}
+                            </Link>
+                          </div>
+                        );
+                      })}
+                      <div className="relative">
+                        <button
+                          type="button"
+                          onClick={
+                            item.id === "circle" ? onNewCircle : onNewBoard
+                          }
+                          className="nav-row-hoverable flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs font-medium text-muted"
+                        >
+                          <Icon
+                            name="plus"
+                            size={15}
+                            className="shrink-0 leading-none"
+                          />
+                          <span className="min-w-0 flex-1 truncate">
+                            {item.id === "circle"
+                              ? t("nav.newCircle")
+                              : t("nav.newBoard")}
+                          </span>
+                        </button>
+                      </div>
+                    </SubmenuTree>
+                  </div>
+                </div>
+              )}
+            </div>
           ))}
         </div>
       </div>
@@ -396,6 +624,7 @@ function routeToNavId(pathname: string): string {
   if (pathname.startsWith("/collaborations")) return "collaborations";
   if (pathname.startsWith("/search")) return "search";
   if (pathname.startsWith("/inbox")) return "inbox";
+  if (pathname.startsWith("/tasks")) return "tasks";
   if (pathname.startsWith("/settings")) return "settings";
   if (pathname === "/" || pathname.startsWith("/dashboard")) return "feeds";
   return DEFAULT_ACTIVE_ID;
@@ -410,6 +639,14 @@ export function Sidebar() {
   // Route-aware active state: init from URL, sync on navigation.
   const [activeId, setActiveId] = useState(() => routeToNavId(pathname));
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+  const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({});
+  // The highlighted board in the Tasks submenu is whichever
+  // board the URL names.
+  const activeChild = pathname.startsWith("/tasks/")
+    ? (pathname.split("/")[2] ?? null)
+    : pathname.startsWith("/circle/")
+      ? (pathname.split("/")[2] ?? null)
+      : null;
   const [miniPref, setMiniPref] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   useEffect(() => {
@@ -433,14 +670,27 @@ export function Sidebar() {
   const inboxUnread = useInboxUnreadCount();
 
   const areaRef = useRef<HTMLDivElement>(null);
-  const stackRef = useRef<HTMLDivElement>(null);
+  const stackRef = useRef<HTMLElement>(null);
   const pillRef = useRef<HTMLDivElement>(null);
   const rowRefs = useRef(new Map<string, HTMLElement>());
   const placedRef = useRef(false);
+  const scrollSettleRef = useRef<number | undefined>(undefined);
 
   // Sync activeId with pathname on navigation.
   useEffect(() => {
     setActiveId(routeToNavId(pathname));
+  }, [pathname]);
+
+  // The Tasks submenu opens on its own page.
+  useEffect(() => {
+    if (pathname.startsWith("/tasks")) {
+      setOpenMenus((prev) => (prev.tasks ? prev : { ...prev, tasks: true }));
+    }
+    if (pathname.startsWith("/circle")) {
+      setOpenMenus((prev) =>
+        prev.circle ? prev : { ...prev, circle: true }
+      );
+    }
   }, [pathname]);
 
   // Apply the stored rail preference BEFORE the browser paints
@@ -543,8 +793,65 @@ export function Sidebar() {
     return () => document.removeEventListener("keydown", onKey);
   }, []);
 
+  const boards = useBoards();
+  const serverBoards = useServerTeamBoards();
+  const circles = useCircles();
+  const { list: ownedCollabs } = useOwnedCollabs();
+  // A team board whose collaboration is completed stays
+  // hidden until the collab is reopened; its data is kept.
+  // Server boards come first; a local team board whose collab
+  // is already on the server is hidden (the shared board
+  // replaces it).
+  const boardChildren: NavChild[] = [
+    ...serverBoards
+      .filter((b) => !isCollabCompleted(ownedCollabs, b.collabId, b.name))
+      .map((b) => ({
+        id: teamBoardId(b.collabId),
+        label: b.name,
+        count: b.openCount > 0 ? b.openCount : undefined,
+        href: `/tasks/${teamBoardId(b.collabId)}`,
+      })),
+    ...boards
+      .filter(
+        (b) =>
+          (b.kind !== "team" ||
+            !isCollabCompleted(ownedCollabs, b.collabId, b.collabName)) &&
+          !(
+            b.kind === "team" &&
+            b.collabId &&
+            serverBoards.some((s) => s.collabId === b.collabId)
+          ),
+      )
+      .map((b) => ({
+        id: b.id,
+        label: b.name,
+        count: openTaskCount(b),
+        href: `/tasks/${b.id}`,
+      })),
+  ];
+
+  // The Circle submenu mirrors the Tasks one: one row per circle
+  // the user can open, with its unread count as the trailing chip.
+  const circleChildren: NavChild[] = (circles ?? []).map((c) => ({
+    id: c.id,
+    label: c.title,
+    count: c.unreadCount > 0 ? c.unreadCount : undefined,
+    href: `/circle/${c.id}`,
+    photoUrl: c.photoProfileUrl,
+  }));
+
+  // Total unread across every circle, for the Circle nav badge.
+  const circleUnreadTotal = (circles ?? []).reduce(
+    (n, c) => n + (c.unreadCount ?? 0),
+    0,
+  );
+
   const badgeFor = (id: string) =>
-    id === "inbox" && inboxUnread > 0 ? inboxUnread : undefined;
+    id === "inbox" && inboxUnread > 0
+      ? inboxUnread
+      : id === "circle" && circleUnreadTotal > 0
+        ? circleUnreadTotal
+        : undefined;
 
   const activeVisible = useMemo(() => {
     for (const section of NAV_SECTIONS) {
@@ -571,6 +878,18 @@ export function Sidebar() {
       return;
     }
     const y = row.getBoundingClientRect().top - area.getBoundingClientRect().top;
+    // While the nav is scrolled so the active row sits outside
+    // its viewport, the pill hides instead of floating over
+    // the brand or the profile footer.
+    const stack = stackRef.current;
+    if (stack) {
+      const sr = stack.getBoundingClientRect();
+      const rr = row.getBoundingClientRect();
+      if (rr.bottom <= sr.top || rr.top >= sr.bottom) {
+        pill.style.opacity = "0";
+        return;
+      }
+    }
     // Snap only the very first placement: this instance is
     // persistent (RootShell, root layout), so after mount the
     // pill glides everywhere — in-page and across page changes
@@ -591,6 +910,27 @@ export function Sidebar() {
   const positionPillRef = useRef(positionPill);
   positionPillRef.current = positionPill;
 
+  // While the nav scrolls, the pill has to track its row
+  // instantly. Its 220ms glide transition exists for page
+  // changes; left on during a scroll, every re-measure starts
+  // a fresh glide toward the latest position, so the pill
+  // trails behind the row the whole way down. Suspend the
+  // transition while scrolling, restore it once settled.
+  const handleNavScroll = () => {
+    const pill = pillRef.current;
+    if (pill) pill.style.transition = "none";
+    positionPillRef.current();
+    window.clearTimeout(scrollSettleRef.current);
+    scrollSettleRef.current = window.setTimeout(() => {
+      if (pillRef.current) pillRef.current.style.transition = "";
+    }, 120);
+  };
+
+  useEffect(
+    () => () => window.clearTimeout(scrollSettleRef.current),
+    [],
+  );
+
   useLayoutEffect(() => {
     positionPillRef.current();
   }, [activeId, activeVisible, mini]);
@@ -607,6 +947,11 @@ export function Sidebar() {
     observer.observe(stack);
     return () => observer.disconnect();
   }, []);
+
+  const toggleMenu = (id: string) => {
+    setOpenMenus((prev) => ({ ...prev, [id]: !prev[id] }));
+    window.setTimeout(() => positionPillRef.current(), 320);
+  };
 
   const toggleSection = (id: string) => {
     const isCollapsed = !!collapsed[id];
@@ -639,7 +984,7 @@ export function Sidebar() {
       <div
         ref={areaRef}
         className={clsx(
-          "relative flex h-full flex-col justify-between py-6",
+          "relative flex h-full flex-col py-6",
           mini ? "px-3" : "px-6",
           animateWidth &&
             "transition-[padding] duration-[380ms] ease-(--uf-ease-out) motion-reduce:transition-none",
@@ -655,7 +1000,7 @@ export function Sidebar() {
           style={{ opacity: 0 }}
         />
 
-        <div ref={stackRef} className="flex flex-col gap-6">
+
           {/* Brand + rail toggle: the panel-glyph button sits at
               the row's right edge, icon only (user placement). On
               the rail the brand cluster clips away and the button
@@ -715,7 +1060,11 @@ export function Sidebar() {
           </div>
 
           {/* Nav sections */}
-          <nav className="flex flex-col gap-6">
+          <nav
+            ref={stackRef}
+            onScroll={handleNavScroll}
+            className="no-scrollbar mt-6 flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto"
+          >
             {NAV_SECTIONS.map((section) => (
               <NavSectionBlock
                 key={section.id}
@@ -724,6 +1073,27 @@ export function Sidebar() {
                   title: SECTION_TITLE_KEYS[section.id]
                     ? t(SECTION_TITLE_KEYS[section.id])
                     : section.title,
+                  items: section.items
+                    .map((item) =>
+                      item.id === "tasks"
+                        ? { ...item, children: boardChildren }
+                        : item.id === "circle"
+                          ? { ...item, children: circleChildren }
+                          : item,
+                    )
+                    .concat(
+                      section.id === "tools" && isAdminTier
+                        ? [
+                            {
+                              id: "admin",
+                              label: "Admin",
+                              icon: "shield",
+                              href: "/admin",
+                              hard: true,
+                            },
+                          ]
+                        : [],
+                    ),
                 }}
                 activeId={activeId}
                 collapsed={!!collapsed[section.id]}
@@ -733,36 +1103,17 @@ export function Sidebar() {
                 onToggle={toggleSection}
                 onSelect={setActiveId}
                 registerRowRef={registerRow}
+                openMenus={openMenus}
+                activeChild={activeChild}
+                onToggleMenu={toggleMenu}
+                onNewBoard={() => setCreateBoardOpen(true)}
+                onNewCircle={() => setCreateCircleOpen(true)}
               />
             ))}
           </nav>
-        </div>
 
-        {/* Footer */}
-        <div className="flex flex-col gap-3">
-          <div className="flex flex-col gap-3">
-            {isAdminTier && (
-              <NavRow
-                item={{ id: "admin", label: "Admin", icon: "shield", href: "/admin", hard: true }}
-                active={false}
-                mini={mini}
-                animate={animateWidth}
-                onSelect={setActiveId}
-                registerRef={registerRow}
-              />
-            )}
-            {FOOTER_LINKS.map((link) => (
-              <NavRow
-                key={link.id}
-                item={link}
-                active={link.id === activeId}
-                mini={mini}
-                animate={animateWidth}
-                onSelect={setActiveId}
-                registerRef={registerRow}
-              />
-            ))}
-          </div>
+        {/* Profile footer: pinned under the scrolling nav. */}
+        <div className="mt-6 flex shrink-0 flex-col gap-3">
           <div className="h-px w-full bg-line" />
 
           {/* Profile card — links to the current user's own profile,
@@ -824,6 +1175,7 @@ export function Sidebar() {
           </div>
         </div>
       </div>
+      <CreateBoardDialog />
     </aside>
   );
 }

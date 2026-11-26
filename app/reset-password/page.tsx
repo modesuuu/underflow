@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { ResetPasswordForm } from "@/features/auth/components/ResetPasswordForm";
 
 export const metadata: Metadata = {
-  title: "Set a new password — Underflow",
+  title: "Set a new password",
   description: "Set a new password for your Underflow account.",
 };
 

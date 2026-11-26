@@ -23,7 +23,7 @@ export async function generateMetadata({
   const { userId } = await params;
   const person = await getPerson(userId);
   if (!person) return { title: "Posts" };
-  return { title: `${person.name}'s posts — Underflow` };
+  return { title: `${person.name}'s posts` };
 }
 
 function FeedColumnSkeleton() {

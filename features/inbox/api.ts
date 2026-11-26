@@ -31,7 +31,7 @@ export interface BackendInboxApplication {
 
 export interface BackendConversation {
   id: string;
-  other: { id: string; username: string; photo_profile_url: string };
+  other: { id: string; username: string; full_name: string; photo_profile_url: string };
   last_message: {
     body: string;
     sender_id: string;

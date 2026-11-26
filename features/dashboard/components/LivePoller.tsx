@@ -32,6 +32,9 @@ import {
   applyRealtimeZoneMessageDeleted,
   applyRealtimeZoneMessageUpdated,
 } from "@/features/circle/store";
+import { refreshCircles, updateCircle } from "@/features/circle/circles";
+import { applyRealtimePlannerTask } from "@/features/planner/store";
+import type { PlannerTask } from "@/features/planner/types";
 import {
   applyThemeMode,
   type ThemeMode,
@@ -108,6 +111,34 @@ export function LivePoller() {
         setSession({ ...sess, user: { ...sess.user, photo: url } });
       } catch {
         // Best-effort: the avatar keeps its initials fallback.
+      }
+    })();
+  }, [isAuthed]);
+
+  // Display-name backfill: sessions saved before display names
+  // were wired carry the username as their name. While the session
+  // name still equals the username, pick the editable profile
+  // full_name up from /api/profiles/me once per mount — the same
+  // source the photo and role backfills use. New logins get the
+  // name straight from the login response.
+  const nameRefreshDone = useRef(false);
+  useEffect(() => {
+    if (!isAuthed || nameRefreshDone.current) return;
+    const current = getSessionUser();
+    if (!current || current.name !== current.username) {
+      nameRefreshDone.current = true;
+      return;
+    }
+    nameRefreshDone.current = true;
+    (async () => {
+      try {
+        const res = await apiFetch<ApiEnvelope<{ full_name?: string | null }>>("/api/profiles/me");
+        const fullName = res.data?.full_name?.trim();
+        const sess = getSession();
+        if (!fullName || !sess) return;
+        setSession({ ...sess, user: { ...sess.user, name: fullName } });
+      } catch {
+        // Best-effort: the username keeps showing as the name.
       }
     })();
   }, [isAuthed]);
@@ -271,6 +302,11 @@ export function LivePoller() {
       void fetchNotifications();
       void fetchPostStats();
       void refreshConversations();
+      // Circle nav badge: re-fetch the list so its unread totals
+      // stay correct even if a realtime bump was missed (socket
+      // was down, tab was hidden, or the push arrived before the
+      // list loaded). Only runs while polling, i.e. while WS is down.
+      void refreshCircles();
     };
 
     const wsLive = () =>
@@ -407,6 +443,27 @@ export function LivePoller() {
               zoneId,
               message: message as unknown as ZoneMessage,
             });
+            // Live Circle sidebar badge: bump the list's unreadCount
+            // so the nav badge updates on every page, not only while
+            // the Circle page is open. CircleWorkspace owns the bump
+            // while on /circle (it also skips the zone being viewed),
+            // so this branch stays out of its way there. Own
+            // messages never count as unread.
+            const authorId = (message as { authorId?: unknown }).authorId;
+            const myId = getSessionUser()?.id;
+            const onCirclePage = (pathnameRef.current ?? "").startsWith(
+              "/circle",
+            );
+            if (
+              typeof authorId === "string" &&
+              authorId !== myId &&
+              !onCirclePage
+            ) {
+              updateCircle(circleId, (c) => ({
+                ...c,
+                unreadCount: c.unreadCount + 1,
+              }));
+            }
           }
           return;
         }
@@ -437,6 +494,17 @@ export function LivePoller() {
             typeof messageId === "string"
           ) {
             applyRealtimeZoneMessageDeleted({ circleId, zoneId, messageId });
+          }
+          return;
+        }
+        if (msg.type === "planner-task") {
+          const collabId = msg.payload?.collabId;
+          const task = msg.payload?.task;
+          if (typeof collabId === "string" && task) {
+            applyRealtimePlannerTask({
+              collabId,
+              task: task as unknown as PlannerTask,
+            });
           }
           return;
         }

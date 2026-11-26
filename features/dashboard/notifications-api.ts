@@ -18,6 +18,7 @@ export interface BackendNotification {
   actor: {
     id: string | null;
     username: string | null;
+    full_name: string | null;
     photo: string | null;
   };
   postId: string | null;
@@ -36,7 +37,7 @@ export function mapWireNotification(b: BackendNotification): NotificationItem {
   const actor: PostAuthor | undefined = b.actor?.id
     ? {
         id: b.actor.id,
-        name: b.actor.username ?? tStatic("notif.someone"),
+        name: b.actor.full_name?.trim() || b.actor.username || tStatic("notif.someone"),
         avatarUrl: b.actor.photo ?? undefined,
       }
     : undefined;

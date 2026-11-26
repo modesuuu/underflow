@@ -5,8 +5,6 @@ import { isImeConfirmingEnter } from "@/lib/keyboard";
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent, type KeyboardEvent } from "react";
 import clsx from "clsx";
 import { Icon } from "@/components/ui/Icon";
-import { TextInput } from "@astryxdesign/core/TextInput";
-import { TextArea } from "@astryxdesign/core/TextArea";
 import { Button } from "@astryxdesign/core/Button";
 import { IconButton } from "@astryxdesign/core/IconButton";
 import { DateField } from "@/components/ui/DateField";
@@ -86,7 +84,7 @@ export function MakeCollabModal({
   const [deletingSkillId, setDeletingSkillId] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const sessionUser = useSessionUser();
-  const ownerName = sessionUser?.username ?? "You";
+  const ownerName = sessionUser?.name ?? "You";
   const [roleCount, setRoleCount] = useState(2);
   const [submitting, setSubmitting] = useState(false);
   const [photos, setPhotos] = useState<PhotoDraft[]>([]);
@@ -539,43 +537,77 @@ export function MakeCollabModal({
 
         <form onSubmit={handleSubmit} noValidate className="flex min-h-0 flex-1 flex-col">
           <div className="no-scrollbar flex flex-1 flex-col gap-5 overflow-y-auto px-6 pb-6">
-          {/* Title (Astryx TextInput; its status carries the error) */}
-          <TextInput
-            id="make-collab-title-input"
-            ref={firstFieldRef}
-            label={t("modal.titleLabel")}
-            value={title}
-            onChange={(value) => {
-              setTitle(value);
-              if (fieldErrors.title)
-                setFieldErrors((f) => ({ ...f, title: undefined }));
-            }}
-            placeholder={t("modal.titlePlaceholder")}
-            status={
-              fieldErrors.title
-                ? { type: "error", message: fieldErrors.title }
-                : undefined
-            }
-          />
+          {/* Title — plain field in the same shell as the due-date
+              field below (white surface box, accent focus ring), so
+              every input in this modal reads as one family. */}
+          <div className="flex flex-col gap-1">
+            <label
+              htmlFor="make-collab-title-input"
+              className="text-base font-medium"
+            >
+              {t("modal.titleLabel")}
+            </label>
+            <div
+              className={clsx(
+                "flex items-center rounded-lg bg-surface px-4 py-3 focus-within:ring-2 focus-within:ring-accent",
+                fieldErrors.title && "ring-2 ring-badge"
+              )}
+            >
+              <input
+                id="make-collab-title-input"
+                ref={firstFieldRef}
+                type="text"
+                value={title}
+                onChange={(e) => {
+                  setTitle(e.target.value);
+                  if (fieldErrors.title)
+                    setFieldErrors((f) => ({ ...f, title: undefined }));
+                }}
+                placeholder={t("modal.titlePlaceholder")}
+                className="min-w-0 flex-1 bg-transparent text-base font-medium text-ink outline-none placeholder:text-muted"
+              />
+            </div>
+            {fieldErrors.title && (
+              <p role="alert" className="text-xs font-medium text-badge">
+                {fieldErrors.title}
+              </p>
+            )}
+          </div>
 
-          {/* Descriptions (Astryx TextArea) */}
-          <TextArea
-            id="make-collab-desc-input"
-            label={t("modal.descriptionsLabel")}
-            value={description}
-            onChange={(value) => {
-              setDescription(value);
-              if (fieldErrors.description)
-                setFieldErrors((f) => ({ ...f, description: undefined }));
-            }}
-            placeholder={t("modal.descriptionsPlaceholder")}
-            rows={3}
-            status={
-              fieldErrors.description
-                ? { type: "error", message: fieldErrors.description }
-                : undefined
-            }
-          />
+          {/* Description — same field shell as the title and the
+              due-date field. */}
+          <div className="flex flex-col gap-1">
+            <label
+              htmlFor="make-collab-desc-input"
+              className="text-base font-medium"
+            >
+              {t("modal.descriptionsLabel")}
+            </label>
+            <div
+              className={clsx(
+                "rounded-lg bg-surface px-4 py-3 focus-within:ring-2 focus-within:ring-accent",
+                fieldErrors.description && "ring-2 ring-badge"
+              )}
+            >
+              <textarea
+                id="make-collab-desc-input"
+                value={description}
+                onChange={(e) => {
+                  setDescription(e.target.value);
+                  if (fieldErrors.description)
+                    setFieldErrors((f) => ({ ...f, description: undefined }));
+                }}
+                placeholder={t("modal.descriptionsPlaceholder")}
+                rows={3}
+                className="w-full resize-none bg-transparent text-base font-medium text-ink outline-none placeholder:text-muted"
+              />
+            </div>
+            {fieldErrors.description && (
+              <p role="alert" className="text-xs font-medium text-badge">
+                {fieldErrors.description}
+              </p>
+            )}
+          </div>
 
           {/* Due date (optional). There is deliberately no Type field:
               the project type is never shown anywhere in the app, so
@@ -611,13 +643,16 @@ export function MakeCollabModal({
                   }
                 }}
               >
-                <TextInput
-                  label={t("modal.addSkill")}
-                  isLabelHidden
-                  value={skillDraft}
-                  onChange={(value) => setSkillDraft(value)}
-                  placeholder={t("modal.addSkill")}
-                />
+                <div className="flex items-center rounded-lg bg-surface px-4 py-3 focus-within:ring-2 focus-within:ring-accent">
+                  <input
+                    type="text"
+                    value={skillDraft}
+                    onChange={(e) => setSkillDraft(e.target.value)}
+                    placeholder={t("modal.addSkill")}
+                    aria-label={t("modal.addSkill")}
+                    className="min-w-0 flex-1 bg-transparent text-base font-medium text-ink outline-none placeholder:text-muted"
+                  />
+                </div>
               </div>
               <IconButton
                 label={t("modal.addSkillBtn")}
@@ -867,21 +902,37 @@ export function MakeCollabModal({
                 })}
               </div>
               {groupMode === "external" && (
-                <TextInput
-                  id="make-collab-group-link"
-                  label={t("modal.groupLinkLabel")}
-                  value={groupLink}
-                  onChange={(value) => {
-                    setGroupLink(value);
-                    if (groupLinkError) setGroupLinkError(null);
-                  }}
-                  placeholder={t("modal.groupLinkPlaceholder")}
-                  status={
-                    groupLinkError
-                      ? { type: "error", message: groupLinkError }
-                      : undefined
-                  }
-                />
+                <div className="flex flex-col gap-1">
+                  <label
+                    htmlFor="make-collab-group-link"
+                    className="text-base font-medium"
+                  >
+                    {t("modal.groupLinkLabel")}
+                  </label>
+                  <div
+                    className={clsx(
+                      "flex items-center rounded-lg bg-surface px-4 py-3 focus-within:ring-2 focus-within:ring-accent",
+                      groupLinkError && "ring-2 ring-badge"
+                    )}
+                  >
+                    <input
+                      id="make-collab-group-link"
+                      type="url"
+                      value={groupLink}
+                      onChange={(e) => {
+                        setGroupLink(e.target.value);
+                        if (groupLinkError) setGroupLinkError(null);
+                      }}
+                      placeholder={t("modal.groupLinkPlaceholder")}
+                      className="min-w-0 flex-1 bg-transparent text-base font-medium text-ink outline-none placeholder:text-muted"
+                    />
+                  </div>
+                  {groupLinkError && (
+                    <p role="alert" className="text-xs font-medium text-badge">
+                      {groupLinkError}
+                    </p>
+                  )}
+                </div>
               )}
             </div>
           )}

@@ -22,6 +22,22 @@ interface DateFieldProps {
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
+  /**
+   * Overrides the day treated as "today" (past-day disabling,
+   * the Today shortcut, the calendar's initial month). The
+   * planner board passes its sample-world today until it runs
+   * on real data; other callers get the real today by default.
+   */
+  todayOverride?: Date;
+  /**
+   * Where the calendar opens. "top" suits fields near the
+   * bottom of a dialog, where a downward calendar would spill
+   * past the card and off the screen; "right" aligns the
+   * calendar's right edge with the field's, for fields in the
+   * right half of a narrow card. Defaults: bottom + left.
+   */
+  popoverSide?: "bottom" | "top";
+  popoverAlign?: "left" | "right";
 }
 
 const MONTHS_SHORT = [
@@ -52,11 +68,14 @@ export function DateField({
   value,
   onChange,
   placeholder = "Select date",
+  todayOverride,
+  popoverSide = "bottom",
+  popoverAlign = "left",
 }: DateFieldProps) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const selected = parseValue(value);
-  const today = todayStart();
+  const today = todayOverride ?? todayStart();
 
   // Close on an outside click. Escape closes ONLY the calendar: the
   // capture-phase listener + stopPropagation keep the surrounding
@@ -98,7 +117,9 @@ export function DateField({
           aria-expanded={open}
           className="flex min-w-0 flex-1 cursor-pointer items-center justify-between gap-2 bg-transparent text-left text-base font-medium outline-none"
         >
-          <span className={selected ? "text-ink" : "text-muted"}>
+          <span
+            className={`whitespace-nowrap ${selected ? "text-ink" : "text-muted"}`}
+          >
             {selected
               ? `${selected.getDate()} ${MONTHS_SHORT[selected.getMonth()]} ${selected.getFullYear()}`
               : placeholder}
@@ -107,7 +128,11 @@ export function DateField({
         </button>
       </div>
       {open && (
-        <div className="uf-datepicker-pop absolute left-0 top-full z-50 mt-2 rounded-lg border border-line bg-surface p-3 shadow-lg">
+        <div
+          className={`uf-datepicker-pop absolute z-50 rounded-lg border border-line bg-surface p-3 shadow-lg ${
+            popoverAlign === "right" ? "right-0" : "left-0"
+          } ${popoverSide === "top" ? "bottom-full mb-2" : "top-full mt-2"}`}
+        >
           <DayPicker
             className="uf-datepicker"
             mode="single"

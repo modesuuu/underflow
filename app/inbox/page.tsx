@@ -1,6 +1,12 @@
 import { AppShell } from "@/components/layout/AppShell";
 import { InboxShell } from "@/features/inbox/components/InboxShell";
 import { tStatic } from "@/lib/i18n/format";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Inbox",
+};
+
 
 /**
  * Inbox (Figma 386:5, breadcrumb "Tools / Inbox"): the Messages rail

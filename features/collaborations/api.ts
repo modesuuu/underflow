@@ -22,10 +22,10 @@ interface BackendCollab {
     status: "pending" | "accepted" | "declined" | "withdrawn";
   } | null;
   skills_needed: { id: string; skill_name: string; scope: string }[];
-  owner: { id: string; username: string; photo_profile_url: string };
+  owner: { id: string; username: string; full_name?: string; photo_profile_url: string };
   /** Accepted members (owner included), join order. Sent by the
    *  detail + my-collaborations payloads; absent on the public list. */
-  members?: { id: string; username: string; photo_profile_url?: string; work_status?: string }[];
+  members?: { id: string; username: string; full_name?: string; photo_profile_url?: string; work_status?: string }[];
   /** The project's Circle, when the owner created one (Phase 1). */
   circle?: { id: string } | null;
   /** External group link; the backend nulls it for non-members. */
@@ -36,6 +36,16 @@ interface BackendCollab {
 function relativeAgo(iso: string | undefined): string {
   if (!iso) return "";
   return formatRelativeAgo(iso);
+}
+
+/** Display-name rule (same as the profile page): the editable
+ *  profile full_name wins; the immutable @username is the fallback. */
+function displayName(
+  fullName: string | null | undefined,
+  username: string
+): string {
+  const trimmed = fullName?.trim();
+  return trimmed ? trimmed : username;
 }
 
 /** user_collaboration.status values the UI understands; anything
@@ -51,7 +61,7 @@ function workStatusOf(
 export function mapBackendCollab(b: BackendCollab): CollabProject {
   const owner: CollabMember = {
     id: b.owner.id,
-    name: b.owner.username,
+    name: displayName(b.owner.full_name, b.owner.username),
     role: "Owner",
     avatarUrl: b.owner.photo_profile_url || undefined,
     isOwner: true,
@@ -67,7 +77,7 @@ export function mapBackendCollab(b: BackendCollab): CollabProject {
     .filter((m) => m.id !== b.owner.id)
     .map((m) => ({
       id: m.id,
-      name: m.username,
+      name: displayName(m.full_name, m.username),
       role: "Member",
       avatarUrl: m.photo_profile_url || undefined,
       workStatus: workStatusOf(m.work_status),
@@ -470,6 +480,7 @@ export interface CollabApplication {
   id: string;
   user_id: string;
   username: string;
+  full_name?: string;
   photo_profile_url: string;
   message: string | null;
   status: "pending" | "accepted" | "declined";

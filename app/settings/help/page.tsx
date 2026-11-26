@@ -1,6 +1,12 @@
 import { AppShell } from "@/components/layout/AppShell";
 import { SettingsDetail } from "@/features/settings/components/SettingsDetail";
 import { HelpSection } from "@/features/settings/components/HelpSection";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Help Center",
+};
+
 
 export default function SettingsHelpPage() {
   return (

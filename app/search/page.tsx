@@ -5,7 +5,7 @@ import { SearchExplorer } from "@/features/search/components/SearchExplorer";
 import { tStatic } from "@/lib/i18n/format";
 
 export const metadata: Metadata = {
-  title: "Search — Underflow",
+  title: "Search",
   description: "Search people, projects, and skills on Underflow.",
 };
 

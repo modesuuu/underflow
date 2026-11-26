@@ -1,6 +1,12 @@
 import { AppShell } from "@/components/layout/AppShell";
 import { SettingsDetail } from "@/features/settings/components/SettingsDetail";
 import { ProfileSection } from "@/features/settings/components/ProfileSection";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Profile Settings",
+};
+
 
 export default function SettingsProfilePage() {
   return (

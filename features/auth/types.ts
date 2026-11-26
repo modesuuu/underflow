@@ -11,7 +11,7 @@ export interface AuthUser {
   id: string;
   username: string;
   email: string;
-  /** Display name. Today this is the username; the profile edit flow owns the real name later. */
+  /** Display name: the editable profile full_name, falling back to the immutable username. */
   name: string;
   /** Profile photo URL (Cloudinary default or Google photo). Absent for sessions saved before this field existed. */
   photo?: string;

@@ -2,6 +2,12 @@ import { AppShell } from "@/components/layout/AppShell";
 import { PostButton } from "@/components/layout/PostButton";
 import { NotificationsPanel } from "@/features/dashboard/components/NotificationsPanel";
 import { tStatic } from "@/lib/i18n/format";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Notifications",
+};
+
 
 export default function NotificationsPage() {
   return (

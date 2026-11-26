@@ -228,6 +228,23 @@
     animation: uf-page-in 420ms var(--uf-ease-out) backwards;
   }
 
+  /* Sticky section bar that breaks out of the page's horizontal
+     padding to span the full content width (the /notifications
+     top bar: title + Mark all read + tabs). Plain CSS, not
+     Tailwind negative-margin utilities, so it applies even
+     when the dev server hasn't regenerated utilities yet.
+     The breakout mirrors the page wrapper's px-4 / sm:px-6. */
+  .notif-sticky-bar {
+    margin-inline: -1rem;
+    padding-inline: 1rem;
+  }
+  @media (min-width: 640px) {
+    .notif-sticky-bar {
+      margin-inline: -1.5rem;
+      padding-inline: 1.5rem;
+    }
+  }
+
   /* Modal/lightbox open/close. Exits use the shared ease-out token and run
      FASTER than the 280ms entrance (exits read as snappier; audit P1-E
      #25/#29 — banned ease-in on exits). */

@@ -12,11 +12,21 @@ import { useSessionUser } from "@/features/auth/store";
 import { backendErrorMessage } from "@/features/collaborations/api";
 import { getMyCollabProjects } from "@/features/my-collaborations/api";
 import type { MyCollabProject } from "@/features/my-collaborations/types";
-import { createCircle, getCircleDetail, getCircles, markZoneRead } from "../api";
+import { createCircle, getCircleDetail, markZoneRead } from "../api";
+import {
+  getCirclesSnapshot,
+  patchCircle,
+  refreshCircles,
+  removeCircle,
+  setCircles,
+  setCreateCircleOpen,
+  updateCircle,
+  useCircles,
+  useCreateCircleOpen,
+} from "../circles";
 import { setPanelOpen, subscribeZoneMessages, usePanelState } from "../store";
-import type { CircleDetail, CircleSummary, CircleZone } from "../types";
+import type { CircleDetail, CircleZone } from "../types";
 import { CirclePanel } from "./CirclePanel";
-import { CircleRail } from "./CircleRail";
 import { CircleSettingsModal } from "./CircleSettingsModal";
 import { CreateCircleModal } from "./CreateCircleModal";
 import { CreateZoneModal } from "./CreateZoneModal";
@@ -29,7 +39,8 @@ import { ZoneSidebar, ZoneSwitcher } from "./ZoneSidebar";
 
 /**
  * The Circle workspace (one-page redesign): a single page for every
- * circle the user can access. The far-left rail switches circles, the
+ * circle the user can access. Circles are switched from the sidebar
+ * submenu now (the far-left rail is gone since 2026-11-26), the
  * zone column switches zones, and the conversation sits in the middle
  * with the collapsible team panel on the right. Switching is client
  * state; the URL is kept in sync with history.replaceState so a link
@@ -48,7 +59,8 @@ export function CircleWorkspace({
 }) {
   const { t } = useLanguage();
   const sessionUser = useSessionUser();
-  const [circles, setCircles] = useState<CircleSummary[] | null>(null);
+  const circles = useCircles();
+  const createCircleOpen = useCreateCircleOpen();
   const [selectedCircleId, setSelectedCircleId] = useState<string | null>(
     initialCircleId ?? null
   );
@@ -124,35 +136,27 @@ export function CircleWorkspace({
             : prev
         );
       }
-      setCircles((prev) =>
-        prev
-          ? prev.map((c) =>
-              c.id === event.circleId
-                ? {
-                    ...c,
-                    unreadCount: c.unreadCount + 1,
-                    mentionCount: c.mentionCount + (mentionsMe ? 1 : 0),
-                  }
-                : c
-            )
-          : prev
-      );
+      updateCircle(event.circleId, (c) => ({
+        ...c,
+        unreadCount: c.unreadCount + 1,
+        mentionCount: c.mentionCount + (mentionsMe ? 1 : 0),
+      }));
     });
   }, [sessionUser]);
 
   // The circles the user can access; preselect the deep-linked one or
-  // the first in the list.
+  // the first in the list. The list lives in the shared circles store
+  // (the sidebar submenu reads the same list), so a visit to the feed
+  // first already has it loaded here.
   useEffect(() => {
     let cancelled = false;
-    getCircles()
-      .then((rows) => {
-        if (cancelled) return;
-        setCircles(rows);
-        setSelectedCircleId((prev) => prev ?? rows[0]?.id ?? null);
-      })
-      .catch(() => {
-        if (!cancelled) setCircles([]);
-      });
+    const snapshot = getCirclesSnapshot();
+    const load =
+      snapshot !== null ? Promise.resolve(snapshot) : refreshCircles();
+    load.then((rows) => {
+      if (cancelled) return;
+      setSelectedCircleId((prev) => prev ?? rows[0]?.id ?? null);
+    });
     return () => {
       cancelled = true;
     };
@@ -245,25 +249,22 @@ export function CircleWorkspace({
     setCreatingId(project.id);
     try {
       const created = await createCircle(project.id);
-      setCircles((prev) =>
-        prev
-          ? [
-              ...prev.filter((c) => c.id !== created.id),
-              {
-                id: created.id,
-                projectId: created.projectId,
-                title: created.title,
-                photoProfileUrl: created.photoUrl,
-                unreadCount: 0,
-                mentionCount: 0,
-                status: created.status,
-                isOwner: true,
-                memberNames: created.members.map((m) => m.name),
-                memberCount: created.members.length,
-              },
-            ]
-          : prev
-      );
+      const current = getCirclesSnapshot() ?? [];
+      setCircles([
+        ...current.filter((c) => c.id !== created.id),
+        {
+          id: created.id,
+          projectId: created.projectId,
+          title: created.title,
+          photoProfileUrl: created.photoUrl,
+          unreadCount: 0,
+          mentionCount: 0,
+          status: created.status,
+          isOwner: true,
+          memberNames: created.members.map((m) => m.name),
+          memberCount: created.members.length,
+        },
+      ]);
       setWithoutCircle((prev) => prev.filter((p) => p.id !== project.id));
       setSelectedCircleId(created.id);
       return true;
@@ -316,19 +317,10 @@ export function CircleWorkspace({
 
   const handleCircleSaved = (fresh: CircleDetail) => {
     setDetail(fresh);
-    setCircles((prev) =>
-      prev
-        ? prev.map((c) =>
-            c.id === fresh.id
-              ? {
-                  ...c,
-                  title: fresh.title,
-                  photoProfileUrl: fresh.photoUrl,
-                }
-              : c
-          )
-        : prev
-    );
+    patchCircle(fresh.id, {
+      title: fresh.title,
+      photoProfileUrl: fresh.photoUrl,
+    });
     setShowCircleSettings(false);
     toast.success(t("circle.changesSaved"));
   };
@@ -336,10 +328,12 @@ export function CircleWorkspace({
   const handleCircleDeleted = () => {
     if (!detail) return;
     const deletedId = detail.id;
-    const remaining = (circles ?? []).filter((c) => c.id !== deletedId);
+    const remaining = (getCirclesSnapshot() ?? []).filter(
+      (c) => c.id !== deletedId
+    );
     setShowCircleSettings(false);
     setDetail(null);
-    setCircles(remaining);
+    removeCircle(deletedId);
     setSelectedCircleId(remaining[0]?.id ?? null);
     toast.success(t("circle.circleDeleted"));
     // The project can pick a group space again: refresh the
@@ -406,19 +400,11 @@ export function CircleWorkspace({
           }
         : prev
     );
-    setCircles((prev) =>
-      prev
-        ? prev.map((c) =>
-            c.id === circleId
-              ? {
-                  ...c,
-                  unreadCount: Math.max(0, c.unreadCount - count),
-                  mentionCount: Math.max(0, c.mentionCount - mentions),
-                }
-              : c
-          )
-        : prev
-    );
+    updateCircle(circleId, (c) => ({
+      ...c,
+      unreadCount: Math.max(0, c.unreadCount - count),
+      mentionCount: Math.max(0, c.mentionCount - mentions),
+    }));
     void markZoneRead(circleId, zoneId).catch(() => {
       // Best-effort: counts refresh on the next fetch.
     });
@@ -530,13 +516,6 @@ export function CircleWorkspace({
       variant="detail"
     >
       <div className="relative flex min-h-0 flex-1">
-        <CircleRail
-          circles={circles}
-          selectedId={selectedCircleId}
-          onSelect={setSelectedCircleId}
-          withoutCircle={withoutCircle}
-          onOpenCreateModal={() => setShowCreateCircle(true)}
-        />
         {detail && zone ? (
           <>
             <ZoneSidebar
@@ -600,14 +579,20 @@ export function CircleWorkspace({
               : t("circle.loadingCircles")}
           </div>
         )}
-        {showCreateCircle && withoutCircle.length > 0 ? (
+        {showCreateCircle || createCircleOpen ? (
           <CreateCircleModal
             projects={withoutCircle}
             creatingId={creatingId}
-            onClose={() => setShowCreateCircle(false)}
+            onClose={() => {
+              setShowCreateCircle(false);
+              setCreateCircleOpen(false);
+            }}
             onCreate={(project) => {
               void handleCreate(project).then((ok) => {
-                if (ok) setShowCreateCircle(false);
+                if (ok) {
+                  setShowCreateCircle(false);
+                  setCreateCircleOpen(false);
+                }
               });
             }}
           />

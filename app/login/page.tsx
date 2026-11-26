@@ -4,7 +4,7 @@ import { RedirectIfAuthed } from "@/features/auth/components/AuthGate";
 import { LoginForm } from "@/features/auth/components/LoginForm";
 
 export const metadata: Metadata = {
-  title: "Log in — Underflow",
+  title: "Log in",
   description: "Log in to Underflow to find collaborators and build together.",
 };
 

@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { VerifyEmailForm } from "@/features/auth/components/VerifyEmailForm";
 
 export const metadata: Metadata = {
-  title: "Verify your email — Underflow",
+  title: "Verify your email",
   description: "Confirm your email address for your Underflow account.",
 };
 
