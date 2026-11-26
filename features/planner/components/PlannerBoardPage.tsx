@@ -231,9 +231,18 @@ type DragState = {
 // inside a stack; the gravity pass afterwards only removes
 // floats, it never undoes the chosen order (in a stack every lane
 // above is genuinely occupied, so nothing can rise).
+// The sort is (lane, position, day): `position` is the persisted
+// vertical order from the server, and it MUST come before `day`,
+// because the server ORDER BY is (due_date, position) — a pill
+// with an earlier due_date would otherwise always win lane 0 on
+// refresh even when the user deliberately put it below another
+// pill, so the pill would jump back up by itself.
 function gravityPass(tasks: BoardTask[]): BoardTask[] {
   const ordered = [...tasks].sort(
-    (a, b) => (a.lane ?? 0) - (b.lane ?? 0) || a.day - b.day,
+    (a, b) =>
+      (a.lane ?? 0) - (b.lane ?? 0) ||
+      (a.position ?? 0) - (b.position ?? 0) ||
+      a.day - b.day,
   );
   const placed: BoardTask[] = [];
   for (const tk of ordered) {
@@ -256,12 +265,17 @@ function gravityPass(tasks: BoardTask[]): BoardTask[] {
 
 // Push same-lane overlaps downward until the row is clean again
 // (an insert shift can land a pill on a lane another pill holds).
+// Same sort as gravityPass: persisted `position` before `day`, so
+// the push order follows the vertical order the user set.
 function resolveOverlaps(tasks: BoardTask[]): BoardTask[] {
   const next = tasks.map((tk) => ({ ...tk }));
   for (let guard = 0; guard < 64; guard++) {
     let pushed = false;
     const ordered = [...next].sort(
-      (a, b) => (a.lane ?? 0) - (b.lane ?? 0) || a.day - b.day,
+      (a, b) =>
+        (a.lane ?? 0) - (b.lane ?? 0) ||
+        (a.position ?? 0) - (b.position ?? 0) ||
+        a.day - b.day,
     );
     for (let i = 0; i < ordered.length && !pushed; i++) {
       for (let j = i + 1; j < ordered.length; j++) {
