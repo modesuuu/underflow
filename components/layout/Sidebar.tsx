@@ -98,6 +98,16 @@ function SidebarPanelIcon({ className }: { className?: string }) {
   );
 }
 
+/** First initials of a circle title, e.g. "BFF Team" -> "BT"
+ * (the same tile the old Circle rail showed). */
+function initialsOf(name: string): string {
+  return name
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? "")
+    .join("");
+}
+
 type RegisterRef<T> = (id: string, el: T | null) => void;
 
 /** When the last rail tooltip closed — a glide reuses a short delay. */
@@ -456,9 +466,31 @@ function NavSectionBlock({
                                 : "nav-row-hoverable text-muted",
                             )}
                           >
-                            <span className="flex w-[15px] shrink-0 items-center justify-center">
-                              <span className="size-1.5 rounded-full bg-current" />
-                            </span>
+                            {child.photoUrl !== undefined ? (
+                              <span
+                                className={clsx(
+                                  "flex size-6 shrink-0 items-center justify-center overflow-hidden rounded-lg text-[10px] font-semibold",
+                                  childActive
+                                    ? "bg-accent text-on-accent"
+                                    : "border border-line bg-surface text-ink"
+                                )}
+                              >
+                                {child.photoUrl ? (
+                                  // eslint-disable-next-line @next/next/no-img-element
+                                  <img
+                                    src={child.photoUrl}
+                                    alt=""
+                                    className="size-6 object-cover"
+                                  />
+                                ) : (
+                                  initialsOf(child.label)
+                                )}
+                              </span>
+                            ) : (
+                              <span className="flex w-[15px] shrink-0 items-center justify-center">
+                                <span className="size-1.5 rounded-full bg-current" />
+                              </span>
+                            )}
                             <span className="min-w-0 flex-1 truncate">
                               {child.label}
                             </span>
@@ -702,6 +734,7 @@ export function Sidebar() {
     label: c.title,
     count: c.unreadCount > 0 ? c.unreadCount : undefined,
     href: `/circle/${c.id}`,
+    photoUrl: c.photoProfileUrl,
   }));
 
   const badgeFor = (id: string) =>

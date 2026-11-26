@@ -7,6 +7,10 @@ export interface NavChild {
   href?: string;
   /** Open-task count, shown as a quiet trailing chip. */
   count?: number;
+  /** Circle rows only: the circle's photo for its tile. null
+   * (or a missing photo) renders the title initials instead;
+   * rows without this field keep the plain dot. */
+  photoUrl?: string | null;
 }
 
 export interface NavItem {
