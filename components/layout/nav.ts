@@ -14,7 +14,8 @@ export interface NavItem {
   label: string;
   icon: string;
   /** Expandable submenu rows; the Sidebar fills the Tasks
-   * item's children from the boards store at render time. */
+   * item's children from the boards store and the Circle item's
+   * from the circles store at render time. */
   children?: NavChild[];
   /** Optional route path. When set, clicking the nav item navigates here. */
   href?: string;

@@ -24,6 +24,7 @@ import {
   useBoards,
 } from "@/features/planner/boards";
 import { CreateBoardDialog } from "@/features/planner/components/CreateBoardDialog";
+import { setCreateCircleOpen, useCircles } from "@/features/circle/circles";
 import { isCollabCompleted, useOwnedCollabs } from "@/features/planner/collab-status";
 import { setMobileNav, useMobileNavOpen } from "./mobile-nav";
 import {
@@ -338,6 +339,7 @@ interface NavSectionBlockProps {
   onToggleMenu: (id: string) => void;
   onSelectChild?: (id: string) => void;
   onNewBoard: () => void;
+  onNewCircle: () => void;
 }
 
 function NavSectionBlock({
@@ -355,6 +357,7 @@ function NavSectionBlock({
   onToggleMenu,
   onSelectChild,
   onNewBoard,
+  onNewCircle,
 }: NavSectionBlockProps) {
   const { t } = useLanguage();
   // On the icon rail the section header becomes a hairline divider
@@ -469,7 +472,9 @@ function NavSectionBlock({
                       })}
                       <button
                         type="button"
-                        onClick={onNewBoard}
+                        onClick={
+                          item.id === "circle" ? onNewCircle : onNewBoard
+                        }
                         className="nav-row-hoverable flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs font-medium text-muted"
                       >
                         <Icon
@@ -478,7 +483,9 @@ function NavSectionBlock({
                           className="shrink-0 leading-none"
                         />
                         <span className="min-w-0 flex-1 truncate">
-                          {t("nav.newBoard")}
+                          {item.id === "circle"
+                            ? t("nav.newCircle")
+                            : t("nav.newBoard")}
                         </span>
                       </button>
                     </div>
@@ -520,7 +527,9 @@ export function Sidebar() {
   // board the URL names.
   const activeChild = pathname.startsWith("/tasks/")
     ? (pathname.split("/")[2] ?? null)
-    : null;
+    : pathname.startsWith("/circle/")
+      ? (pathname.split("/")[2] ?? null)
+      : null;
   const [miniPref, setMiniPref] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   useEffect(() => {
@@ -560,6 +569,11 @@ export function Sidebar() {
   useEffect(() => {
     if (pathname.startsWith("/tasks")) {
       setOpenMenus((prev) => (prev.tasks ? prev : { ...prev, tasks: true }));
+    }
+    if (pathname.startsWith("/circle")) {
+      setOpenMenus((prev) =>
+        prev.circle ? prev : { ...prev, circle: true }
+      );
     }
   }, [pathname]);
 
@@ -664,6 +678,7 @@ export function Sidebar() {
   }, []);
 
   const boards = useBoards();
+  const circles = useCircles();
   const { list: ownedCollabs } = useOwnedCollabs();
   // A team board whose collaboration is completed stays
   // hidden until the collab is reopened; its data is kept.
@@ -679,6 +694,15 @@ export function Sidebar() {
       count: openTaskCount(b),
       href: `/tasks/${b.id}`,
     }));
+
+  // The Circle submenu mirrors the Tasks one: one row per circle
+  // the user can open, with its unread count as the trailing chip.
+  const circleChildren: NavChild[] = (circles ?? []).map((c) => ({
+    id: c.id,
+    label: c.title,
+    count: c.unreadCount > 0 ? c.unreadCount : undefined,
+    href: `/circle/${c.id}`,
+  }));
 
   const badgeFor = (id: string) =>
     id === "inbox" && inboxUnread > 0
@@ -911,7 +935,9 @@ export function Sidebar() {
                     .map((item) =>
                       item.id === "tasks"
                         ? { ...item, children: boardChildren }
-                        : item,
+                        : item.id === "circle"
+                          ? { ...item, children: circleChildren }
+                          : item,
                     )
                     .concat(
                       section.id === "tools" && isAdminTier
@@ -939,6 +965,7 @@ export function Sidebar() {
                 activeChild={activeChild}
                 onToggleMenu={toggleMenu}
                 onNewBoard={() => setCreateBoardOpen(true)}
+                onNewCircle={() => setCreateCircleOpen(true)}
               />
             ))}
           </nav>

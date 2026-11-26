@@ -8,9 +8,9 @@ import { CreateCircleRows } from "./CreateCircleRows";
 
 /**
  * Centered modal listing owned projects that still have no Circle,
- * opened from the rail's plus tile. Replaces the old popover menu,
- * which overflowed the narrow rail. Creating closes the modal and
- * lands the user inside the new circle.
+ * opened from the sidebar's New circle row (used to be the rail's
+ * plus tile). Creating closes the modal and lands the user inside
+ * the new circle.
  */
 export function CreateCircleModal({
   projects,
@@ -59,11 +59,17 @@ export function CreateCircleModal({
           </button>
         </div>
         <div className="mt-2 max-h-[60vh] overflow-y-auto">
-          <CreateCircleRows
-            projects={projects}
-            creatingId={creatingId}
-            onCreate={onCreate}
-          />
+          {projects.length === 0 ? (
+            <p className="py-6 text-center text-sm text-muted">
+              {t("circle.indexEmptyHint")}
+            </p>
+          ) : (
+            <CreateCircleRows
+              projects={projects}
+              creatingId={creatingId}
+              onCreate={onCreate}
+            />
+          )}
         </div>
       </div>
     </div>
