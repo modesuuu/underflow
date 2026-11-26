@@ -85,6 +85,7 @@ import type { CollabMember } from "@/features/collaborations/types";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
+import { toast as sonnerToast } from "sonner";
 
 // A month the board can render. The sample board is November
 // 2026 (Nov 1 is a Sunday, "today" is Tue 17, mirroring the
@@ -1150,11 +1151,21 @@ function BoardCanvas({
     );
   };
   const displayName = (mi: number): string => {
-    if (mi === 0 && sessionUser?.name) return sessionUser.name;
+    if (mi === 0 && sessionUser?.name) {
+      // Member 0 is the board owner. Only show the session
+      // user's own name when they ARE the owner — a
+      // collaborator viewing the board must see the owner's
+      // real name, not their own.
+      const ownerId = members[0]?.userId;
+      if (!ownerId || ownerId === sessionUser.id) return sessionUser.name;
+    }
     return collabMemberFor(mi)?.name ?? members[mi].name;
   };
   const photoFor = (mi: number): string | undefined => {
-    if (mi === 0) return sessionUser?.photo;
+    if (mi === 0) {
+      const ownerId = members[0]?.userId;
+      if (!ownerId || ownerId === sessionUser?.id) return sessionUser?.photo;
+    }
     return collabMemberFor(mi)?.avatarUrl;
   };
   // Every edit flows back to the boards store, so the sidebar
@@ -3119,6 +3130,10 @@ function BoardCanvas({
                       deleteBoard(board.id);
                     }
                     setConfirmDeleteBoard(false);
+                    // Sonner, not the board's local toast: the
+                    // page navigates away right after, and the
+                    // local toast would unmount with it.
+                    sonnerToast.success(t("planner.boardDeleted"));
                     const rest = switchBoards.filter(
                       (b) => b.id !== board.id,
                     );
