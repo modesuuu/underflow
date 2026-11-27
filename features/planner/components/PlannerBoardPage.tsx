@@ -87,10 +87,10 @@ import { useRouter } from "next/navigation";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import { toast as sonnerToast } from "sonner";
 
-// A month the board can render. The sample board is November
-// 2026 (Nov 1 is a Sunday, "today" is Tue 17, mirroring the
-// FigCraft reference); a wired board renders a real month with
-// the real today. Day indices are 0-based inside the month; the
+// A month the board can render. Every board renders a real
+// month built from the real today (local boards used to render
+// the hardcoded sample month November 2026 until 2026-11-27).
+// Day indices are 0-based inside the month; the
 // API speaks ISO dates at the boundary, and the DateField
 // calendar is told the board's "today" so its past-day
 // disabling matches the board's past zone.
@@ -174,8 +174,9 @@ function buildMonth(year: number, month: number, today: Date): MonthModel {
   };
 }
 
-// The sample board's month: November 2026, "today" Tue 17.
-const NOVEMBER_2026 = buildMonth(2026, 10, new Date(2026, 10, 17));
+// (The sample month constant was removed 2026-11-27: every board,
+// local and server, now renders a real month built from the real
+// today.)
 
 // Icons a task pill can carry, chosen from the detail panel.
 // Names are Boxicons glyphs, rendered by the Icon component.
@@ -841,7 +842,13 @@ function ServerBoardCanvas({ collabId }: { collabId: string }) {
 // every local task is pushed once, then the local copy is deleted
 // and the owner lands on the shared board. A collaborator never
 // runs this — they open the shared board directly.
-function MigrateTeamBoard({ board }: { board: PlannerBoard }) {
+function MigrateTeamBoard({
+  board,
+  month,
+}: {
+  board: PlannerBoard;
+  month: MonthModel;
+}) {
   const router = useRouter();
   const { t } = useLanguage();
   const sessionUser = useSessionUser();
@@ -875,8 +882,8 @@ function MigrateTeamBoard({ board }: { board: PlannerBoard }) {
           for (const task of member.tasks) {
             const key = `${assigneeId ?? ""}:${task.title.toLowerCase()}`;
             if (seen.has(key)) continue;
-            const startIso = NOVEMBER_2026.isoForDay(task.day);
-            const endIso = NOVEMBER_2026.isoForDay(
+            const startIso = month.isoForDay(task.day);
+            const endIso = month.isoForDay(
               task.day + (task.span ?? 1) - 1,
             );
             await createPlannerTask(collabId, {
@@ -942,6 +949,24 @@ function LocalBoardPage({ boardId }: { boardId: string }) {
   const loaded = useBoardsLoaded();
   const board = boards.find((b) => b.id === boardId);
   const { list: ownedCollabs } = useOwnedCollabs();
+  // Live month (2026-11-27): local boards used to render the
+  // hardcoded sample month NOVEMBER_2026 ("today" Tue 17), so a
+  // personal board's dates never moved. Now the month is built
+  // from the real today, with the same month navigation the
+  // server board has. Local tasks store a day-of-month index,
+  // so they land on the same day number in the live month.
+  const today = useMemo(() => new Date(), []);
+  const [viewYear, setViewYear] = useState(today.getFullYear());
+  const [viewMonth, setViewMonth] = useState(today.getMonth());
+  const month = useMemo(
+    () => buildMonth(viewYear, viewMonth, today),
+    [viewYear, viewMonth, today],
+  );
+  const shiftView = (delta: number) => {
+    const next = shiftMonth(viewYear, viewMonth, delta);
+    setViewYear(next.year);
+    setViewMonth(next.month);
+  };
   const boardDone =
     board !== undefined &&
     board.kind === "team" &&
@@ -994,14 +1019,20 @@ function LocalBoardPage({ boardId }: { boardId: string }) {
     board.collabId &&
     ownedCollabs?.some((c) => c.id === board.collabId)
   ) {
-    return <MigrateTeamBoard board={board} />;
+    return <MigrateTeamBoard board={board} month={month} />;
   }
   return (
     <BoardCanvas
       key={board.id}
       board={board}
-      month={NOVEMBER_2026}
+      month={month}
       onMembersChange={(ms) => updateBoardMembers(board.id, ms)}
+      onPrevMonth={() => shiftView(-1)}
+      onNextMonth={() => shiftView(1)}
+      onTodayMonth={() => {
+        setViewYear(today.getFullYear());
+        setViewMonth(today.getMonth());
+      }}
     />
   );
 }

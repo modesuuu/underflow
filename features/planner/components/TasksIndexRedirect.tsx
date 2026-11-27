@@ -40,7 +40,7 @@ export function TasksIndexRedirect() {
   if (!loaded || !serverLoaded) return null;
   if (serverBoards.length === 0 && boards.length === 0) {
     return (
-      <div className="flex flex-col items-start gap-3 py-16">
+      <div className="flex min-h-[60vh] flex-col items-center justify-center gap-3 py-16 text-center">
         <h1 className="text-2xl font-medium tracking-tight text-ink">
           {t("planner.noBoards")}
         </h1>
